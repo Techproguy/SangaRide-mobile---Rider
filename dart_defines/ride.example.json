@@ -1,0 +1,5 @@
+{
+  "BASE_URL": "https://replace-with-the-sanga-ride-gateway",
+  "MAPS_API_KEY_ANDROID": "replace-with-the-android-maps-key",
+  "MAPS_API_KEY_IOS": "replace-with-the-ios-maps-key"
+}
