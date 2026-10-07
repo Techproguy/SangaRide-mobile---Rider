@@ -72,8 +72,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> with SingleTickerPr
             overlayBuilder: (context, story) => Stack(
               fit: StackFit.expand,
               children: [
-                if (_isChoiceVisible)
-                  SangaRecedingPhoto(image: AssetImage(_slides[story.index].image), progress: _choice),
+                Visibility(
+                  visible: _isChoiceVisible,
+                  child: SangaRecedingPhoto(image: AssetImage(_slides[story.index].image), progress: _choice),
+                ),
                 FadeTransition(
                   opacity: _slideFade,
                   child: IgnorePointer(
@@ -81,14 +83,16 @@ class _OnboardingScreenState extends State<OnboardingScreen> with SingleTickerPr
                     child: _SlideOverlay(story: story, slide: _slides[story.index], onSkip: _choice.forward),
                   ),
                 ),
-                if (_isChoiceVisible)
-                  Align(
+                Visibility(
+                  visible: _isChoiceVisible,
+                  child: Align(
                     alignment: Alignment.bottomCenter,
                     child: SlideTransition(
                       position: _sheetRise,
                       child: GetStartedSheet(onClose: _choice.reverse),
                     ),
                   ),
+                ),
               ],
             ),
           ),
@@ -124,19 +128,21 @@ class _SlideOverlay extends StatelessWidget {
             ),
           ),
           const Spacer(),
-          Column(
-            key: ValueKey(story.index),
-            children: [
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: SangaSpacing.gutter),
-                child: Text(slide.title, style: SangaTextStyles.display, textAlign: TextAlign.center),
-              ).sangaEnter(SangaEntrance.title),
-              const SizedBox(height: SangaSpacing.md),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: SangaSpacing.heroInset),
-                child: Text(slide.message, style: SangaTextStyles.lead, textAlign: TextAlign.center),
-              ).sangaEnter(SangaEntrance.body),
-            ],
+          SangaHandoff(
+            value: story.index,
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: SangaSpacing.gutter),
+                  child: Text(slide.title, style: SangaTextStyles.display, textAlign: TextAlign.center),
+                ).sangaEnter(SangaEntrance.title),
+                const SizedBox(height: SangaSpacing.md),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: SangaSpacing.heroInset),
+                  child: Text(slide.message, style: SangaTextStyles.lead, textAlign: TextAlign.center),
+                ).sangaEnter(SangaEntrance.body),
+              ],
+            ),
           ),
           const SizedBox(height: SangaSpacing.xxl),
           SangaPageIndicator.dots(count: story.count, index: story.index, progress: story.progress),
