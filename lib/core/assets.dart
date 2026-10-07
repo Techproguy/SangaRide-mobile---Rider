@@ -8,9 +8,8 @@ class AppAssets {
   static const String onboardingRide = '$images/onboarding_1.webp';
   static const String onboardingDelivery = '$images/onboarding_2.webp';
   static const String onboardingFares = '$images/onboarding_3.webp';
-  static const String getStarted = '$images/get_started.webp';
 
-  static const List<String> firstScreenPhotos = [onboardingRide, onboardingDelivery, onboardingFares, getStarted];
+  static const List<String> firstScreenPhotos = [onboardingRide, onboardingDelivery, onboardingFares];
 
   static const String back = '$icons/back.png';
 
