@@ -1,0 +1,61 @@
+import 'dart:developer';
+
+import 'package:geolocator/geolocator.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+
+enum LocationStatus { granted, serviceDisabled, denied, deniedForever, error }
+
+class LocationResult {
+  final LocationStatus status;
+  final LatLng? position;
+
+  const LocationResult(this.status, [this.position]);
+
+  bool get isGranted => status == LocationStatus.granted && position != null;
+}
+
+class LocationService {
+  static const _settings = LocationSettings(accuracy: LocationAccuracy.high, distanceFilter: 10);
+
+  Future<bool> isLocationServiceEnabled() => Geolocator.isLocationServiceEnabled();
+
+  Future<bool> checkAndRequestPermission() async {
+    var permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) permission = await Geolocator.requestPermission();
+    return permission == LocationPermission.whileInUse || permission == LocationPermission.always;
+  }
+
+  Future<LocationResult> resolveCurrentLocation() async {
+    try {
+      if (!await Geolocator.isLocationServiceEnabled()) {
+        return const LocationResult(LocationStatus.serviceDisabled);
+      }
+
+      var permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) return const LocationResult(LocationStatus.denied);
+      if (permission == LocationPermission.deniedForever) return const LocationResult(LocationStatus.deniedForever);
+
+      final position = await Geolocator.getCurrentPosition(locationSettings: _settings);
+      return LocationResult(LocationStatus.granted, LatLng(position.latitude, position.longitude));
+    } catch (e) {
+      log('resolveCurrentLocation error: $e');
+      return const LocationResult(LocationStatus.error);
+    }
+  }
+
+  Future<LatLng?> getCurrentLocation() async => (await resolveCurrentLocation()).position;
+
+  Stream<LatLng> getLocationStream() {
+    return Geolocator.getPositionStream(locationSettings: _settings)
+        .map((position) => LatLng(position.latitude, position.longitude));
+  }
+
+  double calculateDistance(LatLng from, LatLng to) {
+    return Geolocator.distanceBetween(from.latitude, from.longitude, to.latitude, to.longitude);
+  }
+
+  Future<void> openLocationSettings() => Geolocator.openLocationSettings();
+
+  Future<void> openAppSettings() => Geolocator.openAppSettings();
+}
