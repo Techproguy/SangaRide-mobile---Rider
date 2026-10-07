@@ -5,10 +5,10 @@ class AppAssets {
   static const String images = '$root/images';
   static const String icons = '$root/icons';
 
-  static const String onboardingRide = '$images/onboarding_1.jpg';
-  static const String onboardingDelivery = '$images/onboarding_2.jpg';
-  static const String onboardingFares = '$images/onboarding_3.jpg';
-  static const String getStarted = '$images/get_started.jpg';
+  static const String onboardingRide = '$images/onboarding_1.webp';
+  static const String onboardingDelivery = '$images/onboarding_2.webp';
+  static const String onboardingFares = '$images/onboarding_3.webp';
+  static const String getStarted = '$images/get_started.webp';
 
   static const String back = '$icons/back.png';
 
