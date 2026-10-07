@@ -22,6 +22,7 @@ class SangaRide extends StatelessWidget {
       routerConfig: SangaRouter.router,
       theme: SangaTheme.light,
       debugShowCheckedModeBanner: false,
+      builder: (context, child) => SangaFrame(config: SangaConstants.frame, child: child!),
     );
   }
 }

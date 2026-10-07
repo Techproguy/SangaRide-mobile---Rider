@@ -17,14 +17,11 @@ class GetStartedSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(SangaSpacing.md, 0, SangaSpacing.md, SangaSpacing.md),
-      child: SangaAuthChoiceSheet(
-        onClose: onClose,
-        onLogin: () => context.push(SangaRoutes.signIn),
-        onGoogle: () => _continueWith(context, AuthProvider.google),
-        onApple: () => _continueWith(context, AuthProvider.apple),
-      ),
+    return SangaAuthChoiceSheet(
+      onClose: onClose,
+      onLogin: () => context.push(SangaRoutes.signIn),
+      onGoogle: () => _continueWith(context, AuthProvider.google),
+      onApple: () => _continueWith(context, AuthProvider.apple),
     );
   }
 }

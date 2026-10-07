@@ -587,6 +587,13 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.6.0"
+  sanga_device_frame:
+    dependency: transitive
+    description:
+      path: "../sanga_device_frame"
+      relative: true
+    source: path
+    version: "0.0.1"
   sanga_ride_ui:
     dependency: "direct main"
     description:
@@ -615,6 +622,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.10.2"
+  sprung:
+    dependency: transitive
+    description:
+      name: sprung
+      sha256: "54322638f5e393d2b808175f7eadbaa4836a4425456e98d93c3d676dc56ebdf1"
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.0.1"
   stream_transform:
     dependency: transitive
     description:

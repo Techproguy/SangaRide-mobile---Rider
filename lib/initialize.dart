@@ -9,6 +9,7 @@ import 'package:sanga_ride/controller/shared/map_controller.dart';
 import 'package:sanga_ride/controller/shared/user_controller.dart';
 import 'package:sanga_ride/core/api/api.dart';
 import 'package:sanga_ride/core/assets.dart';
+import 'package:sanga_ride/core/constants.dart';
 import 'package:sanga_ride/core/services/connectivity_service.dart';
 import 'package:sanga_ride/core/services/secure_token_store.dart';
 import 'package:sanga_ride/view/widgets/map/sanga_marker_icons.dart';
@@ -19,6 +20,7 @@ Future<void> initializeSanga() async {
   await GetStorage.init();
   await SecureTokenStore.instance.hydrate();
   unawaited(SangaMarkerIcons.preload());
+  await SangaFrame.preload(SangaConstants.frame);
   await SangaPhotoBackdrop.precache([for (final image in AppAssets.firstScreenPhotos) AssetImage(image)]);
 
   Get.put(ApiService(), permanent: true);
