@@ -44,7 +44,10 @@ class OnboardingScreen extends StatelessWidget {
                   alignment: Alignment.centerRight,
                   child: Padding(
                     padding: const EdgeInsets.only(top: SangaSpacing.lg, right: SangaSpacing.lg),
-                    child: SangaPillButton(label: 'Skip', onPressed: () => openGetStarted(story.index)),
+                    child: Visibility.maintain(
+                      visible: !story.isLast,
+                      child: SangaPillButton(label: 'Skip', onPressed: () => openGetStarted(story.index)),
+                    ),
                   ),
                 ),
                 const Spacer(),

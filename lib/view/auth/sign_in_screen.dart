@@ -49,6 +49,7 @@ class _SignInScreenState extends State<SignInScreen> {
       children: [
         SangaPhoneField(
           controller: _phone,
+          autofocus: true,
           errorText: _phoneError,
           onChanged: (_) => setState(() => _phoneError = null),
           onSubmitted: (_) => _submit(),

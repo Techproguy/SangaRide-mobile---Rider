@@ -1,5 +1,6 @@
 import 'package:flutter/widgets.dart';
 import 'package:go_router/go_router.dart';
+import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 import 'package:sanga_ride/view/auth/get_started_screen.dart';
 import 'package:sanga_ride/view/auth/onboarding_screen.dart';
 import 'package:sanga_ride/view/auth/sign_in_screen.dart';
@@ -30,10 +31,17 @@ class SangaRoutes {
       pageBuilder: (context, state) => CustomTransitionPage(
         key: state.pageKey,
         opaque: false,
-        transitionDuration: const Duration(milliseconds: 550),
-        reverseTransitionDuration: const Duration(milliseconds: 400),
+        transitionDuration: SangaMotion.routeEnter,
+        reverseTransitionDuration: SangaMotion.routeExit,
         child: GetStartedScreen(revealFrom: state.extra as String?),
-        transitionsBuilder: (context, animation, _, child) => FadeTransition(opacity: animation, child: child),
+        transitionsBuilder: (context, animation, _, child) => FadeTransition(
+          opacity: CurvedAnimation(
+            parent: animation,
+            curve: SangaMotion.fadeCurve,
+            reverseCurve: SangaMotion.exitCurve,
+          ),
+          child: child,
+        ),
       ),
     ),
     GoRoute(path: signIn, builder: (context, state) => const SignInScreen()),

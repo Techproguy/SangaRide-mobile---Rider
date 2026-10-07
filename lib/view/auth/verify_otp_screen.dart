@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sanga_ride/controller/shared/auth_controller.dart';
 import 'package:sanga_ride/core/router/routes.dart';
+import 'package:sanga_ride/core/services/toast_service.dart';
 import 'package:sanga_ride/view/auth/widgets/otp_expiry_notice.dart';
 import 'package:sanga_ride/view/auth/widgets/resend_code_button.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
@@ -50,6 +51,7 @@ class _VerifyOtpScreenState extends State<VerifyOtpScreen> {
     if (!sent || !mounted) return;
     _auth.clearOtpError();
     _code.clear();
+    Toast.success('New code sent. Check your messages.');
     setState(() {
       _attempt++;
       _isExpired = false;
