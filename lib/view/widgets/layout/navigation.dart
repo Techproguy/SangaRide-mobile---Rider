@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:get/get.dart';
-import 'package:sanga_ride/core/colors.dart';
 import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride/view/widgets/buttons/inkwell.dart';
+import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 class SangaNavigation<T extends BaseTabView> extends StatefulWidget {
   final T? currentTab;
@@ -55,10 +55,14 @@ class SangaNavigationState<T extends BaseTabView> extends State<SangaNavigation<
         Container(
           decoration: BoxDecoration(
             boxShadow: [
-              BoxShadow(color: SangaColors.black.withValues(alpha: 0.1), offset: const Offset(0, -3), blurRadius: 20),
+              BoxShadow(
+                color: SangaColors.textPrimary.withValues(alpha: 0.1),
+                offset: const Offset(0, -3),
+                blurRadius: 20,
+              ),
             ],
-            border: Border.all(color: SangaColors.lineLight.shade500),
-            color: SangaColors.white.withValues(alpha: 0.65),
+            border: Border.all(color: SangaColors.divider),
+            color: SangaColors.surface.withValues(alpha: 0.65),
           ),
           padding: const EdgeInsets.all(12),
           child: SafeArea(
@@ -121,7 +125,7 @@ class SangaNavigationTab<T extends BaseTabView> extends StatelessWidget {
                 fontSize: 13,
                 height: 1,
                 fontWeight: isSelected ? FontWeight.w500 : FontWeight.w400,
-                color: isSelected ? SangaColors.accent : SangaColors.gray,
+                color: isSelected ? SangaColors.primary : SangaColors.textMuted,
               ),
             ),
           ),

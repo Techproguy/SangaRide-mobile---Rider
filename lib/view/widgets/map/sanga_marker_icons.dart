@@ -2,7 +2,7 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:sanga_ride/core/colors.dart';
+import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 class SangaMarkerIcons {
   SangaMarkerIcons._();
@@ -17,6 +17,7 @@ class SangaMarkerIcons {
   static const Offset _kShadowOffset = Offset(0, 2.5);
 
   static const Color _kDropoffColor = Color(0xFF2C2F33);
+  static const Color _kPickupColor = Color(0xFF228B22);
 
   static BitmapDescriptor? _self;
   static BitmapDescriptor? _pickup;
@@ -30,13 +31,13 @@ class SangaMarkerIcons {
   static Future<BitmapDescriptor> self() async => _self ??= await _paintSelf();
 
   static Future<BitmapDescriptor> pickup() async =>
-      _pickup ??= await _paintPin(innerColor: SangaColors.green, glyph: Icons.person_rounded);
+      _pickup ??= await _paintPin(innerColor: _kPickupColor, glyph: Icons.person_rounded);
 
   static Future<BitmapDescriptor> dropoff() async =>
       _dropoff ??= await _paintPin(innerColor: _kDropoffColor, glyph: Icons.flag_rounded);
 
   static Future<BitmapDescriptor> driver() async =>
-      _driver ??= await _paintPin(innerColor: SangaColors.accent, glyph: Icons.directions_car_filled_rounded);
+      _driver ??= await _paintPin(innerColor: SangaColors.primary, glyph: Icons.directions_car_filled_rounded);
 
   static Future<BitmapDescriptor> _paintSelf() async {
     final canvasSize = _kSelfSize * _kPixelRatio;
@@ -52,11 +53,11 @@ class SangaMarkerIcons {
     _drawShadow(canvas, center, outerRadius, paint);
     paint
       ..maskFilter = null
-      ..color = SangaColors.accent;
+      ..color = SangaColors.primary;
     canvas.drawCircle(center, outerRadius, paint);
     paint.color = Colors.white;
     canvas.drawCircle(center, ringRadius, paint);
-    paint.color = SangaColors.accent;
+    paint.color = SangaColors.primary;
     canvas.drawCircle(center, coreRadius, paint);
 
     return _record(recorder, canvasSize.toInt());
@@ -77,7 +78,7 @@ class SangaMarkerIcons {
 
     paint
       ..maskFilter = null
-      ..color = SangaColors.accent;
+      ..color = SangaColors.primary;
     final tail = Path()
       ..moveTo(bodyCenter.dx - bodyRadius * 0.55, bodyCenter.dy + bodyRadius * 0.4)
       ..lineTo(bodyCenter.dx + bodyRadius * 0.55, bodyCenter.dy + bodyRadius * 0.4)

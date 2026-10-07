@@ -8,8 +8,6 @@ class SangaConstants {
 
   static const String baseUrl = String.fromEnvironment('BASE_URL');
 
-  static const String fontFamily = 'InstrumentSans';
-
   static const String iosBundleId = 'com.sangatechnologies.ride';
   static const String androidPackageName = 'com.sangatechnologies.ride';
 

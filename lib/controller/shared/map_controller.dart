@@ -4,11 +4,11 @@ import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:sanga_ride/core/colors.dart';
 import 'package:sanga_ride/core/services/location_service.dart';
 import 'package:sanga_ride/core/services/places_service.dart';
 import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride/view/widgets/map/sanga_marker_icons.dart';
+import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 class MapController extends GetxController {
   static const String selfMarkerId = 'current_location';
@@ -254,7 +254,7 @@ class MapController extends GetxController {
   void setPolyline({
     required String id,
     required List<LatLng> points,
-    Color color = SangaColors.accent,
+    Color color = SangaColors.primary,
     int width = 4,
   }) {
     _polylines.removeWhere((p) => p.polylineId.value == id);

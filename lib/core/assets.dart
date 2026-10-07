@@ -1,9 +1,13 @@
-class SangaAssets {
-  SangaAssets._();
+class AppAssets {
+  AppAssets._();
 
   static const String root = 'assets';
   static const String images = '$root/images';
   static const String icons = '$root/icons';
+
+  static const String onboardingRide = '$images/onboarding_1.jpg';
+  static const String onboardingDelivery = '$images/onboarding_2.jpg';
+  static const String onboardingFares = '$images/onboarding_3.jpg';
 
   static const String back = '$icons/back.png';
 

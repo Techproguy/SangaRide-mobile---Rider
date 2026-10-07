@@ -21,10 +21,10 @@ sealed class BaseTabView {
 }
 
 enum TabView implements BaseTabView {
-  home('Home', HomeScreen(), SangaAssets.homeActive, SangaAssets.homeInactive, SangaRoutes.home),
-  trips('Trips', TripsScreen(), SangaAssets.tripsActive, SangaAssets.tripsInactive, SangaRoutes.trips),
-  wallet('Wallet', WalletScreen(), SangaAssets.walletActive, SangaAssets.walletInactive, SangaRoutes.wallet),
-  profile('Profile', ProfileScreen(), SangaAssets.profileActive, SangaAssets.profileInactive, SangaRoutes.profile);
+  home('Home', HomeScreen(), AppAssets.homeActive, AppAssets.homeInactive, SangaRoutes.home),
+  trips('Trips', TripsScreen(), AppAssets.tripsActive, AppAssets.tripsInactive, SangaRoutes.trips),
+  wallet('Wallet', WalletScreen(), AppAssets.walletActive, AppAssets.walletInactive, SangaRoutes.wallet),
+  profile('Profile', ProfileScreen(), AppAssets.profileActive, AppAssets.profileInactive, SangaRoutes.profile);
 
   @override
   final String name;

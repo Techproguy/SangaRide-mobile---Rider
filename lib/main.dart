@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:sanga_ride/core/constants.dart';
 import 'package:sanga_ride/core/router/router.dart';
-import 'package:sanga_ride/core/theme.dart';
 import 'package:sanga_ride/initialize.dart';
+import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -20,7 +20,7 @@ class SangaRide extends StatelessWidget {
     return MaterialApp.router(
       title: SangaConstants.appName,
       routerConfig: SangaRouter.router,
-      theme: SangaTheme.appTheme,
+      theme: SangaTheme.light,
       debugShowCheckedModeBanner: false,
     );
   }
