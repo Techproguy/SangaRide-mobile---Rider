@@ -22,7 +22,7 @@ class GetStartedScreen extends StatelessWidget {
         backgroundColor: SangaColors.textPrimary,
         body: Stack(
           children: [
-            const Positioned.fill(child: SangaPhotoBackdrop.blurred(image: AssetImage(AppAssets.onboardingFares))),
+            const Positioned.fill(child: SangaPhotoBackdrop.blurred(image: AssetImage(AppAssets.getStarted))),
             Align(
               alignment: Alignment.bottomCenter,
               child: Padding(

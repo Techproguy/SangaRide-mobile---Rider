@@ -8,6 +8,7 @@ class AppAssets {
   static const String onboardingRide = '$images/onboarding_1.jpg';
   static const String onboardingDelivery = '$images/onboarding_2.jpg';
   static const String onboardingFares = '$images/onboarding_3.jpg';
+  static const String getStarted = '$images/get_started.jpg';
 
   static const String back = '$icons/back.png';
 
