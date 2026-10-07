@@ -3,8 +3,10 @@ import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:sanga_ride/core/api/mock/mock_places.dart';
 import 'package:sanga_ride/core/constants.dart';
 import 'package:sanga_ride/core/services/app_signature.dart';
+import 'package:sanga_ride/core/storage_keys.dart';
 import 'package:sanga_ride/model/models.dart';
 
 class PlacesService {
@@ -107,6 +109,7 @@ class PlacesService {
   Future<List<Place>> searchPlaces(String query) async {
     query = query.trim();
     if (query.isEmpty) return [];
+    if (!SangaMapsKeys.isConfigured) return MockPlaces.search(query);
     try {
       return await _textSearch(query);
     } catch (e) {
@@ -138,6 +141,19 @@ class PlacesService {
     if (response.statusCode != 200 || response.data is! Map) return [];
     final places = (response.data['places'] as List?) ?? const [];
     return places.whereType<Map>().map((p) => Place.fromJson(Map<String, dynamic>.from(p))).toList();
+  }
+
+  Future<Place?> placeAt(LatLng coordinates) async {
+    if (!SangaMapsKeys.isConfigured) return MockPlaces.nearest(coordinates);
+    final location = await reverseGeocode(coordinates);
+    if (location == null) return null;
+    final area = location.subLocality ?? location.locality ?? location.route;
+    return Place(
+      placeId: location.placeId ?? '',
+      name: area ?? location.formattedAddress,
+      address: location.formattedAddress,
+      coordinates: coordinates,
+    );
   }
 
   Future<GeocodedLocation?> reverseGeocode(LatLng coordinates) async {

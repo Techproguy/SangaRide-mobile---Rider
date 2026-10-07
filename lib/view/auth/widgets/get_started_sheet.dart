@@ -19,6 +19,7 @@ class GetStartedSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     return SangaAuthChoiceSheet(
       onClose: onClose,
+      onCreateAccount: () => context.push(SangaRoutes.signUp),
       onLogin: () => context.push(SangaRoutes.signIn),
       onGoogle: () => _continueWith(context, AuthProvider.google),
       onApple: () => _continueWith(context, AuthProvider.apple),

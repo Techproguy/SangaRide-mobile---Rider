@@ -28,6 +28,8 @@
 	<true/>
 	<key>MapsApiKey</key>
 	<string>$(MAPS_API_KEY)</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Sanga Ride uses your camera to take a quick selfie that confirms it is really you.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>Sanga Ride uses your location during trips so your driver can find you.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>

@@ -2,16 +2,23 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sanga_ride/controller/shared/auth_controller.dart';
-import 'package:sanga_ride/core/router/routes.dart';
 import 'package:sanga_ride/core/services/toast_service.dart';
 import 'package:sanga_ride/view/auth/widgets/otp_expiry_notice.dart';
 import 'package:sanga_ride/view/auth/widgets/resend_code_button.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
-class VerifyOtpScreen extends StatefulWidget {
-  const VerifyOtpScreen({super.key, required this.phone});
+class OtpArgs {
+  const OtpArgs({required this.phone, required this.next});
 
   final String phone;
+  final String next;
+}
+
+class VerifyOtpScreen extends StatefulWidget {
+  VerifyOtpScreen(OtpArgs args, {super.key}) : phone = args.phone, next = args.next;
+
+  final String phone;
+  final String next;
 
   @override
   State<VerifyOtpScreen> createState() => _VerifyOtpScreenState();
@@ -42,7 +49,7 @@ class _VerifyOtpScreenState extends State<VerifyOtpScreen> {
     if (!_canVerify || _auth.isVerifying) return;
     final verified = await _auth.verifyOtp(phone: widget.phone, code: _code.text);
     if (!mounted) return;
-    if (verified) return context.go(SangaRoutes.home);
+    if (verified) return context.go(widget.next);
     _code.clear();
   }
 

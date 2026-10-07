@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sanga_ride/controller/shared/auth_controller.dart';
 import 'package:sanga_ride/core/router/routes.dart';
+import 'package:sanga_ride/view/auth/verify_otp_screen.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 class SignInScreen extends StatefulWidget {
@@ -32,7 +33,11 @@ class _SignInScreenState extends State<SignInScreen> {
     }
     final phone = SangaPhoneNumber.toE164(_phone.text);
     final sent = await _auth.requestOtp(phone);
-    if (sent && mounted) context.push(SangaRoutes.verifyOtp, extra: phone);
+    if (!sent || !mounted) return;
+    context.push(
+      SangaRoutes.verifyOtp,
+      extra: OtpArgs(phone: phone, next: SangaRoutes.home),
+    );
   }
 
   Future<void> _continueWith(AuthProvider provider) async {

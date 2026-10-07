@@ -4,6 +4,7 @@ import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 
+import 'package:sanga_ride/controller/rider/rider_sign_up_controller.dart';
 import 'package:sanga_ride/controller/shared/auth_controller.dart';
 import 'package:sanga_ride/controller/shared/map_controller.dart';
 import 'package:sanga_ride/controller/shared/user_controller.dart';
@@ -27,6 +28,7 @@ Future<void> initializeSanga() async {
   Get.put(ConnectivityService(), permanent: true);
 
   Get.put(AuthController(), permanent: true);
+  Get.lazyPut(() => RiderSignUpController(), fenix: true);
   Get.put(UserController(), permanent: true);
 
   Get.lazyPut(() => MapController(), fenix: true);
