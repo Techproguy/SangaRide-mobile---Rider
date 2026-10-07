@@ -20,7 +20,7 @@ class VerifyOtpScreen extends StatefulWidget {
 class _VerifyOtpScreenState extends State<VerifyOtpScreen> {
   final _auth = Get.find<AuthController>();
   final _code = TextEditingController();
-  int _attempt = 0;
+  DateTime _sentAt = DateTime.now();
   bool _isExpired = false;
 
   bool get _canVerify => _code.text.length == AuthController.otpLength && !_isExpired;
@@ -53,7 +53,7 @@ class _VerifyOtpScreenState extends State<VerifyOtpScreen> {
     _code.clear();
     Toast.success('New code sent. Check your messages.');
     setState(() {
-      _attempt++;
+      _sentAt = DateTime.now();
       _isExpired = false;
     });
   }
@@ -64,7 +64,7 @@ class _VerifyOtpScreenState extends State<VerifyOtpScreen> {
       title: 'Enter OTP',
       subtitle:
           'Enter the ${AuthController.otpLength}-digit code sent to ${SangaPhoneNumber.masked(widget.phone)} to verify your account',
-      footer: ResendCodeButton(key: ValueKey(_attempt), onResend: _resend),
+      footer: ResendCodeButton(sentAt: _sentAt, onResend: _resend),
       children: [
         Obx(
           () => SangaOtpField(
@@ -76,7 +76,7 @@ class _VerifyOtpScreenState extends State<VerifyOtpScreen> {
           ),
         ),
         const SizedBox(height: SangaSpacing.lg),
-        OtpExpiryNotice(key: ValueKey(_attempt), onExpired: () => setState(() => _isExpired = true)),
+        OtpExpiryNotice(sentAt: _sentAt, onExpired: () => setState(() => _isExpired = true)),
         const SizedBox(height: SangaSpacing.xxl),
         Obx(
           () => SangaButton.primary(

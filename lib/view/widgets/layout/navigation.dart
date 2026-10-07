@@ -103,16 +103,13 @@ class SangaNavigationTab<T extends BaseTabView> extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         spacing: 4,
         children: [
-          AnimatedSwitcher(
+          AnimatedCrossFade(
             duration: 150.ms,
-            switchInCurve: Curves.easeOut,
-            switchOutCurve: Curves.easeIn,
-            child: Image.asset(
-              isSelected ? tab.activeIcon : tab.inactiveIcon,
-              key: ValueKey(isSelected),
-              width: 28,
-              height: 28,
-            ),
+            firstCurve: Curves.easeOut,
+            secondCurve: Curves.easeIn,
+            crossFadeState: isSelected ? CrossFadeState.showFirst : CrossFadeState.showSecond,
+            firstChild: Image.asset(tab.activeIcon, width: 28, height: 28),
+            secondChild: Image.asset(tab.inactiveIcon, width: 28, height: 28),
           ),
           FittedBox(
             fit: BoxFit.scaleDown,

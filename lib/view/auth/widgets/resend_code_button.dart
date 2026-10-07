@@ -2,16 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 class ResendCodeButton extends StatelessWidget {
-  const ResendCodeButton({super.key, required this.onResend});
+  const ResendCodeButton({super.key, required this.sentAt, required this.onResend});
 
   static const cooldown = Duration(seconds: 60);
 
+  final DateTime sentAt;
   final VoidCallback onResend;
 
   @override
   Widget build(BuildContext context) {
     return SangaCountdown(
-      duration: cooldown,
+      endsAt: sentAt.add(cooldown),
       builder: (context, remaining) => SizedBox(
         height: kMinInteractiveDimension,
         child: Center(child: _label(remaining)),
