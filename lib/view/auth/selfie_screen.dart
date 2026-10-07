@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sanga_ride/controller/rider/rider_sign_up_controller.dart';
@@ -20,6 +21,7 @@ class SelfieScreen extends StatelessWidget {
       step: RiderSignUpStep.selfie.formStep,
       verify: signUp.verifySelfie,
       fallbackCapture: kDebugMode ? () => MockCapture.photo('Selfie') : null,
+      onOpenSettings: Geolocator.openAppSettings,
       onPassed: () => context.push(SangaRoutes.homeLocation),
     );
   }

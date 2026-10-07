@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sanga_ride/controller/rider/rider_sign_up_controller.dart';
+import 'package:sanga_ride/controller/shared/auth_controller.dart';
 import 'package:sanga_ride/core/router/routes.dart';
 import 'package:sanga_ride/view/auth/sign_up_steps.dart';
 import 'package:sanga_ride/view/auth/verify_otp_screen.dart';
@@ -57,7 +58,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
     if (started && mounted) {
       context.push(
         SangaRoutes.verifyOtp,
-        extra: OtpArgs(phone: phone, next: SangaRoutes.aboutYou),
+        extra: OtpArgs(phone: phone, next: SangaRoutes.aboutYou, purpose: OtpPurpose.registration),
       );
     }
   }
@@ -111,18 +112,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
         Obx(
           () => _signUp.phoneError == null
               ? const SizedBox.shrink()
-              : Align(
-                  alignment: Alignment.centerLeft,
-                  child: TextButton(
-                    style: TextButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: SangaSpacing.xs),
-                      minimumSize: Size.zero,
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    ),
-                    onPressed: () => context.pushReplacement(SangaRoutes.signIn),
-                    child: Text('Log in instead', style: SangaTextStyles.link),
-                  ),
-                ),
+              : SangaTextLink(label: 'Log in instead', onPressed: () => context.pushReplacement(SangaRoutes.signIn)),
         ),
         const SizedBox(height: SangaSpacing.xxl),
         Obx(() => SangaButton.primary(label: 'Continue', isLoading: _signUp.isSaving, onPressed: _submit)),

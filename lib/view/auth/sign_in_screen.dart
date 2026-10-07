@@ -22,6 +22,7 @@ class _SignInScreenState extends State<SignInScreen> {
 
   @override
   void dispose() {
+    _auth.clearPhoneError();
     _phone.dispose();
     super.dispose();
   }
@@ -32,11 +33,11 @@ class _SignInScreenState extends State<SignInScreen> {
       return;
     }
     final phone = SangaPhoneNumber.toE164(_phone.text);
-    final sent = await _auth.requestOtp(phone);
+    final sent = await _auth.requestOtp(phone, purpose: OtpPurpose.login);
     if (!sent || !mounted) return;
     context.push(
       SangaRoutes.verifyOtp,
-      extra: OtpArgs(phone: phone, next: SangaRoutes.home),
+      extra: OtpArgs(phone: phone, next: SangaRoutes.home, purpose: OtpPurpose.login),
     );
   }
 
@@ -52,12 +53,22 @@ class _SignInScreenState extends State<SignInScreen> {
       titleTrailing: const SangaIcon(SangaAssets.handWave, size: 24),
       subtitle: 'Enter your phone number to continue',
       children: [
-        SangaPhoneField(
-          controller: _phone,
-          autofocus: true,
-          errorText: _phoneError,
-          onChanged: (_) => setState(() => _phoneError = null),
-          onSubmitted: (_) => _submit(),
+        Obx(
+          () => SangaPhoneField(
+            controller: _phone,
+            autofocus: true,
+            errorText: _phoneError ?? _auth.phoneError,
+            onChanged: (_) {
+              _auth.clearPhoneError();
+              setState(() => _phoneError = null);
+            },
+            onSubmitted: (_) => _submit(),
+          ),
+        ),
+        Obx(
+          () => _auth.phoneError == null
+              ? const SizedBox.shrink()
+              : SangaTextLink(label: 'Create an account', onPressed: () => context.pushReplacement(SangaRoutes.signUp)),
         ),
         const SizedBox(height: SangaSpacing.xl),
         Obx(

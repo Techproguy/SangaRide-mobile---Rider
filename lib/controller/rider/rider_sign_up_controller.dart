@@ -1,6 +1,7 @@
 import 'dart:developer';
 
 import 'package:get/get.dart';
+import 'package:sanga_ride/controller/shared/auth_controller.dart';
 import 'package:sanga_ride/core/api/api.dart';
 import 'package:sanga_ride/core/api/mock/mock_endpoints.dart';
 import 'package:sanga_ride/model/models.dart';
@@ -17,19 +18,21 @@ class RiderSignUpController extends GetxController {
 
   void clearPhoneError() => _phoneError.value = null;
 
-  Future<bool> start({required String firstName, required String lastName, required String phone}) {
-    return _save(() async {
-      try {
-        return await _api.post(
-          MockEndpoints.signUp,
-          data: {'firstName': firstName, 'lastName': lastName, 'phone': phone},
-          suppressErrorToast: true,
-        );
-      } on ApiException catch (e) {
-        _phoneError.value = e.message;
-        rethrow;
+  Future<bool> start({required String firstName, required String lastName, required String phone}) async {
+    _isSaving.value = true;
+    try {
+      if (await Get.find<AuthController>().isRegistered(phone)) {
+        _phoneError.value = 'This number already has an account.';
+        return false;
       }
-    });
+      await _api.post(MockEndpoints.signUp, data: {'firstName': firstName, 'lastName': lastName, 'phone': phone});
+      return true;
+    } catch (e) {
+      log('start sign up failed: $e');
+      return false;
+    } finally {
+      _isSaving.value = false;
+    }
   }
 
   Future<bool> saveProfile({required String email, DateTime? birthday, String? referralCode}) {

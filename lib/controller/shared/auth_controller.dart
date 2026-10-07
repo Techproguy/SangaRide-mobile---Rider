@@ -11,6 +11,8 @@ import 'package:sanga_ride/model/models.dart';
 
 enum AuthProvider { google, apple }
 
+enum OtpPurpose { login, registration }
+
 class AuthController extends GetxController {
   static const otpLength = 4;
 
@@ -20,6 +22,7 @@ class AuthController extends GetxController {
   final RxBool _isVerifying = false.obs;
   final Rxn<AuthProvider> _signingInWith = Rxn<AuthProvider>();
   final RxnString _otpError = RxnString();
+  final RxnString _phoneError = RxnString();
 
   bool get isSendingCode => _isSendingCode.value;
 
@@ -29,15 +32,32 @@ class AuthController extends GetxController {
 
   String? get otpError => _otpError.value;
 
+  String? get phoneError => _phoneError.value;
+
   bool get isSignedIn => SecureTokenStore.instance.hasSession;
 
   void clearOtpError() => _otpError.value = null;
 
-  Future<bool> requestOtp(String phone) async {
+  void clearPhoneError() => _phoneError.value = null;
+
+  Future<bool> isRegistered(String phone) async {
+    final response = await _api.post(MockEndpoints.checkExistence, data: {'phone': phone, 'userType': 'rider'});
+    return response.data['data']['exists'] == true;
+  }
+
+  Future<bool> requestOtp(String phone, {required OtpPurpose purpose}) async {
     _isSendingCode.value = true;
+    _phoneError.value = null;
     try {
-      await _api.post(MockEndpoints.requestOtp, data: {'phone': phone});
+      await _api.post(
+        MockEndpoints.requestOtp,
+        data: {'phone': phone, 'purpose': purpose.name},
+        suppressErrorToast: purpose == OtpPurpose.login,
+      );
       return true;
+    } on ApiException catch (e) {
+      if (purpose == OtpPurpose.login) _phoneError.value = e.message;
+      return false;
     } catch (e) {
       log('requestOtp failed: $e');
       return false;

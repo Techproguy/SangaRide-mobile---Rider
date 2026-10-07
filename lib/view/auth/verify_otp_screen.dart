@@ -8,17 +8,19 @@ import 'package:sanga_ride/view/auth/widgets/resend_code_button.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 class OtpArgs {
-  const OtpArgs({required this.phone, required this.next});
+  const OtpArgs({required this.phone, required this.next, required this.purpose});
 
   final String phone;
   final String next;
+  final OtpPurpose purpose;
 }
 
 class VerifyOtpScreen extends StatefulWidget {
-  VerifyOtpScreen(OtpArgs args, {super.key}) : phone = args.phone, next = args.next;
+  VerifyOtpScreen(OtpArgs args, {super.key}) : phone = args.phone, next = args.next, purpose = args.purpose;
 
   final String phone;
   final String next;
+  final OtpPurpose purpose;
 
   @override
   State<VerifyOtpScreen> createState() => _VerifyOtpScreenState();
@@ -54,7 +56,7 @@ class _VerifyOtpScreenState extends State<VerifyOtpScreen> {
   }
 
   Future<void> _resend() async {
-    final sent = await _auth.requestOtp(widget.phone);
+    final sent = await _auth.requestOtp(widget.phone, purpose: widget.purpose);
     if (!sent || !mounted) return;
     _auth.clearOtpError();
     _code.clear();

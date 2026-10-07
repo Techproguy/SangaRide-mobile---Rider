@@ -6,8 +6,12 @@ class MockRoutes {
   MockRoutes._();
 
   static final List<MockRoute> all = [
-    MockRoute.post(MockEndpoints.signUp, _signUp),
-    MockRoute.post(MockEndpoints.requestOtp, (request) => {'phone': request.body['phone'], 'expiresInSeconds': 300}),
+    MockRoute.post(MockEndpoints.signUp, (request) => {'phone': request.body['phone'], 'expiresInSeconds': 300}),
+    MockRoute.post(
+      MockEndpoints.checkExistence,
+      (request) => {'exists': request.body['phone'] == MockData.user['phone']},
+    ),
+    MockRoute.post(MockEndpoints.requestOtp, _requestOtp),
     MockRoute.post(MockEndpoints.verifyOtp, _verifyOtp),
     MockRoute.post(MockEndpoints.googleSignIn, (_) => _session),
     MockRoute.post(MockEndpoints.appleSignIn, (_) => _session),
@@ -21,9 +25,10 @@ class MockRoutes {
 
   static Map<String, dynamic> get _session => {'tokens': MockData.tokens, 'user': MockData.user};
 
-  static Object? _signUp(MockRequest request) {
-    if (request.body['phone'] == MockData.user['phone']) {
-      throw const MockFailure(409, 'This number already has an account.');
+  static Object? _requestOtp(MockRequest request) {
+    final isLogin = request.body['purpose'] == 'login';
+    if (isLogin && request.body['phone'] == MockData.unregisteredPhone) {
+      throw const MockFailure(404, 'We can’t find an account with this number.');
     }
     return {'phone': request.body['phone'], 'expiresInSeconds': 300};
   }

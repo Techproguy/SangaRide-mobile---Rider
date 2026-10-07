@@ -3,6 +3,8 @@ class MockData {
 
   static const String otpCode = '1234';
 
+  static const String unregisteredPhone = '+2348000000000';
+
   static const Map<String, dynamic> tokens = {'accessToken': 'mock-access-token', 'refreshToken': 'mock-refresh-token'};
 
   static const Map<String, dynamic> user = {
