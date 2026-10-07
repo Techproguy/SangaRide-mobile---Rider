@@ -5,15 +5,10 @@ import 'package:sanga_ride/core/router/routes.dart';
 import 'package:sanga_ride/view/auth/widgets/onboarding_slide.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
-class OnboardingScreen extends StatefulWidget {
+class OnboardingScreen extends StatelessWidget {
   const OnboardingScreen({super.key});
 
-  @override
-  State<OnboardingScreen> createState() => _OnboardingScreenState();
-}
-
-class _OnboardingScreenState extends State<OnboardingScreen> {
-  static const _slides = [
+  static const slides = [
     OnboardingSlide(
       image: AppAssets.onboardingRide,
       title: 'Book Rides Promptly',
@@ -31,80 +26,65 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     ),
   ];
 
-  final _pageController = PageController();
-  int _page = 0;
-
-  bool get _isLastPage => _page == _slides.length - 1;
-
-  @override
-  void dispose() {
-    _pageController.dispose();
-    super.dispose();
-  }
-
-  void _next() {
-    if (_isLastPage) return _openGetStarted();
-    _pageController.nextPage(duration: const Duration(milliseconds: 380), curve: Curves.easeOutCubic);
-  }
-
-  void _openGetStarted() => context.push(SangaRoutes.getStarted);
-
   @override
   Widget build(BuildContext context) {
-    final slide = _slides[_page];
+    void openGetStarted(int index) => context.push(SangaRoutes.getStarted, extra: slides[index].image);
+
     return AnnotatedRegion(
       value: SangaSystemUi.onPhoto,
       child: Scaffold(
-        body: Stack(
-          children: [
-            PageView.builder(
-              controller: _pageController,
-              itemCount: _slides.length,
-              onPageChanged: (page) => setState(() => _page = page),
-              itemBuilder: (context, index) => SangaPhotoBackdrop.fadeToWhite(image: AssetImage(_slides[index].image)),
+        body: SangaStoryPager(
+          count: slides.length,
+          onFinished: () => openGetStarted(slides.length - 1),
+          pageBuilder: (context, index) => SangaPhotoBackdrop.fadeToWhite(image: AssetImage(slides[index].image)),
+          overlayBuilder: (context, story) => SafeArea(
+            child: Column(
+              children: [
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: SangaSpacing.lg, right: SangaSpacing.lg),
+                    child: SangaPillButton(label: 'Skip', onPressed: () => openGetStarted(story.index)),
+                  ),
+                ),
+                const Spacer(),
+                _SlideText(key: ValueKey(story.index), slide: slides[story.index]),
+                const SizedBox(height: SangaSpacing.xxl),
+                SangaPageIndicator.dots(count: story.count, index: story.index, progress: story.progress),
+                const SizedBox(height: SangaSpacing.xxl),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: SangaSpacing.heroInset),
+                  child: SangaButton.primary(label: story.isLast ? 'Get started' : 'Next', onPressed: story.next),
+                ),
+                const SizedBox(height: SangaSpacing.md),
+              ],
             ),
-            SafeArea(
-              child: Column(
-                children: [
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: Padding(
-                      padding: const EdgeInsets.only(top: SangaSpacing.lg, right: SangaSpacing.lg),
-                      child: SangaPillButton(label: 'Skip', onPressed: _openGetStarted),
-                    ),
-                  ),
-                  const Spacer(),
-                  AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 280),
-                    child: Column(
-                      key: ValueKey(_page),
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: SangaSpacing.gutter),
-                          child: Text(slide.title, style: SangaTextStyles.display, textAlign: TextAlign.center),
-                        ),
-                        const SizedBox(height: SangaSpacing.md),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: SangaSpacing.heroInset),
-                          child: Text(slide.message, style: SangaTextStyles.lead, textAlign: TextAlign.center),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: SangaSpacing.xxl),
-                  SangaPageIndicator.dots(count: _slides.length, index: _page),
-                  const SizedBox(height: SangaSpacing.xxl),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: SangaSpacing.heroInset),
-                    child: SangaButton.primary(label: _isLastPage ? 'Get started' : 'Next', onPressed: _next),
-                  ),
-                  const SizedBox(height: SangaSpacing.md),
-                ],
-              ),
-            ),
-          ],
+          ),
         ),
       ),
+    );
+  }
+}
+
+class _SlideText extends StatelessWidget {
+  const _SlideText({super.key, required this.slide});
+
+  final OnboardingSlide slide;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: SangaSpacing.gutter),
+          child: Text(slide.title, style: SangaTextStyles.display, textAlign: TextAlign.center),
+        ).sangaEnter(),
+        const SizedBox(height: SangaSpacing.md),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: SangaSpacing.heroInset),
+          child: Text(slide.message, style: SangaTextStyles.lead, textAlign: TextAlign.center),
+        ).sangaEnter(delay: SangaMotion.stagger),
+      ],
     );
   }
 }

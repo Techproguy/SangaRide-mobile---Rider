@@ -7,7 +7,9 @@ import 'package:sanga_ride/core/router/routes.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 class GetStartedScreen extends StatelessWidget {
-  const GetStartedScreen({super.key});
+  const GetStartedScreen({super.key, this.revealFrom});
+
+  final String? revealFrom;
 
   Future<void> _continueWith(BuildContext context, AuthProvider provider) async {
     final signedIn = await Get.find<AuthController>().continueWith(provider);
@@ -19,15 +21,23 @@ class GetStartedScreen extends StatelessWidget {
     return AnnotatedRegion(
       value: SangaSystemUi.onPhoto,
       child: Scaffold(
-        backgroundColor: SangaColors.textPrimary,
+        backgroundColor: Colors.transparent,
         body: Stack(
           children: [
-            const Positioned.fill(child: SangaPhotoBackdrop.blurred(image: AssetImage(AppAssets.getStarted))),
+            Positioned.fill(
+              child: SangaPhotoBackdrop.blurred(
+                image: const AssetImage(AppAssets.getStarted),
+                revealFrom: switch (revealFrom) {
+                  final path? => AssetImage(path),
+                  null => null,
+                },
+              ),
+            ),
             Align(
               alignment: Alignment.bottomCenter,
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(SangaSpacing.md, 0, SangaSpacing.md, SangaSpacing.md),
-                child: _SlideUp(
+                child: SangaRouteRise(
                   child: SangaAuthChoiceSheet(
                     onClose: context.pop,
                     onLogin: () => context.push(SangaRoutes.signIn),
@@ -40,23 +50,6 @@ class GetStartedScreen extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
-}
-
-class _SlideUp extends StatelessWidget {
-  const _SlideUp({required this.child});
-
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return TweenAnimationBuilder<double>(
-      tween: Tween(begin: 1, end: 0),
-      duration: const Duration(milliseconds: 420),
-      curve: Curves.easeOutCubic,
-      child: child,
-      builder: (context, offset, child) => FractionalTranslation(translation: Offset(0, offset * 0.6), child: child),
     );
   }
 }

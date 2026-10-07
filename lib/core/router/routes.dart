@@ -30,8 +30,9 @@ class SangaRoutes {
       pageBuilder: (context, state) => CustomTransitionPage(
         key: state.pageKey,
         opaque: false,
-        transitionDuration: const Duration(milliseconds: 300),
-        child: const GetStartedScreen(),
+        transitionDuration: const Duration(milliseconds: 550),
+        reverseTransitionDuration: const Duration(milliseconds: 400),
+        child: GetStartedScreen(revealFrom: state.extra as String?),
         transitionsBuilder: (context, animation, _, child) => FadeTransition(opacity: animation, child: child),
       ),
     ),
