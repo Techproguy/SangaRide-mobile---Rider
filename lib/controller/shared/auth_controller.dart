@@ -9,17 +9,32 @@ import 'package:sanga_ride/core/router/routes.dart';
 import 'package:sanga_ride/core/services/secure_token_store.dart';
 import 'package:sanga_ride/model/models.dart';
 
+enum AuthProvider { google, apple }
+
 class AuthController extends GetxController {
+  static const otpLength = 4;
+
   final _api = Get.find<ApiService>();
 
-  final RxBool _isLoading = false.obs;
+  final RxBool _isSendingCode = false.obs;
+  final RxBool _isVerifying = false.obs;
+  final Rxn<AuthProvider> _signingInWith = Rxn<AuthProvider>();
+  final RxnString _otpError = RxnString();
 
-  bool get isLoading => _isLoading.value;
+  bool get isSendingCode => _isSendingCode.value;
+
+  bool get isVerifying => _isVerifying.value;
+
+  AuthProvider? get signingInWith => _signingInWith.value;
+
+  String? get otpError => _otpError.value;
 
   bool get isSignedIn => SecureTokenStore.instance.hasSession;
 
+  void clearOtpError() => _otpError.value = null;
+
   Future<bool> requestOtp(String phone) async {
-    _isLoading.value = true;
+    _isSendingCode.value = true;
     try {
       await _api.post(MockEndpoints.requestOtp, data: {'phone': phone});
       return true;
@@ -27,27 +42,48 @@ class AuthController extends GetxController {
       log('requestOtp failed: $e');
       return false;
     } finally {
-      _isLoading.value = false;
+      _isSendingCode.value = false;
     }
   }
 
   Future<bool> verifyOtp({required String phone, required String code}) async {
-    _isLoading.value = true;
+    _isVerifying.value = true;
+    _otpError.value = null;
     try {
-      final response = await _api.post(MockEndpoints.verifyOtp, data: {'phone': phone, 'code': code});
-      final data = response.data['data'] as Map<String, dynamic>;
-      final tokens = data['tokens'] as Map<String, dynamic>;
-      await SecureTokenStore.instance.saveSession(
-        accessToken: tokens['accessToken'] as String,
-        refreshToken: tokens['refreshToken'] as String?,
+      final response = await _api.post(
+        MockEndpoints.verifyOtp,
+        data: {'phone': phone, 'code': code},
+        suppressErrorToast: true,
       );
-      await Get.find<UserController>().setUser(UserModel.fromJson(data['user'] as Map<String, dynamic>));
+      await _startSession(response.data['data'] as Map<String, dynamic>);
       return true;
+    } on ApiException catch (e) {
+      _otpError.value = e.message;
+      return false;
     } catch (e) {
       log('verifyOtp failed: $e');
+      _otpError.value = "We couldn't check that code. Try again.";
       return false;
     } finally {
-      _isLoading.value = false;
+      _isVerifying.value = false;
+    }
+  }
+
+  Future<bool> continueWith(AuthProvider provider) async {
+    _signingInWith.value = provider;
+    try {
+      final endpoint = switch (provider) {
+        AuthProvider.google => MockEndpoints.googleSignIn,
+        AuthProvider.apple => MockEndpoints.appleSignIn,
+      };
+      final response = await _api.post(endpoint);
+      await _startSession(response.data['data'] as Map<String, dynamic>);
+      return true;
+    } catch (e) {
+      log('continueWith $provider failed: $e');
+      return false;
+    } finally {
+      _signingInWith.value = null;
     }
   }
 
@@ -59,6 +95,15 @@ class AuthController extends GetxController {
     }
     await SecureTokenStore.instance.clear();
     await Get.find<UserController>().clear();
-    SangaRouter.router.go(SangaRoutes.getStarted);
+    SangaRouter.router.go(SangaRoutes.onboarding);
+  }
+
+  Future<void> _startSession(Map<String, dynamic> data) async {
+    final tokens = data['tokens'] as Map<String, dynamic>;
+    await SecureTokenStore.instance.saveSession(
+      accessToken: tokens['accessToken'] as String,
+      refreshToken: tokens['refreshToken'] as String?,
+    );
+    await Get.find<UserController>().setUser(UserModel.fromJson(data['user'] as Map<String, dynamic>));
   }
 }

@@ -6,18 +6,22 @@ class MockRoutes {
   MockRoutes._();
 
   static final List<MockRoute> all = [
-    MockRoute.post(MockEndpoints.requestOtp, (request) => {'phone': request.body['phone'], 'expiresInSeconds': 60}),
+    MockRoute.post(MockEndpoints.requestOtp, (request) => {'phone': request.body['phone'], 'expiresInSeconds': 300}),
     MockRoute.post(MockEndpoints.verifyOtp, _verifyOtp),
+    MockRoute.post(MockEndpoints.googleSignIn, (_) => _session),
+    MockRoute.post(MockEndpoints.appleSignIn, (_) => _session),
     MockRoute.post(MockEndpoints.refreshToken, (_) => MockData.tokens),
     MockRoute.post(MockEndpoints.logout, (_) => null),
     MockRoute.get(MockEndpoints.me, (_) => MockData.user),
     MockRoute.patch(MockEndpoints.me, (request) => {...MockData.user, ...request.body}),
   ];
 
+  static Map<String, dynamic> get _session => {'tokens': MockData.tokens, 'user': MockData.user};
+
   static Object? _verifyOtp(MockRequest request) {
     if (request.body['code'] != MockData.otpCode) {
       throw const MockFailure(400, "That code didn't match. Give it another go.");
     }
-    return {'tokens': MockData.tokens, 'user': MockData.user};
+    return _session;
   }
 }

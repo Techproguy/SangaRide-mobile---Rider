@@ -1,7 +1,7 @@
 class MockData {
   MockData._();
 
-  static const String otpCode = '123456';
+  static const String otpCode = '1234';
 
   static const Map<String, dynamic> tokens = {'accessToken': 'mock-access-token', 'refreshToken': 'mock-refresh-token'};
 

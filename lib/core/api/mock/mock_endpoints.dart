@@ -6,6 +6,8 @@ class MockEndpoints {
 
   static const String requestOtp = '$_auth/otp/request';
   static const String verifyOtp = '$_auth/otp/verify';
+  static const String googleSignIn = '$_auth/google';
+  static const String appleSignIn = '$_auth/apple';
   static const String refreshToken = '$_auth/refresh';
   static const String logout = '$_auth/logout';
 

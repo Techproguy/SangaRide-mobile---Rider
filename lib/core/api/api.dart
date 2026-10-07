@@ -64,9 +64,13 @@ class ApiService extends GetxService {
     dynamic data,
     Map<String, dynamic>? queryParameters,
     Options? options,
+    bool suppressErrorToast = false,
   }) async {
     try {
-      return await _dio.post(endpoint, data: data, queryParameters: queryParameters, options: options);
+      final effectiveOptions = suppressErrorToast
+          ? (options ?? Options()).copyWith(extra: {...?options?.extra, 'suppressErrorToast': true})
+          : options;
+      return await _dio.post(endpoint, data: data, queryParameters: queryParameters, options: effectiveOptions);
     } on DioException catch (e) {
       throw await _handleDioError(e);
     }
@@ -176,7 +180,7 @@ class ApiService extends GetxService {
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await SecureTokenStore.instance.clear();
       await GetStorage().remove(SangaStorageKeys.user);
-      SangaRouter.router.go(SangaRoutes.getStarted);
+      SangaRouter.router.go(SangaRoutes.onboarding);
       _handlingUnauthorized = false;
     });
   }

@@ -1,13 +1,20 @@
+import 'package:flutter/widgets.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sanga_ride/view/auth/get_started_screen.dart';
+import 'package:sanga_ride/view/auth/onboarding_screen.dart';
+import 'package:sanga_ride/view/auth/sign_in_screen.dart';
+import 'package:sanga_ride/view/auth/verify_otp_screen.dart';
 import 'package:sanga_ride/view/home_widget.dart';
 
 class SangaRoutes {
   SangaRoutes._();
 
-  static const String root = getStarted;
+  static const String root = onboarding;
 
+  static const String onboarding = '/onboarding';
   static const String getStarted = '/get-started';
+  static const String signIn = '/sign-in';
+  static const String verifyOtp = '/verify-otp';
 
   static const String home = '/home';
   static const String trips = '/trips';
@@ -17,7 +24,22 @@ class SangaRoutes {
   static final List<RouteBase> allRoutes = [...authRoutes, ...homeRoutes];
 
   static final List<RouteBase> authRoutes = [
-    GoRoute(path: getStarted, builder: (context, state) => const GetStartedScreen()),
+    GoRoute(path: onboarding, builder: (context, state) => const OnboardingScreen()),
+    GoRoute(
+      path: getStarted,
+      pageBuilder: (context, state) => CustomTransitionPage(
+        key: state.pageKey,
+        opaque: false,
+        transitionDuration: const Duration(milliseconds: 300),
+        child: const GetStartedScreen(),
+        transitionsBuilder: (context, animation, _, child) => FadeTransition(opacity: animation, child: child),
+      ),
+    ),
+    GoRoute(path: signIn, builder: (context, state) => const SignInScreen()),
+    GoRoute(
+      path: verifyOtp,
+      builder: (context, state) => VerifyOtpScreen(phone: state.extra as String),
+    ),
   ];
 
   static final List<RouteBase> homeRoutes = [GoRoute(path: home, builder: (context, state) => const HomeWidget())];
