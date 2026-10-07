@@ -33,8 +33,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> with SingleTickerPr
 
   late final _choice = AnimationController(
     vsync: this,
-    duration: SangaMotion.routeEnter,
-    reverseDuration: SangaMotion.routeExit,
+    duration: SangaMotion.sheetEnter,
+    reverseDuration: SangaMotion.sheetExit,
   )..addStatusListener((_) => setState(() {}));
   late final _slideFade = ReverseAnimation(
     CurvedAnimation(
@@ -42,10 +42,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> with SingleTickerPr
       curve: const Interval(0, 0.45, curve: SangaMotion.fadeCurve),
     ),
   );
-  late final _sheetRise = Tween(
-    begin: _sheetHidden,
-    end: Offset.zero,
-  ).animate(CurvedAnimation(parent: _choice, curve: SangaMotion.spring, reverseCurve: SangaMotion.exitCurve));
+  late final _sheetRise = Tween(begin: _sheetHidden, end: Offset.zero).animate(
+    CurvedAnimation(parent: _choice, curve: SangaMotion.springSheet, reverseCurve: SangaMotion.springSheet.flipped),
+  );
 
   bool get _isChoosing => _choice.status == AnimationStatus.forward || _choice.status == AnimationStatus.completed;
 
@@ -131,12 +130,12 @@ class _SlideOverlay extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: SangaSpacing.gutter),
                 child: Text(slide.title, style: SangaTextStyles.display, textAlign: TextAlign.center),
-              ).sangaEnter(),
+              ).sangaEnter(SangaEntrance.title),
               const SizedBox(height: SangaSpacing.md),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: SangaSpacing.heroInset),
                 child: Text(slide.message, style: SangaTextStyles.lead, textAlign: TextAlign.center),
-              ).sangaEnter(delay: SangaMotion.stagger),
+              ).sangaEnter(SangaEntrance.body),
             ],
           ),
           const SizedBox(height: SangaSpacing.xxl),
