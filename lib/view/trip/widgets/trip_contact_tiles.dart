@@ -8,12 +8,16 @@ class TripContactTiles extends StatelessWidget {
     required this.onCall,
     required this.onMessage,
     this.onShare,
+    this.onSafety,
+    this.onAddStops,
   });
 
   final int unreadCount;
   final VoidCallback onCall;
   final VoidCallback onMessage;
   final VoidCallback? onShare;
+  final VoidCallback? onSafety;
+  final VoidCallback? onAddStops;
 
   @override
   Widget build(BuildContext context) {
@@ -29,6 +33,10 @@ class TripContactTiles extends StatelessWidget {
           onPressed: onMessage,
           badgeCount: unreadCount,
         ),
+        if (onSafety != null)
+          SangaActionTile(icon: Icons.shield_rounded, label: 'Safety', onPressed: onSafety, tone: SangaTone.danger),
+        if (onAddStops != null)
+          SangaActionTile(icon: Icons.add_location_alt_rounded, label: 'Add stops', onPressed: onAddStops),
       ],
     );
   }

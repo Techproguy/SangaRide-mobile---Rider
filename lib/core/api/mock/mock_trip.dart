@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:sanga_ride/core/api/mock/mock_endpoints.dart';
 import 'package:sanga_ride/core/api/mock/mock_server.dart';
+import 'package:sanga_ride/core/api/mock/mock_trip_changes.dart';
 import 'package:sanga_ride/core/api/mock/mock_trip_state.dart';
 
 abstract final class MockTrip {
@@ -16,6 +17,7 @@ abstract final class MockTrip {
     MockRoute.get(MockEndpoints.liveTripMessages, _messages),
     MockRoute.post(MockEndpoints.liveTripMessages, _sendMessage),
     MockRoute.get(MockEndpoints.liveTripEvents, (request) => {'events': _events(request.params['id']!)}),
+    ...MockTripChanges.routes,
   ];
 
   static final Map<String, Map<String, dynamic>> requests = {};
@@ -28,10 +30,13 @@ abstract final class MockTrip {
   static final Map<String, List<Map<String, dynamic>>> _riderMessages = {};
   static final Set<String> _failedOnce = {};
   static final Map<String, int> _pinIndex = {};
+  static final Map<String, _RideLeg> _legs = {};
+  static final Map<String, String> _cancelledBy = {};
 
   static const Duration _arrivalAfter = Duration(seconds: 15);
   static const Duration _pinVerifiedAfter = Duration(seconds: 6);
   static const Duration _rideDuration = Duration(seconds: 20);
+  static const Duration _legExtra = Duration(seconds: 8);
   static const Duration _pinWindow = Duration(minutes: 5);
 
   static const List<String> _pinCodes = ['5428', '7391', '2064', '8815'];
@@ -120,6 +125,65 @@ abstract final class MockTrip {
     'coordinates': {'lat': place['lat'], 'lng': place['lng']},
   };
 
+  static const double routeDetour = _routeDetour;
+
+  static Map<String, dynamic> stored(String id) => _stored(id);
+
+  static String statusOf(String id) => _status(id, DateTime.now());
+
+  static Map<String, dynamic> payload(String id) => _payload(id);
+
+  static DateTime createdAt(String id) => _createdAt(_stored(id));
+
+  static Map<String, dynamic> placeOf(Object? json) => _place(json, _fallbackPickup);
+
+  static double distanceBetween(Map a, Map b) => _distanceKm(a, b);
+
+  static bool isCancelled(String id) => _cancelledAt.containsKey(id);
+
+  static String? cancelledBy(String id) => _cancelledBy[id];
+
+  static void cancel(String id, {required String reason, required String by}) {
+    _cancelledAt[id] = DateTime.now();
+    _cancelReasons[id] = reason;
+    _cancelledBy[id] = by;
+  }
+
+  static double travelledFraction(String id) {
+    final leg = _legOf(id);
+    return leg == null ? 0 : _legProgress(leg, DateTime.now());
+  }
+
+  static Map<String, dynamic> routeStart(String id) {
+    final trip = _stored(id);
+    final leg = _legOf(id);
+    if (leg == null || _status(id, DateTime.now()) != 'in_progress') return trip['pickup'] as Map<String, dynamic>;
+    return _legPosition(leg, DateTime.now());
+  }
+
+  static List<Map<String, dynamic>> pendingStops(String id) {
+    final trip = _stored(id);
+    final reached = _reachedStops(id, DateTime.now());
+    return [for (final stop in (trip['stops'] as List).skip(reached)) stop as Map<String, dynamic>];
+  }
+
+  static void addStops(String id, List<Map<String, dynamic>> places) {
+    final trip = _stored(id);
+    final now = DateTime.now();
+    final leg = _legOf(id);
+    if (leg != null) {
+      final reached = leg.reachedBefore + _reachedNow(leg, now);
+      _legs[id] = _RideLeg(
+        startedAt: now,
+        endAt: leg.endAt.add(_legExtra * places.length),
+        from: _legPosition(leg, now),
+        targets: [...pendingStops(id), ...places, trip['dropoff'] as Map<String, dynamic>],
+        reachedBefore: reached,
+      );
+    }
+    (trip['stops'] as List).addAll(places);
+  }
+
   static Map<String, dynamic> _stored(String id) {
     final trip = MockTripState.trips[id];
     if (trip == null) throw const MockFailure(404, 'We can’t find that trip.');
@@ -132,8 +196,8 @@ abstract final class MockTrip {
     final trip = _stored(id);
     if (_cancelledAt.containsKey(id)) return 'cancelled';
     if (_completedAt.containsKey(id)) return 'completed';
-    final paidAt = MockTripState.paidAt[id];
-    if (paidAt != null) return now.difference(paidAt) >= _rideDuration ? 'arrived_dropoff' : 'in_progress';
+    final leg = _legOf(id);
+    if (leg != null) return now.isBefore(leg.endAt) ? 'in_progress' : 'arrived_dropoff';
     final confirmedAt = _detailsConfirmedAt[id];
     if (confirmedAt != null && now.difference(confirmedAt) >= _pinVerifiedAfter) return 'pin_verified';
     return now.difference(_createdAt(trip)) >= _arrivalAfter ? 'driver_arrived' : 'driver_en_route';
@@ -143,7 +207,6 @@ abstract final class MockTrip {
     final trip = _stored(id);
     final now = DateTime.now();
     final status = _status(id, now);
-    final paidAt = MockTripState.paidAt[id];
     final showsPin = status == 'driver_arrived' && _detailsConfirmedAt.containsKey(id);
     final position = _driverPosition(trip, status, now);
     return {
@@ -154,13 +217,13 @@ abstract final class MockTrip {
       'driver': trip['driver'],
       'vehicle': trip['vehicle'],
       'pickup': _apiPlace(trip['pickup'] as Map<String, dynamic>),
-      'stops': [for (final stop in trip['stops'] as List) _apiPlace(stop as Map<String, dynamic>)],
+      'stops': _apiStops(id, now),
       'dropoff': _apiPlace(trip['dropoff'] as Map<String, dynamic>),
       'fare': {'total': trip['fare'], 'counterOffer': trip['counterOffer'], 'currency': 'NGN'},
       if (showsPin) 'pin': trip['pin'],
       if (showsPin) 'pinExpiresAt': trip['pinExpiresAt'],
       if (status == 'driver_en_route') 'etaAt': _iso(now.add(_travelTime(_distanceRemaining(trip, status, position)))),
-      if (status == 'in_progress' && paidAt != null) 'etaAt': _iso(paidAt.add(_rideDuration)),
+      if (status == 'in_progress') 'etaAt': _iso(_legOf(id)!.endAt),
       'distanceRemainingKm': _distanceRemaining(trip, status, position),
       'driverPosition': position,
       'unreadMessages': _unread(id, now),
@@ -210,8 +273,7 @@ abstract final class MockTrip {
     if (_status(id, DateTime.now()) != 'driver_arrived') {
       throw const MockFailure(409, 'This trip has already moved on.');
     }
-    _cancelledAt[id] = DateTime.now();
-    _cancelReasons[id] = 'driver_mismatch';
+    cancel(id, reason: 'driver_mismatch', by: 'rider');
     return _payload(id);
   }
 
@@ -229,19 +291,83 @@ abstract final class MockTrip {
     final pickup = trip['pickup'] as Map<String, dynamic>;
     final dropoff = trip['dropoff'] as Map<String, dynamic>;
     final id = trip['id'] as String;
-    final paidAt = MockTripState.paidAt[id];
     switch (status) {
       case 'driver_en_route':
         final progress = _progress(now.difference(_createdAt(trip)), _arrivalAfter);
         return _position(_lerp(start, pickup, progress), _bearing(start, pickup));
       case 'in_progress':
-        final progress = paidAt == null ? 0.5 : _progress(now.difference(paidAt), _rideDuration);
-        return _position(_lerp(pickup, dropoff, progress), _bearing(pickup, dropoff));
+        return _legPosition(_legOf(id)!, now);
       case 'arrived_dropoff' || 'completed':
         return _position(dropoff, _bearing(pickup, dropoff));
       default:
         return _position(pickup, _bearing(start, pickup));
     }
+  }
+
+  static _RideLeg? _legOf(String id) {
+    final explicit = _legs[id];
+    if (explicit != null) return explicit;
+    final paidAt = MockTripState.paidAt[id];
+    if (paidAt == null) return null;
+    final trip = _stored(id);
+    final stops = (trip['stops'] as List).cast<Map<String, dynamic>>();
+    return _RideLeg(
+      startedAt: paidAt,
+      endAt: paidAt.add(_rideDuration + _legExtra * stops.length),
+      from: trip['pickup'] as Map<String, dynamic>,
+      targets: [...stops, trip['dropoff'] as Map<String, dynamic>],
+      reachedBefore: 0,
+    );
+  }
+
+  static double _legProgress(_RideLeg leg, DateTime now) =>
+      _progress(now.difference(leg.startedAt), leg.endAt.difference(leg.startedAt));
+
+  static List<double> _cumulativeKm(List<Map<String, dynamic>> points) {
+    final cumulative = [0.0];
+    for (var i = 1; i < points.length; i++) {
+      cumulative.add(cumulative.last + _distanceKm(points[i - 1], points[i]));
+    }
+    return cumulative;
+  }
+
+  static Map<String, dynamic> _legPosition(_RideLeg leg, DateTime now) {
+    final points = [leg.from, ...leg.targets];
+    final cumulative = _cumulativeKm(points);
+    final travelled = cumulative.last * _legProgress(leg, now);
+    var index = 1;
+    while (index < points.length - 1 && cumulative[index] < travelled) {
+      index++;
+    }
+    final segment = cumulative[index] - cumulative[index - 1];
+    final t = segment == 0 ? 1.0 : ((travelled - cumulative[index - 1]) / segment).clamp(0.0, 1.0);
+    return _position(_lerp(points[index - 1], points[index], t), _bearing(points[index - 1], points[index]));
+  }
+
+  static int _reachedNow(_RideLeg leg, DateTime now) {
+    final points = [leg.from, ...leg.targets];
+    final cumulative = _cumulativeKm(points);
+    final progress = _legProgress(leg, now);
+    var reached = 0;
+    for (var i = 1; i < points.length - 1; i++) {
+      final fraction = cumulative.last == 0 ? 0.0 : cumulative[i] / cumulative.last;
+      if (progress <= 0 || progress < fraction) break;
+      reached++;
+    }
+    return reached;
+  }
+
+  static int _reachedStops(String id, DateTime now) {
+    final leg = _legOf(id);
+    return leg == null ? 0 : leg.reachedBefore + _reachedNow(leg, now);
+  }
+
+  static List<Map<String, dynamic>> _apiStops(String id, DateTime now) {
+    final reached = _reachedStops(id, now);
+    return [
+      for (final (index, stop) in (_stored(id)['stops'] as List).indexed)
+        {..._apiPlace(stop as Map<String, dynamic>), 'status': index < reached ? 'reached' : 'pending'},
+    ];
   }
 
   static const double _cityMinutesPerKm = 2.4;
@@ -306,7 +432,7 @@ abstract final class MockTrip {
       ('details_confirmed', confirmedAt),
       ('pin_verified', confirmedAt?.add(_pinVerifiedAfter)),
       ('trip_started', paidAt),
-      ('arrived_dropoff', paidAt?.add(_rideDuration)),
+      ('arrived_dropoff', _legOf(id)?.endAt),
       ('trip_completed', _completedAt[id]),
       ('trip_cancelled', _cancelledAt[id]),
     ];
@@ -367,6 +493,9 @@ abstract final class MockTrip {
       throw const MockFailure(503, 'Message not sent.');
     }
     final now = DateTime.now();
+    if (body.contains('#drivercancel') && !_cancelledAt.containsKey(id) && _status(id, now) != 'completed') {
+      cancel(id, reason: 'driver_cancelled', by: 'driver');
+    }
     final message = {
       'id': 'msg_rider_${(_riderMessages[id]?.length ?? 0) + 1}',
       'clientId': clientId,
@@ -378,4 +507,20 @@ abstract final class MockTrip {
     _riderMessages.putIfAbsent(id, () => []).add(message);
     return message;
   }
+}
+
+class _RideLeg {
+  const _RideLeg({
+    required this.startedAt,
+    required this.endAt,
+    required this.from,
+    required this.targets,
+    required this.reachedBefore,
+  });
+
+  final DateTime startedAt;
+  final DateTime endAt;
+  final Map<String, dynamic> from;
+  final List<Map<String, dynamic>> targets;
+  final int reachedBefore;
 }

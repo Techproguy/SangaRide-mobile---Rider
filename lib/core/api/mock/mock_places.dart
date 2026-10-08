@@ -37,6 +37,20 @@ class MockPlaces {
       address: 'Idumota, Lagos Island',
       coordinates: LatLng(6.4596, 3.3887),
     ),
+    Place(placeId: 'mock_bodija', name: 'Bodija', address: 'Bodija, Ibadan, Oyo', coordinates: LatLng(7.4352, 3.9133)),
+    Place(placeId: 'mock_wuse', name: 'Wuse 2', address: 'Wuse 2, Abuja, FCT', coordinates: LatLng(9.0790, 7.4700)),
+    Place(
+      placeId: 'mock_gra_benin',
+      name: 'GRA Benin',
+      address: 'GRA, Benin City, Edo',
+      coordinates: LatLng(6.3176, 5.6145),
+    ),
+    Place(
+      placeId: 'mock_gra_ph',
+      name: 'Old GRA',
+      address: 'Old GRA, Port Harcourt, Rivers',
+      coordinates: LatLng(4.7900, 7.0130),
+    ),
   ];
 
   static const List<Place> _landmarks = [

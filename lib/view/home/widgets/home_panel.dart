@@ -11,6 +11,7 @@ class HomePanel extends StatelessWidget {
     required this.onSearch,
     required this.onRideTo,
     required this.onSavedPlaces,
+    required this.onBookForSomeone,
     required this.onPromo,
   });
 
@@ -19,6 +20,7 @@ class HomePanel extends StatelessWidget {
   final VoidCallback onSearch;
   final ValueChanged<Place> onRideTo;
   final VoidCallback onSavedPlaces;
+  final VoidCallback onBookForSomeone;
   final VoidCallback onPromo;
 
   @override
@@ -55,7 +57,7 @@ class HomePanel extends StatelessWidget {
             SangaServiceTile(
               image: const AssetImage(AppAssets.serviceSomeone),
               label: 'Book for someone',
-              onTap: () {},
+              onTap: onBookForSomeone,
             ),
           ],
         ),

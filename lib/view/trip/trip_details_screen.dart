@@ -51,6 +51,18 @@ class _Details extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final fare = trip.fare;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      spacing: SangaSpacing.md,
+      children: [
+        _group(context, fare),
+        if (trip.canChange)
+          SangaButton.danger(label: 'Cancel ride', onPressed: () => context.push(TripRoutes.cancelOf(trip.id))),
+      ],
+    );
+  }
+
+  Widget _group(BuildContext context, TripFare fare) {
     return SangaListGroup(
       children: [
         Padding(
@@ -76,6 +88,7 @@ class _Details extends StatelessWidget {
               onCall: () => callDriver(context, firstName: trip.driver.firstName),
               onMessage: () => context.push(TripRoutes.chatOf(trip.id)),
               onShare: () => shareTrip(trip.id),
+              onAddStops: trip.canAddStops ? () => context.push(TripRoutes.stopsOf(trip.id)) : null,
             ),
           ),
         ),
@@ -96,7 +109,7 @@ class _Details extends StatelessWidget {
         if (TripProgressBar.isShownFor(trip.status))
           Padding(
             padding: _cell,
-            child: TripProgressBar(status: trip.status),
+            child: TripProgressBar(status: trip.status, nextStop: trip.nextStopNumber),
           ),
         Padding(
           padding: _cell,

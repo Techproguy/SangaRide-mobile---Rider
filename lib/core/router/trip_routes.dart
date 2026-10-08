@@ -1,4 +1,6 @@
 import 'package:go_router/go_router.dart';
+import 'package:sanga_ride/view/trip/cancel/cancel_screen.dart';
+import 'package:sanga_ride/view/trip/stops/add_stop_screen.dart';
 import 'package:sanga_ride/view/trip/trip_chat_screen.dart';
 import 'package:sanga_ride/view/trip/trip_details_screen.dart';
 import 'package:sanga_ride/view/trip/trip_screen.dart';
@@ -9,6 +11,8 @@ abstract final class TripRoutes {
   static const String details = '/trip/:id/details';
   static const String timeline = '/trip/:id/timeline';
   static const String chat = '/trip/:id/chat';
+  static const String stops = '/trip/:id/stops';
+  static const String cancel = '/trip/:id/cancel';
 
   static String tripOf(String id) => trip.replaceFirst(':id', id);
 
@@ -17,6 +21,10 @@ abstract final class TripRoutes {
   static String timelineOf(String id) => timeline.replaceFirst(':id', id);
 
   static String chatOf(String id) => chat.replaceFirst(':id', id);
+
+  static String stopsOf(String id) => stops.replaceFirst(':id', id);
+
+  static String cancelOf(String id) => cancel.replaceFirst(':id', id);
 
   static final List<RouteBase> all = [
     GoRoute(
@@ -34,6 +42,14 @@ abstract final class TripRoutes {
     GoRoute(
       path: chat,
       builder: (context, state) => TripChatScreen(tripId: state.pathParameters['id']!),
+    ),
+    GoRoute(
+      path: stops,
+      builder: (context, state) => AddStopScreen(tripId: state.pathParameters['id']!),
+    ),
+    GoRoute(
+      path: cancel,
+      builder: (context, state) => CancelScreen(tripId: state.pathParameters['id']!),
     ),
   ];
 }

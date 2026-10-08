@@ -1,6 +1,8 @@
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:sanga_ride/model/location/place.dart';
 import 'package:sanga_ride/model/ride/ride_match.dart';
 import 'package:sanga_ride/model/ride/ride_request.dart';
+import 'package:sanga_ride/model/trip/server_time.dart';
 
 enum TripStatus {
   driverEnRoute('driver_en_route'),
@@ -19,6 +21,8 @@ enum TripStatus {
   int get rank => index;
 
   bool get isTerminal => this == completed || this == cancelled;
+
+  bool get canChange => this == driverEnRoute || this == driverArrived || this == inProgress;
 
   static TripStatus fromCode(String code) => values.firstWhere(
     (status) => status.code == code,
@@ -87,11 +91,8 @@ enum TripCancelReason {
     'Trip cancelled',
     'We’ve reported this and cancelled your trip. You won’t be charged.',
   ),
-  driverCancelled(
-    'driver_cancelled',
-    'Your driver cancelled',
-    'Sorry about that. You won’t be charged. Head back home to book another ride.',
-  ),
+  driverCancelled('driver_cancelled', 'Your driver cancelled', 'Sorry about that. We won’t charge you.'),
+  riderCancelled('rider_cancelled', 'Ride cancelled', 'You cancelled this ride.'),
   other('other', 'Trip cancelled', 'This trip was cancelled. You won’t be charged.');
 
   const TripCancelReason(this.code, this.title, this.message);
@@ -99,6 +100,8 @@ enum TripCancelReason {
   final String code;
   final String title;
   final String message;
+
+  bool get offersRematch => this == driverCancelled;
 
   static TripCancelReason fromCode(String? code) =>
       values.firstWhere((reason) => reason.code == code, orElse: () => other);
@@ -118,17 +121,21 @@ enum TripLoadFailure {
 LatLng _latLng(Map<String, dynamic> json) => LatLng((json['lat'] as num).toDouble(), (json['lng'] as num).toDouble());
 
 class TripPlace {
-  const TripPlace({required this.name, required this.address, required this.position});
+  const TripPlace({required this.name, required this.address, required this.position, this.isReached = false});
 
   factory TripPlace.fromJson(Map<String, dynamic> json) => TripPlace(
     name: json['name'] as String,
     address: json['address'] as String? ?? '',
     position: _latLng(Map<String, dynamic>.from(json['coordinates'] as Map)),
+    isReached: json['status'] == 'reached',
   );
 
   final String name;
   final String address;
   final LatLng position;
+  final bool isReached;
+
+  Place toPlace() => Place(placeId: '', name: name, address: address, coordinates: position);
 }
 
 class TripFare {
@@ -153,8 +160,7 @@ class DriverPosition {
 
 DateTime? _deadline(Map<String, dynamic> json, String key, DateTime serverTime) {
   final value = json[key] as String?;
-  if (value == null) return null;
-  return DateTime.now().add(DateTime.parse(value).difference(serverTime));
+  return value == null ? null : deadlineAfter(serverTime, value);
 }
 
 class Trip {
@@ -225,7 +231,18 @@ class Trip {
   final List<TripEvent> events;
   final TripCancelReason? cancellationReason;
 
+  static const int maxStops = 3;
+
   List<TripPlace> get route => [pickup, ...stops, dropoff];
+
+  bool get canChange => status.canChange;
+
+  bool get canAddStops => canChange && stops.length < maxStops;
+
+  int? get nextStopNumber {
+    final index = stops.indexWhere((stop) => !stop.isReached);
+    return index < 0 ? null : index + 1;
+  }
 
   bool hasEvent(TripEventType type) => events.any((event) => event.type == type);
 

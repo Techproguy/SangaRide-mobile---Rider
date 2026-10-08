@@ -60,25 +60,7 @@ class RideMatchController extends GetxController {
     return ++_epoch;
   }
 
-  Map<String, dynamic>? _payload() {
-    final pickup = _trip.pickup;
-    final dropoff = _trip.dropoff;
-    final option = _trip.option;
-    final pricing = _trip.pricing;
-    final price = _trip.price;
-    if (pickup == null || dropoff == null || option == null || pricing == null || price == null) return null;
-    return {
-      'optionId': option.id,
-      'pickup': pickup.toJson(),
-      'stops': [for (final stop in _trip.stops) stop.toJson()],
-      'dropoff': dropoff.toJson(),
-      'tripType': _trip.tripType.name,
-      'preferences': _trip.preferences.toJson(),
-      'pricingMode': pricing.name,
-      'proposedFare': price.round(),
-      'timing': _trip.timing.name,
-    };
-  }
+  Map<String, dynamic>? _payload() => _trip.requestPayload();
 
   Future<void> requestRide() async {
     if (isLive) return;

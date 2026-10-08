@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sanga_ride/controller/rider/ride_request_controller.dart';
-import 'package:sanga_ride/core/router/routes.dart';
+import 'package:sanga_ride/core/router/booking_routes.dart';
 import 'package:sanga_ride/model/models.dart';
+import 'package:sanga_ride/model/ride/booking.dart';
+import 'package:sanga_ride/view/ride/widgets/booking_picker_field.dart';
 import 'package:sanga_ride/view/ride/widgets/ride_option_schedule_format.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
@@ -15,16 +17,13 @@ class RideTimingScreen extends StatefulWidget {
 }
 
 class _RideTimingScreenState extends State<RideTimingScreen> {
-  static const _leadTime = Duration(minutes: 15);
-  static const _bookingWindow = Duration(days: 30);
-
   final _ride = Get.find<RideRequestController>();
-  final _scheduleText = TextEditingController();
   DateTime? _schedule;
 
   static IconData _iconFor(RideTiming timing) => switch (timing) {
     RideTiming.now => Icons.schedule_rounded,
-    _ => Icons.event_rounded,
+    RideTiming.later => Icons.event_rounded,
+    RideTiming.repeat => Icons.repeat_rounded,
   };
 
   @override
@@ -34,45 +33,43 @@ class _RideTimingScreenState extends State<RideTimingScreen> {
     if (_ride.timing == RideTiming.later && scheduledAt != null) _schedule = scheduledAt;
   }
 
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    final schedule = _schedule;
-    if (schedule != null) _scheduleText.text = formatRideSchedule(context, schedule);
-  }
+  List<RideTiming> get _timings => [
+    for (final timing in RideTiming.values)
+      if (timing != RideTiming.repeat || _ride.tripType.allowsRepeat) timing,
+  ];
 
-  @override
-  void dispose() {
-    _scheduleText.dispose();
-    super.dispose();
-  }
+  DateTime get _earliest => DateTime.now().add(BookingRules.scheduleLeadTime);
 
-  bool get _isTooSoon => _schedule?.isBefore(DateTime.now().add(_leadTime)) ?? false;
+  bool get _isTooSoon => _schedule?.isBefore(_earliest) ?? false;
 
-  bool get _canConfirm => _ride.timing == RideTiming.now || (_schedule != null && !_isTooSoon);
+  bool get _canConfirm => switch (_ride.timing) {
+    RideTiming.now => true,
+    RideTiming.later => _schedule != null && !_isTooSoon,
+    RideTiming.repeat => _ride.repeatRule != null,
+  };
 
   void _syncLater() => _ride.setTiming(RideTiming.later, scheduledAt: _isTooSoon ? null : _schedule);
 
   void _select(RideTiming timing) {
-    if (timing == RideTiming.now) return _ride.setTiming(RideTiming.now);
-    _syncLater();
+    switch (timing) {
+      case RideTiming.now || RideTiming.repeat:
+        _ride.setTiming(timing);
+      case RideTiming.later:
+        _syncLater();
+    }
   }
 
   Future<void> _pickSchedule() async {
-    FocusScope.of(context).unfocus();
-    final earliest = DateTime.now().add(_leadTime);
+    final earliest = _earliest;
     final picked = await showSangaDateTimeSheet(
       context: context,
       title: 'Pick up date and time',
       minimumDate: earliest,
-      maximumDate: earliest.add(_bookingWindow),
+      maximumDate: earliest.add(BookingRules.bookingWindow),
       initialDateTime: _isTooSoon ? null : _schedule,
     );
     if (picked == null || !mounted) return;
-    setState(() {
-      _schedule = picked;
-      _scheduleText.text = formatRideSchedule(context, picked);
-    });
+    setState(() => _schedule = picked);
     _syncLater();
   }
 
@@ -81,7 +78,7 @@ class _RideTimingScreenState extends State<RideTimingScreen> {
       setState(_syncLater);
       return;
     }
-    context.push(SangaRoutes.rideReview);
+    context.push(BookingRoutes.afterTiming(_ride.tripType));
   }
 
   @override
@@ -94,7 +91,7 @@ class _RideTimingScreenState extends State<RideTimingScreen> {
           () => Column(
             spacing: SangaSpacing.md,
             children: [
-              for (final timing in RideTiming.values)
+              for (final timing in _timings)
                 SangaOptionCard(
                   leading: SangaIconBadge(child: Icon(_iconFor(timing))),
                   title: timing.label,
@@ -107,7 +104,11 @@ class _RideTimingScreenState extends State<RideTimingScreen> {
                 curve: SangaMotion.springBlock,
                 alignment: Alignment.topCenter,
                 clipBehavior: Clip.hardEdge,
-                child: _ride.timing == RideTiming.later ? _buildSchedule() : const SizedBox(width: double.infinity),
+                child: switch (_ride.timing) {
+                  RideTiming.now => const SizedBox(width: double.infinity),
+                  RideTiming.later => _buildSchedule(),
+                  RideTiming.repeat => _buildRepeat(),
+                },
               ),
             ],
           ),
@@ -117,13 +118,25 @@ class _RideTimingScreenState extends State<RideTimingScreen> {
   }
 
   Widget _buildSchedule() {
-    return SangaTextField(
+    final schedule = _schedule;
+    return BookingPickerField(
       label: 'Pick up date and time',
       hintText: 'Choose when',
-      controller: _scheduleText,
+      icon: Icons.event_rounded,
+      value: schedule == null ? null : formatRideSchedule(context, schedule),
       onTap: _pickSchedule,
       errorText: _isTooSoon ? 'That time has passed. Pick a new one.' : null,
-      trailing: const Icon(Icons.event_rounded, color: SangaColors.textMuted),
+    );
+  }
+
+  Widget _buildRepeat() {
+    final rule = _ride.repeatRule;
+    return BookingPickerField(
+      label: 'Repeat schedule',
+      hintText: 'Choose days and time',
+      icon: Icons.repeat_rounded,
+      value: rule == null ? null : formatRepeatRule(context, rule),
+      onTap: () => context.push(BookingRoutes.repeatSetup),
     );
   }
 }

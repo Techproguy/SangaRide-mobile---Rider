@@ -3,8 +3,15 @@ import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 class RideOptionRouteCard extends StatelessWidget {
-  const RideOptionRouteCard({super.key, required this.pickup, required this.stops, required this.dropoff});
+  const RideOptionRouteCard({
+    super.key,
+    required this.pickup,
+    required this.stops,
+    required this.dropoff,
+    this.tags = const [],
+  });
 
+  final List<({String label, IconData icon})> tags;
   final Place? pickup;
   final List<Place> stops;
   final Place? dropoff;
@@ -18,6 +25,15 @@ class RideOptionRouteCard extends StatelessWidget {
           child: Column(
             spacing: SangaSpacing.md,
             children: [
+              if (tags.isNotEmpty)
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: Wrap(
+                    spacing: SangaSpacing.xs,
+                    runSpacing: SangaSpacing.xs,
+                    children: [for (final tag in tags) SangaTag.scheduled(label: tag.label, icon: tag.icon)],
+                  ),
+                ),
               if (pickup != null) _RoutePoint(kind: SangaStopKind.pickup, place: pickup!),
               for (final stop in stops) _RoutePoint(kind: SangaStopKind.stop, place: stop),
               if (dropoff != null) _RoutePoint(kind: SangaStopKind.dropoff, place: dropoff!),

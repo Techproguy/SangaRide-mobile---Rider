@@ -3,13 +3,16 @@ import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 class TripProgressBar extends StatelessWidget {
-  const TripProgressBar({super.key, required this.status});
+  const TripProgressBar({super.key, required this.status, this.nextStop});
 
-  static const List<SangaTripStage> stages = [
-    SangaTripStage(Icons.directions_car_rounded, 'On the way to drop off'),
-    SangaTripStage(Icons.location_on_rounded, 'You’ve arrived at your drop off'),
-    SangaTripStage(Icons.payments_rounded, 'Payment'),
-    SangaTripStage(Icons.check_rounded, 'Trip completed'),
+  static List<SangaTripStage> stagesFor(int? nextStop) => [
+    SangaTripStage(
+      Icons.directions_car_rounded,
+      nextStop == null ? 'On the way to drop off' : 'On the way to stop $nextStop',
+    ),
+    const SangaTripStage(Icons.location_on_rounded, 'You’ve arrived at your drop off'),
+    const SangaTripStage(Icons.payments_rounded, 'Payment'),
+    const SangaTripStage(Icons.check_rounded, 'Trip completed'),
   ];
 
   static bool isShownFor(TripStatus status) => status.rank >= TripStatus.inProgress.rank;
@@ -22,7 +25,8 @@ class TripProgressBar extends StatelessWidget {
   };
 
   final TripStatus status;
+  final int? nextStop;
 
   @override
-  Widget build(BuildContext context) => SangaTripProgress(stages: stages, current: stageOf(status));
+  Widget build(BuildContext context) => SangaTripProgress(stages: stagesFor(nextStop), current: stageOf(status));
 }

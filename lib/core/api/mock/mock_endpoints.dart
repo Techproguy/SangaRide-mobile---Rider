@@ -70,6 +70,10 @@ class MockEndpoints {
   static const String liveTripCall = '$_liveTrip/call';
   static const String liveTripMessages = '$_liveTrip/messages';
   static const String liveTripEvents = '$_liveTrip/events';
+  static const String liveTripStopsQuote = '$_liveTrip/stops/quote';
+  static const String liveTripStops = '$_liveTrip/stops';
+  static const String liveTripCancellation = '$_liveTrip/cancellation';
+  static const String liveTripCancel = '$_liveTrip/cancel';
 
   static String liveTripOf(String id) => liveTrip.replaceFirst(':id', id);
 
@@ -86,6 +90,14 @@ class MockEndpoints {
   static String liveTripMessagesOf(String id) => liveTripMessages.replaceFirst(':id', id);
 
   static String liveTripEventsOf(String id) => liveTripEvents.replaceFirst(':id', id);
+
+  static String liveTripStopsQuoteOf(String id) => liveTripStopsQuote.replaceFirst(':id', id);
+
+  static String liveTripStopsOf(String id) => liveTripStops.replaceFirst(':id', id);
+
+  static String liveTripCancellationOf(String id) => liveTripCancellation.replaceFirst(':id', id);
+
+  static String liveTripCancelOf(String id) => liveTripCancel.replaceFirst(':id', id);
 
   static const String _tripWrapUp = '/trips/:id';
 

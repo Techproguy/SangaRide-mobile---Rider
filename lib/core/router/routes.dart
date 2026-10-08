@@ -1,4 +1,7 @@
 import 'package:go_router/go_router.dart';
+import 'package:sanga_ride/core/router/booking_routes.dart';
+import 'package:sanga_ride/core/router/safety_routes.dart';
+import 'package:sanga_ride/core/router/who_for_routes.dart';
 import 'package:sanga_ride/core/router/trip_routes.dart';
 import 'package:sanga_ride/core/router/trip_wrapup_routes.dart';
 import 'package:sanga_ride/view/auth/about_you_screen.dart';
@@ -49,11 +52,14 @@ class SangaRoutes {
   static const String home = '/home';
 
   static final List<RouteBase> allRoutes = [
+    ...BookingRoutes.all,
+    ...WhoForRoutes.all,
     ...authRoutes,
     ...homeRoutes,
     ...rideRoutes,
     ...TripRoutes.all,
     ...TripWrapUpRoutes.all,
+    ...SafetyRoutes.all,
   ];
 
   static final List<RouteBase> rideRoutes = [

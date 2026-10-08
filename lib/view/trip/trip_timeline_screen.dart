@@ -21,7 +21,7 @@ class TripTimelineScreen extends StatelessWidget {
 
   static String? _timeOf(Trip trip, TripEventType type) {
     final at = trip.eventTime(type);
-    return at == null ? null : DateFormat('h:mma').format(at).toLowerCase();
+    return at == null ? null : DateFormat('h:mm a').format(at);
   }
 
   List<SangaTimelineEntry> _entries(Trip trip) {

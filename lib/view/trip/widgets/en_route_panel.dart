@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:sanga_ride/model/models.dart';
+import 'package:sanga_ride/view/trip/widgets/trip_change_tiles.dart';
 import 'package:sanga_ride/view/trip/widgets/trip_contact_tiles.dart';
 import 'package:sanga_ride/view/trip/widgets/trip_driver_header.dart';
 import 'package:sanga_ride/view/trip/widgets/trip_eta_line.dart';
@@ -13,12 +14,18 @@ class EnRoutePanel extends StatelessWidget {
     required this.unreadCount,
     required this.onCall,
     required this.onMessage,
+    required this.onSafety,
+    required this.onAddStops,
+    required this.onCancel,
   });
 
   final Trip trip;
   final int unreadCount;
   final VoidCallback onCall;
   final VoidCallback onMessage;
+  final VoidCallback onSafety;
+  final VoidCallback onAddStops;
+  final VoidCallback onCancel;
 
   @override
   Widget build(BuildContext context) {
@@ -29,7 +36,7 @@ class EnRoutePanel extends StatelessWidget {
         Row(
           spacing: SangaSpacing.md,
           children: [
-            TripContactTiles(unreadCount: unreadCount, onCall: onCall, onMessage: onMessage),
+            TripContactTiles(unreadCount: unreadCount, onCall: onCall, onMessage: onMessage, onSafety: onSafety),
             Expanded(
               child: Align(
                 alignment: Alignment.centerRight,
@@ -38,6 +45,7 @@ class EnRoutePanel extends StatelessWidget {
             ),
           ],
         ),
+        TripChangeTiles(trip: trip, onAddStops: onAddStops, onCancel: onCancel),
         const SangaNotice(
           message: 'Your driver is heading to your pickup, please be ready',
           tone: SangaTone.neutral,

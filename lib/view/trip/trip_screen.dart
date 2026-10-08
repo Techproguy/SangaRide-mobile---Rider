@@ -3,12 +3,16 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
+import 'package:sanga_ride/controller/rider/ride_request_controller.dart';
 import 'package:sanga_ride/controller/rider/trip/trip_controller.dart';
 import 'package:sanga_ride/controller/shared/map_camera.dart';
 import 'package:sanga_ride/core/router/routes.dart';
+import 'package:sanga_ride/core/router/safety_routes.dart';
 import 'package:sanga_ride/core/router/trip_routes.dart';
 import 'package:sanga_ride/core/router/trip_wrapup_routes.dart';
+import 'package:sanga_ride/core/services/toast_service.dart';
 import 'package:sanga_ride/model/models.dart';
+import 'package:sanga_ride/view/ride/matching/matching_flow.dart';
 import 'package:sanga_ride/view/trip/widgets/active_ride_panel.dart';
 import 'package:sanga_ride/view/trip/widgets/arrived_panel.dart';
 import 'package:sanga_ride/view/trip/widgets/authenticated_panel.dart';
@@ -44,6 +48,7 @@ class _TripScreenState extends State<TripScreen> {
   );
 
   final _trip = Get.find<TripController>();
+  final _ride = Get.find<RideRequestController>();
   final _camera = MapCamera();
   final _panelKey = GlobalKey();
   late final Worker _worker;
@@ -63,7 +68,7 @@ class _TripScreenState extends State<TripScreen> {
   void dispose() {
     _reframeTimer?.cancel();
     _worker.dispose();
-    _trip.close();
+    _trip.close(onlyTripId: widget.tripId);
     super.dispose();
   }
 
@@ -81,7 +86,7 @@ class _TripScreenState extends State<TripScreen> {
     final previous = _previous;
     _previous = next;
     if (!mounted || _isLeaving) return;
-    if (next is TripLoaded && (previous is! TripLoaded || previous.trip.status != next.trip.status)) {
+    if (next is TripLoaded && _hasRouteChanged(previous, next)) {
       _scheduleReframe();
     }
     switch (next) {
@@ -91,13 +96,19 @@ class _TripScreenState extends State<TripScreen> {
         unawaited(_showAuthenticated());
       case TripInProgress() || TripAtDropoff():
         _closeSheet();
-      case TripCancelled(:final reason) when previous is! TripCancelled:
-        unawaited(_showCancelled(reason));
+      case TripCancelled(:final reason, :final trip)
+          when previous is! TripCancelled && reason != TripCancelReason.riderCancelled:
+        unawaited(_showCancelled(trip, reason));
       case TripCompleted(:final trip):
         _leaveForCompletion(trip.id);
       default:
         break;
     }
+  }
+
+  bool _hasRouteChanged(TripState previous, TripLoaded next) {
+    if (previous is! TripLoaded) return true;
+    return previous.trip.status != next.trip.status || previous.trip.stops.length != next.trip.stops.length;
   }
 
   void _syncPanelInset() {
@@ -197,20 +208,50 @@ class _TripScreenState extends State<TripScreen> {
     );
   }
 
-  Future<void> _showCancelled(TripCancelReason reason) {
+  Future<void> _showCancelled(Trip trip, TripCancelReason reason) {
     return _present(
       isDismissible: false,
       padding: _statusPadding,
       builder: (_) => PopScope(
         canPop: false,
-        child: SangaStatusContent(
-          status: SangaStatus.failure,
-          title: reason.title,
-          message: reason.message,
-          action: SangaButton.primary(label: 'Back to home', onPressed: _goHome),
-        ),
+        child: reason.offersRematch
+            ? Obx(() => _rematchContent(trip, reason))
+            : SangaStatusContent(
+                status: SangaStatus.failure,
+                title: reason.title,
+                message: reason.message,
+                action: SangaButton.primary(label: 'Back to home', onPressed: _goHome),
+              ),
       ),
     );
+  }
+
+  Widget _rematchContent(Trip trip, TripCancelReason reason) {
+    return SangaStatusContent(
+      status: SangaStatus.failure,
+      title: reason.title,
+      message: reason.message,
+      action: SangaButton.primary(
+        label: 'Find another driver',
+        isLoading: _ride.isRestoring,
+        onPressed: () => unawaited(_findAnotherDriver(trip)),
+      ),
+      secondary: SangaButton.muted(label: 'Back to home', onPressed: _goHome),
+    );
+  }
+
+  Future<void> _findAnotherDriver(Trip trip) async {
+    final isReady = await _ride.restoreRoute(
+      pickup: trip.pickup.toPlace(),
+      stops: [for (final stop in trip.stops) stop.toPlace()],
+      dropoff: trip.dropoff.toPlace(),
+      category: trip.rideType,
+    );
+    if (!mounted) return;
+    if (!isReady) return Toast.error('We couldn’t set that up. Give it another go.');
+    _isLeaving = true;
+    _closeSheet();
+    await startMatching(context);
   }
 
   Future<void> _makePayment() async {
@@ -231,6 +272,12 @@ class _TripScreenState extends State<TripScreen> {
 
   void _openChat() => unawaited(context.push(TripRoutes.chatOf(widget.tripId)));
 
+  void _openAddStops() => unawaited(context.push(TripRoutes.stopsOf(widget.tripId)));
+
+  void _openCancel() => unawaited(context.push(TripRoutes.cancelOf(widget.tripId)));
+
+  void _openSafety() => unawaited(context.push(SafetyRoutes.centreOf(tripId: widget.tripId)));
+
   void _openDetails() => unawaited(context.push(TripRoutes.detailsOf(widget.tripId)));
 
   void _call(Trip trip) => unawaited(callDriver(context, firstName: trip.driver.firstName));
@@ -244,27 +291,37 @@ class _TripScreenState extends State<TripScreen> {
         unreadCount: _trip.unreadCount,
         onCall: () => _call(trip),
         onMessage: _openChat,
+        onSafety: _openSafety,
+        onAddStops: _openAddStops,
+        onCancel: _openCancel,
       ),
       TripArrived(:final trip) => ArrivedPanel(
         trip: trip,
         unreadCount: _trip.unreadCount,
         onCall: () => _call(trip),
         onMessage: _openChat,
+        onSafety: _openSafety,
         onConfirmDetails: _openDetailsCheck,
+        onAddStops: _openAddStops,
+        onCancel: _openCancel,
       ),
       TripVerifying(:final trip) => VerifyingPanel(
         trip: trip,
         unreadCount: _trip.unreadCount,
         onCall: () => _call(trip),
         onMessage: _openChat,
+        onSafety: _openSafety,
         onShowPin: () => unawaited(_showPin(trip)),
         onReport: _openReport,
+        onAddStops: _openAddStops,
+        onCancel: _openCancel,
       ),
       TripAuthenticated(:final trip) => AuthenticatedPanel(
         trip: trip,
         unreadCount: _trip.unreadCount,
         onCall: () => _call(trip),
         onMessage: _openChat,
+        onSafety: _openSafety,
         onMakePayment: _makePayment,
       ),
       TripInProgress(:final trip) => ActiveRidePanel(
@@ -272,7 +329,10 @@ class _TripScreenState extends State<TripScreen> {
         unreadCount: _trip.unreadCount,
         onCall: () => _call(trip),
         onMessage: _openChat,
+        onSafety: _openSafety,
         onShare: () => unawaited(shareTrip(trip.id)),
+        onAddStops: _openAddStops,
+        onCancel: _openCancel,
         action: SangaButton.primary(label: 'See details', onPressed: _openDetails),
       ),
       TripAtDropoff(:final trip) => ActiveRidePanel(
@@ -280,7 +340,10 @@ class _TripScreenState extends State<TripScreen> {
         unreadCount: _trip.unreadCount,
         onCall: () => _call(trip),
         onMessage: _openChat,
+        onSafety: _openSafety,
         onShare: () => unawaited(shareTrip(trip.id)),
+        onAddStops: _openAddStops,
+        onCancel: _openCancel,
         action: SangaButton.primary(
           label: 'Complete ride',
           isLoading: _trip.isCompleting.value,
@@ -305,6 +368,7 @@ class _TripScreenState extends State<TripScreen> {
                 message: 'Your driver has arrived',
                 detail: 'Check their details before you share your trip PIN',
               ),
+            if (_trip.notice case final notice?) SangaMapToast(message: notice.message),
             if (_trip.isOffline)
               const SangaMapToast(icon: Icons.wifi_off_rounded, message: 'You’re offline. Showing your last update.'),
           ],

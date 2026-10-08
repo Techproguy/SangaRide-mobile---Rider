@@ -1,7 +1,10 @@
 import 'dart:math' as math;
 
+import 'package:sanga_ride/core/api/mock/mock_booking.dart';
+import 'package:sanga_ride/core/api/mock/mock_who_for.dart';
 import 'package:sanga_ride/core/api/mock/mock_data.dart';
 import 'package:sanga_ride/core/api/mock/mock_endpoints.dart';
+import 'package:sanga_ride/core/api/mock/mock_safety.dart';
 import 'package:sanga_ride/core/api/mock/mock_server.dart';
 import 'package:sanga_ride/core/api/mock/mock_trip.dart';
 import 'package:sanga_ride/core/api/mock/mock_trip_wrapup.dart';
@@ -10,7 +13,10 @@ class MockRoutes {
   MockRoutes._();
 
   static final List<MockRoute> all = [
+    ...MockBooking.routes,
+    ...MockWhoFor.routes,
     ...MockTrip.routes,
+    ...MockSafety.routes,
     ...MockTripWrapUp.routes,
     MockRoute.post(MockEndpoints.signUp, (request) => {'phone': request.body['phone'], 'expiresInSeconds': 300}),
     MockRoute.post(
@@ -208,6 +214,21 @@ class MockRoutes {
   }
 
   static Object? _rideEstimate(MockRequest request) {
+    final tripType = request.body['tripType'];
+    final optionId = request.body['optionId'] as String;
+    final boost = tripType == 'hourly' ? 0 : 500;
+    if (tripType == 'hourly') {
+      final rates = (MockBooking.hourlyRates['rates'] as List).cast<Map<String, dynamic>>();
+      final rate = rates.firstWhere((rate) => rate['category'] == optionId)['hourlyRate'] as num;
+      final hours = (request.body['hours'] as num?)?.toInt() ?? 2;
+      return _fare(
+        baseFare: 0,
+        distanceKm: 0,
+        distanceFare: hours * rate,
+        boost: boost,
+        extra: {'hours': hours, 'hourlyRate': rate},
+      );
+    }
     final points = [
       request.body['pickup'],
       ...request.body['stops'] as List,
@@ -217,20 +238,37 @@ class MockRoutes {
     for (var i = 1; i < points.length; i++) {
       km += _distanceKm(points[i - 1], points[i]);
     }
-    km = (km * 1.3).clamp(1, 200).toDouble();
-    final rate = request.body['pricePerKm'] as num;
-    final roundTrip = request.body['tripType'] == 'roundTrip' ? 2 : 1;
-    const baseFare = 500;
-    final distanceFare = (km * rate / 10).round() * 10 * roundTrip;
-    const boost = 500;
+    final isIntercity = tripType == 'intercity';
+    km = (km * 1.3).clamp(1, isIntercity ? 700 : 200).toDouble();
+    final rate = isIntercity ? (request.body['pricePerKm'] as num) * 0.35 : request.body['pricePerKm'] as num;
+    final legs = tripType == 'roundTrip' ? 2 : 1;
+    final baseFare = isIntercity ? 5000 : 500;
+    final distanceFare = (km * rate / 10).round() * 10 * legs;
+    return _fare(
+      baseFare: baseFare,
+      distanceKm: double.parse((km * legs).toStringAsFixed(1)),
+      distanceFare: distanceFare,
+      boost: boost,
+      extra: {'ratePerKm': rate},
+    );
+  }
+
+  static Map<String, dynamic> _fare({
+    required num baseFare,
+    required num distanceKm,
+    required num distanceFare,
+    required num boost,
+    required Map<String, dynamic> extra,
+  }) {
     final total = baseFare + distanceFare + boost;
     return {
       'baseFare': baseFare,
-      'distanceKm': double.parse((km * roundTrip).toStringAsFixed(1)),
+      'distanceKm': distanceKm,
       'distanceFare': distanceFare,
       'discount': 0,
       'boost': boost,
       'total': total,
+      ...extra,
       'pricing': {
         'standard': total,
         'fairFare': (total * 0.9 / 10).round() * 10,

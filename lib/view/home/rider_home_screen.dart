@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:sanga_ride/controller/rider/ride_for_controller.dart';
 import 'package:sanga_ride/controller/rider/ride_request_controller.dart';
 import 'package:sanga_ride/controller/rider/rider_home_controller.dart';
 import 'package:sanga_ride/controller/rider/trip/trip_controller.dart';
@@ -11,6 +12,7 @@ import 'package:sanga_ride/controller/shared/map_controller.dart';
 import 'package:sanga_ride/controller/shared/user_controller.dart';
 import 'package:sanga_ride/core/router/routes.dart';
 import 'package:sanga_ride/core/router/trip_routes.dart';
+import 'package:sanga_ride/core/router/who_for_routes.dart';
 import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride/view/home/widgets/home_panel.dart';
 import 'package:sanga_ride/view/home/widgets/map_top_bar.dart';
@@ -28,6 +30,7 @@ class RiderHomeScreen extends StatefulWidget {
 class _RiderHomeScreenState extends State<RiderHomeScreen> {
   final _home = Get.find<RiderHomeController>();
   final _ride = Get.find<RideRequestController>();
+  final _rideFor = Get.find<RideForController>();
   final _map = Get.find<MapController>();
   final _panelKey = GlobalKey();
   Set<Marker> _markers = const {};
@@ -76,11 +79,22 @@ class _RiderHomeScreenState extends State<RiderHomeScreen> {
   }
 
   void _search({RideCategory? category}) {
+    _rideFor.reset();
+    _openSearch(category: category);
+  }
+
+  void _openSearch({RideCategory? category}) {
     _ride.start(pickup: _home.currentPlace, category: category);
     context.push(SangaRoutes.rideSearch);
   }
 
+  Future<void> _bookForSomeone() async {
+    final chosen = await WhoForRoutes.open(context);
+    if (chosen && mounted) _openSearch();
+  }
+
   void _rideTo(Place destination) {
+    _rideFor.reset();
     _ride.start(pickup: _home.currentPlace, dropoff: destination);
     context.push(SangaRoutes.rideRoute);
   }
@@ -122,6 +136,7 @@ class _RiderHomeScreenState extends State<RiderHomeScreen> {
                       onSearch: _search,
                       onRideTo: _rideTo,
                       onSavedPlaces: _search,
+                      onBookForSomeone: _bookForSomeone,
                       onPromo: () => _search(category: RideCategory.lux),
                     ),
                   ),

@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sanga_ride/controller/rider/ride_request_controller.dart';
-import 'package:sanga_ride/core/router/routes.dart';
-import 'package:sanga_ride/model/models.dart';
+import 'package:sanga_ride/core/router/booking_routes.dart';
 import 'package:sanga_ride/view/ride/widgets/ride_option_async_state.dart';
 import 'package:sanga_ride/view/ride/widgets/ride_option_fare_lines.dart';
 import 'package:sanga_ride/view/ride/widgets/ride_option_quote.dart';
@@ -21,7 +20,9 @@ class FareBreakdownScreen extends StatelessWidget {
       footer: Obx(
         () => SangaButton.primary(
           label: 'Continue',
-          onPressed: ride.estimate == null || ride.pricing == null ? null : () => context.push(SangaRoutes.rideTiming),
+          onPressed: ride.estimate == null || ride.pricing == null
+              ? null
+              : () => context.push(BookingRoutes.afterFare(ride.tripType)),
         ),
       ),
       children: [
@@ -52,7 +53,7 @@ class FareBreakdownScreen extends StatelessWidget {
         estimate: estimate,
         pricing: pricing,
         pricePerKm: option.pricePerKm,
-        isRoundTrip: ride.tripType == TripType.roundTrip,
+        tripType: ride.tripType,
       ),
       totalLabel: 'TOTAL ESTIMATE',
       total: SangaMoney.naira(price),

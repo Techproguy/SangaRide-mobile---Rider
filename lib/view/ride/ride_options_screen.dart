@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sanga_ride/controller/rider/ride_request_controller.dart';
-import 'package:sanga_ride/core/router/routes.dart';
+import 'package:sanga_ride/core/router/booking_routes.dart';
 import 'package:sanga_ride/view/ride/widgets/ride_option_async_state.dart';
 import 'package:sanga_ride/view/ride/widgets/ride_option_image.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
@@ -32,7 +32,7 @@ class _RideOptionsScreenState extends State<RideOptionsScreen> {
       footer: Obx(
         () => SangaButton.primary(
           label: 'Confirm',
-          onPressed: _ride.option == null ? null : () => context.push(SangaRoutes.ridePreferences),
+          onPressed: _ride.option == null ? null : () => context.push(BookingRoutes.afterOptions(_ride.tripType)),
         ),
       ),
       children: [
@@ -69,7 +69,7 @@ class _RideOptionsScreenState extends State<RideOptionsScreen> {
             name: option.name,
             description: option.description,
             seats: option.seats,
-            price: SangaMoney.perKm(option.pricePerKm),
+            price: _ride.rateLabel(option),
             isSelected: _ride.option?.id == option.id,
             onTap: () => _ride.selectOption(option),
           ),

@@ -12,6 +12,7 @@ class AuthenticatedPanel extends StatelessWidget {
     required this.unreadCount,
     required this.onCall,
     required this.onMessage,
+    required this.onSafety,
     required this.onMakePayment,
   });
 
@@ -19,6 +20,7 @@ class AuthenticatedPanel extends StatelessWidget {
   final int unreadCount;
   final VoidCallback onCall;
   final VoidCallback onMessage;
+  final VoidCallback onSafety;
   final VoidCallback onMakePayment;
 
   @override
@@ -30,7 +32,7 @@ class AuthenticatedPanel extends StatelessWidget {
         Row(
           spacing: SangaSpacing.md,
           children: [
-            TripContactTiles(unreadCount: unreadCount, onCall: onCall, onMessage: onMessage),
+            TripContactTiles(unreadCount: unreadCount, onCall: onCall, onMessage: onMessage, onSafety: onSafety),
             Expanded(
               child: Text(
                 'Your driver confirmed your PIN',

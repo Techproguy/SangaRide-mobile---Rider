@@ -5,9 +5,12 @@ import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 
 import 'package:sanga_ride/controller/rider/ride_match_controller.dart';
+import 'package:sanga_ride/controller/rider/ride_for_controller.dart';
+import 'package:sanga_ride/controller/rider/scheduled_rides_controller.dart';
 import 'package:sanga_ride/controller/rider/ride_request_controller.dart';
 import 'package:sanga_ride/controller/rider/rider_home_controller.dart';
 import 'package:sanga_ride/controller/rider/rider_sign_up_controller.dart';
+import 'package:sanga_ride/controller/rider/safety/safety_bindings.dart';
 import 'package:sanga_ride/controller/rider/trip/trip_bindings.dart';
 import 'package:sanga_ride/controller/rider/trip/trip_wrapup_bindings.dart';
 import 'package:sanga_ride/controller/shared/auth_controller.dart';
@@ -36,10 +39,13 @@ Future<void> initializeSanga() async {
   Get.lazyPut(() => RiderSignUpController(), fenix: true);
   Get.lazyPut(() => RideRequestController(), fenix: true);
   Get.lazyPut(() => RideMatchController(), fenix: true);
+  Get.lazyPut(() => RideForController(), fenix: true);
+  Get.lazyPut(() => ScheduledRidesController(), fenix: true);
   Get.lazyPut(() => RiderHomeController(), fenix: true);
   Get.put(UserController(), permanent: true);
 
   Get.lazyPut(() => MapController(), fenix: true);
   registerTripControllers();
   registerTripWrapUpControllers();
+  registerSafetyControllers();
 }

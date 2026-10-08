@@ -13,7 +13,14 @@ import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 List<LatLng> tripFramePoints(Trip trip) {
   final driver = trip.driverPosition?.position;
-  if (trip.status.rank >= TripStatus.inProgress.rank) return [?driver, trip.dropoff.position];
+  if (trip.status.rank >= TripStatus.inProgress.rank) {
+    return [
+      ?driver,
+      for (final stop in trip.stops)
+        if (!stop.isReached) stop.position,
+      trip.dropoff.position,
+    ];
+  }
   if (!trip.status.isTerminal) return [?driver, trip.pickup.position];
   return [for (final place in trip.route) place.position];
 }

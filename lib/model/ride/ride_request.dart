@@ -1,11 +1,19 @@
 enum TripType {
   oneWay('One way', 'Go to a destination'),
-  roundTrip('Round trip', 'Go there and come straight back');
+  roundTrip('Round trip', 'Go there and come back'),
+  hourly('Hourly', 'Keep a driver for a set time'),
+  intercity('Intercity', 'Travel between cities');
 
   const TripType(this.label, this.description);
 
   final String label;
   final String description;
+
+  bool get isAlwaysScheduled => this == intercity;
+
+  bool get allowsRepeat => this == oneWay;
+
+  bool get needsReturn => this == roundTrip;
 }
 
 enum RideCategory { go, plus, xl, lux, moto, assist }
@@ -52,12 +60,15 @@ enum PricingOption {
 
 enum RideTiming {
   now('Now', 'Find a driver immediately'),
-  later('Later', 'Schedule a ride');
+  later('Later', 'Schedule a ride'),
+  repeat('Repeat', 'Set up a recurring ride');
 
   const RideTiming(this.label, this.description);
 
   final String label;
   final String description;
+
+  bool get isScheduled => this != now;
 }
 
 class RidePreferences {
@@ -133,6 +144,9 @@ class FareEstimate {
     required this.boost,
     required this.total,
     required this.pricing,
+    this.ratePerKm,
+    this.hours,
+    this.hourlyRate,
   });
 
   factory FareEstimate.fromJson(Map<String, dynamic> json) => FareEstimate(
@@ -142,6 +156,9 @@ class FareEstimate {
     discount: json['discount'] as num,
     boost: json['boost'] as num,
     total: json['total'] as num,
+    ratePerKm: json['ratePerKm'] as num?,
+    hours: (json['hours'] as num?)?.toInt(),
+    hourlyRate: json['hourlyRate'] as num?,
     pricing: {
       for (final MapEntry(:key, :value) in (json['pricing'] as Map).entries)
         PricingOption.values.byName(key as String): value as num,
@@ -155,6 +172,11 @@ class FareEstimate {
   final num boost;
   final num total;
   final Map<PricingOption, num> pricing;
+  final num? ratePerKm;
+  final int? hours;
+  final num? hourlyRate;
+
+  bool get isHourly => hours != null && hourlyRate != null;
 
   num adjustmentFor(PricingOption option) => (pricing[option] ?? total) - total;
 }

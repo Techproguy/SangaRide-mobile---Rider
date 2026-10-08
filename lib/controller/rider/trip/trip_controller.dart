@@ -13,6 +13,8 @@ enum TripChatStatus { loading, ready, failed }
 class TripController extends GetxController {
   static const Duration pollInterval = Duration(seconds: 3);
   static const int maxMissedPolls = 3;
+  static const Duration noticeDuration = Duration(seconds: 4);
+  static const Duration refreshWait = Duration(milliseconds: 100);
   static const String genericFailure = 'We couldn’t reach the server. Give it another go.';
   static const String _shareLinkBase = 'https://sanga.ride/t/';
 
@@ -27,6 +29,7 @@ class TripController extends GetxController {
   final RxBool isReporting = false.obs;
   final RxBool isCompleting = false.obs;
   final RxBool isCalling = false.obs;
+  final Rxn<TripNotice> _notice = Rxn<TripNotice>();
 
   final RxList<TripMessage> messages = <TripMessage>[].obs;
   final Rx<TripChatStatus> chatStatus = Rx<TripChatStatus>(TripChatStatus.loading);
@@ -35,6 +38,7 @@ class TripController extends GetxController {
   AppLifecycleListener? _lifecycle;
   Timer? _poller;
   Timer? _chatPoller;
+  Timer? _noticeTimer;
   String? _tripId;
   int _epoch = 0;
   int _seq = 0;
@@ -53,6 +57,8 @@ class TripController extends GetxController {
   bool get isOffline => _isOffline.value;
 
   bool get isChatOpen => _isChatOpen.value;
+
+  TripNotice? get notice => _notice.value;
 
   Trip? get trip => switch (state) {
     TripLoaded(:final trip) => trip,
@@ -78,11 +84,15 @@ class TripController extends GetxController {
     if (epoch == _epoch) _startPolling();
   }
 
-  void close() {
+  void close({String? onlyTripId}) {
+    if (onlyTripId != null && onlyTripId != _tripId) return;
     _poller?.cancel();
     _poller = null;
     _chatPoller?.cancel();
     _chatPoller = null;
+    _noticeTimer?.cancel();
+    _noticeTimer = null;
+    _notice.value = null;
     _lifecycle?.dispose();
     _lifecycle = null;
     _tripId = null;
@@ -178,6 +188,21 @@ class TripController extends GetxController {
   }
 
   void _acceptFresh(Trip incoming) => _accept(incoming, ++_seq);
+
+  void applyServerTrip(Trip trip) => _acceptFresh(trip);
+
+  Future<void> pollNow() async {
+    while (_isPolling) {
+      await Future<void>.delayed(refreshWait);
+    }
+    await _poll();
+  }
+
+  void announce(TripNotice notice) {
+    _notice.value = notice;
+    _noticeTimer?.cancel();
+    _noticeTimer = Timer(noticeDuration, () => _notice.value = null);
+  }
 
   Future<Trip?> loadActive() async {
     try {

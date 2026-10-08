@@ -95,7 +95,7 @@ class OfferCard extends StatelessWidget {
   String get _offerLine {
     if (!offer.isAvailable) return 'No longer available';
     final counter = offer.counterOffer;
-    return 'Counter offer: ${counter == null ? 'none' : SangaMoney.naira(counter)}';
+    return counter == null ? 'Accepts your fare' : 'Counter offer: ${SangaMoney.naira(counter)}';
   }
 }
 
