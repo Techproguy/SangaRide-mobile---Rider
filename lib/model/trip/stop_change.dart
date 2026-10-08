@@ -150,7 +150,8 @@ final class AddStopApplied extends AddStopState {
 }
 
 enum TripNotice {
-  fareUpdated('Your fare has been updated');
+  fareUpdated('Your fare has been updated'),
+  packagePickedUp('Package picked up. You can make your payment now');
 
   const TripNotice(this.message);
 

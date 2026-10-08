@@ -65,7 +65,7 @@ class _ConfirmDriverScreenState extends State<ConfirmDriverScreen> {
     await showSangaStatusSheet(
       context: context,
       status: SangaStatus.success,
-      title: 'Ride accepted',
+      title: _trip.tripType == TripType.delivery ? 'Delivery accepted' : 'Ride accepted',
       message: '${state.trip.driver.firstName} is heading to your pickup.',
       actionLabel: 'Done',
     );

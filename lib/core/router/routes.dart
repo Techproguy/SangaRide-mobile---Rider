@@ -1,5 +1,10 @@
 import 'package:go_router/go_router.dart';
 import 'package:sanga_ride/core/router/booking_routes.dart';
+import 'package:sanga_ride/core/router/history_routes.dart';
+import 'package:sanga_ride/core/router/menu_routes.dart';
+import 'package:sanga_ride/core/router/places_routes.dart';
+import 'package:sanga_ride/core/router/delivery_routes.dart';
+import 'package:sanga_ride/core/router/delivery_live_routes.dart';
 import 'package:sanga_ride/core/router/safety_routes.dart';
 import 'package:sanga_ride/core/router/who_for_routes.dart';
 import 'package:sanga_ride/core/router/trip_routes.dart';
@@ -53,18 +58,26 @@ class SangaRoutes {
 
   static final List<RouteBase> allRoutes = [
     ...BookingRoutes.all,
+    ...DeliveryRoutes.all,
     ...WhoForRoutes.all,
     ...authRoutes,
     ...homeRoutes,
     ...rideRoutes,
     ...TripRoutes.all,
     ...TripWrapUpRoutes.all,
+    ...DeliveryLiveRoutes.all,
     ...SafetyRoutes.all,
+    ...PlacesRoutes.all,
+    ...HistoryRoutes.all,
+    ...MenuRoutes.all,
   ];
 
   static final List<RouteBase> rideRoutes = [
     GoRoute(path: rideSearch, builder: (context, state) => const RideSearchScreen()),
-    GoRoute(path: rideRoute, builder: (context, state) => const RideRouteScreen()),
+    GoRoute(
+      path: rideRoute,
+      builder: (context, state) => RideRouteScreen(returnsOnConfirm: DeliveryRoutes.isEditing(state)),
+    ),
     GoRoute(path: tripType, builder: (context, state) => const TripTypeScreen()),
     GoRoute(path: rideOptions, builder: (context, state) => const RideOptionsScreen()),
     GoRoute(path: ridePreferences, builder: (context, state) => const RidePreferencesScreen()),

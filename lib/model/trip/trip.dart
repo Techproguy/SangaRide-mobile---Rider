@@ -4,6 +4,7 @@ import 'package:sanga_ride/model/ride/airport.dart';
 import 'package:sanga_ride/model/ride/ride_match.dart';
 import 'package:sanga_ride/model/ride/ride_request.dart';
 import 'package:sanga_ride/model/trip/server_time.dart';
+import 'package:sanga_ride/model/trip/trip_delivery.dart';
 
 enum TripStatus {
   driverEnRoute('driver_en_route'),
@@ -94,6 +95,13 @@ enum TripCancelReason {
   ),
   driverCancelled('driver_cancelled', 'Your driver cancelled', 'Sorry about that. We won’t charge you.'),
   riderCancelled('rider_cancelled', 'Ride cancelled', 'You cancelled this ride.'),
+  packageRefused('package_refused', 'Package not accepted', 'Your driver couldn’t take this package.'),
+  deliveryCancelled('delivery_cancelled', 'Delivery cancelled', 'This delivery was cancelled.'),
+  deliveryReturned(
+    'delivery_returned',
+    'Package heading back',
+    'Your driver couldn’t hand the package over, so it’s going back to the pickup location.',
+  ),
   other('other', 'Trip cancelled', 'This trip was cancelled. You won’t be charged.');
 
   const TripCancelReason(this.code, this.title, this.message);
@@ -184,12 +192,14 @@ class Trip {
     required this.events,
     required this.cancellationReason,
     this.airport,
+    this.delivery,
   });
 
   factory Trip.fromJson(Map<String, dynamic> json) {
     final serverTime = DateTime.parse(json['serverTime'] as String);
     final position = json['driverPosition'] as Map?;
     final airport = json['airport'] as Map?;
+    final delivery = json['delivery'] as Map?;
     return Trip(
       id: json['id'] as String,
       status: TripStatus.fromCode(json['status'] as String),
@@ -214,6 +224,7 @@ class Trip {
           ? null
           : TripCancelReason.fromCode(json['cancellationReason'] as String),
       airport: airport == null ? null : TripAirport.fromJson(Map<String, dynamic>.from(airport)),
+      delivery: delivery == null ? null : TripDelivery.fromJson(Map<String, dynamic>.from(delivery)),
     );
   }
 
@@ -235,14 +246,32 @@ class Trip {
   final List<TripEvent> events;
   final TripCancelReason? cancellationReason;
   final TripAirport? airport;
+  final TripDelivery? delivery;
 
   static const int maxStops = 3;
 
   List<TripPlace> get route => [pickup, ...stops, dropoff];
 
-  bool get canChange => status.canChange;
+  bool get isDelivery => delivery != null;
 
-  bool get canAddStops => canChange && stops.length < maxStops;
+  bool get canChange => status.canChange && (delivery?.stage.canCancel ?? true);
+
+  bool get canAddStops => !isDelivery && canChange && stops.length < maxStops;
+
+  DeliveryPhase? get deliveryPhase {
+    final delivery = this.delivery;
+    if (delivery == null || delivery.stage == DeliveryStage.refused || delivery.stage == DeliveryStage.failed) {
+      return null;
+    }
+    return switch (status) {
+      TripStatus.driverEnRoute => DeliveryPhase.heading,
+      TripStatus.driverArrived => pin == null ? DeliveryPhase.atPickup : DeliveryPhase.sharingPin,
+      TripStatus.pinVerified => DeliveryPhase.afterPin(delivery),
+      TripStatus.inProgress => DeliveryPhase.onTheWay,
+      TripStatus.arrivedDropoff || TripStatus.paymentPending => DeliveryPhase.atDropoffOf(delivery.stage),
+      TripStatus.completed || TripStatus.cancelled => null,
+    };
+  }
 
   int? get nextStopNumber {
     final index = stops.indexWhere((stop) => !stop.isReached);
@@ -262,7 +291,13 @@ class Trip {
 sealed class TripState {
   const TripState();
 
-  factory TripState.of(Trip trip) => switch (trip.status) {
+  factory TripState.of(Trip trip) {
+    final refusal = trip.delivery?.refusal;
+    if (trip.delivery?.stage == DeliveryStage.refused && refusal != null) return TripRefused(trip, refusal);
+    return _byStatus(trip);
+  }
+
+  static TripState _byStatus(Trip trip) => switch (trip.status) {
     TripStatus.driverEnRoute => TripEnRoute(trip),
     TripStatus.driverArrived => trip.pin == null ? TripArrived(trip) : TripVerifying(trip),
     TripStatus.pinVerified => TripAuthenticated(trip),
@@ -321,4 +356,10 @@ final class TripCancelled extends TripLoaded {
   const TripCancelled(super.trip, this.reason);
 
   final TripCancelReason reason;
+}
+
+final class TripRefused extends TripLoaded {
+  const TripRefused(super.trip, this.refusal);
+
+  final DeliveryRefusal refusal;
 }

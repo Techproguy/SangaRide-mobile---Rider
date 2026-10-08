@@ -49,10 +49,12 @@ class MockRoute {
 
 class MockServerInterceptor extends Interceptor {
   static const Duration _latency = Duration(milliseconds: 400);
+  static const Duration _uploadLatency = Duration(milliseconds: 1600);
+  static const int _uploadSteps = 8;
 
   @override
   Future<void> onRequest(RequestOptions options, RequestInterceptorHandler handler) async {
-    await Future<void>.delayed(_latency);
+    await _simulateLatency(options);
     final (statusCode, body) = _respond(options);
     final response = Response(requestOptions: options, statusCode: statusCode, data: body);
     if (statusCode >= 400) {
@@ -65,6 +67,24 @@ class MockServerInterceptor extends Interceptor {
     }
   }
 
+  Future<void> _simulateLatency(RequestOptions options) async {
+    final onProgress = options.onSendProgress;
+    if (onProgress == null || options.data is! FormData) return Future<void>.delayed(_latency);
+    for (var step = 1; step <= _uploadSteps; step++) {
+      await Future<void>.delayed(_uploadLatency ~/ _uploadSteps);
+      onProgress(step, _uploadSteps);
+    }
+  }
+
+  Map<String, dynamic> _bodyOf(Object? data) => switch (data) {
+    final Map<String, dynamic> map => map,
+    final FormData form => {
+      for (final field in form.fields) field.key: field.value,
+      for (final file in form.files) file.key: {'name': file.value.filename, 'length': file.value.length},
+    },
+    _ => const {},
+  };
+
   (int, Map<String, dynamic>) _respond(RequestOptions options) {
     final method = options.method.toUpperCase();
     final path = Uri.parse(options.path).path;
@@ -73,7 +93,7 @@ class MockServerInterceptor extends Interceptor {
       if (params == null) continue;
       final request = MockRequest(
         path: path,
-        body: options.data is Map<String, dynamic> ? options.data as Map<String, dynamic> : const {},
+        body: _bodyOf(options.data),
         query: options.queryParameters,
         params: params,
       );

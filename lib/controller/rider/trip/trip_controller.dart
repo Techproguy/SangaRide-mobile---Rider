@@ -134,7 +134,7 @@ class TripController extends GetxController {
   }
 
   bool get _isTerminal => switch (state) {
-    TripCompleted() || TripCancelled() || TripFailed() => true,
+    TripCompleted() || TripCancelled() || TripRefused() || TripFailed() => true,
     _ => false,
   };
 

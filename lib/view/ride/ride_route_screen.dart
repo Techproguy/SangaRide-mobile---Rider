@@ -8,7 +8,7 @@ import 'package:sanga_ride/controller/rider/ride_request_controller.dart';
 import 'package:sanga_ride/controller/rider/rider_home_controller.dart';
 import 'package:sanga_ride/controller/shared/map_camera.dart';
 import 'package:sanga_ride/core/extensions/lat_lng.dart';
-import 'package:sanga_ride/core/router/routes.dart';
+import 'package:sanga_ride/core/router/booking_routes.dart';
 import 'package:sanga_ride/core/services/directions_service.dart';
 import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride/view/ride/widgets/place_search_sheet.dart';
@@ -18,7 +18,9 @@ import 'package:sanga_ride/view/widgets/map/sanga_map.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 class RideRouteScreen extends StatefulWidget {
-  const RideRouteScreen({super.key});
+  const RideRouteScreen({super.key, this.returnsOnConfirm = false});
+
+  final bool returnsOnConfirm;
 
   @override
   State<RideRouteScreen> createState() => _RideRouteScreenState();
@@ -166,10 +168,14 @@ class _RideRouteScreenState extends State<RideRouteScreen> {
   }
 
   Future<void> _edit(RouteEdit edit) async {
+    final isDelivery = _ride.tripType == TripType.delivery;
     final (kind, hint) = switch (edit.point) {
-      RoutePoint.pickup => (SangaStopKind.pickup, 'Where should we pick you up?'),
+      RoutePoint.pickup => (
+        SangaStopKind.pickup,
+        isDelivery ? 'Where should we collect it?' : 'Where should we pick you up?',
+      ),
       RoutePoint.stop => (SangaStopKind.stop, 'Where should we stop?'),
-      RoutePoint.dropoff => (SangaStopKind.dropoff, 'Where are you going?'),
+      RoutePoint.dropoff => (SangaStopKind.dropoff, isDelivery ? 'Where is it going?' : 'Where are you going?'),
     };
     final place = await PlaceSearchSheet.show(
       context,
@@ -182,6 +188,14 @@ class _RideRouteScreenState extends State<RideRouteScreen> {
     if (edit.point != RoutePoint.pickup) _home.rememberPlace(place);
     setState(() {});
     _draw();
+  }
+
+  void _confirm() {
+    if (widget.returnsOnConfirm) {
+      context.pop();
+    } else {
+      context.push(BookingRoutes.afterRoute(_ride.tripType));
+    }
   }
 
   void _removeStop(int index) {
@@ -225,7 +239,7 @@ class _RideRouteScreenState extends State<RideRouteScreen> {
                     canAddStop: _ride.canAddStop,
                     onEdit: _edit,
                     onRemoveStop: _removeStop,
-                    onConfirm: _ride.hasRoute ? () => context.push(SangaRoutes.tripType) : null,
+                    onConfirm: _ride.hasRoute ? _confirm : null,
                   ),
                 ),
               ),

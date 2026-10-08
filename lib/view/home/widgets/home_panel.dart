@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:sanga_ride/core/assets.dart';
 import 'package:sanga_ride/model/models.dart';
+import 'package:sanga_ride/model/places/saved_place.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 class HomePanel extends StatelessWidget {
@@ -11,6 +12,8 @@ class HomePanel extends StatelessWidget {
     required this.onSearch,
     required this.onRideTo,
     required this.onSavedPlaces,
+    required this.onAddPlace,
+    required this.onDelivery,
     required this.onBookForSomeone,
     required this.onAirport,
     required this.onPromo,
@@ -21,6 +24,8 @@ class HomePanel extends StatelessWidget {
   final VoidCallback onSearch;
   final ValueChanged<Place> onRideTo;
   final VoidCallback onSavedPlaces;
+  final ValueChanged<SavedPlaceKind> onAddPlace;
+  final VoidCallback onDelivery;
   final VoidCallback onBookForSomeone;
   final VoidCallback onAirport;
   final VoidCallback onPromo;
@@ -34,8 +39,8 @@ class HomePanel extends StatelessWidget {
         Row(
           spacing: SangaSpacing.md,
           children: [
-            Expanded(child: _placeTile(SangaAssets.placeHome, 'Home', home)),
-            Expanded(child: _placeTile(SangaAssets.placeWork, 'Work', work)),
+            Expanded(child: _placeTile(SangaAssets.placeHome, 'Home', home, SavedPlaceKind.home)),
+            Expanded(child: _placeTile(SangaAssets.placeWork, 'Work', work, SavedPlaceKind.work)),
             Expanded(
               child: SangaShortcutTile(icon: SangaAssets.placeSaved, label: 'Saved places', onTap: onSavedPlaces),
             ),
@@ -54,7 +59,7 @@ class HomePanel extends StatelessWidget {
               isSelected: true,
               onTap: onSearch,
             ),
-            SangaServiceTile(image: const AssetImage(AppAssets.serviceDelivery), label: 'Delivery', onTap: () {}),
+            SangaServiceTile(image: const AssetImage(AppAssets.serviceDelivery), label: 'Delivery', onTap: onDelivery),
             SangaServiceTile(
               image: const AssetImage(AppAssets.serviceAirport),
               label: 'Airport rides',
@@ -77,12 +82,12 @@ class HomePanel extends StatelessWidget {
     );
   }
 
-  Widget _placeTile(String icon, String label, Place? place) {
+  Widget _placeTile(String icon, String label, Place? place, SavedPlaceKind kind) {
     return SangaShortcutTile(
       icon: icon,
       label: label,
       caption: place == null ? 'Add+' : null,
-      onTap: place == null ? onSavedPlaces : () => onRideTo(place),
+      onTap: place == null ? () => onAddPlace(kind) : () => onRideTo(place),
     );
   }
 }

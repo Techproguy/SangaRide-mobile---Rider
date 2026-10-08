@@ -30,7 +30,7 @@ SangaFareLine _usageLine(FareEstimate estimate, num pricePerKm, TripType tripTyp
   final label = switch (tripType) {
     TripType.roundTrip => 'Round trip distance',
     TripType.intercity => 'Intercity distance',
-    TripType.oneWay || TripType.hourly || TripType.airport => 'Distance',
+    TripType.oneWay || TripType.hourly || TripType.airport || TripType.delivery => 'Distance',
   };
   return SangaFareLine(
     '$label ($distance km @ ${SangaMoney.perKm(estimate.ratePerKm ?? pricePerKm)})',

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:sanga_ride/controller/rider/trip/trip_receipt_controller.dart';
 import 'package:sanga_ride/model/trip/wrapup/wrapup.dart';
+import 'package:sanga_ride/view/trip/wrapup/widgets/receipt_delivery_card.dart';
 import 'package:sanga_ride/view/trip/wrapup/widgets/receipt_paid_with.dart';
 import 'package:sanga_ride/view/trip/wrapup/widgets/receipt_route_card.dart';
 import 'package:sanga_ride/view/trip/wrapup/widgets/wrapup_async_body.dart';
@@ -32,7 +33,7 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
     return Obx(() {
       final state = _receipt.state;
       return SangaPageLayout(
-        title: 'Trip receipt',
+        title: state is ReceiptLoaded && state.receipt.isDelivery ? 'Delivery receipt' : 'Trip receipt',
         children: [
           WrapUpAsyncBody(
             isLoading: state is ReceiptLoading,
@@ -65,6 +66,7 @@ class _ReceiptBody extends StatelessWidget {
       spacing: SangaSpacing.md,
       children: [
         ReceiptRouteCard(receipt: receipt),
+        if (receipt.delivery case final ReceiptDelivery delivery) ReceiptDeliveryCard(delivery: delivery),
         SangaFareBreakdown(
           title: 'Fare breakdown',
           lines: [for (final line in receipt.lines) SangaFareLine(line.label, SangaMoney.naira(line.amount))],

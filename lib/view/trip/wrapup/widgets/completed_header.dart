@@ -3,9 +3,12 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 class CompletedHeader extends StatelessWidget {
-  const CompletedHeader({super.key});
+  const CompletedHeader({super.key, required this.title, required this.message});
 
   static const double _imageSize = 96;
+
+  final String title;
+  final String message;
 
   @override
   Widget build(BuildContext context) {
@@ -20,9 +23,9 @@ class CompletedHeader extends StatelessWidget {
             .scaleXY(begin: 0.6, end: 1, duration: SangaMotion.sheetEnter, curve: SangaMotion.springDetail)
             .fadeIn(duration: SangaMotion.quick, curve: SangaMotion.fadeCurve),
         const SizedBox(height: SangaSpacing.md),
-        const Text('Trip completed', textAlign: TextAlign.center, style: SangaTextStyles.statusTitle),
+        Text(title, textAlign: TextAlign.center, style: SangaTextStyles.statusTitle),
         const SizedBox(height: SangaSpacing.xs),
-        const Text('Thanks for riding with Sanga', textAlign: TextAlign.center, style: SangaTextStyles.statusMessage),
+        Text(message, textAlign: TextAlign.center, style: SangaTextStyles.statusMessage),
       ],
     );
   }

@@ -39,6 +39,7 @@ class RideRequestController extends GetxController {
   final RxBool _isScheduling = false.obs;
   final Rx<BookingCatalogState> _catalog = Rx<BookingCatalogState>(const CatalogLoading());
   final Rxn<AirportBooking> _airport = Rxn<AirportBooking>();
+  final Rxn<DeliveryBooking> _delivery = Rxn<DeliveryBooking>();
   final Rxn<num> _knownMeetGreetFee = Rxn<num>();
 
   Place? get pickup => _pickup.value;
@@ -84,6 +85,8 @@ class RideRequestController extends GetxController {
   BookingCatalogState get catalog => _catalog.value;
 
   AirportBooking? get airportBooking => _airport.value;
+
+  DeliveryBooking? get deliveryBooking => _delivery.value;
 
   num? get meetGreetFee => estimate?.meetGreetFee ?? _knownMeetGreetFee.value;
 
@@ -135,6 +138,7 @@ class RideRequestController extends GetxController {
     TripType.hourly => timing != RideTiming.later || scheduledAt != null,
     TripType.intercity => scheduledAt != null && intercityIssue == null,
     TripType.airport => airportBooking != null,
+    TripType.delivery => deliveryBooking != null,
   };
 
   bool get hasRoute => pickup != null && dropoff != null;
@@ -162,6 +166,7 @@ class RideRequestController extends GetxController {
     _hours.value = BookingRules.defaultHours;
     _staysWithRider.value = true;
     _airport.value = null;
+    _delivery.value = null;
     _knownMeetGreetFee.value = null;
     _optionId.value = category == null ? null : _options.firstWhereOrNull((o) => o.category == category)?.id;
     _preferredCategory = category;
@@ -249,6 +254,8 @@ class RideRequestController extends GetxController {
     if (previous == null || jsonEncode(previous.toJson()) != jsonEncode(booking.toJson())) _clearQuote();
   }
 
+  void setDeliveryBooking(DeliveryBooking booking) => _delivery.value = booking;
+
   void setHours(int value) {
     final limits = readyCatalog?.hourly;
     final clamped = limits == null ? value : value.clamp(limits.minHours, limits.maxHours);
@@ -331,9 +338,27 @@ class RideRequestController extends GetxController {
     if (tripType == TripType.intercity) ...{'fromCityId': fromCity?.id, 'toCityId': toCity?.id},
     if (returnAt case final at? when tripType.needsReturn) 'returnAt': at.toUtc().toIso8601String(),
     if (airportBooking case final booking? when tripType == TripType.airport) 'airport': booking.toJson(),
+    if (deliveryBooking case final booking? when tripType == TripType.delivery) 'delivery': booking.toJson(),
   };
 
+  Map<String, dynamic>? _deliveryPayload() {
+    final pickup = this.pickup;
+    final dropoff = this.dropoff;
+    final booking = deliveryBooking;
+    if (pickup == null || dropoff == null || booking == null) return null;
+    return {
+      'pickup': pickup.toJson(),
+      'stops': [for (final stop in stops) stop.toJson()],
+      'dropoff': dropoff.toJson(),
+      'rideFor': Get.find<RideForController>().rideFor.toJson(),
+      'pricingMode': PricingOption.standard.name,
+      'proposedFare': booking.fare,
+      ...bookingJson,
+    };
+  }
+
   Map<String, dynamic>? requestPayload() {
+    if (tripType == TripType.delivery) return _deliveryPayload();
     final pickup = this.pickup;
     final dropoff = this.dropoff;
     final option = this.option;

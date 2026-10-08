@@ -98,7 +98,7 @@ class _TripCompletedScreenState extends State<TripCompletedScreen> {
                         ),
                         if (!receipt.isRated)
                           SangaButton.muted(
-                            label: 'Rate your ride',
+                            label: receipt.isDelivery ? 'Rate your driver' : 'Rate your ride',
                             onPressed: () => context.push(TripWrapUpRoutes.rateOf(widget.tripId)),
                           ),
                       ],

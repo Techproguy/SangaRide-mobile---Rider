@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:sanga_ride/controller/rider/rider_home_controller.dart';
+import 'package:sanga_ride/controller/rider/saved_places_controller.dart';
 import 'package:sanga_ride/core/extensions/lat_lng.dart';
 import 'package:sanga_ride/core/services/location_service.dart';
 import 'package:sanga_ride/model/models.dart';
@@ -24,10 +25,12 @@ class PlaceSuggestions extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final home = Get.find<RiderHomeController>();
+    final places = Get.find<SavedPlacesController>();
     return Obx(() {
       final saved = [
         if (home.home != null) (SangaAssets.placeHome, 'Home', home.home!),
         if (home.work != null) (SangaAssets.placeWork, 'Work', home.work!),
+        for (final other in places.others) (SangaAssets.placeSaved, other.label, other.place),
       ];
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,

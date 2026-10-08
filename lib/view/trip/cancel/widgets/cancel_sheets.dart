@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:sanga_ride/model/models.dart';
+import 'package:sanga_ride/view/trip/cancel/widgets/cancel_copy.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 const EdgeInsets _statusPadding = EdgeInsets.fromLTRB(
@@ -9,26 +10,26 @@ const EdgeInsets _statusPadding = EdgeInsets.fromLTRB(
   SangaSpacing.xl,
 );
 
-Future<bool> showCancelConfirmSheet(BuildContext context) async {
+Future<bool> showCancelConfirmSheet(BuildContext context, CancelCopy copy) async {
   final confirmed = await showSangaSheet<bool>(
     context: context,
     padding: _statusPadding,
     builder: (sheet) => SangaStatusContent(
       status: SangaStatus.failure,
-      title: 'Cancel this ride?',
+      title: copy.confirmTitle,
       message: 'You can’t undo this.',
-      action: SangaButton.danger(label: 'Yes, cancel ride', onPressed: () => Navigator.of(sheet).pop(true)),
-      secondary: SangaButton.muted(label: 'Keep ride', onPressed: () => Navigator.of(sheet).pop(false)),
+      action: SangaButton.danger(label: copy.confirmAction, onPressed: () => Navigator.of(sheet).pop(true)),
+      secondary: SangaButton.muted(label: copy.confirmKeep, onPressed: () => Navigator.of(sheet).pop(false)),
     ),
   );
   return confirmed ?? false;
 }
 
-Future<void> showCancelledSheet(BuildContext context, CancelOutcome outcome) {
+Future<void> showCancelledSheet(BuildContext context, CancelOutcome outcome, CancelCopy copy) {
   return showSangaStatusSheet(
     context: context,
     status: SangaStatus.success,
-    title: 'Ride cancelled',
+    title: copy.doneTitle,
     message: outcome.message,
     actionLabel: 'Back to home',
   );

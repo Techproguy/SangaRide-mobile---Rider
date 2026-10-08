@@ -92,6 +92,9 @@ class RideMatchController extends GetxController {
       }
       _requestId = request.id;
       _applyRequest(request);
+    } on ApiException catch (e) {
+      log('requestRide failed: $e');
+      if (epoch == _epoch) _state.value = MatchFailed(MatchFailure.couldNotStart, code: e.code, data: e.data);
     } catch (e) {
       log('requestRide failed: $e');
       if (epoch == _epoch) _state.value = const MatchFailed(MatchFailure.couldNotStart);

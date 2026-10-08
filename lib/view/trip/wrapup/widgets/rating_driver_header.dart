@@ -4,11 +4,12 @@ import 'package:sanga_ride/view/ride/matching/widgets/driver_photo.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 class RatingDriverHeader extends StatelessWidget {
-  const RatingDriverHeader({super.key, required this.driver});
+  const RatingDriverHeader({super.key, required this.driver, this.isDelivery = false});
 
   static const double _avatarSize = 96;
 
   final OfferDriver driver;
+  final bool isDelivery;
 
   String get _initials {
     final parts = driver.name.trim().split(RegExp(r'\s+')).where((part) => part.isNotEmpty);
@@ -33,7 +34,7 @@ class RatingDriverHeader extends StatelessWidget {
         ),
         Text.rich(
           TextSpan(
-            text: 'How was your ride with ',
+            text: isDelivery ? 'How was your delivery with ' : 'How was your ride with ',
             children: [
               TextSpan(text: driver.name, style: SangaTextStyles.bodyStrong),
               const TextSpan(text: '?'),

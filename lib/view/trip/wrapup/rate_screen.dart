@@ -28,16 +28,26 @@ class _RateScreenState extends State<RateScreen> {
   final _receipt = Get.find<TripReceiptController>();
   final _rating = Get.find<TripRatingController>();
   final _comment = TextEditingController();
+  late final Worker _receiptWorker;
 
   @override
   void initState() {
     super.initState();
     _rating.open(widget.tripId);
+    _receiptWorker = ever(_receipt.stateRx, _syncAudience);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _syncAudience(_receipt.state));
     unawaited(_receipt.open(widget.tripId));
+  }
+
+  void _syncAudience(ReceiptState state) {
+    if (state is ReceiptLoaded && state.receipt.tripId == widget.tripId) {
+      _rating.open(widget.tripId, isDelivery: state.receipt.isDelivery);
+    }
   }
 
   @override
   void dispose() {
+    _receiptWorker.dispose();
     _comment.dispose();
     super.dispose();
   }
@@ -90,6 +100,7 @@ class _RateScreenState extends State<RateScreen> {
                 ? const SizedBox.shrink()
                 : _RateBody(
                     driver: driver,
+                    isDelivery: receiptState is ReceiptLoaded && receiptState.receipt.isDelivery,
                     state: ratingState,
                     comment: _comment,
                     onStars: _rating.setStars,
@@ -107,6 +118,7 @@ class _RateScreenState extends State<RateScreen> {
 class _RateBody extends StatelessWidget {
   const _RateBody({
     required this.driver,
+    required this.isDelivery,
     required this.state,
     required this.comment,
     required this.onStars,
@@ -116,6 +128,7 @@ class _RateBody extends StatelessWidget {
   });
 
   final OfferDriver driver;
+  final bool isDelivery;
   final RatingState state;
   final TextEditingController comment;
   final ValueChanged<int> onStars;
@@ -130,7 +143,7 @@ class _RateBody extends StatelessWidget {
     return Column(
       spacing: SangaSpacing.lg,
       children: [
-        RatingDriverHeader(driver: driver),
+        RatingDriverHeader(driver: driver, isDelivery: isDelivery),
         Column(
           spacing: SangaSpacing.sm,
           children: [

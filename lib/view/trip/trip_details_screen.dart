@@ -2,9 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sanga_ride/controller/rider/trip/trip_controller.dart';
+import 'package:sanga_ride/core/router/delivery_live_routes.dart';
+import 'package:sanga_ride/core/router/safety_routes.dart';
 import 'package:sanga_ride/core/router/trip_routes.dart';
 import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride/view/trip/widgets/call_driver.dart';
+import 'package:sanga_ride/view/trip/widgets/delivery_package_line.dart';
+import 'package:sanga_ride/view/trip/widgets/delivery_progress_bar.dart';
 import 'package:sanga_ride/view/trip/widgets/share_trip.dart';
 import 'package:sanga_ride/view/trip/widgets/trip_contact_tiles.dart';
 import 'package:sanga_ride/view/trip/widgets/trip_driver_header.dart';
@@ -25,7 +29,7 @@ class TripDetailsScreen extends StatelessWidget {
     return Obx(() {
       final trip = controller.trip;
       return SangaPageLayout(
-        title: 'Active ride details',
+        title: trip?.isDelivery == true ? 'Delivery details' : 'Active ride details',
         children: [
           if (trip == null)
             const Padding(
@@ -57,7 +61,10 @@ class _Details extends StatelessWidget {
       children: [
         _group(context, fare),
         if (trip.canChange)
-          SangaButton.danger(label: 'Cancel ride', onPressed: () => context.push(TripRoutes.cancelOf(trip.id))),
+          SangaButton.danger(
+            label: trip.isDelivery ? 'Cancel delivery' : 'Cancel ride',
+            onPressed: () => context.push(TripRoutes.cancelOf(trip.id)),
+          ),
       ],
     );
   }
@@ -80,6 +87,7 @@ class _Details extends StatelessWidget {
             stops: [for (final stop in trip.stops) stop.name],
           ),
         ),
+        if (trip.delivery case final TripDelivery delivery) ..._deliverySections(context, delivery),
         Padding(
           padding: _cell,
           child: Center(
@@ -87,8 +95,10 @@ class _Details extends StatelessWidget {
               unreadCount: unreadCount,
               onCall: () => callDriver(context, firstName: trip.driver.firstName),
               onMessage: () => context.push(TripRoutes.chatOf(trip.id)),
-              onShare: () => shareTrip(trip.id),
+              onShare: () => shareTrip(trip.id, isDelivery: trip.isDelivery),
+              onSafety: trip.isDelivery ? () => context.push(SafetyRoutes.centreOf(tripId: trip.id)) : null,
               onAddStops: trip.canAddStops ? () => context.push(TripRoutes.stopsOf(trip.id)) : null,
+              onReportIssue: trip.isDelivery ? () => context.push(DeliveryLiveRoutes.issueOf(trip.id)) : null,
             ),
           ),
         ),
@@ -106,16 +116,63 @@ class _Details extends StatelessWidget {
           padding: _cell,
           child: TripVehicleCard(trip: trip, showsFeatures: true),
         ),
-        if (TripProgressBar.isShownFor(trip.status))
+        if (trip.deliveryPhase case final DeliveryPhase phase when DeliveryProgressBar.isShownFor(phase))
+          Padding(
+            padding: _cell,
+            child: DeliveryProgressBar(phase: phase),
+          )
+        else if (!trip.isDelivery && TripProgressBar.isShownFor(trip.status))
           Padding(
             padding: _cell,
             child: TripProgressBar(status: trip.status, nextStop: trip.nextStopNumber),
           ),
-        Padding(
-          padding: _cell,
-          child: TripTimelineLink(onPressed: () => context.push(TripRoutes.timelineOf(trip.id))),
-        ),
+        if (!trip.isDelivery)
+          Padding(
+            padding: _cell,
+            child: TripTimelineLink(onPressed: () => context.push(TripRoutes.timelineOf(trip.id))),
+          ),
       ],
     );
+  }
+
+  List<Widget> _deliverySections(BuildContext context, TripDelivery delivery) {
+    final description = delivery.item.description;
+    final phase = trip.deliveryPhase;
+    return [
+      Padding(
+        padding: _cell,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          spacing: SangaSpacing.sm,
+          children: [
+            DeliveryPackageLine(delivery: delivery),
+            if (description != null && description.trim().isNotEmpty)
+              Text(description.trim(), style: SangaTextStyles.cardSubtitle),
+          ],
+        ),
+      ),
+      if (phase != null)
+        Padding(
+          padding: _cell,
+          child: Row(
+            spacing: SangaSpacing.sm,
+            children: [
+              Expanded(
+                child: Text.rich(
+                  TextSpan(
+                    text: 'Status: ',
+                    style: SangaTextStyles.cardSubtitle,
+                    children: [TextSpan(text: phase.statusLine, style: SangaTextStyles.cardTitle)],
+                  ),
+                ),
+              ),
+              TripLinkChip(
+                label: 'Live tracking',
+                onPressed: () => context.push(DeliveryLiveRoutes.trackingOf(trip.id)),
+              ),
+            ],
+          ),
+        ),
+    ];
   }
 }

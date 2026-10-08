@@ -10,6 +10,7 @@ import 'package:sanga_ride/core/services/toast_service.dart';
 import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride/view/trip/cancel/cancel_reasons_view.dart';
 import 'package:sanga_ride/view/trip/cancel/cancel_review_view.dart';
+import 'package:sanga_ride/view/trip/cancel/widgets/cancel_copy.dart';
 import 'package:sanga_ride/view/trip/cancel/widgets/cancel_sheets.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
@@ -26,6 +27,8 @@ class _CancelScreenState extends State<CancelScreen> {
   final _cancel = Get.find<CancelController>();
   final _trip = Get.find<TripController>();
   late final Worker _worker;
+
+  CancelCopy get _copy => CancelCopy.of(isDelivery: _trip.trip?.isDelivery ?? false);
 
   @override
   void initState() {
@@ -62,12 +65,12 @@ class _CancelScreenState extends State<CancelScreen> {
   }
 
   Future<void> _showDone(CancelOutcome outcome) async {
-    await showCancelledSheet(context, outcome);
+    await showCancelledSheet(context, outcome, _copy);
     if (mounted) context.go(SangaRoutes.home);
   }
 
   Future<void> _confirmCancel() async {
-    final confirmed = await showCancelConfirmSheet(context);
+    final confirmed = await showCancelConfirmSheet(context, _copy);
     if (confirmed && mounted) unawaited(_cancel.submit());
   }
 
@@ -82,6 +85,7 @@ class _CancelScreenState extends State<CancelScreen> {
   Widget _body(Trip trip, CancelState state) {
     return switch (state) {
       CancelReviewing(:final reason, :final review, :final isSubmitting) => CancelReviewView(
+        copy: CancelCopy.of(isDelivery: trip.isDelivery),
         trip: trip,
         reason: reason,
         review: review,
@@ -104,6 +108,7 @@ class _CancelScreenState extends State<CancelScreen> {
 
   Widget _reasons(Trip trip, CancelReason? reason, String note, {bool canContinue = false, bool isLoading = false}) {
     return CancelReasonsView(
+      copy: CancelCopy.of(isDelivery: trip.isDelivery),
       reasons: CancelReason.availableFor(trip.status),
       reason: reason,
       note: note,
@@ -121,9 +126,9 @@ class _CancelScreenState extends State<CancelScreen> {
       final trip = _trip.trip;
       final state = _cancel.state;
       if (trip == null) {
-        return const SangaPageLayout(
-          title: 'Cancel ride',
-          children: [
+        return SangaPageLayout(
+          title: _copy.title,
+          children: const [
             Padding(
               padding: EdgeInsets.all(SangaSpacing.xl),
               child: Center(child: SangaActivityIndicator(size: 40)),

@@ -2,10 +2,13 @@ import 'dart:math' as math;
 
 import 'package:sanga_ride/core/api/mock/mock_airport.dart';
 import 'package:sanga_ride/core/api/mock/mock_booking.dart';
+import 'package:sanga_ride/core/api/mock/mock_delivery.dart';
 import 'package:sanga_ride/core/api/mock/mock_who_for.dart';
 import 'package:sanga_ride/core/api/mock/mock_data.dart';
+import 'package:sanga_ride/core/api/mock/mock_history.dart';
 import 'package:sanga_ride/core/api/mock/mock_endpoints.dart';
 import 'package:sanga_ride/core/api/mock/mock_safety.dart';
+import 'package:sanga_ride/core/api/mock/mock_saved_places.dart';
 import 'package:sanga_ride/core/api/mock/mock_server.dart';
 import 'package:sanga_ride/core/api/mock/mock_trip.dart';
 import 'package:sanga_ride/core/api/mock/mock_trip_wrapup.dart';
@@ -17,9 +20,12 @@ class MockRoutes {
     ...MockBooking.routes,
     ...MockAirport.routes,
     ...MockWhoFor.routes,
+    ...MockDelivery.routes,
     ...MockTrip.routes,
     ...MockSafety.routes,
     ...MockTripWrapUp.routes,
+    ...MockSavedPlaces.routes,
+    ...MockHistory.routes,
     MockRoute.post(MockEndpoints.signUp, (request) => {'phone': request.body['phone'], 'expiresInSeconds': 300}),
     MockRoute.post(
       MockEndpoints.checkExistence,
@@ -33,7 +39,6 @@ class MockRoutes {
     MockRoute.post(MockEndpoints.logout, (_) => null),
     MockRoute.get(MockEndpoints.me, (_) => MockData.user),
     MockRoute.patch(MockEndpoints.me, (request) => {...MockData.user, ...request.body}),
-    MockRoute.post(MockEndpoints.homeAddress, (request) => request.body),
     MockRoute.post(MockEndpoints.selfie, (_) => {'status': 'verified'}),
     MockRoute.get(MockEndpoints.recentPlaces, (_) => _recentPlaces),
     MockRoute.post(MockEndpoints.recentPlaces, _addRecentPlace),
@@ -41,7 +46,6 @@ class MockRoutes {
       _recentPlaces.removeWhere((place) => place['place_id'] == request.params['id']);
       return null;
     }),
-    MockRoute.get(MockEndpoints.savedPlaces, (_) => MockData.savedPlaces),
     MockRoute.get(MockEndpoints.weather, (_) => MockData.weather),
     MockRoute.get(MockEndpoints.rideOptions, (_) => MockData.rideOptions),
     MockRoute.post(MockEndpoints.rideEstimate, _rideEstimate),
@@ -96,12 +100,14 @@ class MockRoutes {
       final decision = MockAirport.decide(request.body);
       if (!decision.isLive) return MockBooking.scheduleAirport(request.body, decision);
     }
+    if (request.body['delivery'] != null) MockDelivery.validateRequest(request.body);
     final id = 'req_${_rideRequests.length + 1}';
     MockTrip.requests[id] = request.body;
     _rideRequests[id] = _MockRideRequest(
       createdAt: DateTime.now(),
       pricingMode: request.body['pricingMode'] as String?,
       proposedFare: (request.body['proposedFare'] as num?)?.toInt() ?? 0,
+      isFixedFare: request.body['delivery'] != null,
     );
     return {..._requestPayload(id, 'searching', 1), 'createdAt': _isoNow()};
   }
@@ -129,8 +135,8 @@ class MockRoutes {
     return _requestPayload(id, 'offers', 4);
   }
 
-  static Map<String, dynamic> _priced(Map<String, dynamic> offer, num fare) {
-    final markup = offer['counterMarkup'] as num?;
+  static Map<String, dynamic> _priced(Map<String, dynamic> offer, num fare, {bool isFixed = false}) {
+    final markup = isFixed ? null : offer['counterMarkup'] as num?;
     return {
       ...offer..remove('counterMarkup'),
       'counterOffer': markup == null ? null : ((fare * (1 + markup)) / 50).round() * 50,
@@ -140,7 +146,7 @@ class MockRoutes {
   static Object? _rideOffers(MockRequest request) {
     final record = _requireRideRequest(request);
     return {
-      'offers': [for (final offer in MockData.driverOffers) _priced(Map.of(offer), record.proposedFare)],
+      'offers': [for (final offer in MockData.driverOffers) _priced(Map.of(offer), record.proposedFare, isFixed: record.isFixedFare)],
     };
   }
 
@@ -162,7 +168,7 @@ class MockRoutes {
         'holdExpiresAt': DateTime.now().toUtc().add(_holdWindow).toIso8601String(),
         'serverTime': _isoNow(),
         'fare': record.proposedFare,
-        'counterOffer': _priced(Map.of(offer), record.proposedFare)['counterOffer'],
+        'counterOffer': _priced(Map.of(offer), record.proposedFare, isFixed: record.isFixedFare)['counterOffer'],
         'matchLabel': offer['matchLabel'],
       },
       'driver': _driverCard(offer),
@@ -181,7 +187,7 @@ class MockRoutes {
       request: MockTrip.requests[requestId] ?? const {},
       driverCard: _driverCard(offer),
       proposedFare: record.proposedFare,
-      counterOffer: (_priced(Map.of(offer), record.proposedFare)['counterOffer'] as num?)?.toInt(),
+      counterOffer: (_priced(Map.of(offer), record.proposedFare, isFixed: record.isFixedFare)['counterOffer'] as num?)?.toInt(),
       etaMinutes: offer['etaMinutes'] as num,
     );
     return {
@@ -310,10 +316,16 @@ class MockRoutes {
 }
 
 class _MockRideRequest {
-  _MockRideRequest({required this.createdAt, required this.pricingMode, required this.proposedFare});
+  _MockRideRequest({
+    required this.createdAt,
+    required this.pricingMode,
+    required this.proposedFare,
+    this.isFixedFare = false,
+  });
 
   final DateTime createdAt;
   final String? pricingMode;
   final int proposedFare;
+  final bool isFixedFare;
   bool isCancelled = false;
 }

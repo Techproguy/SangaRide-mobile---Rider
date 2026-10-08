@@ -3,7 +3,8 @@ enum TripType {
   roundTrip('Round trip', 'Go there and come back'),
   hourly('Hourly', 'Keep a driver for a set time'),
   intercity('Intercity', 'Travel between cities'),
-  airport('Airport', 'Get picked up from the airport');
+  airport('Airport', 'Get picked up from the airport'),
+  delivery('Delivery', 'Send a package across town');
 
   const TripType(this.label, this.description);
 
@@ -12,7 +13,7 @@ enum TripType {
 
   static List<TripType> get selectable => [
     for (final type in values)
-      if (type != airport) type,
+      if (type != airport && type != delivery) type,
   ];
 
   bool get isAlwaysScheduled => this == intercity;
@@ -20,6 +21,8 @@ enum TripType {
   bool get allowsRepeat => this == oneWay;
 
   bool get needsReturn => this == roundTrip;
+
+  bool get handlesOwnRejections => this == delivery;
 }
 
 enum RideCategory { go, plus, xl, lux, moto, assist }

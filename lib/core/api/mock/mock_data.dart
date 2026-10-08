@@ -41,21 +41,6 @@ class MockData {
     },
   ];
 
-  static const Map<String, dynamic> savedPlaces = {
-    'home': {
-      'place_id': 'mock_home',
-      'name': 'Home',
-      'address': '12 Ajegule Street, Ikorodu, Lagos',
-      'coordinates': {'lat': 6.6194, 'lng': 3.5105},
-    },
-    'work': {
-      'place_id': 'mock_work',
-      'name': 'Work',
-      'address': 'Akeredolu Building, Agege, Lagos',
-      'coordinates': {'lat': 6.6180, 'lng': 3.3209},
-    },
-  };
-
   static const List<Map<String, dynamic>> rideOptions = [
     {
       'id': 'go',

@@ -2,6 +2,7 @@ import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sanga_ride/controller/rider/ride_match_controller.dart';
+import 'package:sanga_ride/controller/rider/ride_request_controller.dart';
 import 'package:sanga_ride/core/router/routes.dart';
 import 'package:sanga_ride/core/services/toast_service.dart';
 import 'package:sanga_ride/model/models.dart';
@@ -12,6 +13,7 @@ import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 Future<void> startMatching(BuildContext context, {bool replacingOffers = false}) async {
   final match = Get.find<RideMatchController>();
+  final trip = Get.find<RideRequestController>();
   if (replacingOffers) {
     await match.retry();
   } else {
@@ -22,6 +24,8 @@ Future<void> startMatching(BuildContext context, {bool replacingOffers = false})
     return;
   }
   switch (match.state) {
+    case MatchFailed(:final code) when code != null && trip.tripType.handlesOwnRejections && !replacingOffers:
+      return;
     case MatchFailed(:final reason):
       return _showFailure(context, reason, replacingOffers: replacingOffers);
     case MatchNoDriver():

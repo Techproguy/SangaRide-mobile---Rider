@@ -7,14 +7,20 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:sanga_ride/controller/rider/ride_for_controller.dart';
 import 'package:sanga_ride/controller/rider/ride_request_controller.dart';
 import 'package:sanga_ride/controller/rider/rider_home_controller.dart';
+import 'package:sanga_ride/controller/rider/saved_places_controller.dart';
 import 'package:sanga_ride/controller/rider/trip/trip_controller.dart';
 import 'package:sanga_ride/controller/shared/map_controller.dart';
 import 'package:sanga_ride/controller/shared/user_controller.dart';
+import 'package:sanga_ride/core/router/menu_routes.dart';
+import 'package:sanga_ride/core/router/places_routes.dart';
 import 'package:sanga_ride/core/router/routes.dart';
 import 'package:sanga_ride/core/router/trip_routes.dart';
 import 'package:sanga_ride/core/router/who_for_routes.dart';
+import 'package:sanga_ride/core/services/toast_service.dart';
 import 'package:sanga_ride/model/models.dart';
+import 'package:sanga_ride/model/places/saved_place.dart';
 import 'package:sanga_ride/view/airport/airport_entry.dart';
+import 'package:sanga_ride/view/delivery/send/delivery_entry.dart';
 import 'package:sanga_ride/view/home/widgets/home_panel.dart';
 import 'package:sanga_ride/view/home/widgets/map_top_bar.dart';
 import 'package:sanga_ride/view/widgets/map/place_marker.dart';
@@ -32,6 +38,7 @@ class _RiderHomeScreenState extends State<RiderHomeScreen> {
   final _home = Get.find<RiderHomeController>();
   final _ride = Get.find<RideRequestController>();
   final _rideFor = Get.find<RideForController>();
+  final _saved = Get.find<SavedPlacesController>();
   final _map = Get.find<MapController>();
   final _panelKey = GlobalKey();
   Set<Marker> _markers = const {};
@@ -94,6 +101,15 @@ class _RiderHomeScreenState extends State<RiderHomeScreen> {
     if (chosen && mounted) _openSearch();
   }
 
+  Future<void> _setUpPlace(SavedPlaceKind kind) async {
+    if (!await _saved.ensureLoaded()) return Toast.error('We couldn’t load your saved places. Give it another go.');
+    if (!mounted) return;
+    final existing = _saved.book?.of(kind)?.place;
+    if (existing != null) return _rideTo(existing);
+    final saved = await context.push<Place>(PlacesRoutes.editOf(kind));
+    if (saved != null && mounted) _rideTo(saved);
+  }
+
   void _rideTo(Place destination) {
     _rideFor.reset();
     _ride.start(pickup: _home.currentPlace, dropoff: destination);
@@ -112,7 +128,7 @@ class _RiderHomeScreenState extends State<RiderHomeScreen> {
             SafeArea(
               child: Obx(
                 () => MapTopBar(
-                  leading: SangaMapButton.menu(onPressed: () {}),
+                  leading: SangaMapButton.menu(onPressed: () => context.push(MenuRoutes.menu)),
                   weather: _home.weather,
                   userName: user?.displayName ?? '',
                   changedCity: _home.changedCity,
@@ -136,7 +152,9 @@ class _RiderHomeScreenState extends State<RiderHomeScreen> {
                       work: _home.work,
                       onSearch: _search,
                       onRideTo: _rideTo,
-                      onSavedPlaces: _search,
+                      onSavedPlaces: () => context.push(PlacesRoutes.saved),
+                      onAddPlace: _setUpPlace,
+                      onDelivery: () => openDelivery(context, pickup: _home.currentPlace),
                       onBookForSomeone: _bookForSomeone,
                       onAirport: () => openAirportRides(context),
                       onPromo: () => _search(category: RideCategory.lux),

@@ -30,7 +30,9 @@ class _PinSheetState extends State<PinSheet> {
           Text('Your trip PIN', textAlign: TextAlign.center, style: SangaTextStyles.statusTitle),
           const SizedBox(height: SangaSpacing.xs),
           Text(
-            'Share these 4 digits with your driver to begin',
+            widget.trip.isDelivery
+                ? 'Share these 4 digits with your driver to hand over the package'
+                : 'Share these 4 digits with your driver to begin',
             textAlign: TextAlign.center,
             style: SangaTextStyles.statusMessage,
           ),

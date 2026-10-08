@@ -1,6 +1,7 @@
 import 'package:sanga_ride/core/api/mock/mock_data.dart';
 import 'package:sanga_ride/core/api/mock/mock_endpoints.dart';
 import 'package:sanga_ride/core/api/mock/mock_server.dart';
+import 'package:sanga_ride/core/api/mock/mock_trip.dart';
 import 'package:sanga_ride/core/api/mock/mock_trip_state.dart';
 
 abstract final class MockTripWrapUp {
@@ -226,6 +227,7 @@ abstract final class MockTripWrapUp {
       'vehicle': _vehicleOf(trip),
       'category': _asMap(trip['vehicle'])['category'] ?? trip['category'] ?? 'go',
       'rating': stars == null ? null : {'stars': stars},
+      'delivery': ?MockTrip.deliveryReceiptBlock(id),
     };
   }
 

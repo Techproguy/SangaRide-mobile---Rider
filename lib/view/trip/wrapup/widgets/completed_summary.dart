@@ -15,10 +15,14 @@ class CompletedSummary extends StatelessWidget {
   Widget build(BuildContext context) {
     final driver = receipt.driver;
     final vehicle = receipt.vehicle;
+    final delivery = receipt.delivery;
     return Column(
       spacing: SangaSpacing.lg,
       children: [
-        const CompletedHeader(),
+        if (delivery == null)
+          const CompletedHeader(title: 'Trip completed', message: 'Thanks for riding with Sanga')
+        else
+          const CompletedHeader(title: 'Package delivered', message: 'Thanks for sending with Sanga'),
         const Divider(height: 1, thickness: 1, color: SangaColors.cardBorder),
         SangaPersonHeader(
           name: driver.name,
@@ -27,11 +31,21 @@ class CompletedSummary extends StatelessWidget {
           isVerified: driver.isVerified,
           caption: driver.ridesLabel,
         ),
-        SangaVehicleInfo(
-          image: receipt.category.image,
-          lines: [vehicle.title, '${vehicle.colourLabel} colour', 'REG NO: ${vehicle.plateLabel}'],
-        ),
-        WrapUpAmountTile(label: 'Total fare', amount: receipt.total),
+        if (delivery == null)
+          SangaVehicleInfo(
+            image: receipt.category.image,
+            lines: [vehicle.title, '${vehicle.colourLabel} colour', 'REG NO: ${vehicle.plateLabel}'],
+          )
+        else
+          SangaDetailList(
+            title: 'Delivery',
+            rows: [
+              SangaDetailRow(icon: Icons.inventory_2_outlined, label: 'Package', value: delivery.itemName),
+              SangaDetailRow(icon: Icons.person_outline_rounded, label: 'Delivered to', value: delivery.recipientName),
+              SangaDetailRow(icon: Icons.bolt_rounded, label: 'Delivery tier', value: delivery.tierLabel),
+            ],
+          ),
+        WrapUpAmountTile(label: delivery == null ? 'Total fare' : 'Total paid', amount: receipt.total),
       ],
     );
   }

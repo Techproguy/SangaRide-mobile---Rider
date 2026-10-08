@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:sanga_ride/model/models.dart';
+import 'package:sanga_ride/view/trip/cancel/widgets/cancel_copy.dart';
 import 'package:sanga_ride/view/trip/cancel/widgets/cancel_reason_row.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 class CancelReasonsView extends StatefulWidget {
   const CancelReasonsView({
     super.key,
+    required this.copy,
     required this.reasons,
     required this.reason,
     required this.note,
@@ -17,6 +19,7 @@ class CancelReasonsView extends StatefulWidget {
     required this.onContinue,
   });
 
+  final CancelCopy copy;
   final List<CancelReason> reasons;
   final CancelReason? reason;
   final String note;
@@ -43,7 +46,7 @@ class _CancelReasonsViewState extends State<CancelReasonsView> {
   Widget build(BuildContext context) {
     final reason = widget.reason;
     return SangaPageLayout(
-      title: 'Cancel ride',
+      title: widget.copy.title,
       footer: SangaButton.primary(
         label: 'Continue',
         isLoading: widget.isLoading,

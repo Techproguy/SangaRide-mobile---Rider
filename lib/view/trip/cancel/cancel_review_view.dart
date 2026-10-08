@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride/view/trip/cancel/widgets/cancel_breakdown_rows.dart';
+import 'package:sanga_ride/view/trip/cancel/widgets/cancel_copy.dart';
 import 'package:sanga_ride/view/trip/widgets/trip_driver_header.dart';
 import 'package:sanga_ride/view/trip/widgets/trip_vehicle_card.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
@@ -8,6 +9,7 @@ import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 class CancelReviewView extends StatelessWidget {
   const CancelReviewView({
     super.key,
+    required this.copy,
     required this.trip,
     required this.reason,
     required this.review,
@@ -17,6 +19,7 @@ class CancelReviewView extends StatelessWidget {
     required this.onBack,
   });
 
+  final CancelCopy copy;
   final Trip trip;
   final CancelReason reason;
   final CancellationReview review;
@@ -27,19 +30,19 @@ class CancelReviewView extends StatelessWidget {
 
   static const EdgeInsets _cell = EdgeInsets.all(SangaSpacing.md);
 
-  String get _cancelLabel => review.hasFee ? 'Cancel ride · ${SangaMoney.naira(review.fee)}' : 'Cancel ride';
+  String get _cancelLabel => review.hasFee ? '${copy.title} · ${SangaMoney.naira(review.fee)}' : copy.title;
 
   @override
   Widget build(BuildContext context) {
     return SangaPageLayout(
-      title: 'Cancel ride',
+      title: copy.title,
       onBack: onBack,
       footer: Column(
         mainAxisSize: MainAxisSize.min,
         spacing: SangaSpacing.sm,
         children: [
           SangaButton.danger(label: _cancelLabel, isLoading: isSubmitting, onPressed: onCancel),
-          SangaButton.muted(label: 'Keep my ride', onPressed: isSubmitting ? null : onKeep),
+          SangaButton.muted(label: copy.keepLabel, onPressed: isSubmitting ? null : onKeep),
         ],
       ),
       children: [

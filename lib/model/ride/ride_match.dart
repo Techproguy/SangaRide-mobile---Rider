@@ -319,9 +319,11 @@ final class MatchCancelled extends RideMatchState {
 }
 
 final class MatchFailed extends RideMatchState {
-  const MatchFailed(this.reason);
+  const MatchFailed(this.reason, {this.code, this.data = const {}});
 
   final MatchFailure reason;
+  final String? code;
+  final Map<String, dynamic> data;
 }
 
 final class MatchOffersLoading extends RideMatchState {

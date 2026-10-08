@@ -26,10 +26,10 @@ class TripRatingController extends GetxController {
     super.onClose();
   }
 
-  void open(String tripId) {
+  void open(String tripId, {bool isDelivery = false}) {
     _epoch++;
     _tripId = tripId;
-    _state.value = const RatingEditing(DriverRating());
+    _state.value = RatingEditing(DriverRating(isDelivery: isDelivery));
   }
 
   void setStars(int stars) {

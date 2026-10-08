@@ -1,4 +1,5 @@
 import 'package:go_router/go_router.dart';
+import 'package:sanga_ride/core/router/delivery_routes.dart';
 import 'package:sanga_ride/core/router/routes.dart';
 import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride/view/airport/airport_pickup_screen.dart';
@@ -46,11 +47,19 @@ abstract final class BookingRoutes {
   static String afterTripType(TripType type) => switch (type) {
     TripType.intercity => intercity,
     TripType.airport => airportSelect,
+    TripType.delivery => DeliveryRoutes.tier,
     TripType.oneWay || TripType.roundTrip || TripType.hourly => SangaRoutes.rideOptions,
+  };
+
+  static String afterRoute(TripType type) => switch (type) {
+    TripType.delivery => DeliveryRoutes.tier,
+    TripType.oneWay || TripType.roundTrip || TripType.hourly || TripType.intercity || TripType.airport =>
+      SangaRoutes.tripType,
   };
 
   static String afterOptions(TripType type) => switch (type) {
     TripType.hourly => hourlyHours,
+    TripType.delivery => DeliveryRoutes.review,
     TripType.oneWay || TripType.roundTrip || TripType.intercity || TripType.airport => SangaRoutes.ridePreferences,
   };
 
@@ -58,11 +67,13 @@ abstract final class BookingRoutes {
 
   static String afterFare(TripType type) => switch (type) {
     TripType.intercity || TripType.airport => SangaRoutes.rideReview,
+    TripType.delivery => DeliveryRoutes.review,
     TripType.oneWay || TripType.roundTrip || TripType.hourly => SangaRoutes.rideTiming,
   };
 
   static String afterTiming(TripType type) => switch (type) {
     TripType.roundTrip => roundTripReturn,
+    TripType.delivery => DeliveryRoutes.review,
     TripType.oneWay || TripType.hourly || TripType.intercity || TripType.airport => SangaRoutes.rideReview,
   };
 

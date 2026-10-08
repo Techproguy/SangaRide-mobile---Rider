@@ -1,6 +1,8 @@
 import 'dart:math' as math;
 
 import 'package:sanga_ride/core/api/mock/mock_airport.dart';
+import 'package:sanga_ride/core/api/mock/mock_data.dart';
+import 'package:sanga_ride/core/api/mock/mock_delivery_live.dart';
 import 'package:sanga_ride/core/api/mock/mock_endpoints.dart';
 import 'package:sanga_ride/core/api/mock/mock_server.dart';
 import 'package:sanga_ride/core/api/mock/mock_trip_changes.dart';
@@ -19,6 +21,7 @@ abstract final class MockTrip {
     MockRoute.post(MockEndpoints.liveTripMessages, _sendMessage),
     MockRoute.get(MockEndpoints.liveTripEvents, (request) => {'events': _events(request.params['id']!)}),
     ...MockTripChanges.routes,
+    ...MockDeliveryLive.routes,
   ];
 
   static final Map<String, Map<String, dynamic>> requests = {};
@@ -105,6 +108,42 @@ abstract final class MockTrip {
       'driverStart': {'lat': (pickup['lat'] as num) + 0.012, 'lng': (pickup['lng'] as num) - 0.01},
     };
     _pinIndex[tripId] = 0;
+    MockDeliveryLive.attach(tripId, request);
+    MockDeliveryLive.bind(
+      MockDeliveryLink(
+        clockOf: _deliveryClock,
+        payloadOf: _payload,
+        cancel: (id, {required reason}) => cancel(id, reason: reason, by: 'system'),
+        reassign: _reassignDriver,
+      ),
+    );
+  }
+
+  static MockDeliveryClock _deliveryClock(String id) {
+    final trip = _stored(id);
+    final now = DateTime.now();
+    final created = _createdAt(trip);
+    return MockDeliveryClock(
+      now: now,
+      status: _status(id, now),
+      createdAt: created,
+      arrivedAt: created.add(_arrivalAfter),
+      pinVerifiedAt: _pinVerifiedAt(id),
+      arrivedDropoffAt: _legOf(id)?.endAt,
+      completedAt: _completedAt[id],
+      dropoff: trip['dropoff'] as Map<String, dynamic>,
+    );
+  }
+
+  static DateTime? _pinVerifiedAt(String id) => _detailsConfirmedAt[id]?.add(_pinVerifiedAfter);
+
+  static void _reassignDriver(String id) {
+    final trip = _stored(id);
+    final currentId = (trip['driver'] as Map)['id'];
+    final replacement = MockData.driverOffers.firstWhere(
+      (offer) => offer['status'] != 'withdrawn' && (offer['driver'] as Map)['id'] != currentId,
+    );
+    trip['driver'] = {...(replacement['driver'] as Map<String, dynamic>)};
   }
 
   static Map<String, dynamic> _place(Object? json, Map<String, dynamic> fallback) {
@@ -131,6 +170,11 @@ abstract final class MockTrip {
   static Map<String, dynamic> stored(String id) => _stored(id);
 
   static String statusOf(String id) => _status(id, DateTime.now());
+
+  static DateTime? completedAt(String id) => _completedAt[id];
+
+  static Map<String, dynamic>? deliveryReceiptBlock(String id) =>
+      MockDeliveryLive.receiptBlock(id, () => _deliveryClock(id));
 
   static Map<String, dynamic> payload(String id) => _payload(id);
 
@@ -197,6 +241,8 @@ abstract final class MockTrip {
     final trip = _stored(id);
     if (_cancelledAt.containsKey(id)) return 'cancelled';
     if (_completedAt.containsKey(id)) return 'completed';
+    final refusedAt = MockDeliveryLive.refusedAt(id, _pinVerifiedAt(id));
+    if (refusedAt != null && !now.isBefore(refusedAt)) return 'cancelled';
     final leg = _legOf(id);
     if (leg != null) return now.isBefore(leg.endAt) ? 'in_progress' : 'arrived_dropoff';
     final confirmedAt = _detailsConfirmedAt[id];
@@ -229,9 +275,15 @@ abstract final class MockTrip {
       'driverPosition': position,
       'unreadMessages': _unread(id, now),
       'events': _events(id),
-      'cancellationReason': ?_cancelReasons[id],
+      'cancellationReason': ?(_cancelReasons[id] ?? (status == 'cancelled' ? _refusalReason(id) : null)),
       'airport': ?MockAirport.tripBlock(id),
+      'delivery': ?MockDeliveryLive.tripBlock(id, () => _deliveryClock(id)),
     };
+  }
+
+  static String? _refusalReason(String id) {
+    final refusedAt = MockDeliveryLive.refusedAt(id, _pinVerifiedAt(id));
+    return refusedAt == null ? null : 'package_refused';
   }
 
   static Map<String, dynamic>? _active() {
@@ -283,6 +335,9 @@ abstract final class MockTrip {
     final id = request.params['id']!;
     if (_status(id, DateTime.now()) != 'arrived_dropoff') {
       throw const MockFailure(409, 'You can complete the ride once you’ve arrived.');
+    }
+    if (MockDeliveryLive.isDelivery(id) && !MockDeliveryLive.canComplete(id, _deliveryClock(id))) {
+      throw const MockFailure(409, 'Your driver is still handing over the package.', code: 'wrong_stage');
     }
     _completedAt[id] = DateTime.now();
     return _payload(id);

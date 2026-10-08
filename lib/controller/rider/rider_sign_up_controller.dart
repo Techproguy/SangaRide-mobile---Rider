@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:sanga_ride/controller/shared/auth_controller.dart';
 import 'package:sanga_ride/core/api/api.dart';
 import 'package:sanga_ride/core/api/mock/mock_endpoints.dart';
+import 'package:sanga_ride/core/api/places_endpoints.dart';
 import 'package:sanga_ride/model/models.dart';
 
 class RiderSignUpController extends GetxController {
@@ -54,7 +55,9 @@ class RiderSignUpController extends GetxController {
     }
   }
 
-  Future<bool> saveHome(Place place) => _save(() => _api.post(MockEndpoints.homeAddress, data: place.toJson()));
+  Future<bool> saveHome(Place place) => _save(
+    () => _api.post(PlacesEndpoints.saved, data: {'kind': 'home', 'label': 'Home', 'place': place.toJson()}),
+  );
 
   Future<bool> _save(Future<Object?> Function() request) async {
     _isSaving.value = true;

@@ -116,13 +116,19 @@ class ApiService extends GetxService {
     String fieldName = 'file',
     Map<String, dynamic>? fields,
     void Function(int, int)? onSendProgress,
+    bool suppressErrorToast = false,
   }) async {
     try {
       final formData = FormData.fromMap({
         ...?fields,
         fieldName: await MultipartFile.fromFile(file.path, filename: file.path.split('/').last),
       });
-      return await _dio.post(endpoint, data: formData, onSendProgress: onSendProgress);
+      return await _dio.post(
+        endpoint,
+        data: formData,
+        onSendProgress: onSendProgress,
+        options: suppressErrorToast ? Options(extra: {'suppressErrorToast': true}) : null,
+      );
     } on DioException catch (e) {
       throw await _handleDioError(e);
     }

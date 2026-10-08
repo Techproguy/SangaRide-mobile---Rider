@@ -3,6 +3,7 @@ import 'dart:developer';
 import 'package:dio/dio.dart' show Options;
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
+import 'package:sanga_ride/controller/rider/saved_places_controller.dart';
 import 'package:sanga_ride/core/api/api.dart';
 import 'package:sanga_ride/core/api/mock/mock_endpoints.dart';
 import 'package:sanga_ride/core/services/location_service.dart';
@@ -15,13 +16,12 @@ class RiderHomeController extends GetxController {
   final _api = Get.find<ApiService>();
   final _location = LocationService();
   final _places = PlacesService();
+  final _saved = Get.find<SavedPlacesController>();
   final _box = GetStorage();
 
   final Rxn<Place> _currentPlace = Rxn<Place>();
   final Rxn<LocationStatus> _locationStatus = Rxn<LocationStatus>();
   final Rxn<Weather> _weather = Rxn<Weather>();
-  final Rxn<Place> _home = Rxn<Place>();
-  final Rxn<Place> _work = Rxn<Place>();
   final RxList<Place> _recent = <Place>[].obs;
   final RxnString _changedCity = RxnString();
   final RxBool _isLocating = false.obs;
@@ -36,9 +36,9 @@ class RiderHomeController extends GetxController {
 
   Weather? get weather => _weather.value;
 
-  Place? get home => _home.value;
+  Place? get home => _saved.home;
 
-  Place? get work => _work.value;
+  Place? get work => _saved.work;
 
   List<Place> get recent => _recent;
 
@@ -50,7 +50,7 @@ class RiderHomeController extends GetxController {
     refreshHome();
   }
 
-  Future<void> refreshHome() => Future.wait([locate(), _loadWeather(), _loadPlaces()]);
+  Future<void> refreshHome() => Future.wait([locate(), _loadWeather(), _loadPlaces(), _saved.load()]);
 
   Future<LocationStatus> locate() async {
     _isLocating.value = true;
@@ -90,7 +90,7 @@ class RiderHomeController extends GetxController {
 
   static const int _maxRecent = 5;
 
-  bool _isSaved(Place place) => [home, work].any((saved) => saved != null && saved.isSameAs(place));
+  bool _isSaved(Place place) => _saved.isSaved(place);
 
   Future<void> rememberPlace(Place place) async {
     if (place.coordinates == null || _isSaved(place)) return;
@@ -131,11 +131,8 @@ class RiderHomeController extends GetxController {
 
   Future<void> _loadPlaces() async {
     try {
-      final responses = await Future.wait([_api.get(MockEndpoints.savedPlaces), _api.get(MockEndpoints.recentPlaces)]);
-      final saved = Map<String, dynamic>.from(responses[0].data['data'] as Map);
-      _home.value = _place(saved['home']);
-      _work.value = _place(saved['work']);
-      _recent.assignAll((responses[1].data['data'] as List).map(_place).whereType<Place>());
+      final response = await _api.get(MockEndpoints.recentPlaces);
+      _recent.assignAll((response.data['data'] as List).map(_place).whereType<Place>());
     } catch (e) {
       log('places failed: $e');
     }

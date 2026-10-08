@@ -8,5 +8,6 @@ extension TripTypeIcon on TripType {
     TripType.hourly => Icons.schedule_rounded,
     TripType.intercity => Icons.alt_route_rounded,
     TripType.airport => Icons.flight_land_rounded,
+    TripType.delivery => Icons.inventory_2_outlined,
   };
 }

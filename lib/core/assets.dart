@@ -22,5 +22,7 @@ class AppAssets {
 
   static const String promoLux = '$images/promo_lux.webp';
 
+  static const String packagePhoto = '$images/package_photo.webp';
+
   static const List<String> firstScreenPhotos = [onboardingRide, onboardingDelivery, onboardingFares];
 }

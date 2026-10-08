@@ -1,5 +1,6 @@
 import 'package:sanga_ride/model/ride/ride_match.dart';
 import 'package:sanga_ride/model/ride/ride_request.dart';
+import 'package:sanga_ride/model/trip/trip_delivery.dart';
 import 'package:sanga_ride/model/trip/wrapup/payment.dart';
 
 class ReceiptPlace {
@@ -35,6 +36,35 @@ class ReceiptPayment {
   String get label => method == PaymentMethod.card && last4 != null ? '•••• $last4' : method.label;
 }
 
+class ReceiptDelivery {
+  const ReceiptDelivery({
+    required this.tier,
+    required this.itemName,
+    required this.recipientName,
+    required this.deliveredAt,
+    required this.proofPhotoUrl,
+  });
+
+  factory ReceiptDelivery.fromJson(Map<String, dynamic> json) {
+    final deliveredAt = json['deliveredAt'] as String?;
+    return ReceiptDelivery(
+      tier: json['tier'] as String,
+      itemName: json['itemName'] as String? ?? '',
+      recipientName: json['recipientName'] as String? ?? '',
+      deliveredAt: deliveredAt == null ? null : DateTime.parse(deliveredAt).toLocal(),
+      proofPhotoUrl: json['proofPhotoUrl'] as String?,
+    );
+  }
+
+  final String tier;
+  final String itemName;
+  final String recipientName;
+  final DateTime? deliveredAt;
+  final String? proofPhotoUrl;
+
+  String get tierLabel => DeliveryTier.labelOf(tier);
+}
+
 class TripReceipt {
   const TripReceipt({
     required this.id,
@@ -52,10 +82,12 @@ class TripReceipt {
     required this.vehicle,
     required this.category,
     required this.ratedStars,
+    this.delivery,
   });
 
   factory TripReceipt.fromJson(Map<String, dynamic> json) {
     final rating = json['rating'] as Map?;
+    final delivery = json['delivery'] as Map?;
     return TripReceipt(
       id: json['id'] as String,
       tripId: json['tripId'] as String,
@@ -72,6 +104,7 @@ class TripReceipt {
       vehicle: DriverVehicle.fromJson(Map<String, dynamic>.from(json['vehicle'] as Map)),
       category: RideCategory.values.asNameMap()[json['category']] ?? RideCategory.go,
       ratedStars: rating == null ? null : (rating['stars'] as num).toInt(),
+      delivery: delivery == null ? null : ReceiptDelivery.fromJson(Map<String, dynamic>.from(delivery)),
     );
   }
 
@@ -90,6 +123,9 @@ class TripReceipt {
   final DriverVehicle vehicle;
   final RideCategory category;
   final int? ratedStars;
+  final ReceiptDelivery? delivery;
+
+  bool get isDelivery => delivery != null;
 
   bool get isRated => ratedStars != null;
 
