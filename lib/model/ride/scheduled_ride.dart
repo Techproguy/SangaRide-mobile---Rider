@@ -1,3 +1,4 @@
+import 'package:sanga_ride/model/ride/airport.dart';
 import 'package:sanga_ride/model/ride/booking.dart';
 import 'package:sanga_ride/model/ride/ride_request.dart';
 
@@ -39,11 +40,13 @@ class ScheduledRide {
     this.repeat,
     this.hours,
     this.reminderAt,
+    this.airport,
   });
 
   factory ScheduledRide.fromJson(Map<String, dynamic> json) {
     final repeat = json['repeat'] as Map?;
     final reminderAt = json['reminderAt'] as String?;
+    final airport = json['airport'] as Map?;
     return ScheduledRide(
       id: json['id'] as String,
       kind: ScheduledRideKind.fromCode(json['kind'] as String),
@@ -57,6 +60,7 @@ class ScheduledRide {
       repeat: repeat == null ? null : RepeatRule.fromJson(Map<String, dynamic>.from(repeat)),
       hours: (json['hours'] as num?)?.toInt(),
       reminderAt: reminderAt == null ? null : DateTime.parse(reminderAt).toLocal(),
+      airport: airport == null ? null : ScheduledAirport.fromJson(Map<String, dynamic>.from(airport)),
     );
   }
 
@@ -72,6 +76,7 @@ class ScheduledRide {
   final RepeatRule? repeat;
   final int? hours;
   final DateTime? reminderAt;
+  final ScheduledAirport? airport;
 
   bool get isRepeat => kind == ScheduledRideKind.repeat;
 

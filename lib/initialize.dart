@@ -4,6 +4,8 @@ import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 
+import 'package:sanga_ride/controller/rider/airport_controller.dart';
+import 'package:sanga_ride/controller/rider/flight_tracking_controller.dart';
 import 'package:sanga_ride/controller/rider/ride_match_controller.dart';
 import 'package:sanga_ride/controller/rider/ride_for_controller.dart';
 import 'package:sanga_ride/controller/rider/scheduled_rides_controller.dart';
@@ -41,6 +43,8 @@ Future<void> initializeSanga() async {
   Get.lazyPut(() => RideMatchController(), fenix: true);
   Get.lazyPut(() => RideForController(), fenix: true);
   Get.lazyPut(() => ScheduledRidesController(), fenix: true);
+  Get.lazyPut(() => AirportController(), fenix: true);
+  Get.lazyPut(() => FlightTrackingController(), fenix: true);
   Get.lazyPut(() => RiderHomeController(), fenix: true);
   Get.put(UserController(), permanent: true);
 

@@ -2,12 +2,18 @@ enum TripType {
   oneWay('One way', 'Go to a destination'),
   roundTrip('Round trip', 'Go there and come back'),
   hourly('Hourly', 'Keep a driver for a set time'),
-  intercity('Intercity', 'Travel between cities');
+  intercity('Intercity', 'Travel between cities'),
+  airport('Airport', 'Get picked up from the airport');
 
   const TripType(this.label, this.description);
 
   final String label;
   final String description;
+
+  static List<TripType> get selectable => [
+    for (final type in values)
+      if (type != airport) type,
+  ];
 
   bool get isAlwaysScheduled => this == intercity;
 
@@ -43,6 +49,8 @@ class RideOption {
   final String description;
   final String seats;
   final num pricePerKm;
+
+  int get maxSeats => int.tryParse(seats.split('-').last.trim()) ?? 1;
 }
 
 enum PricingOption {
@@ -147,6 +155,7 @@ class FareEstimate {
     this.ratePerKm,
     this.hours,
     this.hourlyRate,
+    this.meetGreetFee,
   });
 
   factory FareEstimate.fromJson(Map<String, dynamic> json) => FareEstimate(
@@ -159,6 +168,7 @@ class FareEstimate {
     ratePerKm: json['ratePerKm'] as num?,
     hours: (json['hours'] as num?)?.toInt(),
     hourlyRate: json['hourlyRate'] as num?,
+    meetGreetFee: json['meetGreetFee'] as num?,
     pricing: {
       for (final MapEntry(:key, :value) in (json['pricing'] as Map).entries)
         PricingOption.values.byName(key as String): value as num,
@@ -175,6 +185,7 @@ class FareEstimate {
   final num? ratePerKm;
   final int? hours;
   final num? hourlyRate;
+  final num? meetGreetFee;
 
   bool get isHourly => hours != null && hourlyRate != null;
 

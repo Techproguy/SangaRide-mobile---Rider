@@ -304,6 +304,12 @@ final class MatchOffersReady extends RideMatchState {
   final DateTime continueAt;
 }
 
+final class MatchScheduled extends RideMatchState {
+  const MatchScheduled(this.booking);
+
+  final ScheduledBooking booking;
+}
+
 final class MatchNoDriver extends RideMatchState {
   const MatchNoDriver();
 }

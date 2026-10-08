@@ -1,4 +1,5 @@
 import 'package:sanga_ride/core/api/booking_endpoints.dart';
+import 'package:sanga_ride/core/api/mock/mock_airport.dart';
 import 'package:sanga_ride/core/api/mock/mock_server.dart';
 
 abstract final class MockBooking {
@@ -80,7 +81,35 @@ abstract final class MockBooking {
           'endDate': null,
         },
       ),
-    ];
+      for (final seed in MockAirport.seeds)
+        _ScheduledRecord(
+          id: seed.id,
+          kind: 'one_time',
+          tripType: 'airport',
+          category: seed.category,
+          scheduledAt: seed.pickupAt,
+          pickup: seed.pickup,
+          dropoff: seed.dropoff,
+          fare: seed.fare,
+        ),
+    ]..sort((a, b) => a.scheduledAt.compareTo(b.scheduledAt));
+  }
+
+  static Map<String, dynamic> scheduleAirport(Map<String, dynamic> body, MockAirportDecision decision) {
+    final record = _ScheduledRecord(
+      id: 'sched_${_nextId++}',
+      kind: 'one_time',
+      tripType: 'airport',
+      category: body['optionId'] as String,
+      scheduledAt: decision.pickupAt,
+      pickup: _stop(body['pickup']),
+      dropoff: _stop(body['dropoff']),
+      fare: (body['proposedFare'] as num?) ?? 0,
+    );
+    MockAirport.register(record.id, body, decision.pickupAt);
+    _rides.add(record);
+    _rides.sort((a, b) => a.scheduledAt.compareTo(b.scheduledAt));
+    return _payload(record);
   }
 
   static String _date(DateTime date) =>
@@ -100,6 +129,7 @@ abstract final class MockBooking {
       'fare': ride.fare,
       'hours': ride.hours,
       'repeat': ride.repeat,
+      'airport': ?MockAirport.display(ride.id),
       'reminderAt': ride.reminderAt?.toUtc().toIso8601String(),
       'canRemind': remindAt.isAfter(DateTime.now()),
       'serverTime': DateTime.now().toUtc().toIso8601String(),

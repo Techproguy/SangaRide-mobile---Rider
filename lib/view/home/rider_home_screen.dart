@@ -14,6 +14,7 @@ import 'package:sanga_ride/core/router/routes.dart';
 import 'package:sanga_ride/core/router/trip_routes.dart';
 import 'package:sanga_ride/core/router/who_for_routes.dart';
 import 'package:sanga_ride/model/models.dart';
+import 'package:sanga_ride/view/airport/airport_entry.dart';
 import 'package:sanga_ride/view/home/widgets/home_panel.dart';
 import 'package:sanga_ride/view/home/widgets/map_top_bar.dart';
 import 'package:sanga_ride/view/widgets/map/place_marker.dart';
@@ -137,6 +138,7 @@ class _RiderHomeScreenState extends State<RiderHomeScreen> {
                       onRideTo: _rideTo,
                       onSavedPlaces: _search,
                       onBookForSomeone: _bookForSomeone,
+                      onAirport: () => openAirportRides(context),
                       onPromo: () => _search(category: RideCategory.lux),
                     ),
                   ),

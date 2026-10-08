@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:developer';
 
 import 'package:get/get.dart';
@@ -37,6 +38,8 @@ class RideRequestController extends GetxController {
   final RxBool _staysWithRider = true.obs;
   final RxBool _isScheduling = false.obs;
   final Rx<BookingCatalogState> _catalog = Rx<BookingCatalogState>(const CatalogLoading());
+  final Rxn<AirportBooking> _airport = Rxn<AirportBooking>();
+  final Rxn<num> _knownMeetGreetFee = Rxn<num>();
 
   Place? get pickup => _pickup.value;
 
@@ -80,6 +83,15 @@ class RideRequestController extends GetxController {
 
   BookingCatalogState get catalog => _catalog.value;
 
+  AirportBooking? get airportBooking => _airport.value;
+
+  num? get meetGreetFee => estimate?.meetGreetFee ?? _knownMeetGreetFee.value;
+
+  bool fitsGroup(RideOption option) {
+    final booking = airportBooking;
+    return tripType != TripType.airport || booking == null || option.maxSeats >= booking.passengers;
+  }
+
   BookingCatalog? get readyCatalog => switch (catalog) {
     CatalogReady(:final catalog) => catalog,
     CatalogLoading() || CatalogFailed() => null,
@@ -122,6 +134,7 @@ class RideRequestController extends GetxController {
     TripType.roundTrip => returnAt != null && (timing != RideTiming.later || scheduledAt != null),
     TripType.hourly => timing != RideTiming.later || scheduledAt != null,
     TripType.intercity => scheduledAt != null && intercityIssue == null,
+    TripType.airport => airportBooking != null,
   };
 
   bool get hasRoute => pickup != null && dropoff != null;
@@ -148,6 +161,8 @@ class RideRequestController extends GetxController {
     _returnAt.value = null;
     _hours.value = BookingRules.defaultHours;
     _staysWithRider.value = true;
+    _airport.value = null;
+    _knownMeetGreetFee.value = null;
     _optionId.value = category == null ? null : _options.firstWhereOrNull((o) => o.category == category)?.id;
     _preferredCategory = category;
   }
@@ -226,6 +241,12 @@ class RideRequestController extends GetxController {
     if (wasAlwaysScheduled || (!type.allowsRepeat && timing == RideTiming.repeat)) setTiming(RideTiming.now);
     if (!type.needsReturn) _returnAt.value = null;
     _clearQuote();
+  }
+
+  void setAirportBooking(AirportBooking booking) {
+    final previous = airportBooking;
+    _airport.value = booking;
+    if (previous == null || jsonEncode(previous.toJson()) != jsonEncode(booking.toJson())) _clearQuote();
   }
 
   void setHours(int value) {
@@ -309,6 +330,7 @@ class RideRequestController extends GetxController {
     if (tripType == TripType.hourly) ...{'hours': hours, 'stayWithMe': staysWithRider},
     if (tripType == TripType.intercity) ...{'fromCityId': fromCity?.id, 'toCityId': toCity?.id},
     if (returnAt case final at? when tripType.needsReturn) 'returnAt': at.toUtc().toIso8601String(),
+    if (airportBooking case final booking? when tripType == TripType.airport) 'airport': booking.toJson(),
   };
 
   Map<String, dynamic>? requestPayload() {
@@ -393,7 +415,9 @@ class RideRequestController extends GetxController {
         },
       );
       if (request != _estimateRequest) return false;
-      _estimate.value = FareEstimate.fromJson(Map<String, dynamic>.from(response.data['data'] as Map));
+      final estimate = FareEstimate.fromJson(Map<String, dynamic>.from(response.data['data'] as Map));
+      _estimate.value = estimate;
+      if (estimate.meetGreetFee != null) _knownMeetGreetFee.value = estimate.meetGreetFee;
       return true;
     } catch (e) {
       log('loadEstimate failed: $e');

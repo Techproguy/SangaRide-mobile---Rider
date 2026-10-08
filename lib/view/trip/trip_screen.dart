@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:sanga_ride/controller/rider/ride_request_controller.dart';
 import 'package:sanga_ride/controller/rider/trip/trip_controller.dart';
 import 'package:sanga_ride/controller/shared/map_camera.dart';
+import 'package:sanga_ride/core/router/booking_routes.dart';
 import 'package:sanga_ride/core/router/routes.dart';
 import 'package:sanga_ride/core/router/safety_routes.dart';
 import 'package:sanga_ride/core/router/trip_routes.dart';
@@ -22,6 +23,7 @@ import 'package:sanga_ride/view/trip/widgets/en_route_panel.dart';
 import 'package:sanga_ride/view/trip/widgets/pin_sheet.dart';
 import 'package:sanga_ride/view/trip/widgets/report_sheet.dart';
 import 'package:sanga_ride/view/trip/widgets/share_trip.dart';
+import 'package:sanga_ride/view/trip/widgets/trip_flight_line.dart';
 import 'package:sanga_ride/view/trip/widgets/trip_map.dart';
 import 'package:sanga_ride/view/trip/widgets/trip_state_panel.dart';
 import 'package:sanga_ride/view/trip/widgets/verifying_panel.dart';
@@ -282,6 +284,19 @@ class _TripScreenState extends State<TripScreen> {
 
   void _call(Trip trip) => unawaited(callDriver(context, firstName: trip.driver.firstName));
 
+  Widget _flightLine(TripState state) {
+    final airport = switch (state) {
+      TripEnRoute(:final trip) || TripArrived(:final trip) || TripVerifying(:final trip) => trip.airport,
+      TripAuthenticated(:final trip) => trip.airport,
+      _ => null,
+    };
+    if (airport == null) return const SizedBox.shrink();
+    return TripFlightLine(
+      airport: airport,
+      onTap: () => unawaited(context.push(BookingRoutes.flightTrackingOf(widget.tripId, isTrip: true))),
+    );
+  }
+
   Widget _panel(TripState state) {
     return switch (state) {
       TripLoading() || TripCompleted() => const TripLoadingPanel(),
@@ -404,7 +419,7 @@ class _TripScreenState extends State<TripScreen> {
                         duration: SangaMotion.morph,
                         curve: SangaMotion.springBlock,
                         alignment: Alignment.bottomCenter,
-                        child: SangaMapPanel(key: _panelKey, children: [_panel(state)]),
+                        child: SangaMapPanel(key: _panelKey, children: [_flightLine(state), _panel(state)]),
                       ),
                     ),
                   ),

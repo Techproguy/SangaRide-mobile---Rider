@@ -2,13 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sanga_ride/controller/rider/scheduled_rides_controller.dart';
+import 'package:sanga_ride/core/router/booking_routes.dart';
 import 'package:sanga_ride/core/router/routes.dart';
-import 'package:sanga_ride/core/services/toast_service.dart';
 import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride/model/ride/scheduled_ride.dart';
 import 'package:sanga_ride/view/ride/widgets/ride_option_async_state.dart';
 import 'package:sanga_ride/view/ride/widgets/ride_option_schedule_format.dart';
-import 'package:sanga_ride/view/rides/widgets/cancel_scheduled_sheet.dart';
+import 'package:sanga_ride/view/rides/widgets/scheduled_actions.dart';
 import 'package:sanga_ride/view/rides/widgets/scheduled_ride_card.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
@@ -26,30 +26,6 @@ class _ScheduledRidesScreenState extends State<ScheduledRidesScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) => _rides.load());
-  }
-
-  Future<void> _cancel(ScheduledRide ride) async {
-    final confirmed = await showCancelScheduledSheet(
-      context: context,
-      isRepeat: ride.isRepeat,
-      whenLabel: formatRideSchedule(context, ride.scheduledAt),
-    );
-    if (!confirmed || !mounted) return;
-    final problem = await _rides.cancel(ride.id);
-    if (problem == null) {
-      Toast.success(ride.isRepeat ? 'Repeat ride cancelled.' : 'Ride cancelled.');
-    } else {
-      Toast.error(problem.message);
-    }
-  }
-
-  Future<void> _remind(ScheduledRide ride) async {
-    final problem = await _rides.remind(ride.id);
-    if (problem == null) {
-      Toast.success('Done. We’ll remind you before your ride.');
-    } else {
-      Toast.error(problem.message);
-    }
   }
 
   @override
@@ -89,6 +65,7 @@ class _ScheduledRidesScreenState extends State<ScheduledRidesScreen> {
   Widget _card(BuildContext context, ScheduledRide ride, ScheduledLoaded state) {
     final rule = ride.repeat;
     final reminderAt = ride.reminderAt;
+    final airport = ride.airport;
     return ScheduledRideCard(
       ride: ride,
       whenLabel: formatRideSchedule(context, ride.scheduledAt),
@@ -96,13 +73,16 @@ class _ScheduledRidesScreenState extends State<ScheduledRidesScreen> {
       repeatLabel: rule == null ? null : formatRepeatRule(context, rule),
       reminderLabel: reminderAt == null ? null : 'Reminder at ${formatRideClock(context, reminderAt)}',
       busyAction: state.actionOn(ride.id),
-      onCancel: () => _cancel(ride),
-      onRemind: ride.showsRemindAction ? () => _remind(ride) : null,
+      flightLabel: airport == null ? null : airportCardLabel(context, airport),
+      onTap: () => context.push(BookingRoutes.scheduledRideOf(ride.id)),
+      onCancel: () => cancelScheduledRide(context, _rides, ride),
+      onRemind: ride.showsRemindAction ? () => remindScheduledRide(_rides, ride) : null,
     );
   }
 
   String _tagLabel(ScheduledRide ride) {
     if (ride.isRepeat) return 'Repeat';
+    if (ride.tripType == TripType.airport) return TripType.airport.label;
     return ride.tripType == TripType.oneWay ? 'Scheduled' : ride.tripType.label;
   }
 }

@@ -4,6 +4,7 @@ export 'location/geocoded_location.dart';
 export 'location/place.dart';
 export 'location/weather.dart';
 
+export 'ride/airport.dart';
 export 'ride/ride_request.dart';
 export 'ride/ride_match.dart';
 export 'ride/ride_for.dart';

@@ -6,6 +6,8 @@ import 'package:sanga_ride/core/router/routes.dart';
 import 'package:sanga_ride/core/services/toast_service.dart';
 import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride/view/ride/matching/searching_sheet.dart';
+import 'package:sanga_ride/view/ride/widgets/ride_option_schedule_format.dart';
+import 'package:sanga_ride/view/ride/widgets/scheduled_success.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 Future<void> startMatching(BuildContext context, {bool replacingOffers = false}) async {
@@ -24,6 +26,12 @@ Future<void> startMatching(BuildContext context, {bool replacingOffers = false})
       return _showFailure(context, reason, replacingOffers: replacingOffers);
     case MatchNoDriver():
       return _showFailure(context, MatchFailure.noDriverFound, replacingOffers: replacingOffers);
+    case MatchScheduled(:final booking):
+      return showScheduledSuccess(
+        context,
+        title: 'Airport pickup booked',
+        message: 'We’ll track your flight. Your pick up is ${formatRideMoment(context, booking.scheduledAt)}.',
+      );
     case MatchSearching() || MatchOffersReady():
       break;
     default:

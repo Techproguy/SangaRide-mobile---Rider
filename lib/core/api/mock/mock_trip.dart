@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import 'package:sanga_ride/core/api/mock/mock_airport.dart';
 import 'package:sanga_ride/core/api/mock/mock_endpoints.dart';
 import 'package:sanga_ride/core/api/mock/mock_server.dart';
 import 'package:sanga_ride/core/api/mock/mock_trip_changes.dart';
@@ -229,6 +230,7 @@ abstract final class MockTrip {
       'unreadMessages': _unread(id, now),
       'events': _events(id),
       'cancellationReason': ?_cancelReasons[id],
+      'airport': ?MockAirport.tripBlock(id),
     };
   }
 

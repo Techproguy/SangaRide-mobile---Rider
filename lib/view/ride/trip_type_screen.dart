@@ -24,7 +24,7 @@ class TripTypeScreen extends StatelessWidget {
           () => Column(
             spacing: SangaSpacing.md,
             children: [
-              for (final type in TripType.values)
+              for (final type in TripType.selectable)
                 SangaOptionCard(
                   leading: SangaIconBadge(child: Icon(type.icon)),
                   title: type.label,

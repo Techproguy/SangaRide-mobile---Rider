@@ -39,7 +39,12 @@ class RideMatchController extends GetxController {
     MatchOffersLoading() ||
     MatchOffersFailed() ||
     MatchBrowsing() => true,
-    MatchIdle() || MatchNoDriver() || MatchCancelled() || MatchFailed() || MatchConfirmed() => false,
+    MatchIdle() ||
+    MatchNoDriver() ||
+    MatchCancelled() ||
+    MatchFailed() ||
+    MatchConfirmed() ||
+    MatchScheduled() => false,
   };
 
   DriverHold? get holding => switch (state) {
@@ -75,7 +80,12 @@ class RideMatchController extends GetxController {
     _state.value = const MatchStarting();
     try {
       final response = await _api.post(MockEndpoints.rideRequests, data: payload, suppressErrorToast: true);
-      final request = MatchRequest.fromJson(_dataOf(response.data));
+      final data = _dataOf(response.data);
+      if (data['status'] == 'scheduled') {
+        if (epoch == _epoch) _state.value = MatchScheduled(ScheduledBooking.fromJson(data));
+        return;
+      }
+      final request = MatchRequest.fromJson(data);
       if (epoch != _epoch) {
         unawaited(_sendCancel(request.id));
         return;

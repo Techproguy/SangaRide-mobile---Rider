@@ -10,6 +10,8 @@ class ScheduledRideCard extends StatelessWidget {
     required this.whenLabel,
     required this.tagLabel,
     required this.onCancel,
+    this.onTap,
+    this.flightLabel,
     this.repeatLabel,
     this.reminderLabel,
     this.busyAction,
@@ -23,38 +25,49 @@ class ScheduledRideCard extends StatelessWidget {
   final String? reminderLabel;
   final ScheduledAction? busyAction;
   final VoidCallback onCancel;
+  final VoidCallback? onTap;
+  final String? flightLabel;
   final VoidCallback? onRemind;
 
   bool get _isBusy => busyAction != null;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: SangaColors.surface,
+    return DecoratedBox(
+      decoration: const BoxDecoration(
         borderRadius: SangaRadii.field,
-        border: Border.all(color: SangaColors.cardBorder),
-        boxShadow: const [BoxShadow(color: SangaColors.cardShadow, blurRadius: 20, offset: Offset(0, 4))],
+        boxShadow: [BoxShadow(color: SangaColors.cardShadow, blurRadius: 20, offset: Offset(0, 4))],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(SangaSpacing.md),
-            child: IntrinsicHeight(
-              child: Row(
-                spacing: SangaSpacing.md,
-                children: [
-                  _vehicle(),
-                  const VerticalDivider(width: 1, thickness: 1, color: SangaColors.divider),
-                  Expanded(child: _details()),
-                ],
+      child: Material(
+        color: SangaColors.surface,
+        shape: const RoundedRectangleBorder(
+          borderRadius: SangaRadii.field,
+          side: BorderSide(color: SangaColors.cardBorder),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            InkWell(
+              onTap: onTap,
+              child: Padding(
+                padding: const EdgeInsets.all(SangaSpacing.md),
+                child: IntrinsicHeight(
+                  child: Row(
+                    spacing: SangaSpacing.md,
+                    children: [
+                      _vehicle(),
+                      const VerticalDivider(width: 1, thickness: 1, color: SangaColors.divider),
+                      Expanded(child: _details()),
+                    ],
+                  ),
+                ),
               ),
             ),
-          ),
-          const Divider(height: 1, thickness: 1, color: SangaColors.cardBorder),
-          Padding(padding: const EdgeInsets.all(SangaSpacing.sm), child: _actions()),
-        ],
+            const Divider(height: 1, thickness: 1, color: SangaColors.cardBorder),
+            Padding(padding: const EdgeInsets.all(SangaSpacing.sm), child: _actions()),
+          ],
+        ),
       ),
     );
   }
@@ -89,10 +102,11 @@ class ScheduledRideCard extends StatelessWidget {
                 children: [
                   Text(whenLabel, style: SangaTextStyles.cardTitle),
                   if (repeatLabel != null) Text(repeatLabel!, style: SangaTextStyles.cardSubtitle),
+                  if (flightLabel != null) Text(flightLabel!, style: SangaTextStyles.cardSubtitle),
                 ],
               ),
             ),
-            SangaTag.scheduled(label: tagLabel),
+            SangaTag.scheduled(label: tagLabel, icon: ride.airport == null ? null : Icons.flight_land_rounded),
           ],
         ),
         _stop(SangaStopKind.pickup, ride.pickup),

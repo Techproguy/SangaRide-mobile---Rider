@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import 'package:sanga_ride/core/api/mock/mock_airport.dart';
 import 'package:sanga_ride/core/api/mock/mock_booking.dart';
 import 'package:sanga_ride/core/api/mock/mock_who_for.dart';
 import 'package:sanga_ride/core/api/mock/mock_data.dart';
@@ -14,6 +15,7 @@ class MockRoutes {
 
   static final List<MockRoute> all = [
     ...MockBooking.routes,
+    ...MockAirport.routes,
     ...MockWhoFor.routes,
     ...MockTrip.routes,
     ...MockSafety.routes,
@@ -90,6 +92,10 @@ class MockRoutes {
   }
 
   static Object? _createRideRequest(MockRequest request) {
+    if (request.body['airport'] != null) {
+      final decision = MockAirport.decide(request.body);
+      if (!decision.isLive) return MockBooking.scheduleAirport(request.body, decision);
+    }
     final id = 'req_${_rideRequests.length + 1}';
     MockTrip.requests[id] = request.body;
     _rideRequests[id] = _MockRideRequest(
@@ -169,6 +175,7 @@ class MockRoutes {
     if (offer['status'] == 'withdrawn') throw _offerUnavailable;
     final requestId = request.params['id']!;
     final tripId = 'trip_$requestId';
+    MockAirport.attachLive(tripId, MockTrip.requests[requestId]);
     MockTrip.open(
       tripId: tripId,
       request: MockTrip.requests[requestId] ?? const {},
@@ -217,6 +224,7 @@ class MockRoutes {
     final tripType = request.body['tripType'];
     final optionId = request.body['optionId'] as String;
     final boost = tripType == 'hourly' ? 0 : 500;
+    final meetGreetFee = MockAirport.meetGreetFee(request.body);
     if (tripType == 'hourly') {
       final rates = (MockBooking.hourlyRates['rates'] as List).cast<Map<String, dynamic>>();
       final rate = rates.firstWhere((rate) => rate['category'] == optionId)['hourlyRate'] as num;
@@ -226,6 +234,7 @@ class MockRoutes {
         distanceKm: 0,
         distanceFare: hours * rate,
         boost: boost,
+        fee: 0,
         extra: {'hours': hours, 'hourlyRate': rate},
       );
     }
@@ -249,6 +258,7 @@ class MockRoutes {
       distanceKm: double.parse((km * legs).toStringAsFixed(1)),
       distanceFare: distanceFare,
       boost: boost,
+      fee: meetGreetFee,
       extra: {'ratePerKm': rate},
     );
   }
@@ -258,9 +268,10 @@ class MockRoutes {
     required num distanceKm,
     required num distanceFare,
     required num boost,
+    required num fee,
     required Map<String, dynamic> extra,
   }) {
-    final total = baseFare + distanceFare + boost;
+    final total = baseFare + distanceFare + boost + fee;
     return {
       'baseFare': baseFare,
       'distanceKm': distanceKm,
@@ -268,6 +279,7 @@ class MockRoutes {
       'discount': 0,
       'boost': boost,
       'total': total,
+      if (fee > 0) 'meetGreetFee': fee,
       ...extra,
       'pricing': {
         'standard': total,

@@ -225,6 +225,7 @@ enum BookingProblem {
   intercityUnavailable('intercity_unavailable', 'We can’t do that intercity route yet.'),
   sameCity('same_city', 'Pick a drop off in a different city.'),
   reminderTooLate('reminder_too_late', 'This ride is too close for a reminder.'),
+  tooEarly('too_early', 'Your flight hasn’t landed yet. You can notify your driver once it has.'),
   notFound('not_found', 'We can’t find that ride. It may already be gone.'),
   unknown('unknown', 'We couldn’t do that. Give it another go.');
 

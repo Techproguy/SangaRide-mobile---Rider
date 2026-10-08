@@ -2,18 +2,18 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:go_router/go_router.dart';
 import 'package:sanga_ride/controller/rider/ride_match_controller.dart';
 import 'package:sanga_ride/controller/rider/ride_request_controller.dart';
-import 'package:sanga_ride/core/router/booking_routes.dart';
-import 'package:sanga_ride/core/router/routes.dart';
 import 'package:sanga_ride/core/services/toast_service.dart';
 import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride/model/ride/booking.dart';
+import 'package:sanga_ride/view/airport/widgets/airport_review_lines.dart';
+import 'package:sanga_ride/view/airport/widgets/flight_summary_card.dart';
 import 'package:sanga_ride/view/ride/matching/matching_flow.dart';
 import 'package:sanga_ride/view/ride/widgets/ride_option_image.dart';
 import 'package:sanga_ride/view/ride/widgets/ride_option_review_cards.dart';
 import 'package:sanga_ride/view/ride/widgets/ride_option_schedule_format.dart';
+import 'package:sanga_ride/view/ride/widgets/scheduled_success.dart';
 import 'package:sanga_ride/view/ride/who_for/widgets/ride_for_summary_row.dart';
 import 'package:sanga_ride/view/ride/widgets/trip_type_icon.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
@@ -57,17 +57,7 @@ class _RideReviewScreenState extends State<RideReviewScreen> {
       (_, TripType.intercity) => ('Intercity trip booked', 'We’ll pick you up $first.'),
       _ => ('Ride scheduled', 'Your ride is booked for $first.'),
     };
-    final viewScheduled = !await showSangaStatusSheet(
-      context: context,
-      status: SangaStatus.success,
-      title: title,
-      message: message,
-      actionLabel: 'Done',
-      secondaryLabel: 'View scheduled rides',
-    );
-    if (!mounted) return;
-    context.go(SangaRoutes.home);
-    if (viewScheduled) unawaited(context.push(BookingRoutes.scheduledRides));
+    await showScheduledSuccess(context, title: title, message: message);
   }
 
   @override
@@ -95,6 +85,8 @@ class _RideReviewScreenState extends State<RideReviewScreen> {
           return Column(
             spacing: SangaSpacing.md,
             children: [
+              if (ride.airportBooking case final booking? when ride.tripType == TripType.airport)
+                FlightSummaryCard(flight: booking.flight, airportName: booking.airport.name),
               RideOptionRouteCard(
                 pickup: ride.pickup,
                 stops: ride.stops.toList(),
@@ -123,7 +115,10 @@ class _RideReviewScreenState extends State<RideReviewScreen> {
     );
   }
 
-  String _submitLabel(RideRequestController ride) => switch (ride.timing) {
+  String _submitLabel(RideRequestController ride) =>
+      ride.tripType == TripType.airport ? 'Book airport pickup' : _timingLabel(ride);
+
+  String _timingLabel(RideRequestController ride) => switch (ride.timing) {
     RideTiming.repeat => 'Book repeat ride',
     RideTiming.later => 'Schedule ride',
     RideTiming.now => ride.tripType.isAlwaysScheduled ? 'Schedule ride' : 'Find a driver',
@@ -149,6 +144,8 @@ class _RideReviewScreenState extends State<RideReviewScreen> {
     final returnAt = ride.returnAt;
     final rule = ride.repeatRule;
     final scheduledAt = ride.scheduledAt;
+    final airport = ride.airportBooking;
+    if (ride.tripType == TripType.airport) return airport == null ? const [] : airportReviewLines(context, airport);
     return [
       SangaFareLine('Trip', ride.tripType.label),
       if (ride.tripType == TripType.hourly) ...[

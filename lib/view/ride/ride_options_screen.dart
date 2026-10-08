@@ -16,6 +16,7 @@ class RideOptionsScreen extends StatefulWidget {
 
 class _RideOptionsScreenState extends State<RideOptionsScreen> {
   static const _skeletonCount = 6;
+  static const double _tooSmallOpacity = 0.4;
 
   final _ride = Get.find<RideRequestController>();
 
@@ -32,7 +33,9 @@ class _RideOptionsScreenState extends State<RideOptionsScreen> {
       footer: Obx(
         () => SangaButton.primary(
           label: 'Confirm',
-          onPressed: _ride.option == null ? null : () => context.push(BookingRoutes.afterOptions(_ride.tripType)),
+          onPressed: _ride.option == null || !_ride.fitsGroup(_ride.option!)
+              ? null
+              : () => context.push(BookingRoutes.afterOptions(_ride.tripType)),
         ),
       ),
       children: [
@@ -60,18 +63,29 @@ class _RideOptionsScreenState extends State<RideOptionsScreen> {
         onAction: _ride.loadOptions,
       );
     }
+    final booking = _ride.airportBooking;
+    final hasTooSmall = booking != null && _ride.options.any((option) => !_ride.fitsGroup(option));
     return Column(
       spacing: SangaSpacing.md,
       children: [
+        if (hasTooSmall)
+          SangaNotice(
+            message: 'Some rides are too small for ${booking.details.passengersLabel}.',
+            tone: SangaTone.neutral,
+            icon: Icons.info_outline_rounded,
+          ),
         for (final option in _ride.options)
-          SangaVehicleCard(
-            image: option.category.image,
-            name: option.name,
-            description: option.description,
-            seats: option.seats,
-            price: _ride.rateLabel(option),
-            isSelected: _ride.option?.id == option.id,
-            onTap: () => _ride.selectOption(option),
+          Opacity(
+            opacity: _ride.fitsGroup(option) ? 1 : _tooSmallOpacity,
+            child: SangaVehicleCard(
+              image: option.category.image,
+              name: option.name,
+              description: option.description,
+              seats: option.seats,
+              price: _ride.rateLabel(option),
+              isSelected: _ride.option?.id == option.id,
+              onTap: _ride.fitsGroup(option) ? () => _ride.selectOption(option) : null,
+            ),
           ),
       ],
     );

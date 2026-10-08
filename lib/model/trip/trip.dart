@@ -1,5 +1,6 @@
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:sanga_ride/model/location/place.dart';
+import 'package:sanga_ride/model/ride/airport.dart';
 import 'package:sanga_ride/model/ride/ride_match.dart';
 import 'package:sanga_ride/model/ride/ride_request.dart';
 import 'package:sanga_ride/model/trip/server_time.dart';
@@ -182,11 +183,13 @@ class Trip {
     required this.unreadMessages,
     required this.events,
     required this.cancellationReason,
+    this.airport,
   });
 
   factory Trip.fromJson(Map<String, dynamic> json) {
     final serverTime = DateTime.parse(json['serverTime'] as String);
     final position = json['driverPosition'] as Map?;
+    final airport = json['airport'] as Map?;
     return Trip(
       id: json['id'] as String,
       status: TripStatus.fromCode(json['status'] as String),
@@ -210,6 +213,7 @@ class Trip {
       cancellationReason: json['cancellationReason'] == null
           ? null
           : TripCancelReason.fromCode(json['cancellationReason'] as String),
+      airport: airport == null ? null : TripAirport.fromJson(Map<String, dynamic>.from(airport)),
     );
   }
 
@@ -230,6 +234,7 @@ class Trip {
   final int unreadMessages;
   final List<TripEvent> events;
   final TripCancelReason? cancellationReason;
+  final TripAirport? airport;
 
   static const int maxStops = 3;
 
