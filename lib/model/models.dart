@@ -5,3 +5,4 @@ export 'location/place.dart';
 export 'location/weather.dart';
 
 export 'ride/ride_request.dart';
+export 'ride/ride_match.dart';

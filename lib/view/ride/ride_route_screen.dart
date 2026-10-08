@@ -25,7 +25,7 @@ class RideRouteScreen extends StatefulWidget {
 }
 
 class _RideRouteScreenState extends State<RideRouteScreen> {
-  static const double _topInset = 90;
+  static const double _topInset = 120;
   static const String _routeId = 'route';
   static const int _dashesPerRoute = 40;
 

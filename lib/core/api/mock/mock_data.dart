@@ -106,4 +106,91 @@ class MockData {
       'pricePerKm': 3000,
     },
   ];
+
+  static const List<String> matchStepLabels = [
+    'Searching for nearby drivers',
+    'Checking availability',
+    'Sending request',
+    'Finding a match',
+  ];
+
+  static const Map<String, dynamic> driverVehicle = {
+    'make': 'Toyota',
+    'model': 'Corolla',
+    'year': 2007,
+    'colour': 'blue',
+    'plate': 'BDJ822FQ',
+    'features': ['Air conditioned'],
+  };
+
+  static const List<Map<String, dynamic>> driverOffers = [
+    {
+      'id': 'offer_kamaru',
+      'status': 'pending',
+      'counterMarkup': 0.1,
+      'etaMinutes': 20,
+      'distanceKm': 4.0,
+      'matchLabel': 'Perfect match',
+      'driver': {
+        'id': 'drv_kamaru',
+        'name': 'Kamaru U.',
+        'firstName': 'Kamaru',
+        'photoUrl': null,
+        'verified': true,
+        'rating': 4.0,
+        'ridesCompleted': 150,
+      },
+    },
+    {
+      'id': 'offer_george',
+      'status': 'pending',
+      'counterMarkup': null,
+      'etaMinutes': 25,
+      'distanceKm': 6.0,
+      'matchLabel': null,
+      'driver': {
+        'id': 'drv_george',
+        'name': 'George A.',
+        'firstName': 'George',
+        'photoUrl': null,
+        'verified': true,
+        'rating': 3.0,
+        'ridesCompleted': 88,
+      },
+    },
+    {
+      'id': 'offer_john',
+      'status': 'pending',
+      'counterMarkup': 0.05,
+      'etaMinutes': 25,
+      'distanceKm': 7.0,
+      'matchLabel': null,
+      'driver': {
+        'id': 'drv_john',
+        'name': 'John A.',
+        'firstName': 'John',
+        'photoUrl': null,
+        'verified': true,
+        'rating': 5.0,
+        'ridesCompleted': 312,
+      },
+    },
+    {
+      'id': 'offer_ibrahim',
+      'status': 'withdrawn',
+      'counterMarkup': null,
+      'etaMinutes': 25,
+      'distanceKm': 9.0,
+      'matchLabel': null,
+      'driver': {
+        'id': 'drv_ibrahim',
+        'name': 'Ibrahim S.',
+        'firstName': 'Ibrahim',
+        'photoUrl': null,
+        'verified': false,
+        'rating': 3.0,
+        'ridesCompleted': 42,
+      },
+    },
+  ];
 }

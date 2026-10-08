@@ -33,7 +33,141 @@ class MockRoutes {
     MockRoute.get(MockEndpoints.weather, (_) => MockData.weather),
     MockRoute.get(MockEndpoints.rideOptions, (_) => MockData.rideOptions),
     MockRoute.post(MockEndpoints.rideEstimate, _rideEstimate),
+    MockRoute.post(MockEndpoints.rideRequests, _createRideRequest),
+    MockRoute.post(MockEndpoints.rideRequestsScheduled, _scheduleRide),
+    MockRoute.get(MockEndpoints.rideRequest, _rideRequestStatus),
+    MockRoute.get(MockEndpoints.rideRequestOffers, _rideOffers),
+    MockRoute.post(MockEndpoints.rideOfferIgnore, (_) => null),
+    MockRoute.post(MockEndpoints.rideOfferHold, _holdOffer),
+    MockRoute.delete(MockEndpoints.rideRequestHold, (_) => null),
+    MockRoute.post(MockEndpoints.rideOfferConfirm, _confirmOffer),
+    MockRoute.post(MockEndpoints.rideRequestCancel, _cancelRideRequest),
   ];
+
+  static final Map<String, _MockRideRequest> _rideRequests = {};
+
+  static const Duration _searchWindow = Duration(seconds: 60);
+  static const Duration _holdWindow = Duration(seconds: 120);
+  static const Duration _checkingAfter = Duration(milliseconds: 1500);
+  static const Duration _sendingAfter = Duration(milliseconds: 3000);
+  static const Duration _resolvedAfter = Duration(milliseconds: 4500);
+
+  static String _isoNow() => DateTime.now().toUtc().toIso8601String();
+
+  static List<Map<String, dynamic>> _matchSteps(int done) => [
+    for (final (index, label) in MockData.matchStepLabels.indexed)
+      {'key': 'step_${index + 1}', 'label': label, 'done': index < done},
+  ];
+
+  static Map<String, dynamic> _requestPayload(String id, String status, int stepsDone) => {
+    'id': id,
+    'status': status,
+    'searchExpiresAt': DateTime.now().toUtc().add(_searchWindow).toIso8601String(),
+    'serverTime': _isoNow(),
+    'steps': _matchSteps(stepsDone),
+  };
+
+  static _MockRideRequest _requireRideRequest(MockRequest request) {
+    final record = _rideRequests[request.params['id']];
+    if (record == null) throw const MockFailure(404, 'We can’t find that ride request.');
+    return record;
+  }
+
+  static Map<String, dynamic> _requireOffer(MockRequest request) {
+    final offer = MockData.driverOffers.where((offer) => offer['id'] == request.params['offerId']).firstOrNull;
+    if (offer == null) throw const MockFailure(404, 'We can’t find that driver offer.');
+    return offer;
+  }
+
+  static Object? _createRideRequest(MockRequest request) {
+    final id = 'req_${_rideRequests.length + 1}';
+    _rideRequests[id] = _MockRideRequest(
+      createdAt: DateTime.now(),
+      pricingMode: request.body['pricingMode'] as String?,
+      proposedFare: (request.body['proposedFare'] as num?)?.toInt() ?? 0,
+    );
+    return {..._requestPayload(id, 'searching', 1), 'createdAt': _isoNow()};
+  }
+
+  static Object? _scheduleRide(MockRequest request) {
+    final scheduledAt = request.body['scheduledAt'];
+    if (scheduledAt == null) throw const MockFailure(422, 'Pick a time for your ride.');
+    return {
+      'id': 'sched_${_rideRequests.length + 1}',
+      'status': 'scheduled',
+      'scheduledAt': scheduledAt,
+      'serverTime': _isoNow(),
+    };
+  }
+
+  static Object? _rideRequestStatus(MockRequest request) {
+    final record = _requireRideRequest(request);
+    final id = request.params['id']!;
+    if (record.isCancelled) return _requestPayload(id, 'cancelled', 0);
+    final elapsed = DateTime.now().difference(record.createdAt);
+    if (elapsed < _checkingAfter) return _requestPayload(id, 'searching', 1);
+    if (elapsed < _sendingAfter) return _requestPayload(id, 'checking', 2);
+    if (elapsed < _resolvedAfter) return _requestPayload(id, 'sending', 3);
+    if (record.pricingMode == 'saver') return _requestPayload(id, 'no_driver_found', 3);
+    return _requestPayload(id, 'offers', 4);
+  }
+
+  static Map<String, dynamic> _priced(Map<String, dynamic> offer, num fare) {
+    final markup = offer['counterMarkup'] as num?;
+    return {
+      ...offer..remove('counterMarkup'),
+      'counterOffer': markup == null ? null : ((fare * (1 + markup)) / 50).round() * 50,
+    };
+  }
+
+  static Object? _rideOffers(MockRequest request) {
+    final record = _requireRideRequest(request);
+    return {
+      'offers': [for (final offer in MockData.driverOffers) _priced(Map.of(offer), record.proposedFare)],
+    };
+  }
+
+  static Map<String, dynamic> _driverCard(Map<String, dynamic> offer) => {
+    ...(offer['driver'] as Map<String, dynamic>),
+    'vehicle': MockData.driverVehicle,
+    'distanceAwayKm': offer['distanceKm'],
+  };
+
+  static const _offerUnavailable = MockFailure(409, 'That driver is no longer available.', code: 'offer_unavailable');
+
+  static Object? _holdOffer(MockRequest request) {
+    final record = _requireRideRequest(request);
+    final offer = _requireOffer(request);
+    if (offer['status'] == 'withdrawn') throw _offerUnavailable;
+    return {
+      'hold': {
+        'offerId': offer['id'],
+        'holdExpiresAt': DateTime.now().toUtc().add(_holdWindow).toIso8601String(),
+        'serverTime': _isoNow(),
+        'fare': record.proposedFare,
+        'counterOffer': _priced(Map.of(offer), record.proposedFare)['counterOffer'],
+        'matchLabel': offer['matchLabel'],
+      },
+      'driver': _driverCard(offer),
+    };
+  }
+
+  static Object? _confirmOffer(MockRequest request) {
+    _requireRideRequest(request);
+    final offer = _requireOffer(request);
+    if (offer['status'] == 'withdrawn') throw _offerUnavailable;
+    return {
+      'tripId': 'trip_${request.params['id']}',
+      'status': 'driver_confirmed',
+      'driver': _driverCard(offer),
+      'etaMinutes': offer['etaMinutes'],
+    };
+  }
+
+  static Object? _cancelRideRequest(MockRequest request) {
+    _requireRideRequest(request).isCancelled = true;
+    return {'status': 'cancelled'};
+  }
 
   static const int _maxRecentPlaces = 5;
 
@@ -108,4 +242,13 @@ class MockRoutes {
     }
     return _session;
   }
+}
+
+class _MockRideRequest {
+  _MockRideRequest({required this.createdAt, required this.pricingMode, required this.proposedFare});
+
+  final DateTime createdAt;
+  final String? pricingMode;
+  final int proposedFare;
+  bool isCancelled = false;
 }

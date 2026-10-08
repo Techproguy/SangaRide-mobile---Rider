@@ -8,6 +8,8 @@ import 'package:sanga_ride/view/auth/sign_up_screen.dart';
 import 'package:sanga_ride/view/auth/verify_otp_screen.dart';
 import 'package:sanga_ride/view/home/rider_home_screen.dart';
 import 'package:sanga_ride/view/ride/fare_breakdown_screen.dart';
+import 'package:sanga_ride/view/ride/matching/confirm_driver_screen.dart';
+import 'package:sanga_ride/view/ride/matching/ride_offers_screen.dart';
 import 'package:sanga_ride/view/ride/ride_options_screen.dart';
 import 'package:sanga_ride/view/ride/ride_preferences_screen.dart';
 import 'package:sanga_ride/view/ride/ride_pricing_screen.dart';
@@ -39,7 +41,8 @@ class SangaRoutes {
   static const String rideFare = '/ride/fare';
   static const String rideTiming = '/ride/when';
   static const String rideReview = '/ride/review';
-  static const String rideMatching = '/ride/matching';
+  static const String rideOffers = '/ride/offers';
+  static const String rideConfirmDriver = '/ride/confirm-driver';
 
   static const String home = '/home';
 
@@ -55,6 +58,8 @@ class SangaRoutes {
     GoRoute(path: rideFare, builder: (context, state) => const FareBreakdownScreen()),
     GoRoute(path: rideTiming, builder: (context, state) => const RideTimingScreen()),
     GoRoute(path: rideReview, builder: (context, state) => const RideReviewScreen()),
+    GoRoute(path: rideOffers, builder: (context, state) => const RideOffersScreen()),
+    GoRoute(path: rideConfirmDriver, builder: (context, state) => const ConfirmDriverScreen()),
   ];
 
   static final List<RouteBase> authRoutes = [

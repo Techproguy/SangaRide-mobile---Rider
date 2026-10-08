@@ -3,8 +3,10 @@ part of 'api.dart';
 class ApiException implements Exception {
   final int statusCode;
   final String message;
+  final String? code;
+  final Map<String, dynamic> data;
 
-  const ApiException(this.statusCode, this.message);
+  const ApiException(this.statusCode, this.message, {this.code, this.data = const {}});
 
   @override
   String toString() => message;
@@ -55,6 +57,8 @@ Exception _handleStatusCode(
   bool suppressToast = false,
 }) {
   final message = _extractUserFriendlyMessage(responseData);
+  final body = responseData is Map ? Map<String, dynamic>.from(responseData) : const <String, dynamic>{};
+  final code = body['code'] is String ? body['code'] as String : null;
 
   final isSilent4xx = (statusCode == 401 || statusCode == 403) && !isAuthEndpoint;
   final isClientError = statusCode != null && statusCode >= 400 && statusCode < 500;
@@ -62,16 +66,19 @@ Exception _handleStatusCode(
     Toast.error(message);
   }
 
+  ApiException api(int status, String fallback) => ApiException(status, message ?? fallback, code: code, data: body);
+
   return switch (statusCode) {
-    400 => ApiException(400, message ?? 'Bad request'),
-    401 => ApiException(401, message ?? 'Unauthorized. Please login again.'),
-    403 => ApiException(403, message ?? 'Access forbidden'),
-    404 => ApiException(404, message ?? 'Resource not found'),
-    409 => ApiException(409, message ?? 'Conflict'),
-    422 => ApiException(422, message ?? 'Invalid request. Please check your input.'),
+    400 => api(400, 'Bad request'),
+    401 => api(401, 'Unauthorized. Please login again.'),
+    403 => api(403, 'Access forbidden'),
+    404 => api(404, 'Resource not found'),
+    409 => api(409, 'Conflict'),
+    410 => api(410, 'This is no longer available'),
+    422 => api(422, 'Invalid request. Please check your input.'),
     500 || 502 => Exception('Server error. Please try again later.'),
     503 => Exception('Service unavailable. Please try again later.'),
-    _ => ApiException(statusCode ?? 0, message ?? 'Unexpected error occurred. Please try again.'),
+    _ => api(statusCode ?? 0, 'Unexpected error occurred. Please try again.'),
   };
 }
 

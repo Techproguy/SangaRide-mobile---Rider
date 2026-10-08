@@ -13,8 +13,10 @@ class MockRequest {
 class MockFailure implements Exception {
   final int statusCode;
   final String message;
+  final String? code;
+  final Map<String, dynamic> data;
 
-  const MockFailure(this.statusCode, this.message);
+  const MockFailure(this.statusCode, this.message, {this.code, this.data = const {}});
 }
 
 typedef MockHandler = Object? Function(MockRequest request);
@@ -78,7 +80,10 @@ class MockServerInterceptor extends Interceptor {
       try {
         return (200, {'success': true, 'message': 'Success', 'data': route.handler(request)});
       } on MockFailure catch (failure) {
-        return (failure.statusCode, {'success': false, 'message': failure.message});
+        return (
+          failure.statusCode,
+          {...failure.data, 'success': false, 'message': failure.message, 'code': ?failure.code},
+        );
       }
     }
     return (404, {'success': false, 'message': 'No mock for $method $path'});
