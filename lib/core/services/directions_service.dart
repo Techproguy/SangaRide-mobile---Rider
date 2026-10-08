@@ -4,6 +4,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_polyline_points/flutter_polyline_points.dart' show PolylinePoints, PointLatLng;
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:sanga_ride/core/constants.dart';
+import 'package:sanga_ride/core/storage_keys.dart';
 
 class DirectionsService {
   static const String _endpoint = 'https://routes.googleapis.com/directions/v2:computeRoutes';
@@ -13,9 +14,9 @@ class DirectionsService {
 
   DirectionsService({Dio? dio}) : _dio = dio ?? Dio();
 
-  static String _key(LatLng origin, LatLng destination) {
+  static String _key(List<LatLng> points) {
     String r(double v) => v.toStringAsFixed(3);
-    return '${r(origin.latitude)},${r(origin.longitude)}→${r(destination.latitude)},${r(destination.longitude)}';
+    return points.map((p) => '${r(p.latitude)},${r(p.longitude)}').join('|');
   }
 
   static Map<String, dynamic> _waypoint(LatLng point) => {
@@ -24,15 +25,11 @@ class DirectionsService {
     },
   };
 
-  Future<List<LatLng>?> getRoute(
-    LatLng origin,
-    LatLng destination, {
-    Duration cacheTtl = const Duration(seconds: 60),
-  }) async {
-    if (origin.latitude == 0 && origin.longitude == 0) return null;
-    if (destination.latitude == 0 && destination.longitude == 0) return null;
+  Future<List<LatLng>?> getRoute(List<LatLng> points, {Duration cacheTtl = const Duration(seconds: 60)}) async {
+    if (points.length < 2 || !SangaMapsKeys.isConfigured) return null;
+    if (points.any((p) => p.latitude == 0 && p.longitude == 0)) return null;
 
-    final key = _key(origin, destination);
+    final key = _key(points);
     final cached = _cache[key];
     if (cached != null && DateTime.now().difference(cached.fetchedAt) < cacheTtl) return cached.points;
 
@@ -47,8 +44,10 @@ class DirectionsService {
           },
         ),
         data: {
-          'origin': _waypoint(origin),
-          'destination': _waypoint(destination),
+          'origin': _waypoint(points.first),
+          'destination': _waypoint(points.last),
+          if (points.length > 2)
+            'intermediates': [for (final stop in points.sublist(1, points.length - 1)) _waypoint(stop)],
           'travelMode': 'DRIVE',
           'polylineEncoding': 'ENCODED_POLYLINE',
           'routingPreference': 'TRAFFIC_AWARE',

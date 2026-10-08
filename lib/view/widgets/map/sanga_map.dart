@@ -3,6 +3,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:sanga_ride/controller/shared/map_camera.dart';
 import 'package:sanga_ride/controller/shared/map_controller.dart';
 import 'package:sanga_ride/core/constants.dart';
 
@@ -20,6 +21,8 @@ class SangaMap extends StatefulWidget {
   final Set<Marker>? extraMarkers;
   final Set<Polyline>? extraPolylines;
   final String? style;
+  final MapCamera? camera;
+  final bool followsUser;
 
   const SangaMap({
     super.key,
@@ -36,6 +39,8 @@ class SangaMap extends StatefulWidget {
     this.extraMarkers,
     this.extraPolylines,
     this.style,
+    this.camera,
+    this.followsUser = true,
   });
 
   @override
@@ -50,6 +55,8 @@ class _SangaMapState extends State<SangaMap> {
   Worker? _locationWatcher;
   bool _centeredOnUser = false;
 
+  MapCamera get _camera => widget.camera ?? _mapController.camera;
+
   CameraPosition get _initialPosition {
     if (widget.initialCameraPosition != null) return widget.initialCameraPosition!;
     final current = _mapController.currentLocation;
@@ -60,24 +67,25 @@ class _SangaMapState extends State<SangaMap> {
   @override
   void initState() {
     super.initState();
+    if (!widget.followsUser) return;
     final current = _mapController.currentLocation;
     if (current != null) {
       _centeredOnUser = true;
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) _mapController.moveCamera(current, zoom: _userZoom);
+        if (mounted) _camera.moveTo(current, zoom: _userZoom);
       });
     }
     _locationWatcher = ever(_mapController.currentLocationObs, (LatLng? loc) {
       if (loc == null || _centeredOnUser || !mounted) return;
       _centeredOnUser = true;
-      _mapController.moveCamera(loc, zoom: _userZoom);
+      _camera.moveTo(loc, zoom: _userZoom);
     });
   }
 
   @override
   void dispose() {
     _locationWatcher?.dispose();
-    _mapController.clearMapController();
+    _camera.detach(_gmController);
     _gmController?.dispose();
     _gmController = null;
     super.dispose();
@@ -87,7 +95,7 @@ class _SangaMapState extends State<SangaMap> {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        _mapController.mapSize = constraints.biggest;
+        _camera.mapSize = constraints.biggest;
         return Obx(
           () => GoogleMap(
             mapType: widget.mapType,
@@ -97,7 +105,7 @@ class _SangaMapState extends State<SangaMap> {
             polylines: {..._mapController.polylines, ...?widget.extraPolylines},
             onMapCreated: (controller) {
               _gmController = controller;
-              _mapController.setMapController(controller);
+              _camera.attach(controller);
               widget.onMapCreated?.call();
             },
             onTap: widget.onMapTap,

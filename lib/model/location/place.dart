@@ -1,4 +1,5 @@
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:sanga_ride/core/extensions/lat_lng.dart';
 
 class Place {
   final String placeId;
@@ -26,6 +27,15 @@ class Place {
     );
   }
 
+  static const double _sameSpotMeters = 50;
+
+  bool isSameAs(Place other) {
+    if (placeId.isNotEmpty && placeId == other.placeId) return true;
+    final here = coordinates;
+    final there = other.coordinates;
+    return here != null && there != null && here.metersTo(there) < _sameSpotMeters;
+  }
+
   Map<String, dynamic> toJson() => {
     'place_id': placeId,
     'name': name,
@@ -39,8 +49,17 @@ class PlaceAutocomplete {
   final String description;
   final String? mainText;
   final String? secondaryText;
+  final int? distanceMeters;
 
-  const PlaceAutocomplete({required this.placeId, required this.description, this.mainText, this.secondaryText});
+  const PlaceAutocomplete({
+    required this.placeId,
+    required this.description,
+    this.mainText,
+    this.secondaryText,
+    this.distanceMeters,
+  });
+
+  String get title => mainText ?? description;
 
   factory PlaceAutocomplete.fromJson(Map<String, dynamic> json) {
     final structured = json['structuredFormat'] as Map?;
@@ -50,6 +69,7 @@ class PlaceAutocomplete {
       description: (text is Map ? text['text'] : text) ?? json['description'] ?? '',
       mainText: (structured?['mainText'] as Map?)?['text'],
       secondaryText: (structured?['secondaryText'] as Map?)?['text'],
+      distanceMeters: (json['distanceMeters'] as num?)?.toInt(),
     );
   }
 }

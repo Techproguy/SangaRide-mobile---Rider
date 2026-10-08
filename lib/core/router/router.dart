@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sanga_ride/core/nav_key.dart';
 import 'package:sanga_ride/core/router/routes.dart';
+import 'package:sanga_ride/core/services/secure_token_store.dart';
 import 'package:sanga_ride/core/services/nav_observer.dart';
 import 'package:sanga_ride/view/widgets/widgets.dart';
 
@@ -10,7 +11,7 @@ class SangaRouter {
 
   static final router = GoRouter(
     navigatorKey: navigatorKey,
-    initialLocation: SangaRoutes.root,
+    initialLocation: SecureTokenStore.instance.hasSession ? SangaRoutes.home : SangaRoutes.root,
     debugLogDiagnostics: kDebugMode,
     observers: [SangaNavObserver()],
     routes: SangaRoutes.allRoutes,

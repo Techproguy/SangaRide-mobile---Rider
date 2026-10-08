@@ -18,4 +18,14 @@ class MockEndpoints {
   static const String homeAddress = '$_users/me/places/home';
 
   static const String selfie = '$_verification/selfie';
+
+  static const String recentPlaces = '$_users/me/places/recent';
+  static const String recentPlace = '$_users/me/places/recent/:id';
+  static const String savedPlaces = '$_users/me/places';
+  static const String weather = '/weather';
+
+  static String recentPlaceOf(String id) => recentPlace.replaceFirst(':id', id);
+
+  static const String rideOptions = '/rides/options';
+  static const String rideEstimate = '/rides/estimate';
 }

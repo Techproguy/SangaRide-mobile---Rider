@@ -29,50 +29,56 @@ class PlacesService {
   Options _options([String? fieldMask]) =>
       Options(headers: {'X-Goog-Api-Key': _apiKey, 'X-Goog-FieldMask': ?fieldMask});
 
+  static const double _biasRadiusMeters = 30000;
+
   Future<List<PlaceAutocomplete>> getAutocompletePredictions(
     String input, {
     String? sessionToken,
-    String? language = 'en',
+    LatLng? origin,
+    String language = 'en',
   }) async {
     input = input.trim();
     if (input.isEmpty) return [];
+    if (!SangaMapsKeys.isConfigured) return MockPlaces.autocomplete(input, origin: origin);
 
-    try {
-      final response = await _dio.post(
-        '$_placesBase/places:autocomplete',
-        data: {
-          'input': input,
-          'sessionToken': ?sessionToken,
-          'languageCode': ?language,
-          'includedRegionCodes': [SangaConstants.placesCountryCode],
+    final response = await _dio.post(
+      '$_placesBase/places:autocomplete',
+      data: {
+        'input': input,
+        'sessionToken': ?sessionToken,
+        'languageCode': language,
+        'includedRegionCodes': [SangaConstants.placesCountryCode],
+        if (origin != null) ...{
+          'origin': _latLng(origin),
+          'locationBias': {
+            'circle': {'center': _latLng(origin), 'radius': _biasRadiusMeters},
+          },
         },
-        options: _options(),
-      );
-      if (response.statusCode != 200 || response.data is! Map) return [];
-
-      final suggestions = (response.data['suggestions'] as List?) ?? const [];
-      return suggestions
-          .whereType<Map>()
-          .map((s) => s['placePrediction'])
-          .whereType<Map>()
-          .map((p) => PlaceAutocomplete.fromJson(Map<String, dynamic>.from(p)))
-          .toList();
-    } catch (e) {
-      log('Error fetching autocomplete predictions: $e');
-      return [];
-    }
+      },
+      options: _options(),
+    );
+    if (response.data is! Map) return [];
+    final suggestions = (response.data['suggestions'] as List?) ?? const [];
+    return suggestions
+        .whereType<Map>()
+        .map((s) => s['placePrediction'])
+        .whereType<Map>()
+        .map((p) => PlaceAutocomplete.fromJson(Map<String, dynamic>.from(p)))
+        .toList();
   }
 
-  Future<Place?> getPlaceDetails(String placeId) async {
-    try {
-      final response = await _dio.get('$_placesBase/places/$placeId', options: _options(_placeDetailMask));
-      if (response.statusCode != 200 || response.data is! Map) return null;
-      return Place.fromJson(Map<String, dynamic>.from(response.data));
-    } catch (e) {
-      log('Error fetching place details: $e');
-      return null;
-    }
+  Future<Place?> getPlaceDetails(String placeId, {String? sessionToken}) async {
+    if (!SangaMapsKeys.isConfigured) return MockPlaces.details(placeId);
+    final response = await _dio.get(
+      '$_placesBase/places/$placeId',
+      queryParameters: {'sessionToken': ?sessionToken},
+      options: _options(_placeDetailMask),
+    );
+    if (response.data is! Map) return null;
+    return Place.fromJson(Map<String, dynamic>.from(response.data));
   }
+
+  static Map<String, double> _latLng(LatLng point) => {'latitude': point.latitude, 'longitude': point.longitude};
 
   Future<List<Place>> searchNearby({
     required double latitude,

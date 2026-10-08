@@ -6,7 +6,16 @@ import 'package:sanga_ride/view/auth/selfie_screen.dart';
 import 'package:sanga_ride/view/auth/sign_in_screen.dart';
 import 'package:sanga_ride/view/auth/sign_up_screen.dart';
 import 'package:sanga_ride/view/auth/verify_otp_screen.dart';
-import 'package:sanga_ride/view/home_widget.dart';
+import 'package:sanga_ride/view/home/rider_home_screen.dart';
+import 'package:sanga_ride/view/ride/fare_breakdown_screen.dart';
+import 'package:sanga_ride/view/ride/ride_options_screen.dart';
+import 'package:sanga_ride/view/ride/ride_preferences_screen.dart';
+import 'package:sanga_ride/view/ride/ride_pricing_screen.dart';
+import 'package:sanga_ride/view/ride/ride_review_screen.dart';
+import 'package:sanga_ride/view/ride/ride_route_screen.dart';
+import 'package:sanga_ride/view/ride/ride_search_screen.dart';
+import 'package:sanga_ride/view/ride/ride_timing_screen.dart';
+import 'package:sanga_ride/view/ride/trip_type_screen.dart';
 
 class SangaRoutes {
   SangaRoutes._();
@@ -21,12 +30,32 @@ class SangaRoutes {
   static const String selfie = '/sign-up/selfie';
   static const String homeLocation = '/sign-up/home';
 
-  static const String home = '/home';
-  static const String trips = '/trips';
-  static const String wallet = '/wallet';
-  static const String profile = '/profile';
+  static const String rideSearch = '/ride/search';
+  static const String rideRoute = '/ride/route';
+  static const String tripType = '/ride/trip-type';
+  static const String rideOptions = '/ride/options';
+  static const String ridePreferences = '/ride/preferences';
+  static const String ridePricing = '/ride/pricing';
+  static const String rideFare = '/ride/fare';
+  static const String rideTiming = '/ride/when';
+  static const String rideReview = '/ride/review';
+  static const String rideMatching = '/ride/matching';
 
-  static final List<RouteBase> allRoutes = [...authRoutes, ...homeRoutes];
+  static const String home = '/home';
+
+  static final List<RouteBase> allRoutes = [...authRoutes, ...homeRoutes, ...rideRoutes];
+
+  static final List<RouteBase> rideRoutes = [
+    GoRoute(path: rideSearch, builder: (context, state) => const RideSearchScreen()),
+    GoRoute(path: rideRoute, builder: (context, state) => const RideRouteScreen()),
+    GoRoute(path: tripType, builder: (context, state) => const TripTypeScreen()),
+    GoRoute(path: rideOptions, builder: (context, state) => const RideOptionsScreen()),
+    GoRoute(path: ridePreferences, builder: (context, state) => const RidePreferencesScreen()),
+    GoRoute(path: ridePricing, builder: (context, state) => const RidePricingScreen()),
+    GoRoute(path: rideFare, builder: (context, state) => const FareBreakdownScreen()),
+    GoRoute(path: rideTiming, builder: (context, state) => const RideTimingScreen()),
+    GoRoute(path: rideReview, builder: (context, state) => const RideReviewScreen()),
+  ];
 
   static final List<RouteBase> authRoutes = [
     GoRoute(path: onboarding, builder: (context, state) => const OnboardingScreen()),
@@ -38,5 +67,5 @@ class SangaRoutes {
     GoRoute(path: verifyOtp, builder: (context, state) => VerifyOtpScreen(state.extra as OtpArgs)),
   ];
 
-  static final List<RouteBase> homeRoutes = [GoRoute(path: home, builder: (context, state) => const HomeWidget())];
+  static final List<RouteBase> homeRoutes = [GoRoute(path: home, builder: (context, state) => const RiderHomeScreen())];
 }

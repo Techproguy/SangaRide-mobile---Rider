@@ -4,6 +4,7 @@ class SangaStorageKeys {
   SangaStorageKeys._();
 
   static const String user = 'user';
+  static const String lastCity = 'last_city';
 }
 
 class SangaMapsKeys {

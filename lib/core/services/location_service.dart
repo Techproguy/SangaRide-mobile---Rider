@@ -25,7 +25,11 @@ class LocationService {
     return permission == LocationPermission.whileInUse || permission == LocationPermission.always;
   }
 
-  Future<LocationResult> resolveCurrentLocation() async {
+  static Future<LocationResult>? _inFlight;
+
+  Future<LocationResult> resolveCurrentLocation() => _inFlight ??= _resolve().whenComplete(() => _inFlight = null);
+
+  Future<LocationResult> _resolve() async {
     try {
       if (!await Geolocator.isLocationServiceEnabled()) {
         return const LocationResult(LocationStatus.serviceDisabled);
