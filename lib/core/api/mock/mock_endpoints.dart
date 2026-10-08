@@ -58,4 +58,47 @@ class MockEndpoints {
 
   static String _offerPath(String template, String id, String offerId) =>
       template.replaceFirst(':id', id).replaceFirst(':offerId', offerId);
+
+  static const String activeTrip = '/trips/active';
+  static const String _liveTrip = '/trips/:id';
+
+  static const String liveTrip = _liveTrip;
+  static const String liveTripConfirmDetails = '$_liveTrip/details/confirm';
+  static const String liveTripPinRefresh = '$_liveTrip/pin/refresh';
+  static const String liveTripReport = '$_liveTrip/report';
+  static const String liveTripComplete = '$_liveTrip/complete';
+  static const String liveTripCall = '$_liveTrip/call';
+  static const String liveTripMessages = '$_liveTrip/messages';
+  static const String liveTripEvents = '$_liveTrip/events';
+
+  static String liveTripOf(String id) => liveTrip.replaceFirst(':id', id);
+
+  static String liveTripConfirmDetailsOf(String id) => liveTripConfirmDetails.replaceFirst(':id', id);
+
+  static String liveTripPinRefreshOf(String id) => liveTripPinRefresh.replaceFirst(':id', id);
+
+  static String liveTripReportOf(String id) => liveTripReport.replaceFirst(':id', id);
+
+  static String liveTripCompleteOf(String id) => liveTripComplete.replaceFirst(':id', id);
+
+  static String liveTripCallOf(String id) => liveTripCall.replaceFirst(':id', id);
+
+  static String liveTripMessagesOf(String id) => liveTripMessages.replaceFirst(':id', id);
+
+  static String liveTripEventsOf(String id) => liveTripEvents.replaceFirst(':id', id);
+
+  static const String _tripWrapUp = '/trips/:id';
+
+  static const String tripPayment = '$_tripWrapUp/payment';
+  static const String tripPaymentCancel = '$_tripWrapUp/payment/cancel';
+  static const String tripReceipt = '$_tripWrapUp/receipt';
+  static const String tripRating = '$_tripWrapUp/rating';
+
+  static String tripPaymentOf(String id) => tripPayment.replaceFirst(':id', id);
+
+  static String tripPaymentCancelOf(String id) => tripPaymentCancel.replaceFirst(':id', id);
+
+  static String tripReceiptOf(String id) => tripReceipt.replaceFirst(':id', id);
+
+  static String tripRatingOf(String id) => tripRating.replaceFirst(':id', id);
 }

@@ -5,7 +5,7 @@ import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sanga_ride/controller/rider/ride_match_controller.dart';
 import 'package:sanga_ride/controller/rider/ride_request_controller.dart';
-import 'package:sanga_ride/core/router/routes.dart';
+import 'package:sanga_ride/core/router/trip_routes.dart';
 import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride/view/ride/matching/widgets/confirm_driver_card.dart';
 import 'package:sanga_ride/view/ride/widgets/ride_option_image.dart';
@@ -69,7 +69,7 @@ class _ConfirmDriverScreenState extends State<ConfirmDriverScreen> {
       message: '${state.trip.driver.firstName} is heading to your pickup.',
       actionLabel: 'Done',
     );
-    if (mounted) context.go(SangaRoutes.home);
+    if (mounted) context.go(TripRoutes.tripOf(state.trip.tripId));
   }
 
   @override

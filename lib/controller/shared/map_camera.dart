@@ -2,8 +2,11 @@ import 'dart:math' as math;
 
 import 'package:flutter/widgets.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:sanga_ride/core/extensions/lat_lng.dart';
 
 class MapCamera {
+  static const double _samePlaceMeters = 200;
+
   GoogleMapController? _controller;
   EdgeInsets visibleInsets = EdgeInsets.zero;
   Size mapSize = Size.zero;
@@ -48,7 +51,9 @@ class MapCamera {
   }) async {
     final controller = _controller;
     if (controller == null || points.isEmpty) return;
-    if (points.length == 1) return moveTo(points.first, zoom: singlePointZoom);
+    if (points.every((point) => point.metersTo(points.first) < _samePlaceMeters)) {
+      return moveTo(points.first, zoom: singlePointZoom);
+    }
     try {
       var minLat = points.first.latitude, maxLat = minLat;
       var minLng = points.first.longitude, maxLng = minLng;

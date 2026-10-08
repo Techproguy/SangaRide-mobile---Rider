@@ -1,0 +1,39 @@
+import 'package:flutter/material.dart';
+import 'package:sanga_ride/model/trip/wrapup/wrapup.dart';
+import 'package:sanga_ride/view/ride/widgets/ride_option_schedule_format.dart';
+import 'package:sanga_ride_ui/sanga_ride_ui.dart';
+
+class ReceiptPaidWith extends StatelessWidget {
+  const ReceiptPaidWith({super.key, required this.paidWith, required this.paidAt});
+
+  final ReceiptPayment paidWith;
+  final DateTime paidAt;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(SangaSpacing.md),
+      decoration: const BoxDecoration(color: SangaColors.cardMuted, borderRadius: SangaRadii.field),
+      child: Row(
+        spacing: SangaSpacing.md,
+        children: [
+          SangaIconBadge(
+            size: 40,
+            child: Icon(paidWith.method == PaymentMethod.card ? Icons.credit_card_rounded : Icons.payments_outlined),
+          ),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              spacing: SangaSpacing.xxs,
+              children: [
+                const Text('Paid with', style: SangaTextStyles.cardSubtitle),
+                Text(paidWith.label, style: SangaTextStyles.cardTitle),
+                Text(formatRideSchedule(context, paidAt), style: SangaTextStyles.cardSubtitle),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}

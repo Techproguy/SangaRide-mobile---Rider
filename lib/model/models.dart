@@ -6,3 +6,7 @@ export 'location/weather.dart';
 
 export 'ride/ride_request.dart';
 export 'ride/ride_match.dart';
+
+export 'trip/trip.dart';
+export 'trip/trip_message.dart';
+export 'trip/wrapup/wrapup.dart';

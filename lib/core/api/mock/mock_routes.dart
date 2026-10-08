@@ -85,6 +85,7 @@ class MockRoutes {
 
   static Object? _createRideRequest(MockRequest request) {
     final id = 'req_${_rideRequests.length + 1}';
+    MockTrip.requests[id] = request.body;
     _rideRequests[id] = _MockRideRequest(
       createdAt: DateTime.now(),
       pricingMode: request.body['pricingMode'] as String?,
@@ -157,11 +158,21 @@ class MockRoutes {
   }
 
   static Object? _confirmOffer(MockRequest request) {
-    _requireRideRequest(request);
+    final record = _requireRideRequest(request);
     final offer = _requireOffer(request);
     if (offer['status'] == 'withdrawn') throw _offerUnavailable;
+    final requestId = request.params['id']!;
+    final tripId = 'trip_$requestId';
+    MockTrip.open(
+      tripId: tripId,
+      request: MockTrip.requests[requestId] ?? const {},
+      driverCard: _driverCard(offer),
+      proposedFare: record.proposedFare,
+      counterOffer: (_priced(Map.of(offer), record.proposedFare)['counterOffer'] as num?)?.toInt(),
+      etaMinutes: offer['etaMinutes'] as num,
+    );
     return {
-      'tripId': 'trip_${request.params['id']}',
+      'tripId': tripId,
       'status': 'driver_confirmed',
       'driver': _driverCard(offer),
       'etaMinutes': offer['etaMinutes'],

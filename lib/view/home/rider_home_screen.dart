@@ -1,12 +1,16 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:sanga_ride/controller/rider/ride_request_controller.dart';
 import 'package:sanga_ride/controller/rider/rider_home_controller.dart';
+import 'package:sanga_ride/controller/rider/trip/trip_controller.dart';
 import 'package:sanga_ride/controller/shared/map_controller.dart';
 import 'package:sanga_ride/controller/shared/user_controller.dart';
 import 'package:sanga_ride/core/router/routes.dart';
+import 'package:sanga_ride/core/router/trip_routes.dart';
 import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride/view/home/widgets/home_panel.dart';
 import 'package:sanga_ride/view/home/widgets/map_top_bar.dart';
@@ -35,6 +39,13 @@ class _RiderHomeScreenState extends State<RiderHomeScreen> {
     _placeWorker = ever(_home.currentPlaceObs, (_) => _showCurrentPlace());
     _showCurrentPlace();
     WidgetsBinding.instance.addPostFrameCallback((_) => _syncPanelInset());
+    unawaited(_resumeActiveTrip());
+  }
+
+  Future<void> _resumeActiveTrip() async {
+    final trip = await Get.find<TripController>().loadActive();
+    if (!mounted || trip == null) return;
+    unawaited(context.push(TripRoutes.tripOf(trip.id)));
   }
 
   @override
