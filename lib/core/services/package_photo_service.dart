@@ -4,6 +4,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:sanga_ride/core/api/mock/mock_capture.dart';
 import 'package:sanga_ride/core/services/image_compression_service.dart';
 import 'package:sanga_ride/model/models.dart';
+import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 abstract final class PackagePhotoService {
   static const double _pickerSide = 2400;
@@ -24,6 +25,10 @@ abstract final class PackagePhotoService {
   }
 
   static Future<String?> _pickOriginal(PhotoSource source) async {
+    if (source == PhotoSource.camera && !await SangaCamera.hasCamera()) {
+      if (kDebugMode) return MockCapture.photo('Package');
+      throw const PhotoException(DeliveryFailure.cameraUnavailable);
+    }
     try {
       final photo = await ImagePicker().pickImage(
         source: source == PhotoSource.camera ? ImageSource.camera : ImageSource.gallery,

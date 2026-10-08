@@ -29,9 +29,9 @@ class UserModel {
     lastName: json['lastName'] as String?,
     email: json['email'] as String?,
     phone: json['phone'] as String?,
-    avatarUrl: json['avatarUrl'] as String?,
+    avatarUrl: (json['photoUrl'] ?? json['avatarUrl']) as String?,
     rating: (json['rating'] as num?)?.toDouble(),
-    tripCount: json['tripCount'] as int? ?? 0,
+    tripCount: ((json['ridesCount'] ?? json['tripCount']) as num?)?.toInt() ?? 0,
   );
 
   Map<String, dynamic> toJson() => {
@@ -40,8 +40,8 @@ class UserModel {
     'lastName': lastName,
     'email': email,
     'phone': phone,
-    'avatarUrl': avatarUrl,
+    'photoUrl': avatarUrl,
     'rating': rating,
-    'tripCount': tripCount,
+    'ridesCount': tripCount,
   };
 }

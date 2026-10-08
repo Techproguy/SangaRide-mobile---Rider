@@ -13,12 +13,17 @@ abstract final class MockDelivery {
 
   static const String expiredHook = '#expired';
   static const String packagePhotoAsset = 'assets/images/package_photo.webp';
+  static const String profilePhotoAsset = 'assets/images/service_someone.webp';
+  static const String idDocumentAsset = 'assets/images/package_photo.webp';
 
   static const Duration _quoteLifetime = Duration(minutes: 10);
   static const int _maxUploadBytes = 8 * 1024 * 1024;
   static const Set<String> _imageExtensions = {'jpg', 'jpeg', 'png', 'webp', 'heic', 'heif'};
+  static const int _maxDocumentBytes = 5 * 1024 * 1024;
   static const Map<String, String> _uploadAssets = {
     'package_photo': packagePhotoAsset,
+    'profile_photo': profilePhotoAsset,
+    'id_document': idDocumentAsset,
     'pickup_proof': MockDeliveryLive.pickupProofAsset,
     'delivery_proof': MockDeliveryLive.deliveryProofAsset,
   };
@@ -115,7 +120,8 @@ abstract final class MockDelivery {
       if (!_imageExtensions.contains(extension)) {
         throw const MockFailure(415, 'That file type isn’t supported.', code: 'unsupported_type');
       }
-      if ((file['length'] as num? ?? 0) > _maxUploadBytes) {
+      final limit = purpose == 'id_document' ? _maxDocumentBytes : _maxUploadBytes;
+      if ((file['length'] as num? ?? 0) > limit) {
         throw const MockFailure(413, 'That photo is too big.', code: 'file_too_large');
       }
     }

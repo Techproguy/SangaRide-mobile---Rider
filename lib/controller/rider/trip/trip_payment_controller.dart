@@ -3,10 +3,12 @@ import 'dart:developer';
 
 import 'package:dio/dio.dart' show Options;
 import 'package:get/get.dart';
+import 'package:sanga_ride/controller/rider/wallet_controller.dart';
 import 'package:sanga_ride/core/api/api.dart';
 import 'package:sanga_ride/core/api/mock/mock_endpoints.dart';
 import 'package:sanga_ride/core/services/toast_service.dart';
 import 'package:sanga_ride/model/trip/wrapup/wrapup.dart';
+import 'package:sanga_ride/model/wallet/wallet.dart';
 
 class TripPaymentController extends GetxController {
   static const Duration pollInterval = Duration(milliseconds: 1500);
@@ -15,6 +17,7 @@ class TripPaymentController extends GetxController {
   static final Options _noAutoRetry = Options(extra: {'retries': 3});
 
   final _api = Get.find<ApiService>();
+  final _wallet = Get.find<WalletController>();
 
   final Rx<PaymentState> _state = Rx<PaymentState>(const PaymentLoading());
   Timer? _poller;
@@ -61,8 +64,10 @@ class TripPaymentController extends GetxController {
     if (id == null) return;
     final epoch = _invalidate();
     _state.value = const PaymentLoading();
+    final walletReady = _wallet.open();
     try {
       final response = await _api.get(MockEndpoints.tripPaymentOf(id), suppressErrorToast: true);
+      await walletReady;
       if (epoch != _epoch) return;
       _apply(TripPayment.fromJson(_dataOf(response.data)), epoch);
     } catch (e) {
@@ -75,6 +80,7 @@ class TripPaymentController extends GetxController {
     switch (payment.status) {
       case PaymentStatus.succeeded:
         _stopPolling();
+        if (payment.method == PaymentMethod.wallet) unawaited(_wallet.reloadQuietly());
         _state.value = PaymentPaid(payment);
       case PaymentStatus.awaitingDriver:
         _state.value = PaymentAwaitingDriver(payment);
@@ -87,14 +93,25 @@ class TripPaymentController extends GetxController {
         _state.value = PaymentFailed(payment, method: payment.method ?? PaymentMethod.cash);
       case PaymentStatus.pending:
         _stopPolling();
-        final method = payment.preferredMethod;
+        final method = _preferredOf(payment);
         _state.value = method == null ? const PaymentUnavailable() : PaymentChoosing(payment, selected: method);
     }
   }
 
+  bool _walletCovers(int fare) => WalletPayOption.from(_wallet.state, fare) is WalletCovers;
+
+  bool _isChoosable(TripPayment payment, PaymentMethod method) =>
+      payment.allowedMethods.contains(method) && (method != PaymentMethod.wallet || _walletCovers(payment.amount));
+
+  PaymentMethod? _preferredOf(TripPayment payment) {
+    final last = payment.lastMethod;
+    if (last != null && _isChoosable(payment, last)) return last;
+    return payment.allowedMethods.where((method) => _isChoosable(payment, method)).firstOrNull;
+  }
+
   void select(PaymentMethod method) {
     final current = state;
-    if (current is! PaymentChoosing || !current.payment.allowedMethods.contains(method)) return;
+    if (current is! PaymentChoosing || !_isChoosable(current.payment, method)) return;
     _state.value = current.withSelected(method);
   }
 
@@ -109,7 +126,9 @@ class TripPaymentController extends GetxController {
     if (payment == null || current is PaymentProcessing || current is PaymentAwaitingDriver || current is PaymentPaid) {
       return;
     }
-    final method = current is PaymentChoosing ? current.selected : payment.preferredMethod;
+    final method = current is PaymentChoosing && _isChoosable(payment, current.selected)
+        ? current.selected
+        : _preferredOf(payment);
     if (method != null) _state.value = PaymentChoosing(payment, selected: method);
   }
 
@@ -131,6 +150,12 @@ class TripPaymentController extends GetxController {
     final current = state;
     if (current is! PaymentChoosing || current.selected != PaymentMethod.cash) return;
     await _submit(current.payment, const PaymentRequest.cash());
+  }
+
+  Future<void> payWallet() async {
+    final current = state;
+    if (current is! PaymentChoosing || current.selected != PaymentMethod.wallet) return;
+    await _submit(current.payment, const PaymentRequest.wallet());
   }
 
   Future<void> payCard(CardDetails details) async {
@@ -155,17 +180,23 @@ class TripPaymentController extends GetxController {
       _apply(TripPayment.fromJson(_dataOf(response.data)), epoch);
     } catch (e) {
       log('payment submit failed: ${e is ApiException ? e.code : e.runtimeType}');
-      if (epoch == _epoch) _failSubmit(e, payment, request.method, id);
+      if (epoch == _epoch) await _failSubmit(e, payment, request.method);
     }
   }
 
-  void _failSubmit(Object error, TripPayment payment, PaymentMethod method, String id) {
+  Future<void> _failSubmit(Object error, TripPayment payment, PaymentMethod method) async {
     if (error is ApiException && error.code == 'already_paid') {
       unawaited(_load());
       return;
     }
     if (error is ApiException && error.statusCode == 402) {
+      if (error.code == PaymentDeclineReason.insufficientBalance.code) await _wallet.reloadQuietly();
       _state.value = PaymentDeclined(payment, reason: PaymentDeclineReason.fromCode(error.code));
+      return;
+    }
+    if (method == PaymentMethod.wallet) {
+      Toast.error(genericFailure);
+      unawaited(_load());
       return;
     }
     if (method == PaymentMethod.cash) {

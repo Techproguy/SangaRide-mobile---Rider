@@ -13,9 +13,9 @@ class MockData {
     'lastName': 'Okafor',
     'email': 'ada.okafor@example.com',
     'phone': '+2348012345678',
-    'avatarUrl': null,
+    'photoUrl': null,
     'rating': 4.9,
-    'tripCount': 37,
+    'ridesCount': 37,
   };
 
   static const Map<String, dynamic> weather = {'city': 'Lagos', 'temperatureC': 28, 'condition': 'sunny'};

@@ -138,6 +138,11 @@ abstract final class MockHistory {
 
   static String _idOf(int i) => 'hist_${i.toString().padLeft(2, '0')}';
 
+  static bool isPaidWithWallet(String id) {
+    final i = _indexOf(id);
+    return i != null && !_isCancelled(i) && i % 5 != 0;
+  }
+
   static int? _indexOf(String id) {
     final match = RegExp(r'^hist_(\d{2})$').firstMatch(id);
     final index = match == null ? null : int.parse(match.group(1)!);
@@ -318,7 +323,7 @@ abstract final class MockHistory {
       'distanceKm': isCancelled ? null : km,
       'durationMinutes': isCancelled ? null : minutes,
       'lines': isCancelled ? const [] : _lines(fare, km, minutes, isDelivery: isDelivery),
-      'paidWith': isCancelled ? null : {'method': isCard ? 'card' : 'cash', 'last4': isCard ? _cardLast4[i % 3] : null},
+      'paidWith': isCancelled ? null : _paidWith(i, isCard),
       'driver': hasDriver ? _driverOf(i) : null,
       'vehicle': hasDriver ? _vehicleOf(i) : null,
       'events': isCancelled
@@ -335,6 +340,11 @@ abstract final class MockHistory {
       'delivery': isDelivery ? _deliveryOf(i) : null,
       'serverTime': _iso(DateTime.now()),
     };
+  }
+
+  static Map<String, dynamic> _paidWith(int i, bool isCard) {
+    if (isPaidWithWallet(_idOf(i))) return {'method': 'wallet', 'last4': null};
+    return {'method': isCard ? 'card' : 'cash', 'last4': isCard ? _cardLast4[i % 3] : null};
   }
 
   static Object? _setBlocked(MockRequest request, bool isBlocked) {

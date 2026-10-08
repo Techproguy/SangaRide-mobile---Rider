@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import 'package:sanga_ride/core/api/mock/mock_account.dart';
 import 'package:sanga_ride/core/api/mock/mock_airport.dart';
 import 'package:sanga_ride/core/api/mock/mock_booking.dart';
 import 'package:sanga_ride/core/api/mock/mock_delivery.dart';
@@ -8,10 +9,14 @@ import 'package:sanga_ride/core/api/mock/mock_data.dart';
 import 'package:sanga_ride/core/api/mock/mock_history.dart';
 import 'package:sanga_ride/core/api/mock/mock_endpoints.dart';
 import 'package:sanga_ride/core/api/mock/mock_safety.dart';
+import 'package:sanga_ride/core/api/mock/mock_notifications.dart';
 import 'package:sanga_ride/core/api/mock/mock_saved_places.dart';
 import 'package:sanga_ride/core/api/mock/mock_server.dart';
+import 'package:sanga_ride/core/api/mock/mock_support.dart';
 import 'package:sanga_ride/core/api/mock/mock_trip.dart';
 import 'package:sanga_ride/core/api/mock/mock_trip_wrapup.dart';
+import 'package:sanga_ride/core/api/mock/mock_verification.dart';
+import 'package:sanga_ride/core/api/mock/mock_wallet.dart';
 
 class MockRoutes {
   MockRoutes._();
@@ -26,6 +31,11 @@ class MockRoutes {
     ...MockTripWrapUp.routes,
     ...MockSavedPlaces.routes,
     ...MockHistory.routes,
+    ...MockAccount.routes,
+    ...MockNotifications.routes,
+    ...MockVerification.routes,
+    ...MockSupport.routes,
+    ...MockWallet.routes,
     MockRoute.post(MockEndpoints.signUp, (request) => {'phone': request.body['phone'], 'expiresInSeconds': 300}),
     MockRoute.post(
       MockEndpoints.checkExistence,
@@ -37,9 +47,7 @@ class MockRoutes {
     MockRoute.post(MockEndpoints.appleSignIn, (_) => _session),
     MockRoute.post(MockEndpoints.refreshToken, (_) => MockData.tokens),
     MockRoute.post(MockEndpoints.logout, (_) => null),
-    MockRoute.get(MockEndpoints.me, (_) => MockData.user),
-    MockRoute.patch(MockEndpoints.me, (request) => {...MockData.user, ...request.body}),
-    MockRoute.post(MockEndpoints.selfie, (_) => {'status': 'verified'}),
+    MockRoute.post(MockEndpoints.selfie, MockVerification.selfie),
     MockRoute.get(MockEndpoints.recentPlaces, (_) => _recentPlaces),
     MockRoute.post(MockEndpoints.recentPlaces, _addRecentPlace),
     MockRoute.delete(MockEndpoints.recentPlace, (request) {

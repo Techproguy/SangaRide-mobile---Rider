@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
-class WrapUpAmountTile extends StatelessWidget {
-  const WrapUpAmountTile({super.key, required this.label, required this.amount});
+class AmountTile extends StatelessWidget {
+  const AmountTile({super.key, required this.label, required this.amount});
 
   final String label;
   final int amount;

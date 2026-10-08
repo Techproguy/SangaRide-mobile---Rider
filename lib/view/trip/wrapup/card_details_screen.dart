@@ -3,9 +3,9 @@ import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sanga_ride/controller/rider/trip/trip_payment_controller.dart';
 import 'package:sanga_ride/model/trip/wrapup/wrapup.dart';
-import 'package:sanga_ride/view/trip/wrapup/widgets/card_details_fields.dart';
-import 'package:sanga_ride/view/trip/wrapup/widgets/card_form_model.dart';
-import 'package:sanga_ride/view/trip/wrapup/widgets/payment_sheets.dart';
+import 'package:sanga_ride/view/widgets/card/card_details_fields.dart';
+import 'package:sanga_ride/view/widgets/card/card_form_model.dart';
+import 'package:sanga_ride/view/widgets/feedback/payment_sheets.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 class CardDetailsScreen extends StatefulWidget {

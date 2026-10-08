@@ -3,6 +3,7 @@ import 'package:sanga_ride/core/api/mock/mock_endpoints.dart';
 import 'package:sanga_ride/core/api/mock/mock_server.dart';
 import 'package:sanga_ride/core/api/mock/mock_trip.dart';
 import 'package:sanga_ride/core/api/mock/mock_trip_state.dart';
+import 'package:sanga_ride/core/api/mock/mock_wallet.dart';
 
 abstract final class MockTripWrapUp {
   static final List<MockRoute> routes = [
@@ -17,7 +18,7 @@ abstract final class MockTripWrapUp {
   static const int _fallbackFare = 4500;
   static const double _fallbackDistanceKm = 12.4;
   static const int _fallbackDurationMinutes = 24;
-  static const List<String> _allowedMethods = ['cash', 'card'];
+  static const List<String> _allowedMethods = ['cash', 'card', 'wallet'];
 
   static final Map<String, DateTime> _cashPostedAt = {};
   static final Map<String, String> _cardLast4 = {};
@@ -100,6 +101,7 @@ abstract final class MockTripWrapUp {
     return switch (method) {
       'cash' => _payCash(id, trip),
       'card' => _payCard(id, trip, _asMap(request.body['card'])),
+      'wallet' => _payWallet(id, trip),
       _ => throw const MockFailure(422, 'Pick a way to pay.', code: 'invalid_method'),
     };
   }
@@ -127,6 +129,20 @@ abstract final class MockTripWrapUp {
     _cardLast4[id] = last4;
     _settle(id, 'card', paidAt);
     return _paymentPayload(id, trip, 'succeeded', method: 'card', last4: last4, paidAt: paidAt);
+  }
+
+  static Object? _payWallet(String id, Map<String, dynamic> trip) {
+    final paidAt = DateTime.now();
+    MockWallet.payTrip(
+      tripId: id,
+      fare: _fareOf(trip),
+      pickup: _placeOf(trip['pickup'], 'Pickup')['name'] as String,
+      dropoff: _placeOf(trip['dropoff'], 'Drop off')['name'] as String,
+      at: paidAt,
+    );
+    _cashPostedAt.remove(id);
+    _settle(id, 'wallet', paidAt);
+    return _paymentPayload(id, trip, 'succeeded', method: 'wallet', paidAt: paidAt);
   }
 
   static bool _isFutureExpiry(String expiry) {

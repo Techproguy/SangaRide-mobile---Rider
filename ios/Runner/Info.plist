@@ -31,7 +31,7 @@
 	<key>NSCameraUsageDescription</key>
 	<string>Sanga Ride uses your camera for your verification selfie and for photos of the packages you send.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>Sanga Ride lets you pick a photo of the package you are sending from your library.</string>
+	<string>Sanga Ride lets you pick photos from your library for your profile, your ID and the packages you send.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>Sanga Ride uses your location during trips so your driver can find you.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>

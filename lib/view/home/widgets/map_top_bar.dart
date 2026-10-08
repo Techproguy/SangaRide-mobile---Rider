@@ -8,6 +8,7 @@ class MapTopBar extends StatelessWidget {
     required this.leading,
     required this.weather,
     required this.userName,
+    this.bell,
     this.changedCity,
     this.onConfirmCity,
     this.onDeclineCity,
@@ -16,6 +17,7 @@ class MapTopBar extends StatelessWidget {
   final Widget leading;
   final Weather? weather;
   final String userName;
+  final Widget? bell;
   final String? changedCity;
   final VoidCallback? onConfirmCity;
   final VoidCallback? onDeclineCity;
@@ -35,6 +37,7 @@ class MapTopBar extends StatelessWidget {
               const Spacer(),
               if (weather case final weather?) SangaWeatherChip(city: weather.city, temperature: weather.temperatureC),
               const SizedBox(width: SangaSpacing.sm),
+              if (bell case final bell?) ...[bell, const SizedBox(width: SangaSpacing.sm)],
               SangaAvatar(name: userName),
             ],
           ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:sanga_ride/model/trip/wrapup/wrapup.dart';
+import 'package:sanga_ride/view/widgets/card/payment_method_icon.dart';
 import 'package:sanga_ride/view/ride/widgets/ride_option_schedule_format.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
@@ -17,10 +18,7 @@ class ReceiptPaidWith extends StatelessWidget {
       child: Row(
         spacing: SangaSpacing.md,
         children: [
-          SangaIconBadge(
-            size: 40,
-            child: Icon(paidWith.method == PaymentMethod.card ? Icons.credit_card_rounded : Icons.payments_outlined),
-          ),
+          SangaIconBadge(size: 40, child: Icon(PaymentMethodIcon.of(paidWith.method))),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,

@@ -5,7 +5,7 @@ import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 enum CardField { number, expiry, cvv, pin }
 
 class CardFormModel extends ChangeNotifier {
-  CardFormModel() {
+  CardFormModel({this.isPinRequired = true}) {
     for (final field in CardField.values) {
       _controllers[field]!.addListener(() => _onEdited(field));
       _focusNodes[field]!.addListener(() => _onFocusChanged(field));
@@ -17,6 +17,8 @@ class CardFormModel extends ChangeNotifier {
   static const int standardNumberLength = 16;
   static const List<String> longNumberPrefixes = ['506', '650'];
   static const int expiryLength = 5;
+
+  final bool isPinRequired;
 
   final Map<CardField, TextEditingController> _controllers = {
     for (final field in CardField.values) field: TextEditingController(),
@@ -41,7 +43,7 @@ class CardFormModel extends ChangeNotifier {
     CardField.number => _numberProblem,
     CardField.expiry => _expiryProblem,
     CardField.cvv => _textOf(field).length == cvvLength ? null : 'Enter the 3 digits on the back of your card',
-    CardField.pin => _textOf(field).length == pinLength ? null : 'Enter your 4 digit card PIN',
+    CardField.pin => !isPinRequired || _textOf(field).length == pinLength ? null : 'Enter your 4 digit card PIN',
   };
 
   String? get _numberProblem {
@@ -80,7 +82,7 @@ class CardFormModel extends ChangeNotifier {
     final next = switch (field) {
       CardField.number => CardField.expiry,
       CardField.expiry => CardField.cvv,
-      CardField.cvv => CardField.pin,
+      CardField.cvv => isPinRequired ? CardField.pin : null,
       CardField.pin => null,
     };
     if (next != null) focusOf(next).requestFocus();

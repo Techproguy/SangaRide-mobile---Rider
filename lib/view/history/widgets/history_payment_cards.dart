@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:sanga_ride/model/history/history_detail.dart';
-import 'package:sanga_ride/model/trip/wrapup/payment.dart';
+import 'package:sanga_ride/view/widgets/card/payment_method_icon.dart';
 import 'package:sanga_ride/view/history/widgets/history_format.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
@@ -30,7 +30,7 @@ class HistoryPaymentCards extends StatelessWidget {
           rows: [
             if (paidWith != null)
               SangaDetailRow(
-                icon: paidWith.method == PaymentMethod.card ? Icons.credit_card_rounded : Icons.payments_outlined,
+                icon: PaymentMethodIcon.of(paidWith.method),
                 label: 'Paid with',
                 value: paidWith.label,
               ),

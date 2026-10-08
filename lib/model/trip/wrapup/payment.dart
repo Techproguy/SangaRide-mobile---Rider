@@ -6,6 +6,13 @@ enum PaymentMethod {
     'Pay securely with your debit or credit card',
     'Payment complete',
     'Your card payment went through.',
+  ),
+  wallet(
+    'wallet',
+    'Wallet',
+    'Pay from your Sanga balance',
+    'Paid from your wallet',
+    'Your wallet payment went through.',
   );
 
   const PaymentMethod(this.code, this.label, this.subtitle, this.paidTitle, this.paidMessage);
@@ -47,6 +54,11 @@ enum PaymentStatus {
 enum PaymentDeclineReason {
   cardDeclined('card_declined', 'Card declined', 'Your bank declined this card.'),
   cardExpired('card_expired', 'Card expired', 'This card has expired.'),
+  insufficientBalance(
+    'insufficient_balance',
+    'Not enough in your wallet',
+    'Your wallet balance is lower than this fare. Top up to use it, or pay another way.',
+  ),
   unknown('unknown', 'Payment didn’t go through', 'We couldn’t take that payment. Give it another go.');
 
   const PaymentDeclineReason(this.code, this.title, this.message);

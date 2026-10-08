@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:sanga_ride/controller/rider/account/notifications_controller.dart';
 import 'package:sanga_ride/controller/rider/ride_for_controller.dart';
 import 'package:sanga_ride/controller/rider/ride_request_controller.dart';
 import 'package:sanga_ride/controller/rider/rider_home_controller.dart';
@@ -23,6 +24,7 @@ import 'package:sanga_ride/view/airport/airport_entry.dart';
 import 'package:sanga_ride/view/delivery/send/delivery_entry.dart';
 import 'package:sanga_ride/view/home/widgets/home_panel.dart';
 import 'package:sanga_ride/view/home/widgets/map_top_bar.dart';
+import 'package:sanga_ride/view/notifications/widgets/notification_bell.dart';
 import 'package:sanga_ride/view/widgets/map/place_marker.dart';
 import 'package:sanga_ride/view/widgets/widgets.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
@@ -40,6 +42,7 @@ class _RiderHomeScreenState extends State<RiderHomeScreen> {
   final _rideFor = Get.find<RideForController>();
   final _saved = Get.find<SavedPlacesController>();
   final _map = Get.find<MapController>();
+  final _notifications = Get.find<NotificationsController>();
   final _panelKey = GlobalKey();
   Set<Marker> _markers = const {};
   Worker? _placeWorker;
@@ -51,6 +54,7 @@ class _RiderHomeScreenState extends State<RiderHomeScreen> {
     _showCurrentPlace();
     WidgetsBinding.instance.addPostFrameCallback((_) => _syncPanelInset());
     unawaited(_resumeActiveTrip());
+    WidgetsBinding.instance.addPostFrameCallback((_) => unawaited(_notifications.reload()));
   }
 
   Future<void> _resumeActiveTrip() async {
@@ -84,6 +88,11 @@ class _RiderHomeScreenState extends State<RiderHomeScreen> {
     if (!mounted) return;
     setState(() => _markers = {marker});
     _map.camera.moveTo(position, zoom: 15);
+  }
+
+  Future<void> _openMenu() async {
+    await context.push(MenuRoutes.menu);
+    if (mounted) unawaited(_notifications.reload());
   }
 
   void _search({RideCategory? category}) {
@@ -128,9 +137,10 @@ class _RiderHomeScreenState extends State<RiderHomeScreen> {
             SafeArea(
               child: Obx(
                 () => MapTopBar(
-                  leading: SangaMapButton.menu(onPressed: () => context.push(MenuRoutes.menu)),
+                  leading: SangaMapButton.menu(onPressed: _openMenu),
                   weather: _home.weather,
                   userName: user?.displayName ?? '',
+                  bell: const NotificationBell(),
                   changedCity: _home.changedCity,
                   onConfirmCity: _home.confirmCity,
                   onDeclineCity: _home.dismissCity,

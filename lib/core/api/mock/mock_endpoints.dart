@@ -1,3 +1,5 @@
+import 'package:sanga_ride/core/api/account_endpoints.dart';
+
 class MockEndpoints {
   MockEndpoints._();
 
@@ -14,7 +16,7 @@ class MockEndpoints {
   static const String refreshToken = '$_auth/refresh';
   static const String logout = '$_auth/logout';
 
-  static const String me = '$_users/me';
+  static const String me = AccountEndpoints.me;
 
   static const String selfie = '$_verification/selfie';
 

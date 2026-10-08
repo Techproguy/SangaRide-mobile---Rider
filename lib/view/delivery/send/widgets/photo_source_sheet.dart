@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
-Future<PhotoSource?> showPhotoSourceSheet(BuildContext context) {
+Future<PhotoSource?> showPhotoSourceSheet(BuildContext context, {String title = 'Add a package photo'}) {
   return showSangaSheet<PhotoSource>(
     context: context,
     padding: const EdgeInsets.fromLTRB(SangaSpacing.gutter, SangaSpacing.xl, SangaSpacing.gutter, SangaSpacing.md),
@@ -11,7 +11,7 @@ Future<PhotoSource?> showPhotoSourceSheet(BuildContext context) {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       spacing: SangaSpacing.md,
       children: [
-        const Text('Add a package photo', style: SangaTextStyles.title),
+        Text(title, style: SangaTextStyles.title),
         SangaListGroup(
           children: [
             SangaListRow(

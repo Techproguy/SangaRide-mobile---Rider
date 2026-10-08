@@ -1,14 +1,19 @@
 import 'package:go_router/go_router.dart';
+import 'package:sanga_ride/core/router/account_routes.dart';
 import 'package:sanga_ride/core/router/booking_routes.dart';
 import 'package:sanga_ride/core/router/history_routes.dart';
 import 'package:sanga_ride/core/router/menu_routes.dart';
+import 'package:sanga_ride/core/router/notification_routes.dart';
 import 'package:sanga_ride/core/router/places_routes.dart';
 import 'package:sanga_ride/core/router/delivery_routes.dart';
 import 'package:sanga_ride/core/router/delivery_live_routes.dart';
 import 'package:sanga_ride/core/router/safety_routes.dart';
+import 'package:sanga_ride/core/router/support_routes.dart';
 import 'package:sanga_ride/core/router/who_for_routes.dart';
 import 'package:sanga_ride/core/router/trip_routes.dart';
 import 'package:sanga_ride/core/router/trip_wrapup_routes.dart';
+import 'package:sanga_ride/core/router/verification_routes.dart';
+import 'package:sanga_ride/core/router/wallet_routes.dart';
 import 'package:sanga_ride/view/auth/about_you_screen.dart';
 import 'package:sanga_ride/view/auth/home_location_screen.dart';
 import 'package:sanga_ride/view/auth/onboarding_screen.dart';
@@ -70,6 +75,11 @@ class SangaRoutes {
     ...PlacesRoutes.all,
     ...HistoryRoutes.all,
     ...MenuRoutes.all,
+    ...AccountRoutes.all,
+    ...NotificationRoutes.all,
+    ...VerificationRoutes.all,
+    ...SupportRoutes.all,
+    ...WalletRoutes.all,
   ];
 
   static final List<RouteBase> rideRoutes = [

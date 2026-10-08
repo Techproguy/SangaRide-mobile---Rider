@@ -83,7 +83,7 @@ class _DeliveryItemScreenState extends State<DeliveryItemScreen> {
       spacing: SangaSpacing.lg,
       children: [
         SangaTextField(
-          label: 'Item’s name',
+          label: 'Item name',
           isRequired: true,
           hintText: isDocuments ? 'Contract, certificate, letter' : 'Birthday cake, phone, shoes',
           controller: _name,

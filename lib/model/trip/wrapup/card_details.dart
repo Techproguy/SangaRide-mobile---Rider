@@ -10,7 +10,7 @@ class SensitiveBody extends UnmodifiableMapView<String, dynamic> {
 }
 
 class CardDetails {
-  const CardDetails({required this.number, required this.expiry, required this.cvv, required this.pin});
+  const CardDetails({required this.number, required this.expiry, required this.cvv, this.pin = ''});
 
   final String number;
   final String expiry;
@@ -24,6 +24,8 @@ class PaymentRequest {
   const PaymentRequest.cash() : method = PaymentMethod.cash, card = null;
 
   const PaymentRequest.card(CardDetails this.card) : method = PaymentMethod.card;
+
+  const PaymentRequest.wallet() : method = PaymentMethod.wallet, card = null;
 
   final PaymentMethod method;
   final CardDetails? card;

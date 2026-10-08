@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:sanga_ride/view/trip/wrapup/widgets/card_form_model.dart';
+import 'package:sanga_ride/view/widgets/card/card_form_model.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 class CardDetailsFields extends StatelessWidget {
@@ -52,22 +52,24 @@ class CardDetailsFields extends StatelessWidget {
                   focusNode: model.focusOf(CardField.cvv),
                   errorText: model.errorOf(CardField.cvv),
                   maxDigits: CardFormModel.cvvLength,
-                  onSubmitted: (_) => model.focusAfter(CardField.cvv),
+                  textInputAction: model.isPinRequired ? TextInputAction.next : TextInputAction.done,
+                  onSubmitted: (_) => model.isPinRequired ? model.focusAfter(CardField.cvv) : onDone(),
                 ),
               ),
             ],
           ),
-          SangaSecretField(
-            label: 'Card PIN',
-            hintText: '••••',
-            controller: model.controllerOf(CardField.pin),
-            focusNode: model.focusOf(CardField.pin),
-            errorText: model.errorOf(CardField.pin),
-            maxDigits: CardFormModel.pinLength,
-            textInputAction: TextInputAction.done,
-            onSubmitted: (_) => onDone(),
-          ),
-          const _SecurityNote(),
+          if (model.isPinRequired)
+            SangaSecretField(
+              label: 'Card PIN',
+              hintText: '••••',
+              controller: model.controllerOf(CardField.pin),
+              focusNode: model.focusOf(CardField.pin),
+              errorText: model.errorOf(CardField.pin),
+              maxDigits: CardFormModel.pinLength,
+              textInputAction: TextInputAction.done,
+              onSubmitted: (_) => onDone(),
+            ),
+          _SecurityNote(storesNothing: !model.isPinRequired),
         ],
       ),
     );
@@ -75,18 +77,22 @@ class CardDetailsFields extends StatelessWidget {
 }
 
 class _SecurityNote extends StatelessWidget {
-  const _SecurityNote();
+  const _SecurityNote({required this.storesNothing});
+
+  final bool storesNothing;
 
   @override
   Widget build(BuildContext context) {
-    return const Row(
+    return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       spacing: SangaSpacing.xs,
       children: [
-        Icon(Icons.lock_outline_rounded, size: 14, color: SangaColors.textMuted),
+        const Icon(Icons.lock_outline_rounded, size: 14, color: SangaColors.textMuted),
         Expanded(
           child: Text(
-            'Your card details go straight to our payment partner. We don’t store your PIN.',
+            storesNothing
+                ? 'Your card details go straight to our payment partner. We never see or keep your card number.'
+                : 'Your card details go straight to our payment partner. We don’t store your PIN.',
             style: SangaTextStyles.caption,
           ),
         ),
