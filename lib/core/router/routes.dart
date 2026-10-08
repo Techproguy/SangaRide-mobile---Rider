@@ -1,4 +1,6 @@
 import 'package:go_router/go_router.dart';
+import 'package:sanga_ride/core/router/trip_routes.dart';
+import 'package:sanga_ride/core/router/trip_wrapup_routes.dart';
 import 'package:sanga_ride/view/auth/about_you_screen.dart';
 import 'package:sanga_ride/view/auth/home_location_screen.dart';
 import 'package:sanga_ride/view/auth/onboarding_screen.dart';
@@ -46,7 +48,13 @@ class SangaRoutes {
 
   static const String home = '/home';
 
-  static final List<RouteBase> allRoutes = [...authRoutes, ...homeRoutes, ...rideRoutes];
+  static final List<RouteBase> allRoutes = [
+    ...authRoutes,
+    ...homeRoutes,
+    ...rideRoutes,
+    ...TripRoutes.all,
+    ...TripWrapUpRoutes.all,
+  ];
 
   static final List<RouteBase> rideRoutes = [
     GoRoute(path: rideSearch, builder: (context, state) => const RideSearchScreen()),

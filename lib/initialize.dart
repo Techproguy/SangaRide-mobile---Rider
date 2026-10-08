@@ -8,6 +8,8 @@ import 'package:sanga_ride/controller/rider/ride_match_controller.dart';
 import 'package:sanga_ride/controller/rider/ride_request_controller.dart';
 import 'package:sanga_ride/controller/rider/rider_home_controller.dart';
 import 'package:sanga_ride/controller/rider/rider_sign_up_controller.dart';
+import 'package:sanga_ride/controller/rider/trip/trip_bindings.dart';
+import 'package:sanga_ride/controller/rider/trip/trip_wrapup_bindings.dart';
 import 'package:sanga_ride/controller/shared/auth_controller.dart';
 import 'package:sanga_ride/controller/shared/map_controller.dart';
 import 'package:sanga_ride/controller/shared/user_controller.dart';
@@ -38,4 +40,6 @@ Future<void> initializeSanga() async {
   Get.put(UserController(), permanent: true);
 
   Get.lazyPut(() => MapController(), fenix: true);
+  registerTripControllers();
+  registerTripWrapUpControllers();
 }

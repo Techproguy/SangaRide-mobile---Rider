@@ -3,11 +3,15 @@ import 'dart:math' as math;
 import 'package:sanga_ride/core/api/mock/mock_data.dart';
 import 'package:sanga_ride/core/api/mock/mock_endpoints.dart';
 import 'package:sanga_ride/core/api/mock/mock_server.dart';
+import 'package:sanga_ride/core/api/mock/mock_trip.dart';
+import 'package:sanga_ride/core/api/mock/mock_trip_wrapup.dart';
 
 class MockRoutes {
   MockRoutes._();
 
   static final List<MockRoute> all = [
+    ...MockTrip.routes,
+    ...MockTripWrapUp.routes,
     MockRoute.post(MockEndpoints.signUp, (request) => {'phone': request.body['phone'], 'expiresInSeconds': 300}),
     MockRoute.post(
       MockEndpoints.checkExistence,
