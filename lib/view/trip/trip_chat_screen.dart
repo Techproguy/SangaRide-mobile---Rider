@@ -74,6 +74,7 @@ class _TripChatScreenState extends State<TripChatScreen> {
                 final driver = _trip.trip?.driver;
                 return SangaPageHeader(
                   title: driver?.name ?? '',
+                  isSingleLine: true,
                   trailing: IconButton(
                     tooltip: 'Call',
                     padding: EdgeInsets.zero,
