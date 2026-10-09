@@ -7,7 +7,6 @@ import 'package:sanga_ride/controller/rider/trip/live_problem.dart';
 import 'package:sanga_ride/controller/rider/wallet_controller.dart';
 import 'package:sanga_ride/core/api/api.dart';
 import 'package:sanga_ride/core/api/app_endpoints.dart';
-import 'package:sanga_ride/core/api/trip_live_endpoints.dart';
 import 'package:sanga_ride/core/services/card_tokenizer.dart';
 import 'package:sanga_ride/model/trip/wrapup/wrapup.dart';
 import 'package:sanga_ride/model/wallet/wallet.dart';
@@ -151,8 +150,22 @@ class TripPaymentController extends GetxController {
   }
 
   void _settleWallets(TripPayment payment) {
-    final method = payment.method;
-    if (method == PaymentMethod.wallet || method == PaymentMethod.groupWallet) unawaited(_wallet.reloadQuietly());
+    switch (payment.method) {
+      case PaymentMethod.wallet:
+        unawaited(_wallet.reloadQuietly());
+      case PaymentMethod.groupWallet:
+        _reloadGroupWallet(payment.group?.id);
+      default:
+        break;
+    }
+  }
+
+  void _reloadGroupWallet(String? groupId) {
+    if (groupId == null) return;
+    final scope = WalletScope.group(groupId);
+    if (Get.isRegistered<WalletController>(tag: scope.tag)) {
+      unawaited(Get.find<WalletController>(tag: scope.tag).reloadQuietly());
+    }
   }
 
   CashWaitLink _cashLinkOf(TripPayment payment) {
@@ -417,7 +430,7 @@ class TripPaymentController extends GetxController {
       intent: 'trip-pay-otp',
       run: (key) async {
         final response = await _api.post(
-          TripLiveEndpoints.tripPaymentAuthorizeOf(id),
+          AppEndpoints.tripPaymentAuthorizeOf(id),
           data: SensitiveBody({'otp': code}),
           key: key,
           suppressErrorToast: true,

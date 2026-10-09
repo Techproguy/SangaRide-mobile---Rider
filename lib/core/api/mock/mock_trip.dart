@@ -9,7 +9,6 @@ import 'package:sanga_ride/core/api/mock/mock_server.dart';
 import 'package:sanga_ride/core/api/mock/mock_trip_changes.dart';
 import 'package:sanga_ride/core/api/mock/mock_trip_state.dart';
 import 'package:sanga_ride/core/api/mock/mock_trip_wrapup.dart';
-import 'package:sanga_ride/core/api/trip_live_endpoints.dart';
 
 abstract final class MockTrip {
   static final List<MockRoute> routes = [
@@ -20,7 +19,7 @@ abstract final class MockTrip {
     MockRoute.post(AppEndpoints.liveTripReport, _report),
     MockRoute.post(AppEndpoints.liveTripComplete, _complete),
     MockRoute.post(AppEndpoints.liveTripCall, (_) => {'maskedNumber': _maskedNumber}),
-    MockRoute.post(TripLiveEndpoints.tripShare, _share),
+    MockRoute.post(AppEndpoints.tripShare, _share),
     MockRoute.get(AppEndpoints.liveTripMessages, _messages),
     MockRoute.post(AppEndpoints.liveTripMessages, _sendMessage),
     MockRoute.get(AppEndpoints.liveTripEvents, (request) => {'events': _events(request.params['id']!)}),

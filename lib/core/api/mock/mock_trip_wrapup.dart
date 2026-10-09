@@ -1,6 +1,5 @@
 import 'package:sanga_ride/core/api/mock/mock_data.dart';
 import 'package:sanga_ride/core/api/mock/mock_card_tokenizer.dart';
-import 'package:sanga_ride/core/api/trip_live_endpoints.dart';
 import 'package:sanga_ride/core/api/app_endpoints.dart';
 import 'package:sanga_ride/core/api/mock/mock_groups.dart';
 import 'package:sanga_ride/core/api/mock/mock_server.dart';
@@ -13,7 +12,7 @@ abstract final class MockTripWrapUp {
     MockRoute.get(AppEndpoints.tripPayment, _payment),
     MockRoute.post(AppEndpoints.tripPayment, _pay),
     MockRoute.post(AppEndpoints.tripPaymentCancel, _cancelPayment),
-    MockRoute.post(TripLiveEndpoints.tripPaymentAuthorize, _authorize),
+    MockRoute.post(AppEndpoints.tripPaymentAuthorize, _authorize),
     MockRoute.get(AppEndpoints.tripReceipt, _receipt),
     MockRoute.post(AppEndpoints.tripRating, _rate),
   ];

@@ -7,7 +7,6 @@ import 'package:sanga_ride/controller/rider/delivery/send_delivery_controller.da
 import 'package:sanga_ride/controller/rider/trip/live_problem.dart';
 import 'package:sanga_ride/core/api/api.dart';
 import 'package:sanga_ride/core/api/app_endpoints.dart';
-import 'package:sanga_ride/core/api/trip_live_endpoints.dart';
 import 'package:sanga_ride/core/services/session_restore.dart';
 import 'package:sanga_ride/core/services/session_storage.dart';
 import 'package:sanga_ride/model/models.dart';
@@ -403,7 +402,7 @@ class TripController extends GetxController {
     }
     _shareKey ??= IdempotencyKey.newFor('trip-share');
     try {
-      final response = await _api.post(TripLiveEndpoints.tripShareOf(id), key: _shareKey, suppressErrorToast: true);
+      final response = await _api.post(AppEndpoints.tripShareOf(id), key: _shareKey, suppressErrorToast: true);
       return JsonReader.of(_dataOf(response.data)).str('url');
     } catch (error) {
       log('share link failed: $error', name: 'TripController');

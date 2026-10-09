@@ -5,7 +5,6 @@ class AppEndpoints {
 
   static const String _auth = '/auth';
   static const String _users = '/users';
-  static const String _verification = '/verification';
 
   static const String signUp = '$_auth/sign-up';
   static const String checkExistence = '$_auth/check-existence';
@@ -19,8 +18,6 @@ class AppEndpoints {
   static const String me = AccountEndpoints.me;
   static const String meState = '/me/state';
   static const String health = '/health';
-
-  static const String selfie = '$_verification/selfie';
 
   static const String recentPlaces = '$_users/me/places/recent';
   static const String recentPlace = '$_users/me/places/recent/:id';
@@ -107,6 +104,8 @@ class AppEndpoints {
   static const String tripPaymentCancel = '$_tripWrapUp/payment/cancel';
   static const String tripReceipt = '$_tripWrapUp/receipt';
   static const String tripRating = '$_tripWrapUp/rating';
+  static const String tripPaymentAuthorize = '$_tripWrapUp/payment/authorize';
+  static const String tripShare = '$_tripWrapUp/share';
 
   static String tripPaymentOf(String id) => tripPayment.replaceFirst(':id', id);
 
@@ -115,4 +114,8 @@ class AppEndpoints {
   static String tripReceiptOf(String id) => tripReceipt.replaceFirst(':id', id);
 
   static String tripRatingOf(String id) => tripRating.replaceFirst(':id', id);
+
+  static String tripPaymentAuthorizeOf(String id) => tripPaymentAuthorize.replaceFirst(':id', id);
+
+  static String tripShareOf(String id) => tripShare.replaceFirst(':id', id);
 }
