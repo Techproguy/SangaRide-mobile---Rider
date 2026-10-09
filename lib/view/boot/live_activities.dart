@@ -22,7 +22,7 @@ abstract final class LiveActivities {
           title: 'SOS is active',
           subtitle: 'Tap to open your Safety Centre',
         ),
-      if (trip != null && path != TripRoutes.tripOf(trip.id))
+      if (trip != null && !path.startsWith(TripRoutes.tripOf(trip.id)))
         const SangaLiveActivity(
           id: tripId,
           tone: SangaLiveActivityTone.live,
