@@ -63,7 +63,7 @@ abstract final class MockAccount {
 
   static void finishOnboarding() => _onboardingStep = null;
 
-  static const Set<MockOnboardingStep> _skippableSteps = {MockOnboardingStep.selfie, MockOnboardingStep.home};
+  static const Set<MockOnboardingStep> _skippableSteps = {MockOnboardingStep.home};
 
   static Object? _skipOnboarding(MockRequest request) {
     final step = _skippableSteps.where((step) => step.code == request.body['step']).firstOrNull;

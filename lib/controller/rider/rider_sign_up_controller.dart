@@ -15,7 +15,6 @@ import 'package:sanga_ride_ui/sanga_ride_ui.dart' show SangaSelfieOutcome;
 
 class RiderSignUpController extends GetxController {
   static const String homeStepCode = 'home';
-  static const String selfieStepCode = 'selfie';
   static const Duration skipCap = Duration(seconds: 3);
 
   final _api = Get.find<ApiService>();
@@ -97,13 +96,9 @@ class RiderSignUpController extends GetxController {
     );
   }
 
-  void skipHome() => _skip(homeStepCode);
-
-  void skipSelfie() => _skip(selfieStepCode);
-
-  void _skip(String step) {
+  void skipHome() {
     if (_isOffline) return;
-    unawaited(_sendSkip(step));
+    unawaited(_sendSkip(homeStepCode));
   }
 
   Future<void> _sendSkip(String step) async {

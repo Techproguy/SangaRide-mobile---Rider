@@ -43,10 +43,6 @@ class _SelfieScreenState extends State<SelfieScreen> {
       fallbackCapture: kDebugMode ? () => MockCapture.photo('Selfie') : null,
       onOpenSettings: _permissions.openSettings,
       onPassed: () => context.push(SangaRoutes.homeLocation),
-      onLater: () {
-        _signUp.skipSelfie();
-        context.push(SangaRoutes.homeLocation);
-      },
     );
   }
 }
