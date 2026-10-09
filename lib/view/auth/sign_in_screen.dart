@@ -72,7 +72,7 @@ class _SignInScreenState extends State<SignInScreen> {
               ? const SizedBox.shrink()
               : SangaTextLink(label: 'Create an account', onPressed: () => context.pushReplacement(SangaRoutes.signUp)),
         ),
-        const SizedBox(height: SangaSpacing.xl),
+        const SizedBox(height: SangaSpacing.xxl),
         Obx(
           () => SangaButton.primary(
             label: 'Continue',

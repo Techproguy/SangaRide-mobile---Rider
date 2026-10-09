@@ -148,12 +148,7 @@ class _HomeLocationScreenState extends State<HomeLocationScreen> {
         if (_isSearching)
           const Padding(
             padding: EdgeInsets.all(SangaSpacing.md),
-            child: Center(
-              child: SizedBox.square(
-                dimension: 20,
-                child: CircularProgressIndicator(strokeWidth: 2, color: SangaColors.primary),
-              ),
-            ),
+            child: Center(child: SangaActivityIndicator(size: 24, color: SangaColors.primary)),
           ),
         if (hasNoMatches)
           Padding(
@@ -164,7 +159,7 @@ class _HomeLocationScreenState extends State<HomeLocationScreen> {
               style: SangaTextStyles.body,
             ),
           ),
-        const SizedBox(height: SangaSpacing.lg),
+        const SizedBox(height: SangaSpacing.xxl),
         const SignUpErrorNotice(),
         Obx(
           () => SangaButton.primary(
@@ -175,10 +170,7 @@ class _HomeLocationScreenState extends State<HomeLocationScreen> {
         ),
         const SizedBox(height: SangaSpacing.xs),
         Center(
-          child: TextButton(
-            onPressed: _skip,
-            child: Text('Skip for now', style: SangaTextStyles.label.copyWith(color: SangaColors.textSubtle)),
-          ),
+          child: SangaTextAction(label: 'Skip for now', onPressed: _skip),
         ),
       ],
     );
