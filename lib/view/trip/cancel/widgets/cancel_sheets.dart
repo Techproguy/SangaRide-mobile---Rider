@@ -18,7 +18,7 @@ Future<bool> showCancelConfirmSheet(BuildContext context, CancelCopy copy) async
     builder: (sheet) => SangaStatusContent(
       status: SangaStatus.caution,
       title: copy.confirmTitle,
-      message: 'You can’t undo this.',
+      message: CancelCopy.cannotUndo,
       action: SangaButton.danger(label: copy.confirmAction, onPressed: () => Navigator.of(sheet).pop(true)),
       secondary: SangaButton.muted(label: copy.confirmKeep, onPressed: () => Navigator.of(sheet).pop(false)),
     ),
@@ -53,6 +53,6 @@ Future<void> showCancelSettledSheet(BuildContext context, CancelSettled settled)
     status: settled.isCancelled ? SangaStatus.success : SangaStatus.caution,
     title: settled.failure.title,
     message: settled.message ?? settled.failure.message,
-    actionLabel: settled.isCancelled ? CommonCopy.backToHome : 'Got it',
+    actionLabel: settled.isCancelled ? CommonCopy.backToHome : CancelCopy.gotIt,
   );
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:sanga_ride/model/models.dart';
+import 'package:sanga_ride/view/trip/cancel/widgets/cancel_copy.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 class CancelBreakdownRows extends StatelessWidget {
@@ -10,8 +11,8 @@ class CancelBreakdownRows extends StatelessWidget {
 
   String get _refundLabel {
     final refund = review.refund;
-    if (refund == null) return 'Not applicable';
-    return '${SangaMoney.naira(refund.amount)} to your ${refund.destination}';
+    if (refund == null) return CancelCopy.notApplicable;
+    return CancelCopy.refundTo(SangaMoney.naira(refund.amount), refund.destination);
   }
 
   @override
@@ -23,11 +24,15 @@ class CancelBreakdownRows extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       spacing: SangaSpacing.xs,
       children: [
-        const SangaSectionHeader('Fare breakdown'),
-        _Row(label: 'Cancellation fee', value: review.hasFee ? SangaMoney.naira(review.fee) : 'Free', style: feeStyle),
-        _Row(label: 'Payment method', value: review.paymentMethod?.label ?? 'Not set yet'),
-        _Row(label: 'Refund', value: _refundLabel),
-        _Row(label: 'Reason', value: reason.summary),
+        const SangaSectionHeader(CancelCopy.fareBreakdown),
+        _Row(
+          label: CancelCopy.cancellationFee,
+          value: review.hasFee ? SangaMoney.naira(review.fee) : CancelCopy.free,
+          style: feeStyle,
+        ),
+        _Row(label: CancelCopy.paymentMethod, value: review.paymentMethod?.label ?? CancelCopy.notSetYet),
+        _Row(label: CancelCopy.refund, value: _refundLabel),
+        _Row(label: CancelCopy.reason, value: reason.summary),
       ],
     );
   }

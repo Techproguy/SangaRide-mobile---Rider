@@ -32,7 +32,7 @@ class CancelReviewView extends StatelessWidget {
 
   static const EdgeInsets _cell = EdgeInsets.all(SangaSpacing.md);
 
-  String get _cancelLabel => review.hasFee ? '${copy.title} · ${SangaMoney.naira(review.fee)}' : copy.title;
+  String get _cancelLabel => review.hasFee ? copy.titleWithFee(SangaMoney.naira(review.fee)) : copy.title;
 
   @override
   Widget build(BuildContext context) {
@@ -80,16 +80,11 @@ class CancelReviewView extends StatelessWidget {
             ),
             if (feeWas != null && feeWas != review.fee)
               SangaNotice(
-                message:
-                    'The fee changed from ${SangaMoney.naira(feeWas!)} to ${SangaMoney.naira(review.fee)}. Take a look before you cancel.',
+                message: CancelCopy.feeChanged(SangaMoney.naira(feeWas!), SangaMoney.naira(review.fee)),
                 tone: SangaTone.warning,
               ),
             if (reason.isSafety)
-              const SangaNotice(
-                message: 'If you feel unsafe right now, get help first',
-                tone: SangaTone.neutral,
-                icon: Icons.shield_outlined,
-              ),
+              const SangaNotice(message: CancelCopy.getHelpFirst, tone: SangaTone.neutral, icon: Icons.shield_outlined),
             if (review.hasFee) SangaNotice(message: review.notice(SangaMoney.naira(review.fee))),
           ],
         ),

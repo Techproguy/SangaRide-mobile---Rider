@@ -48,12 +48,12 @@ class _CancelReasonsViewState extends State<CancelReasonsView> {
     return SangaPageLayout(
       title: widget.copy.title,
       footer: SangaButton.primary(
-        label: 'Continue',
+        label: CancelCopy.continueLabel,
         isLoading: widget.isLoading,
         onPressed: widget.canContinue ? widget.onContinue : null,
       ),
       children: [
-        const SangaSectionHeader('Why are you cancelling?'),
+        const SangaSectionHeader(CancelCopy.whyCancelling),
         const SizedBox(height: SangaSpacing.sm),
         SangaListGroup(
           children: [
@@ -71,9 +71,9 @@ class _CancelReasonsViewState extends State<CancelReasonsView> {
         if (reason != null && reason.needsNote) ...[
           const SizedBox(height: SangaSpacing.md),
           SangaTextArea(
-            label: 'Tell us what happened',
+            label: CancelCopy.tellUsWhatHappened,
             controller: _note,
-            hintText: 'A few words is plenty',
+            hintText: CancelCopy.fewWordsIsPlenty,
             maxLength: CancelReason.maxNoteLength,
             onChanged: widget.onNote,
           ).animate().fadeIn(duration: SangaMotion.quick, curve: SangaMotion.fadeCurve),
