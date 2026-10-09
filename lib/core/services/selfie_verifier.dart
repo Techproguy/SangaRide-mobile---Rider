@@ -3,13 +3,14 @@ import 'dart:io';
 import 'package:get/get.dart';
 import 'package:sanga_ride/controller/rider/account/account_api.dart';
 import 'package:sanga_ride/core/api/api.dart';
+import 'package:sanga_ride/core/api/idempotency_intents.dart';
+import 'package:sanga_ride/core/api/server_codes.dart';
+import 'package:sanga_ride/core/api/upload_purposes.dart';
 import 'package:sanga_ride/core/api/verification_endpoints.dart';
 import 'package:sanga_ride_core/sanga_ride_core.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart' show SangaSelfieOutcome;
 
 class SelfieVerifier {
-  static const String purpose = 'selfie';
-  static const String noMatchCode = 'face_not_matched';
   static const Set<String> _acceptedStatuses = {'verified', 'pending'};
 
   final _api = Get.find<ApiService>();
@@ -22,7 +23,7 @@ class SelfieVerifier {
       final response = await _api.post(
         VerificationEndpoints.selfie,
         data: {'uploadId': uploadId},
-        key: IdempotencyKey('selfie-$uploadId'),
+        key: IdempotencyKey(IdempotencyIntent.selfieKey(uploadId)),
         suppressErrorToast: true,
       );
       final status = JsonReader(dataOf(response)).strOrNull('status');
@@ -30,7 +31,7 @@ class SelfieVerifier {
     } on Object catch (error) {
       return switch (ProblemKind.of(error)) {
         ProblemOffline() => SangaSelfieOutcome.noConnection,
-        ProblemRejected(code: noMatchCode) => SangaSelfieOutcome.noMatch,
+        ProblemRejected(code: ServerCode.faceNotMatched) => SangaSelfieOutcome.noMatch,
         _ => SangaSelfieOutcome.serverTrouble,
       };
     }
@@ -40,7 +41,7 @@ class SelfieVerifier {
     final ref = await _api.upload(
       VerificationEndpoints.uploads,
       file: File(photoPath),
-      purpose: purpose,
+      purpose: UploadPurposes.selfie,
       suppressErrorToast: true,
     );
     return ref.id;

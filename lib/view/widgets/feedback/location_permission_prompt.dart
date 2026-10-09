@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:sanga_ride/core/copy/common_copy.dart';
 import 'package:sanga_ride/core/services/location_service.dart';
 import 'package:sanga_ride/core/services/permission_center.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
@@ -32,7 +33,7 @@ abstract final class LocationPermissionPrompt {
           icon: Icons.location_disabled_rounded,
           title: 'Location access is off',
           message: 'Let Sanga Ride use your location in Settings, so pickups start right where you stand.',
-          actionLabel: 'Open Settings',
+          actionLabel: CommonCopy.openSettings,
         );
         if (accepted) await permissions.openSettings();
         return false;
