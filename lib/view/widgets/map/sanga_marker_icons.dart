@@ -16,9 +16,6 @@ class SangaMarkerIcons {
   static const double _kShadowAlpha = 0.18;
   static const Offset _kShadowOffset = Offset(0, 2.5);
 
-  static const Color _kDropoffColor = Color(0xFF2C2F33);
-  static const Color _kPickupColor = Color(0xFF228B22);
-
   static BitmapDescriptor? _self;
   static BitmapDescriptor? _pickup;
   static BitmapDescriptor? _dropoff;
@@ -31,10 +28,10 @@ class SangaMarkerIcons {
   static Future<BitmapDescriptor> self() async => _self ??= await _paintSelf();
 
   static Future<BitmapDescriptor> pickup() async =>
-      _pickup ??= await _paintPin(innerColor: _kPickupColor, glyph: Icons.person_rounded);
+      _pickup ??= await _paintPin(innerColor: SangaColors.mapMarkerGreen, glyph: Icons.person_rounded);
 
   static Future<BitmapDescriptor> dropoff() async =>
-      _dropoff ??= await _paintPin(innerColor: _kDropoffColor, glyph: Icons.flag_rounded);
+      _dropoff ??= await _paintPin(innerColor: SangaColors.mapMarkerDark, glyph: Icons.flag_rounded);
 
   static Future<BitmapDescriptor> driver() async =>
       _driver ??= await _paintPin(innerColor: SangaColors.primary, glyph: Icons.directions_car_filled_rounded);
@@ -55,7 +52,7 @@ class SangaMarkerIcons {
       ..maskFilter = null
       ..color = SangaColors.primary;
     canvas.drawCircle(center, outerRadius, paint);
-    paint.color = Colors.white;
+    paint.color = SangaColors.onPrimary;
     canvas.drawCircle(center, ringRadius, paint);
     paint.color = SangaColors.primary;
     canvas.drawCircle(center, coreRadius, paint);
@@ -87,7 +84,7 @@ class SangaMarkerIcons {
     canvas.drawPath(tail, paint);
 
     canvas.drawCircle(bodyCenter, bodyRadius, paint);
-    paint.color = Colors.white;
+    paint.color = SangaColors.onPrimary;
     canvas.drawCircle(bodyCenter, bodyRadius - 3 * _kPixelRatio, paint);
     paint.color = innerColor;
     canvas.drawCircle(bodyCenter, bodyRadius - 5 * _kPixelRatio, paint);
@@ -96,7 +93,7 @@ class SangaMarkerIcons {
       text: TextSpan(
         text: String.fromCharCode(glyph.codePoint),
         style: TextStyle(
-          color: Colors.white,
+          color: SangaColors.onPrimary,
           fontSize: bodyRadius,
           fontFamily: glyph.fontFamily,
           package: glyph.fontPackage,

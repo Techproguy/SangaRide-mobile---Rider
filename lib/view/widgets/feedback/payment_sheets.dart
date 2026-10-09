@@ -102,9 +102,6 @@ class PaymentSheetAction extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return TextButton(
-      onPressed: () => Navigator.of(context).pop(result),
-      child: Text(label, style: SangaTextStyles.label.copyWith(color: SangaColors.primary)),
-    );
+    return SangaTextAction(label: label, onPressed: () => Navigator.of(context).pop(result));
   }
 }
