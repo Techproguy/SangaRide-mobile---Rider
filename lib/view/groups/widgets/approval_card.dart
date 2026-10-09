@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:sanga_ride/model/groups/group_models.dart';
 import 'package:sanga_ride/view/groups/group_copy.dart';
 import 'package:sanga_ride/view/wallet/wallet_format.dart';
-import 'package:sanga_ride_core/sanga_ride_core.dart' show ServerClock;
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 class ApprovalCard extends StatelessWidget {
