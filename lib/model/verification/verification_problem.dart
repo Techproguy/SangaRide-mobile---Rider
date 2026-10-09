@@ -1,7 +1,10 @@
 import 'package:sanga_ride/model/delivery/delivery_failure.dart';
+import 'package:sanga_ride_core/sanga_ride_core.dart';
 
 enum VerificationProblem {
   connection('We couldn’t reach the server. Check your connection and try again.'),
+  unknown('Something went wrong on our side. Try again in a moment.'),
+  unconfirmed('We’re not sure that went through. Check the status before you send it again.'),
   incomplete('A few things still need your attention before we can review.'),
   uploadFailed('The upload didn’t go through. Check your connection and try again.'),
   fileTooLarge('That photo is over 5MB. Try a smaller one.'),
@@ -16,12 +19,18 @@ enum VerificationProblem {
   final String message;
   final bool opensSettings;
 
+  static VerificationProblem of(Object error) => switch (ProblemKind.of(error)) {
+    ProblemOffline() => connection,
+    ProblemRejected(:final code) => fromCode(code),
+    _ => unknown,
+  };
+
   static VerificationProblem fromCode(String? code) => switch (code) {
     'incomplete' => incomplete,
     'upload_failed' => uploadFailed,
     'file_too_large' => fileTooLarge,
     'unsupported_type' => unsupportedType,
-    _ => connection,
+    _ => unknown,
   };
 
   static VerificationProblem fromPhoto(DeliveryFailure failure) => switch (failure) {

@@ -7,9 +7,7 @@ import 'package:sanga_ride/controller/rider/account/verification_controller.dart
 import 'package:sanga_ride/core/format/time_format.dart';
 import 'package:sanga_ride/core/router/support_routes.dart';
 import 'package:sanga_ride/core/router/verification_routes.dart';
-import 'package:sanga_ride/core/services/toast_service.dart';
 import 'package:sanga_ride/model/models.dart';
-import 'package:sanga_ride/view/account/widgets/load_state.dart';
 import 'package:sanga_ride/view/verification/verification_copy.dart';
 import 'package:sanga_ride/view/verification/widgets/verification_hero.dart';
 import 'package:sanga_ride/view/verification/widgets/verification_item_tile.dart';
@@ -40,7 +38,6 @@ class _VerificationScreenState extends State<VerificationScreen> {
   @override
   void dispose() {
     _worker.dispose();
-    _controller.stopPolling();
     super.dispose();
   }
 
@@ -68,8 +65,8 @@ class _VerificationScreenState extends State<VerificationScreen> {
     final reason = verification.actionItems.firstOrNull?.reason?.message;
     final isRetry = await showSangaStatusSheet(
       context: context,
-      status: SangaStatus.failure,
-      title: 'Verification unsuccessful',
+      status: SangaStatus.caution,
+      title: 'Verification needs another go',
       message: reason ?? 'We couldn’t verify everything. Have a look and try again.',
       actionLabel: 'Try again',
       secondaryLabel: 'Not now',
@@ -93,7 +90,12 @@ class _VerificationScreenState extends State<VerificationScreen> {
   Future<void> _submit() async {
     final isSent = await _controller.submitReview();
     if (!mounted) return;
-    if (!isSent) Toast.error(_controller.draft.problem?.message ?? VerificationProblem.connection.message);
+    if (!isSent) {
+      SangaToast.show(
+        _controller.draft.problem?.message ?? VerificationProblem.unknown.message,
+        tone: SangaToastTone.error,
+      );
+    }
   }
 
   Widget _items(Verification verification) {
@@ -159,8 +161,11 @@ class _VerificationScreenState extends State<VerificationScreen> {
         footer: verification == null ? null : _footer(verification),
         children: [
           switch (state) {
-            VerificationLoading() => const LoadingIndicator(),
-            VerificationFailed(:final problem) => LoadFailure(message: problem.message, onRetry: _controller.retry),
+            VerificationLoading() => const SangaSkeleton.heights([140, 56, 56]),
+            VerificationFailed(:final problem) => SangaFailureMessage(
+              message: problem.message,
+              onRetry: _controller.retry,
+            ),
             VerificationLoaded(:final verification) => _body(verification),
           },
         ],

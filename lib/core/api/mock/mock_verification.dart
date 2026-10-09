@@ -5,6 +5,7 @@ abstract final class MockVerification {
   static const String rejectedDocumentType = 'voters_card';
   static const Duration _reviewTime = Duration(seconds: 20);
   static const int _estimatedReviewHours = 24;
+  static const int _maxUploadBytes = 5 * 1024 * 1024;
   static const Set<String> _documentTypes = {
     'national_id_card',
     'drivers_license',
@@ -140,5 +141,12 @@ class _Item {
     'status': status,
     'reason': reason == null ? null : {'code': reason, 'message': MockVerification._reasonMessages[reason]},
     'expiresAt': null,
+    if (kind == 'document') ...{
+      'upload': {
+        'maxBytes': MockVerification._maxUploadBytes,
+        'formats': ['jpg', 'png'],
+      },
+      'documentTypes': MockVerification._documentTypes.toList(),
+    },
   };
 }

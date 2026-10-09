@@ -1,4 +1,5 @@
 import 'package:sanga_ride/model/verification/verification_status.dart';
+import 'package:sanga_ride_core/sanga_ride_core.dart';
 
 enum VerificationItemKind {
   document('document'),
@@ -9,7 +10,7 @@ enum VerificationItemKind {
   final String code;
 
   static VerificationItemKind fromCode(Object? code) =>
-      values.where((kind) => kind.code == '$code').firstOrNull ?? document;
+      enumByCode(values, '$code', (kind) => kind.code, VerificationItemKind.document);
 }
 
 enum ItemStatus {
@@ -26,17 +27,39 @@ enum ItemStatus {
 
   bool get needsAction => this == missing || this == rejected || this == expired;
 
-  static ItemStatus fromCode(Object? code) => values.where((status) => status.code == '$code').firstOrNull ?? missing;
+  static ItemStatus fromCode(Object? code) => enumByCode(values, '$code', (status) => status.code, ItemStatus.missing);
 }
 
 class ItemReason {
   const ItemReason({required this.code, required this.message});
 
-  factory ItemReason.fromJson(Map<String, dynamic> json) =>
-      ItemReason(code: json['code'] as String, message: json['message'] as String);
+  static ItemReason? tryFromReader(JsonReader? reader) {
+    if (reader == null) return null;
+    return ItemReason(code: reader.strOr('code', ''), message: reader.strOr('message', ''));
+  }
 
   final String code;
   final String message;
+}
+
+class UploadRules {
+  const UploadRules({required this.maxBytes, required this.formats});
+
+  static UploadRules? tryFromReader(JsonReader? reader) {
+    if (reader == null) return null;
+    final maxBytes = reader.intOrNull('maxBytes');
+    if (maxBytes == null) return null;
+    return UploadRules(maxBytes: maxBytes, formats: reader.strings('formats'));
+  }
+
+  final int maxBytes;
+  final List<String> formats;
+
+  String get summary {
+    final size = maxBytes >= 1048576 ? '${(maxBytes / 1048576).round()}MB' : '${(maxBytes / 1024).round()}KB';
+    final kinds = formats.map((format) => format.toUpperCase()).join(' or ');
+    return kinds.isEmpty ? 'Up to $size each' : 'Accepted formats: $kinds, up to $size each';
+  }
 }
 
 class VerificationItem {
@@ -47,15 +70,19 @@ class VerificationItem {
     required this.status,
     required this.reason,
     required this.expiresAt,
+    this.uploadRules,
+    this.documentTypes = const [],
   });
 
-  factory VerificationItem.fromJson(Map<String, dynamic> json) => VerificationItem(
-    id: json['id'] as String,
-    kind: VerificationItemKind.fromCode(json['kind']),
-    label: json['label'] as String,
-    status: ItemStatus.fromCode(json['status']),
-    reason: json['reason'] == null ? null : ItemReason.fromJson(Map<String, dynamic>.from(json['reason'] as Map)),
-    expiresAt: json['expiresAt'] == null ? null : DateTime.parse('${json['expiresAt']}').toLocal(),
+  factory VerificationItem.fromReader(JsonReader reader) => VerificationItem(
+    id: reader.str('id'),
+    kind: VerificationItemKind.fromCode(reader.strOrNull('kind')),
+    label: reader.strOr('label', ''),
+    status: ItemStatus.fromCode(reader.strOrNull('status')),
+    reason: ItemReason.tryFromReader(reader.objectOrNull('reason')),
+    expiresAt: reader.timeOrNull('expiresAt')?.toLocal(),
+    uploadRules: UploadRules.tryFromReader(reader.objectOrNull('upload')),
+    documentTypes: reader.strings('documentTypes'),
   );
 
   final String id;
@@ -64,6 +91,8 @@ class VerificationItem {
   final ItemStatus status;
   final ItemReason? reason;
   final DateTime? expiresAt;
+  final UploadRules? uploadRules;
+  final List<String> documentTypes;
 
   bool get needsAction => status.needsAction;
 }
@@ -76,14 +105,15 @@ class Verification {
     required this.items,
   });
 
-  factory Verification.fromJson(Map<String, dynamic> json) => Verification(
-    status: VerificationStatus.fromCode(json['status']),
-    submittedAt: json['submittedAt'] == null ? null : DateTime.parse('${json['submittedAt']}').toLocal(),
-    estimatedReviewHours: (json['estimatedReviewHours'] as num?)?.toInt() ?? 24,
-    items: [
-      for (final item in json['items'] as List) VerificationItem.fromJson(Map<String, dynamic>.from(item as Map)),
-    ],
-  );
+  factory Verification.fromJson(Map<String, dynamic> json) {
+    final reader = JsonReader(json);
+    return Verification(
+      status: VerificationStatus.fromCode(reader.strOrNull('status')),
+      submittedAt: reader.timeOrNull('submittedAt')?.toLocal(),
+      estimatedReviewHours: reader.intOr('estimatedReviewHours', 24),
+      items: reader.listOf('items', VerificationItem.fromReader),
+    );
+  }
 
   final VerificationStatus status;
   final DateTime? submittedAt;
@@ -96,6 +126,13 @@ class Verification {
   ];
 
   VerificationItem? get nextItem => actionItems.firstOrNull;
+
+  VerificationItem? get documentItem {
+    for (final item in items) {
+      if (item.kind == VerificationItemKind.document) return item;
+    }
+    return null;
+  }
 
   bool get isReadyToSubmit =>
       status != VerificationStatus.pending && status != VerificationStatus.verified && actionItems.isEmpty;

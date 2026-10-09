@@ -1,13 +1,14 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sanga_ride/controller/rider/account/verification_controller.dart';
 import 'package:sanga_ride/core/router/verification_routes.dart';
+import 'package:sanga_ride/core/services/permission_center.dart';
 import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride/view/delivery/send/widgets/photo_source_sheet.dart';
+import 'package:sanga_ride/view/verification/verification_copy.dart';
 import 'package:sanga_ride/view/verification/widgets/document_slot.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
@@ -20,10 +21,15 @@ class VerificationDocumentScreen extends StatefulWidget {
 
 class _VerificationDocumentScreenState extends State<VerificationDocumentScreen> {
   final _controller = Get.find<VerificationController>();
+  final _permissions = Get.find<PermissionCenter>();
+  final List<Worker> _workers = [];
 
   @override
   void initState() {
     super.initState();
+    for (final kind in [PermissionKind.camera, PermissionKind.photos]) {
+      _workers.add(ever(_permissions.statusRx(kind), _onPermissionChanged));
+    }
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _controller.startDocument();
     });
@@ -31,14 +37,23 @@ class _VerificationDocumentScreenState extends State<VerificationDocumentScreen>
 
   @override
   void dispose() {
+    for (final worker in _workers) {
+      worker.dispose();
+    }
     WidgetsBinding.instance.addPostFrameCallback((_) => _controller.releaseDocument());
     super.dispose();
+  }
+
+  void _onPermissionChanged(PermissionAccess access) {
+    if (access.isUsable) _controller.clearPermissionFailures();
   }
 
   Future<void> _pick(DocumentSide side) async {
     if (_controller.draft.sideOf(side).isBusy) return;
     final source = await showPhotoSourceSheet(context, title: 'Add your ID');
-    if (source != null) await _controller.pickPhoto(side, source);
+    if (source == null || !mounted) return;
+    if (source == PhotoSource.camera) await _permissions.prime(PermissionKind.camera, context);
+    if (mounted) await _controller.pickPhoto(side, source);
   }
 
   Future<void> _takeSelfie() async {
@@ -58,7 +73,8 @@ class _VerificationDocumentScreenState extends State<VerificationDocumentScreen>
       context: context,
       status: SangaStatus.pending,
       title: 'Verification under review',
-      message: 'This usually takes up to 24 hours. We’ll let you know in your notifications.',
+      message:
+          'This usually takes up to ${VerificationCopy.hoursLabel(_controller.state.verificationOrNull?.estimatedReviewHours ?? 24)}. We’ll let you know in your notifications.',
       actionLabel: 'Done',
     );
     if (mounted) context.pop();
@@ -71,7 +87,7 @@ class _VerificationDocumentScreenState extends State<VerificationDocumentScreen>
       onPick: () => _pick(side),
       onRemove: () => _controller.removePhoto(side),
       onRetry: () => _controller.retryUpload(side),
-      onOpenSettings: Geolocator.openAppSettings,
+      onOpenSettings: _permissions.openSettings,
     );
   }
 
@@ -108,7 +124,7 @@ class _VerificationDocumentScreenState extends State<VerificationDocumentScreen>
         label: 'Document type',
         isRequired: true,
         value: type,
-        options: [for (final option in IdDocumentType.values) SangaSelectOption(option, option.label)],
+        options: [for (final option in _controller.documentTypes) SangaSelectOption(option, option.label)],
         onChanged: _controller.selectType,
       ),
       const SizedBox(height: SangaSpacing.md),
@@ -122,7 +138,8 @@ class _VerificationDocumentScreenState extends State<VerificationDocumentScreen>
             Text(type.hint, style: SangaTextStyles.body),
             _slot(draft, DocumentSide.front, type.frontLabel),
             if (type.hasBack) _slot(draft, DocumentSide.back, 'Back of ID'),
-            Text('Accepted formats: JPG or PNG, up to 5MB each', style: SangaTextStyles.caption),
+            if (_controller.documentItem?.uploadRules case final rules?)
+              Text(rules.summary, style: SangaTextStyles.caption),
           ],
         ),
       const SizedBox(height: SangaSpacing.lg),
@@ -140,18 +157,18 @@ class _VerificationDocumentScreenState extends State<VerificationDocumentScreen>
   Widget build(BuildContext context) {
     return Obx(() {
       final draft = _controller.draft;
-      return SangaFormLayout(
+      return SangaPageLayout(
         title: 'Document verification',
-        subtitle: 'Upload a valid ID',
-        footer: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: SangaSpacing.gutter),
-          child: SangaButton.primary(
-            label: 'Submit for review',
-            isLoading: draft.isSubmitting,
-            onPressed: draft.isReady ? _submit : null,
-          ),
+        footer: SangaButton.primary(
+          label: 'Submit for review',
+          isLoading: draft.isSubmitting,
+          onPressed: draft.isReady ? _submit : null,
         ),
-        children: _children(draft),
+        children: [
+          Text('Upload a valid ID', style: SangaTextStyles.body),
+          const SizedBox(height: SangaSpacing.lg),
+          ..._children(draft),
+        ],
       );
     });
   }

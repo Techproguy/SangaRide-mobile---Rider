@@ -27,7 +27,19 @@ class DocumentSlot extends StatelessWidget {
   Widget _thumb(String path) {
     return ClipRRect(
       borderRadius: SangaRadii.digit,
-      child: Image.file(File(path), width: _thumbnail, height: _thumbnail, fit: BoxFit.cover),
+      child: Image.file(
+        File(path),
+        width: _thumbnail,
+        height: _thumbnail,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stack) => const SizedBox.square(
+          dimension: _thumbnail,
+          child: ColoredBox(
+            color: SangaColors.fill,
+            child: Icon(Icons.image_outlined, color: SangaColors.textMuted),
+          ),
+        ),
+      ),
     );
   }
 
