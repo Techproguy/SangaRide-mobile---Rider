@@ -21,11 +21,24 @@ final class AccountFailed extends AccountState {
 }
 
 final class AccountLoaded extends AccountState {
-  const AccountLoaded(this.account, {this.isUploadingPhoto = false, this.photoProblem});
+  const AccountLoaded(this.account, {this.isUploadingPhoto = false, this.photoProblem, this.hasPendingPhoto = false});
 
   final Account account;
   final bool isUploadingPhoto;
   final AccountProblem? photoProblem;
+  final bool hasPendingPhoto;
+
+  AccountLoaded copyWith({
+    Account? account,
+    bool? isUploadingPhoto,
+    AccountProblem? Function()? photoProblem,
+    bool? hasPendingPhoto,
+  }) => AccountLoaded(
+    account ?? this.account,
+    isUploadingPhoto: isUploadingPhoto ?? this.isUploadingPhoto,
+    photoProblem: photoProblem == null ? this.photoProblem : photoProblem(),
+    hasPendingPhoto: hasPendingPhoto ?? this.hasPendingPhoto,
+  );
 }
 
 sealed class PhoneChangeState {
@@ -43,10 +56,11 @@ final class PhoneSending extends PhoneChangeState {
 }
 
 final class PhoneCode extends PhoneChangeState {
-  const PhoneCode(this.phone, this.sentAt, {this.problem, this.isVerifying = false});
+  const PhoneCode(this.phone, this.sentAt, this.lifetime, {this.problem, this.isVerifying = false});
 
   final String phone;
   final DateTime sentAt;
+  final Duration lifetime;
   final AccountProblem? problem;
   final bool isVerifying;
 }
@@ -69,8 +83,12 @@ final class DeleteDeleting extends DeleteAccountState {
   const DeleteDeleting();
 }
 
+final class DeleteUnknown extends DeleteAccountState {
+  const DeleteUnknown();
+}
+
 final class DeleteScheduled extends DeleteAccountState {
   const DeleteScheduled(this.deletesAt);
 
-  final DateTime deletesAt;
+  final DateTime? deletesAt;
 }

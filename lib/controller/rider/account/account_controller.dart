@@ -1,4 +1,4 @@
-import 'dart:developer';
+import 'dart:async';
 import 'dart:io';
 
 import 'package:get/get.dart';
@@ -11,6 +11,7 @@ import 'package:sanga_ride/core/api/api.dart';
 import 'package:sanga_ride/core/services/image_compression_service.dart';
 import 'package:sanga_ride/core/services/package_photo_service.dart';
 import 'package:sanga_ride/model/models.dart';
+import 'package:sanga_ride_core/sanga_ride_core.dart';
 
 class AccountController extends GetxController {
   static const String _photoPurpose = 'profile_photo';
@@ -20,21 +21,36 @@ class AccountController extends GetxController {
 
   final Rx<AccountState> _state = Rx<AccountState>(const AccountLoading());
   final Rx<DeleteAccountState> _delete = Rx<DeleteAccountState>(const DeleteIdle());
+  final Rx<DeletionPreviewState> _preview = Rx<DeletionPreviewState>(const DeletionPreviewLoading());
+
+  String? _uploadedPhotoId;
+  IdempotencyKey? _photoLinkKey;
+  Mutation<DateTime?>? _deletion;
+  int _loadEpoch = 0;
 
   AccountState get state => _state.value;
 
   DeleteAccountState get deleteState => _delete.value;
 
+  DeletionPreviewState get previewState => _preview.value;
+
   Account? get account => _state.value.accountOrNull;
 
+  @override
+  void onClose() {
+    _deletion?.dispose();
+    super.onClose();
+  }
+
   Future<void> load() async {
+    final epoch = ++_loadEpoch;
     if (_state.value is! AccountLoaded) _state.value = const AccountLoading();
     try {
       final response = await _api.get(AccountEndpoints.me, options: quietOptions);
+      if (epoch != _loadEpoch) return;
       await apply(dataOf(response));
-    } catch (error) {
-      log('account load failed: $error');
-      if (_state.value is! AccountLoaded) _state.value = AccountFailed(_problemOf(error));
+    } on Object catch (error) {
+      if (epoch == _loadEpoch && _state.value is! AccountLoaded) _state.value = AccountFailed(AccountProblem.of(error));
     }
   }
 
@@ -44,9 +60,9 @@ class AccountController extends GetxController {
   }
 
   Future<void> apply(Map<String, dynamic> json) async {
-    final current = _state.value;
     final account = Account.fromJson(json);
-    _state.value = AccountLoaded(account, isUploadingPhoto: current is AccountLoaded && current.isUploadingPhoto);
+    final current = _state.value;
+    _state.value = current is AccountLoaded ? current.copyWith(account: account) : AccountLoaded(account);
     await _users.setUser(account.toUserModel());
   }
 
@@ -55,10 +71,14 @@ class AccountController extends GetxController {
       final response = await _api.patch(AccountEndpoints.me, data: fields, options: quietOptions);
       await apply(dataOf(response));
       return null;
-    } catch (error) {
-      log('account update failed: $error');
-      return _problemOf(error);
+    } on Object catch (error) {
+      return AccountProblem.of(error);
     }
+  }
+
+  void denyPhoto(PhotoSource source) {
+    final problem = source == PhotoSource.camera ? AccountProblem.cameraDenied : AccountProblem.photosDenied;
+    _patchLoaded((loaded) => loaded.copyWith(photoProblem: () => problem));
   }
 
   Future<void> changePhoto(PhotoSource source) async {
@@ -68,56 +88,145 @@ class AccountController extends GetxController {
     try {
       prepared = await PackagePhotoService.pick(
         source,
-        onPicked: () => _state.value = AccountLoaded(current.account, isUploadingPhoto: true),
+        onPicked: () => _patchLoaded((loaded) => loaded.copyWith(isUploadingPhoto: true, photoProblem: () => null)),
       );
       if (prepared == null) return;
-      final upload = await _api.uploadFile(
+      final ref = await _api.upload(
         AccountEndpoints.uploads,
         file: File(prepared),
-        fields: {'purpose': _photoPurpose},
+        purpose: _photoPurpose,
         suppressErrorToast: true,
       );
-      final response = await _api.post(
-        AccountEndpoints.photo,
-        data: {'uploadId': dataOf(upload)['id']},
-        options: quietOptions,
-      );
-      await apply(dataOf(response));
+      _uploadedPhotoId = ref.id;
+      _photoLinkKey = IdempotencyKey.newFor('profile-photo');
+      await _linkPhoto();
     } on PhotoException catch (error) {
-      log('photo prepare failed: ${error.failure}');
-      _state.value = AccountLoaded(current.account, photoProblem: _photoProblemOf(error.failure));
-    } catch (error) {
-      log('photo upload failed: $error');
-      _state.value = AccountLoaded(current.account, photoProblem: _problemOf(error));
+      _patchLoaded((loaded) => loaded.copyWith(photoProblem: () => _photoProblemOf(error.failure)));
+    } on Object catch (error) {
+      _patchLoaded(
+        (loaded) => loaded.copyWith(photoProblem: () => AccountProblem.of(error), hasPendingPhoto: _hasPendingPhoto),
+      );
     } finally {
       await ImageCompressionService.discard(prepared);
-      final latest = _state.value;
-      if (latest is AccountLoaded && latest.isUploadingPhoto) {
-        _state.value = AccountLoaded(latest.account, photoProblem: latest.photoProblem);
-      }
+      _patchLoaded((loaded) => loaded.copyWith(isUploadingPhoto: false));
     }
   }
 
-  void clearPhotoProblem() {
+  Future<void> retryPhoto() async {
     final current = _state.value;
-    if (current is AccountLoaded && current.photoProblem != null) _state.value = AccountLoaded(current.account);
+    if (!_hasPendingPhoto || current is! AccountLoaded || current.isUploadingPhoto) return;
+    _patchLoaded((loaded) => loaded.copyWith(isUploadingPhoto: true, photoProblem: () => null));
+    try {
+      await _linkPhoto();
+    } on Object catch (error) {
+      _patchLoaded(
+        (loaded) => loaded.copyWith(photoProblem: () => AccountProblem.of(error), hasPendingPhoto: _hasPendingPhoto),
+      );
+    } finally {
+      _patchLoaded((loaded) => loaded.copyWith(isUploadingPhoto: false));
+    }
+  }
+
+  bool get _hasPendingPhoto => _uploadedPhotoId != null;
+
+  Future<void> _linkPhoto() async {
+    final response = await _api.post(
+      AccountEndpoints.photo,
+      data: {'uploadId': _uploadedPhotoId},
+      key: _photoLinkKey,
+      options: quietOptions,
+    );
+    _uploadedPhotoId = null;
+    _photoLinkKey = null;
+    await apply(dataOf(response));
+    _patchLoaded((loaded) => loaded.copyWith(hasPendingPhoto: false));
+  }
+
+  void _patchLoaded(AccountLoaded Function(AccountLoaded loaded) change) {
+    final latest = _state.value;
+    if (latest is AccountLoaded) _state.value = change(latest);
+  }
+
+  void clearPhotoProblem() => _patchLoaded((loaded) => loaded.copyWith(photoProblem: () => null));
+
+  Future<void> loadDeletionPreview() async {
+    _preview.value = const DeletionPreviewLoading();
+    try {
+      final response = await _api.get(AccountDeletionEndpoints.preview, options: quietOptions);
+      _preview.value = DeletionPreviewLoaded(DeletionPreview.fromJson(dataOf(response)));
+    } on Object catch (error) {
+      _preview.value = DeletionPreviewFailed(AccountProblem.of(error).message);
+    }
   }
 
   Future<bool> deleteAccount({String? reason}) async {
-    if (_delete.value is DeleteDeleting) return false;
-    _delete.value = const DeleteDeleting();
-    try {
-      final response = await _api.delete(AccountEndpoints.me, data: {'reason': reason}, options: quietOptions);
-      _delete.value = DeleteScheduled(DateTime.parse('${dataOf(response)['deletesAt']}').toLocal());
-      return true;
-    } catch (error) {
-      log('account delete failed: $error');
-      _delete.value = DeleteIdle(block: _problemOf(error));
+    final current = _delete.value;
+    if (current is DeleteDeleting) return false;
+    if (current is DeleteUnknown) return _recheckDeletion();
+    if (_isOffline) {
+      _delete.value = const DeleteIdle(block: AccountProblem.connection);
       return false;
     }
+    _delete.value = const DeleteDeleting();
+    _deletion?.dispose();
+    final mutation = _deletion = Mutation<DateTime?>(
+      intent: 'delete-account',
+      run: (key) async {
+        final response = await _api.delete(
+          AccountEndpoints.me,
+          data: {'reason': reason},
+          key: key,
+          options: quietOptions,
+        );
+        return JsonReader(dataOf(response)).timeOrNull('deletesAt')?.toLocal();
+      },
+      reconcile: _reconcileDeletion,
+    );
+    return _settleDeletion(await mutation.start());
   }
 
-  void resetDelete() => _delete.value = const DeleteIdle();
+  Future<bool> _recheckDeletion() async {
+    final mutation = _deletion;
+    if (mutation == null) {
+      _delete.value = const DeleteIdle();
+      return false;
+    }
+    _delete.value = const DeleteDeleting();
+    return _settleDeletion(await mutation.recheck());
+  }
+
+  bool _settleDeletion(MutationState<DateTime?> result) {
+    switch (result) {
+      case MutationDone<DateTime?>(:final value):
+        _delete.value = DeleteScheduled(value);
+        return true;
+      case MutationRejected<DateTime?>(:final error):
+        _deletion?.reset();
+        _delete.value = DeleteIdle(block: AccountProblem.of(error));
+      case MutationFailed<DateTime?>(:final error):
+        _delete.value = DeleteIdle(block: AccountProblem.of(error));
+      case MutationUnknown<DateTime?>():
+        _delete.value = const DeleteUnknown();
+      case MutationIdle<DateTime?>() || MutationRunning<DateTime?>() || MutationChecking<DateTime?>():
+        _delete.value = const DeleteIdle();
+    }
+    return false;
+  }
+
+  Future<Reconciled<DateTime?>> _reconcileDeletion() async {
+    final response = await _api.get(AccountEndpoints.me, options: quietOptions);
+    final deletesAt = JsonReader(dataOf(response)).timeOrNull('deletesAt');
+    if (deletesAt == null) return const ReconciledNotDone<DateTime?>();
+    return ReconciledDone<DateTime?>(deletesAt.toLocal());
+  }
+
+  bool get _isOffline => ConnectionMonitor.current?.isOnline == false;
+
+  void resetDelete() {
+    _deletion?.dispose();
+    _deletion = null;
+    _delete.value = const DeleteIdle();
+  }
 
   Future<void> logout() async {
     await Get.find<AuthController>().logout();
@@ -132,7 +241,4 @@ class AccountController extends GetxController {
     DeliveryFailure.photosDenied => AccountProblem.photosDenied,
     _ => AccountProblem.photoUnreadable,
   };
-
-  AccountProblem _problemOf(Object error) =>
-      error is ApiException ? AccountProblem.fromCode(error.code) : AccountProblem.connection;
 }

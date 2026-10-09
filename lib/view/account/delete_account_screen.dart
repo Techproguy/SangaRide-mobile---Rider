@@ -1,8 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:sanga_ride/controller/rider/account/account_controller.dart';
 import 'package:sanga_ride/core/format/time_format.dart';
 import 'package:sanga_ride/model/models.dart';
+import 'package:sanga_ride/view/account/account_copy.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 class DeleteAccountScreen extends StatefulWidget {
@@ -13,13 +16,6 @@ class DeleteAccountScreen extends StatefulWidget {
 }
 
 class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
-  static const List<String> _consequences = [
-    'Your account is scheduled for deletion and disappears after 30 days',
-    'Log back in during those 30 days and your account stays right where it was',
-    'Your ride history and saved places go with it',
-    'Records we must keep by law stay with us',
-  ];
-
   final _controller = Get.find<AccountController>();
   DeleteReason? _reason;
   bool _isUnderstood = false;
@@ -28,80 +24,115 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _controller.resetDelete();
+      if (!mounted) return;
+      _controller.resetDelete();
+      unawaited(_controller.loadDeletionPreview());
     });
   }
 
   Future<void> _confirm() async {
-    final isConfirmed = await showSangaPromptSheet(
+    final isConfirmed = await showSangaStatusSheet(
       context: context,
+      status: SangaStatus.caution,
       icon: Icons.delete_outline_rounded,
       title: 'Delete your account?',
       message: 'This is the last step. You’ll be logged out right away.',
       actionLabel: 'Yes, delete it',
-      dismissLabel: 'Keep my account',
+      secondaryLabel: 'Keep my account',
+      isDestructive: true,
     );
     if (!isConfirmed || !mounted) return;
     final isScheduled = await _controller.deleteAccount(reason: _reason?.code);
     if (!isScheduled || !mounted) return;
+    await _announceAndLogOut();
+  }
+
+  Future<void> _announceAndLogOut() async {
     final state = _controller.deleteState;
+    final preview = _controller.previewState;
+    final graceDays = preview is DeletionPreviewLoaded ? preview.preview.graceDays : null;
+    final deletesAt = state is DeleteScheduled ? state.deletesAt : null;
     await showSangaStatusSheet(
       context: context,
       status: SangaStatus.success,
       title: 'Deletion scheduled',
-      message: state is DeleteScheduled
-          ? 'Your account goes on ${TimeFormat.longDate(state.deletesAt)}. Log in before then to keep it.'
-          : 'Log in within 30 days to keep your account.',
+      message: deletesAt != null
+          ? 'Your account goes on ${TimeFormat.longDate(deletesAt)}. Log in before then to keep it.'
+          : graceDays != null
+          ? 'Log in within $graceDays days to keep your account.'
+          : 'Log in soon to keep your account.',
       actionLabel: 'Log out',
     );
     await _controller.logout();
   }
 
-  Widget _block(AccountProblem problem) => SangaNotice(message: problem.message);
+  Widget _consequences(DeletionPreview preview) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      spacing: SangaSpacing.md,
+      children: [
+        SangaSectionCard(
+          title: 'What to expect',
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: SangaSpacing.md, vertical: SangaSpacing.xs),
+              child: Column(
+                spacing: SangaSpacing.sm,
+                children: [for (final line in AccountCopy.deletionLines(preview.graceDays)) _Bullet(line)],
+              ),
+            ),
+          ],
+        ),
+        if (preview.walletBalance > 0)
+          SangaNotice(message: AccountCopy.walletWarning(preview.walletBalance), tone: SangaTone.warning),
+        if (preview.pendingTransfers > 0)
+          const SangaNotice(message: AccountCopy.transferWarning, tone: SangaTone.warning),
+        for (final group in preview.ownedGroups)
+          SangaNotice(message: AccountCopy.groupWarning(group), tone: SangaTone.warning),
+        if (preview.hasActiveTrip) SangaNotice(message: AccountProblem.activeTrip.message),
+      ],
+    );
+  }
+
+  Widget _previewBody(DeletionPreviewState state) => switch (state) {
+    DeletionPreviewLoading() => const SangaSkeleton.heights([140, 56]),
+    DeletionPreviewFailed(:final message) => SangaFailureMessage(
+      message: message,
+      onRetry: () => unawaited(_controller.loadDeletionPreview()),
+    ),
+    DeletionPreviewLoaded(:final preview) => _consequences(preview),
+  };
+
+  Widget _footer(DeleteAccountState state, DeletionPreviewState previewState) {
+    final preview = previewState is DeletionPreviewLoaded ? previewState.preview : null;
+    final canDelete = _isUnderstood && preview != null && !preview.hasActiveTrip;
+    return SangaButton.danger(
+      label: state is DeleteUnknown ? 'Check again' : 'Delete my account',
+      isLoading: state is DeleteDeleting,
+      onPressed: state is DeleteUnknown ? () => unawaited(_checkAgain()) : (canDelete ? _confirm : null),
+    );
+  }
+
+  Future<void> _checkAgain() async {
+    final isScheduled = await _controller.deleteAccount();
+    if (isScheduled && mounted) await _announceAndLogOut();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Obx(() {
       final state = _controller.deleteState;
-      final isDeleting = state is DeleteDeleting;
+      final previewState = _controller.previewState;
       final block = state is DeleteIdle ? state.block : null;
       return SangaPageLayout(
         title: 'Delete account',
-        footer: SangaButton.danger(
-          label: 'Delete my account',
-          isLoading: isDeleting,
-          onPressed: _isUnderstood ? _confirm : null,
-        ),
+        footer: _footer(state, previewState),
         children: [
           Text('Before you go', style: SangaTextStyles.title),
           const SizedBox(height: SangaSpacing.xs),
           Text('Here’s what happens when you delete your account.', style: SangaTextStyles.body),
           const SizedBox(height: SangaSpacing.lg),
-          SangaSectionCard(
-            title: 'What to expect',
-            children: [
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: SangaSpacing.md, vertical: SangaSpacing.xs),
-                child: Column(
-                  spacing: SangaSpacing.sm,
-                  children: [
-                    for (final line in _consequences)
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        spacing: SangaSpacing.sm,
-                        children: [
-                          const Padding(
-                            padding: EdgeInsets.only(top: 2),
-                            child: Icon(Icons.circle, size: 6, color: SangaColors.textMuted),
-                          ),
-                          Expanded(child: Text(line, style: SangaTextStyles.cardSubtitle.copyWith(fontSize: 13))),
-                        ],
-                      ),
-                  ],
-                ),
-              ),
-            ],
-          ),
+          _previewBody(previewState),
           const SizedBox(height: SangaSpacing.xl),
           const SangaSectionHeader('Why are you leaving? (optional)'),
           const SizedBox(height: SangaSpacing.sm),
@@ -116,9 +147,34 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
             onChanged: (value) => setState(() => _isUnderstood = value),
             text: 'I understand my account will be deleted',
           ),
-          if (block != null) ...[const SizedBox(height: SangaSpacing.lg), _block(block)],
+          if (block != null) ...[const SizedBox(height: SangaSpacing.lg), SangaNotice(message: block.message)],
+          if (state is DeleteUnknown) ...[
+            const SizedBox(height: SangaSpacing.lg),
+            SangaNotice(message: AccountProblem.deleteUnconfirmed.message, tone: SangaTone.warning),
+          ],
         ],
       );
     });
+  }
+}
+
+class _Bullet extends StatelessWidget {
+  const _Bullet(this.text);
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      spacing: SangaSpacing.sm,
+      children: [
+        const Padding(
+          padding: EdgeInsets.only(top: 2),
+          child: Icon(Icons.circle, size: 6, color: SangaColors.textMuted),
+        ),
+        Expanded(child: Text(text, style: SangaTextStyles.cardSubtitle.copyWith(fontSize: 13))),
+      ],
+    );
   }
 }

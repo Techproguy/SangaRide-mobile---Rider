@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:sanga_ride/controller/rider/account/account_controller.dart';
-import 'package:sanga_ride/core/services/toast_service.dart';
 import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
@@ -84,7 +83,7 @@ class _ProfileEditSheetState extends State<_ProfileEditSheet> {
     if (!mounted) return;
     if (problem == null) {
       Navigator.of(context).pop();
-      return Toast.success('Profile updated');
+      return SangaToast.show('Profile updated', tone: SangaToastTone.success);
     }
     setState(() {
       _isSaving = false;

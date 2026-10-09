@@ -1,9 +1,12 @@
+import 'package:sanga_ride/controller/rider/account/account_api.dart';
 import 'package:sanga_ride/core/api/account_endpoints.dart';
 import 'package:sanga_ride/core/api/mock/mock_data.dart';
 import 'package:sanga_ride/core/api/mock/mock_delivery.dart';
+import 'package:sanga_ride/core/api/mock/mock_groups.dart';
 import 'package:sanga_ride/core/api/mock/mock_server.dart';
 import 'package:sanga_ride/core/api/mock/mock_trip.dart';
 import 'package:sanga_ride/core/api/mock/mock_verification.dart';
+import 'package:sanga_ride/core/api/mock/mock_wallet.dart';
 
 enum MockOnboardingStep {
   aboutYou('about_you'),
@@ -24,11 +27,13 @@ abstract final class MockAccount {
   static const int _minimumAge = 16;
   static const Duration _otpLifetime = Duration(minutes: 5);
   static const Duration _deletionDelay = Duration(days: 30);
+  static DateTime? _deletesAt;
 
   static final List<MockRoute> routes = [
     MockRoute.get(AccountEndpoints.me, (_) => _json()),
     MockRoute.patch(AccountEndpoints.me, _update),
     MockRoute.delete(AccountEndpoints.me, _delete),
+    MockRoute.get(AccountDeletionEndpoints.preview, _deletionPreview),
     MockRoute.post(AccountEndpoints.photo, _photo),
     MockRoute.post(AccountEndpoints.phone, _requestPhone),
     MockRoute.post(AccountEndpoints.phoneVerify, _verifyPhone),
@@ -66,6 +71,7 @@ abstract final class MockAccount {
     ..._fields,
     'memberSince': _memberSince.toUtc().toIso8601String(),
     'verification': {'status': MockVerification.accountStatus(DateTime.now())},
+    if (_deletesAt != null) 'deletesAt': _deletesAt!.toUtc().toIso8601String(),
     'serverTime': DateTime.now().toUtc().toIso8601String(),
   };
 
@@ -126,7 +132,12 @@ abstract final class MockAccount {
     if (phone == takenPhone) throw const MockFailure(409, 'This number already has an account.', code: 'phone_taken');
     _pendingPhone = phone;
     _codeSentAt = DateTime.now();
-    return {'phone': phone, 'expiresInSeconds': _otpLifetime.inSeconds, 'code': 'otp_sent'};
+    return {
+      'phone': phone,
+      'expiresInSeconds': _otpLifetime.inSeconds,
+      'expiresAt': _codeSentAt!.add(_otpLifetime).toUtc().toIso8601String(),
+      'code': 'otp_sent',
+    };
   }
 
   static Object? _verifyPhone(MockRequest request) {
@@ -151,8 +162,20 @@ abstract final class MockAccount {
     if (_hasActiveTrip()) {
       throw const MockFailure(409, 'Finish your current trip first.', code: 'active_trip');
     }
-    return {'deletesAt': DateTime.now().add(_deletionDelay).toUtc().toIso8601String()};
+    _deletesAt ??= DateTime.now().add(_deletionDelay);
+    return {'deletesAt': _deletesAt!.toUtc().toIso8601String()};
   }
+
+  static void cancelDeletion() => _deletesAt = null;
+
+  static Object? _deletionPreview(MockRequest request) => {
+    'graceDays': _deletionDelay.inDays,
+    'walletBalance': MockWallet.balance,
+    'pendingTransfers': MockWallet.pendingTopUps().where((topUp) => topUp['scope'] == 'personal').length,
+    'ownedGroups': MockGroups.ownedSummaries(),
+    'hasActiveTrip': _hasActiveTrip(),
+    'serverTime': DateTime.now().toUtc().toIso8601String(),
+  };
 
   static bool _hasActiveTrip() => MockTrip.active() != null;
 }

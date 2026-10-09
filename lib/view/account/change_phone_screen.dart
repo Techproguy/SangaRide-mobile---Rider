@@ -3,10 +3,7 @@ import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sanga_ride/controller/rider/account/phone_change_controller.dart';
 import 'package:sanga_ride/controller/shared/auth_controller.dart';
-import 'package:sanga_ride/core/services/toast_service.dart';
 import 'package:sanga_ride/model/models.dart';
-import 'package:sanga_ride/view/auth/widgets/otp_expiry_notice.dart';
-import 'package:sanga_ride/view/auth/widgets/resend_code_button.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 class ChangePhoneScreen extends StatefulWidget {
@@ -53,7 +50,7 @@ class _ChangePhoneScreenState extends State<ChangePhoneScreen> {
     final changed = await _controller.verify(_code.text);
     if (!mounted) return;
     if (changed) {
-      Toast.success('Phone number updated');
+      SangaToast.show('Phone number updated', tone: SangaToastTone.success);
       return context.pop();
     }
     _code.clear();
@@ -64,7 +61,9 @@ class _ChangePhoneScreenState extends State<ChangePhoneScreen> {
     if (!mounted) return;
     _code.clear();
     setState(() => _isExpired = false);
-    if (_controller.state case PhoneCode(problem: null)) Toast.success('New code sent. Check your messages.');
+    if (_controller.state case PhoneCode(problem: null)) {
+      SangaToast.show('New code sent. Check your messages.', tone: SangaToastTone.success);
+    }
   }
 
   void _useAnotherNumber() {
@@ -100,7 +99,11 @@ class _ChangePhoneScreenState extends State<ChangePhoneScreen> {
         onCompleted: (_) => _verify(),
       ),
       const SizedBox(height: SangaSpacing.lg),
-      OtpExpiryNotice(sentAt: state.sentAt, onExpired: () => setState(() => _isExpired = true)),
+      SangaOtpExpiryNotice(
+        sentAt: state.sentAt,
+        lifetime: state.lifetime,
+        onExpired: () => setState(() => _isExpired = true),
+      ),
       const SizedBox(height: SangaSpacing.xxl),
       SangaButton.primary(label: 'Verify', isLoading: state.isVerifying, onPressed: _canVerify ? _verify : null),
       const SizedBox(height: SangaSpacing.sm),
@@ -118,7 +121,7 @@ class _ChangePhoneScreenState extends State<ChangePhoneScreen> {
         subtitle: code == null
             ? 'We’ll text a code to your new number to make sure it’s yours'
             : 'Enter the ${AuthController.otpLength}-digit code sent to ${SangaPhoneNumber.masked(code.phone)}',
-        footer: code == null ? null : ResendCodeButton(sentAt: code.sentAt, onResend: _resend),
+        footer: code == null ? null : SangaResendCodeButton(sentAt: code.sentAt, onResend: _resend),
         children: switch (state) {
           PhoneCode() => _verification(state),
           PhoneEntry(:final problem) => _entry(problem: problem, isSending: false),

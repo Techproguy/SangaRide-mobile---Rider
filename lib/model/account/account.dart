@@ -1,5 +1,6 @@
 import 'package:sanga_ride/model/user_model.dart';
 import 'package:sanga_ride/model/verification/verification_status.dart';
+import 'package:sanga_ride_core/sanga_ride_core.dart';
 
 class Account {
   const Account({
@@ -14,21 +15,28 @@ class Account {
     required this.ridesCount,
     required this.memberSince,
     required this.verification,
+    this.deletesAt,
   });
 
-  factory Account.fromJson(Map<String, dynamic> json) => Account(
-    id: json['id'] as String,
-    firstName: json['firstName'] as String? ?? '',
-    lastName: json['lastName'] as String? ?? '',
-    phone: json['phone'] as String,
-    email: json['email'] as String?,
-    dateOfBirth: json['dateOfBirth'] == null ? null : DateTime.parse('${json['dateOfBirth']}'),
-    photoUrl: json['photoUrl'] as String?,
-    rating: (json['rating'] as num?)?.toDouble(),
-    ridesCount: (json['ridesCount'] as num?)?.toInt() ?? 0,
-    memberSince: json['memberSince'] == null ? null : DateTime.parse('${json['memberSince']}').toLocal(),
-    verification: VerificationStatus.fromCode((json['verification'] as Map?)?['status']),
-  );
+  factory Account.fromJson(Map<String, dynamic> json) {
+    final reader = JsonReader(json);
+    return Account(
+      id: reader.str('id'),
+      firstName: reader.strOr('firstName', ''),
+      lastName: reader.strOr('lastName', ''),
+      phone: reader.str('phone'),
+      email: reader.strOrNull('email'),
+      dateOfBirth: _dayOf(reader.strOrNull('dateOfBirth')),
+      photoUrl: reader.strOrNull('photoUrl'),
+      rating: reader.doubleOrNull('rating'),
+      ridesCount: reader.intOr('ridesCount', 0),
+      memberSince: reader.timeOrNull('memberSince')?.toLocal(),
+      verification: VerificationStatus.fromCode(reader.objectOrNull('verification')?.strOrNull('status')),
+      deletesAt: reader.timeOrNull('deletesAt')?.toLocal(),
+    );
+  }
+
+  static DateTime? _dayOf(String? raw) => raw == null ? null : DateTime.tryParse(raw);
 
   final String id;
   final String firstName;
@@ -41,6 +49,7 @@ class Account {
   final int ridesCount;
   final DateTime? memberSince;
   final VerificationStatus verification;
+  final DateTime? deletesAt;
 
   String get fullName => [firstName, lastName].where((part) => part.isNotEmpty).join(' ');
 

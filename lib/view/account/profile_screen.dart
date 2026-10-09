@@ -1,18 +1,16 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sanga_ride/controller/rider/account/account_controller.dart';
 import 'package:sanga_ride/core/format/time_format.dart';
 import 'package:sanga_ride/core/router/account_routes.dart';
+import 'package:sanga_ride/core/services/permission_center.dart';
 import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride/view/account/account_copy.dart';
 import 'package:sanga_ride/view/account/widgets/account_image.dart';
-import 'package:sanga_ride/view/account/widgets/load_state.dart';
 import 'package:sanga_ride/view/account/widgets/profile_edit_sheet.dart';
-import 'package:sanga_ride/view/account/widgets/profile_field_tile.dart';
 import 'package:sanga_ride/view/account/widgets/profile_photo_editor.dart';
 import 'package:sanga_ride/view/delivery/send/widgets/photo_source_sheet.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
@@ -38,7 +36,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Future<void> _changePhoto() async {
     final source = await showPhotoSourceSheet(context, title: 'Change your photo');
-    if (source == null) return;
+    if (source == null || !mounted) return;
+    if (source == PhotoSource.camera) {
+      final access = await Get.find<PermissionCenter>().prime(PermissionKind.camera, context);
+      if (!mounted) return;
+      if (!access.isUsable) {
+        if (access.needsSettings) _controller.denyPhoto(source);
+        return;
+      }
+    }
     await _controller.changePhoto(source);
   }
 
@@ -97,7 +103,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
             SangaButton.outline(
               label: 'Open Settings',
               size: SangaButtonSize.compact,
-              onPressed: Geolocator.openAppSettings,
+              onPressed: Get.find<PermissionCenter>().openSettings,
+            ),
+          if (state.hasPendingPhoto)
+            SangaButton.outline(
+              label: 'Try again',
+              size: SangaButtonSize.compact,
+              onPressed: () => unawaited(_controller.retryPhoto()),
             ),
         ],
       ),
@@ -110,23 +122,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Column(
       spacing: SangaSpacing.sm,
       children: [
-        ProfileFieldTile(
+        SangaProfileFieldTile(
           label: 'Full name',
           value: account.fullName,
           onTap: () => showProfileEditSheet(context, field: ProfileField.name, account: account),
         ),
-        ProfileFieldTile(
+        SangaProfileFieldTile(
           label: 'Phone number',
           value: '${SangaPhoneNumber.dialCode} ${SangaPhoneNumber.format(account.phone)}',
           onTap: () => context.push(AccountRoutes.phone),
         ),
-        ProfileFieldTile(
+        SangaProfileFieldTile(
           label: 'Email',
           value: email ?? 'Add your email',
           isEmpty: email == null,
           onTap: () => showProfileEditSheet(context, field: ProfileField.email, account: account),
         ),
-        ProfileFieldTile(
+        SangaProfileFieldTile(
           label: 'Date of birth',
           value: birthday == null ? 'Add your birthday' : TimeFormat.longDate(birthday),
           isEmpty: birthday == null,
@@ -186,8 +198,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
         title: 'Profile',
         children: [
           switch (state) {
-            AccountLoading() => const LoadingIndicator(),
-            AccountFailed(:final problem) => LoadFailure(message: problem.message, onRetry: _controller.retry),
+            AccountLoading() => const SangaSkeleton.heights([96, 24, 56, 56, 56, 56]),
+            AccountFailed(:final problem) => SangaFailureMessage(message: problem.message, onRetry: _controller.retry),
             AccountLoaded() => Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: _loaded(state)),
           },
         ],

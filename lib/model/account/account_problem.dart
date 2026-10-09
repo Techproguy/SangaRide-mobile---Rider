@@ -1,5 +1,9 @@
+import 'package:sanga_ride_core/sanga_ride_core.dart';
+
 enum AccountProblem {
   connection('We couldn’t reach the server. Check your connection and try again.'),
+  unknown('Something went wrong on our side. Try again in a moment.'),
+  deleteUnconfirmed('We’re not sure the request went through. Check again before you try deleting.'),
   invalidEmail('That email doesn’t look right. Check it and try again.'),
   emailTaken('Another account already uses that email.'),
   tooYoung('You need to be at least 16 to ride with Sanga.'),
@@ -21,6 +25,12 @@ enum AccountProblem {
 
   bool get opensSettings => this == cameraDenied || this == photosDenied;
 
+  static AccountProblem of(Object error) => switch (ProblemKind.of(error)) {
+    ProblemOffline() => connection,
+    ProblemRejected(:final code) => fromCode(code),
+    _ => unknown,
+  };
+
   static AccountProblem fromCode(String? code) => switch (code) {
     'invalid_email' => invalidEmail,
     'email_taken' => emailTaken,
@@ -34,6 +44,6 @@ enum AccountProblem {
     'photo_unreadable' => photoUnreadable,
     'file_too_large' => photoTooLarge,
     'active_trip' => activeTrip,
-    _ => connection,
+    _ => unknown,
   };
 }
