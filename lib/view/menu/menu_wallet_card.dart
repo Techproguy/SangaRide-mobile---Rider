@@ -9,8 +9,6 @@ import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 class MenuWalletCard extends StatefulWidget {
   const MenuWalletCard({super.key, required this.onTap});
 
-  static const double _softAlpha = 0.78;
-
   final VoidCallback onTap;
 
   @override
@@ -39,7 +37,7 @@ class _MenuWalletCardState extends State<MenuWalletCard> {
         child: InkWell(
           onTap: widget.onTap,
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: SangaSpacing.md, vertical: SangaSpacing.md),
+            padding: const EdgeInsets.all(SangaSpacing.md),
             child: Row(
               spacing: SangaSpacing.md,
               children: [
@@ -49,12 +47,7 @@ class _MenuWalletCardState extends State<MenuWalletCard> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     spacing: SangaSpacing.xxs,
                     children: [
-                      Text(
-                        'Wallet',
-                        style: SangaTextStyles.cardSubtitle.copyWith(
-                          color: SangaColors.onPrimary.withValues(alpha: MenuWalletCard._softAlpha),
-                        ),
-                      ),
+                      Text('Wallet', style: SangaTextStyles.cardSubtitle.copyWith(color: SangaColors.onPrimaryMuted)),
                       Obx(() {
                         final balance = _wallet.balance;
                         return Text(
@@ -65,7 +58,10 @@ class _MenuWalletCardState extends State<MenuWalletCard> {
                     ],
                   ),
                 ),
-                const Icon(Icons.chevron_right_rounded, color: SangaColors.onPrimary),
+                const RotatedBox(
+                  quarterTurns: 3,
+                  child: SangaIcon(SangaAssets.chevronDown, size: 12, color: SangaColors.onPrimary),
+                ),
               ],
             ),
           ),
