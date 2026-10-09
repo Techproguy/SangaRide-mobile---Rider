@@ -173,12 +173,6 @@ class _PayScreenState extends State<PayScreen> {
     if (mounted) _payment.select(PaymentMethod.wallet);
   }
 
-  String _continueLabel(PaymentState state) {
-    if (state is! PaymentChoosing || state.selected != PaymentMethod.groupWallet) return 'Continue';
-    final name = state.payment.group?.name;
-    return name == null || name.isEmpty ? 'Charge the group wallet' : 'Charge $name';
-  }
-
   @override
   Widget build(BuildContext context) {
     return Obx(() {
@@ -189,7 +183,7 @@ class _PayScreenState extends State<PayScreen> {
         child: SangaPageLayout(
           title: 'Make payment',
           footer: SangaButton.primary(
-            label: _continueLabel(state),
+            label: 'Continue',
             isLoading: state is PaymentProcessing || state is PaymentChecking,
             onPressed: state is PaymentChoosing && state.selected != null ? _continue : null,
           ),
