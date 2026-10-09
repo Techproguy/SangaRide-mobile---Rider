@@ -75,11 +75,10 @@ class SosSheetView extends StatelessWidget {
   }
 
   Widget _sending() {
-    return SangaSosSheetContent(
+    return const SangaSosSheetContent(
       title: 'Sending your SOS',
-      message: 'Hang tight. We’re getting your alert out. If you can’t wait, call for help now.',
-      status: const SangaActivityIndicator(size: 28),
-      action: _CallEmergencyButton(number: emergencyNumber, onPressed: onCallEmergency),
+      message: 'Hang tight. We’re getting your alert out.',
+      status: SangaActivityIndicator(size: 28),
     );
   }
 
