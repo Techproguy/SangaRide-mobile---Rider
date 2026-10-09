@@ -1,3 +1,4 @@
+import 'package:sanga_ride/core/copy/common_copy.dart';
 import 'package:sanga_ride/model/trip/trip.dart';
 import 'package:sanga_ride/model/trip/wrapup/payment.dart';
 import 'package:sanga_ride_core/sanga_ride_core.dart';
@@ -125,21 +126,21 @@ enum CancelFailure {
   reviewUnavailable(
     'review_unavailable',
     'We couldn’t check the fee',
-    'Check your connection and give it another go. Your ride is still on.',
+    '${CommonCopy.connectionBody} Your ride is still on.',
     primaryLabel: 'Try again',
     secondaryLabel: 'Not now',
   ),
   connection(
     'connection',
     'We couldn’t cancel your ride',
-    'Check your connection and give it another go. Your ride is still on.',
+    '${CommonCopy.connectionBody} Your ride is still on.',
     primaryLabel: 'Try again',
     secondaryLabel: 'Not now',
   ),
   unknown(
     'unknown',
-    'Something went wrong',
-    'Something went wrong on our side. Try again in a moment. Your ride is still on.',
+    CommonCopy.serverTitle,
+    '${CommonCopy.serverTrouble} Your ride is still on.',
     primaryLabel: 'Try again',
     secondaryLabel: 'Not now',
   ),
@@ -227,8 +228,6 @@ final class CancelReviewing extends CancelState {
   final CancellationReview review;
   final bool isSubmitting;
   final int? feeWas;
-
-  bool get hasFeeChanged => feeWas != null && feeWas != review.fee;
 
   CancelReviewing submitting() => CancelReviewing(reason, note, review, isSubmitting: true);
 }

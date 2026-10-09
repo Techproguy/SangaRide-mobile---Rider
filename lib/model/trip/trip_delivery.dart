@@ -95,7 +95,7 @@ enum DeliveryKind {
   final String code;
   final String label;
 
-  static DeliveryKind fromCode(String? code) => values.firstWhere((kind) => kind.code == code, orElse: () => package);
+  static DeliveryKind fromCode(String? code) => codedEnum(values, (kind) => kind.code, code, orElse: package);
 }
 
 enum DeliveryPackageType {
@@ -255,7 +255,7 @@ enum DeliveryRefusalReason {
   final String detail;
 
   static DeliveryRefusalReason fromCode(String? code) =>
-      values.firstWhere((reason) => reason.code == code, orElse: () => other);
+      codedEnum(values, (reason) => reason.code, code, orElse: other);
 }
 
 class DeliveryRefusal {

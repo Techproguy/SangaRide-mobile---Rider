@@ -1,3 +1,5 @@
+import 'package:sanga_ride/core/api/server_codes.dart';
+import 'package:sanga_ride/core/copy/common_copy.dart';
 import 'package:sanga_ride_core/sanga_ride_core.dart';
 
 enum DeliveryPickupProblem {
@@ -21,41 +23,31 @@ enum DeliveryPickupProblem {
     isPhotoProblem: true,
   ),
   fileTooLarge(
-    'file_too_large',
+    ServerCode.fileTooLarge,
     'That photo is too big',
     'Snap it again. Photos need to be under 8 MB.',
     isPhotoProblem: true,
   ),
   unsupportedType(
-    'unsupported_type',
+    ServerCode.unsupportedType,
     'We can’t use that photo',
     'Snap it again with your camera.',
     isPhotoProblem: true,
   ),
   uploadFailed(
-    'upload_failed',
+    ServerCode.uploadFailed,
     'We couldn’t upload your photo',
-    'Check your connection and give it another go.',
+    CommonCopy.connectionBody,
     isPhotoProblem: true,
   ),
   movedOn(
-    'wrong_stage',
+    ServerCode.wrongStage,
     'This pickup has moved on',
     'Your driver has already carried on with the delivery.',
     isPhotoProblem: false,
   ),
-  connection(
-    'connection',
-    'We couldn’t reach the server',
-    'Check your connection and give it another go.',
-    isPhotoProblem: false,
-  ),
-  unknown(
-    'unknown',
-    'Something went wrong',
-    'Something went wrong on our side. Try again in a moment.',
-    isPhotoProblem: false,
-  );
+  connection('connection', CommonCopy.unreachableTitle, CommonCopy.connectionBody, isPhotoProblem: false),
+  unknown('unknown', CommonCopy.serverTitle, CommonCopy.serverTrouble, isPhotoProblem: false);
 
   const DeliveryPickupProblem(
     this.code,

@@ -1,3 +1,4 @@
+import 'package:sanga_ride/model/support/support_chat.dart';
 import 'package:sanga_ride_core/sanga_ride_core.dart';
 
 enum TripMessageDelivery { sending, sent, failed }
@@ -19,7 +20,7 @@ class TripMessage {
       clientId: reader.strOrNull('clientId'),
       body: reader.str('body'),
       sentAt: reader.time('createdAt').toLocal(),
-      isMine: reader.strOrNull('senderRole') == 'rider',
+      isMine: reader.strOrNull('senderRole') == ChatRole.rider.code,
     );
   }
 

@@ -1,3 +1,4 @@
+import 'package:sanga_ride/core/api/server_codes.dart';
 import 'package:sanga_ride/model/groups/group_kind.dart';
 import 'package:sanga_ride/model/trip/server_time.dart';
 import 'package:sanga_ride_core/sanga_ride_core.dart';
@@ -61,15 +62,15 @@ enum PaymentStatus {
 }
 
 enum PaymentDeclineReason {
-  cardDeclined('card_declined', 'Card declined', 'Your bank declined this card.'),
-  cardExpired('card_expired', 'Card expired', 'This card has expired.'),
+  cardDeclined(ServerCode.cardDeclined, 'Card declined', 'Your bank declined this card.'),
+  cardExpired(ServerCode.cardExpired, 'Card expired', 'This card has expired.'),
   insufficientBalance(
-    'insufficient_balance',
+    ServerCode.insufficientBalance,
     'Not enough in your wallet',
     'Your wallet balance is lower than this fare. Top up to use it, or pay another way.',
   ),
   groupWalletShort(
-    'group_wallet_short',
+    ServerCode.groupWalletShort,
     'The group wallet is short',
     'There isn’t enough in the group wallet for this ride. Ask an admin to top it up, or pay another way.',
   ),
@@ -82,7 +83,7 @@ enum PaymentDeclineReason {
   final String message;
 
   static PaymentDeclineReason fromCode(String? code) =>
-      values.firstWhere((reason) => reason.code == code, orElse: () => unknown);
+      codedEnum(values, (reason) => reason.code, code, orElse: unknown);
 }
 
 class PaymentGroup {
@@ -166,11 +167,4 @@ class TripPayment {
   String get paidTitle => method?.paidTitle ?? 'Payment complete';
 
   String get paidMessage => method?.paidMessage ?? 'Your payment went through.';
-
-  String get paidSummary => switch ((method, last4)) {
-    (PaymentMethod.card, final String last4) => 'Card •••• $last4',
-    (PaymentMethod.groupWallet, _) when group != null => '${group!.name} wallet',
-    (final PaymentMethod method?, _) => method.label,
-    _ => 'Paid',
-  };
 }

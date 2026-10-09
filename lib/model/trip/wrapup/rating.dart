@@ -1,3 +1,5 @@
+import 'package:sanga_ride/core/copy/common_copy.dart';
+
 enum RatingAudience { ride, delivery, both }
 
 enum RatingTag {
@@ -98,5 +100,5 @@ final class RatingFailed extends RatingState {
   const RatingFailed(super.rating);
 
   static const String title = 'We couldn’t send your rating';
-  static const String message = 'Check your connection and give it another go. Your review is still here.';
+  static const String message = '${CommonCopy.connectionBody} Your review is still here.';
 }

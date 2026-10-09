@@ -1,4 +1,6 @@
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:sanga_ride/core/api/error_handling.dart';
+import 'package:sanga_ride/core/copy/common_copy.dart';
 import 'package:sanga_ride/model/location/place.dart';
 import 'package:sanga_ride/model/ride/airport.dart';
 import 'package:sanga_ride/model/ride/ride_match.dart';
@@ -116,14 +118,13 @@ enum TripCancelReason {
 
   bool get didNotHappen => this == driverCancelled || this == packageRefused || this == deliveryCancelled;
 
-  static TripCancelReason fromCode(String? code) =>
-      values.firstWhere((reason) => reason.code == code, orElse: () => other);
+  static TripCancelReason fromCode(String? code) => codedEnum(values, (reason) => reason.code, code, orElse: other);
 }
 
 enum TripLoadFailure {
   notFound('We can’t find this trip', 'It may have ended. Head back home to see what’s next.', canRetry: false),
-  connection('We couldn’t load your trip', 'Check your connection and give it another go.', canRetry: true),
-  unknown('Something went wrong', 'Something went wrong on our side. Try again in a moment.', canRetry: true);
+  connection('We couldn’t load your trip', CommonCopy.connectionBody, canRetry: true),
+  unknown(CommonCopy.serverTitle, CommonCopy.serverTrouble, canRetry: true);
 
   const TripLoadFailure(this.title, this.message, {required this.canRetry});
 
@@ -132,12 +133,24 @@ enum TripLoadFailure {
   final bool canRetry;
 
   static TripLoadFailure of(Object error) {
-    if (error is ApiException && (error.statusCode == 404 || error.statusCode == 410)) return notFound;
+    if (error is ApiException && error.isGone) return notFound;
     return switch (ProblemKind.of(error)) {
       ProblemOffline() => connection,
       _ => unknown,
     };
   }
+}
+
+enum StopStatus {
+  reached('reached'),
+  pending('pending'),
+  unknown('unknown');
+
+  const StopStatus(this.code);
+
+  final String code;
+
+  static StopStatus fromCode(String? code) => codedEnum(values, (status) => status.code, code, orElse: unknown);
 }
 
 LatLng _latLng(JsonReader json) => LatLng(json.number('lat').toDouble(), json.number('lng').toDouble());
@@ -151,7 +164,7 @@ class TripPlace {
       name: reader.str('name'),
       address: reader.strOr('address', ''),
       position: _latLng(reader.object('coordinates')),
-      isReached: reader.strOrNull('status') == 'reached',
+      isReached: StopStatus.fromCode(reader.strOrNull('status')) == StopStatus.reached,
     );
   }
 

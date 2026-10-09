@@ -1,3 +1,4 @@
+import 'package:sanga_ride/core/copy/common_copy.dart';
 import 'package:sanga_ride/model/location/place.dart';
 import 'package:sanga_ride/model/trip/server_time.dart';
 import 'package:sanga_ride/model/trip/trip.dart';
@@ -90,15 +91,15 @@ enum AddStopFailure {
   connection(
     'connection',
     'We couldn’t update your trip',
-    'Check your connection and give it another go. Nothing has changed yet.',
+    '${CommonCopy.connectionBody} Nothing has changed yet.',
     StopResolution.retry,
     'Try again',
     'Not now',
   ),
   unknown(
     'unknown',
-    'Something went wrong',
-    'Something went wrong on our side. Try again in a moment. Your trip stays as it is.',
+    CommonCopy.serverTitle,
+    '${CommonCopy.serverTrouble} Your trip stays as it is.',
     StopResolution.retry,
     'Try again',
     'Not now',

@@ -1,3 +1,4 @@
+import 'package:sanga_ride/core/copy/common_copy.dart';
 import 'package:sanga_ride_core/sanga_ride_core.dart';
 
 enum DeliveryIssueReason {
@@ -147,18 +148,8 @@ enum DeliveryIssueProblem {
     'Pick one of the options on screen to carry on.',
     canRetry: true,
   ),
-  connection(
-    'connection',
-    'We couldn’t reach the server',
-    'Check your connection and give it another go.',
-    canRetry: true,
-  ),
-  unknown(
-    'unknown',
-    'Something went wrong',
-    'Something went wrong on our side. Try again in a moment.',
-    canRetry: true,
-  );
+  connection('connection', CommonCopy.unreachableTitle, CommonCopy.connectionBody, canRetry: true),
+  unknown('unknown', CommonCopy.serverTitle, CommonCopy.serverTrouble, canRetry: true);
 
   const DeliveryIssueProblem(this.code, this.title, this.message, {required this.canRetry});
 
