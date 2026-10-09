@@ -20,7 +20,7 @@ class RoundTripReturnScreen extends StatelessWidget {
       context: context,
       title: 'Return date and time',
       minimumDate: earliest,
-      maximumDate: earliest.add(BookingRules.bookingWindow),
+      maximumDate: earliest.add(ride.rules.bookingWindow),
       initialDateTime: ride.returnAt,
     );
     if (picked != null) ride.setReturnAt(picked);
@@ -41,7 +41,7 @@ class RoundTripReturnScreen extends StatelessWidget {
         Obx(() {
           final departure = ride.timing == RideTiming.now ? null : ride.scheduledAt;
           final returnAt = ride.returnAt;
-          final away = returnAt?.difference(ride.departureAt ?? DateTime.now());
+          final away = returnAt?.difference(ride.departureAt ?? BookingClock.now());
           return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             spacing: SangaSpacing.md,

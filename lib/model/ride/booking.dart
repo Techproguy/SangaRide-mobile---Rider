@@ -1,13 +1,43 @@
 import 'package:google_maps_flutter/google_maps_flutter.dart' show LatLng;
 import 'package:sanga_ride/core/extensions/lat_lng.dart';
 import 'package:sanga_ride/model/ride/ride_match.dart' show ScheduledBooking;
+import 'package:sanga_ride/model/ride/ride_load_problem.dart';
 import 'package:sanga_ride/model/ride/ride_request.dart';
+import 'package:sanga_ride_core/sanga_ride_core.dart';
 
-abstract final class BookingRules {
-  static const Duration scheduleLeadTime = Duration(minutes: 15);
-  static const Duration returnGap = Duration(minutes: 30);
-  static const Duration bookingWindow = Duration(days: 30);
+class BookingRules {
+  const BookingRules({required this.scheduleLeadTime, required this.returnGap, required this.bookingWindow});
+
+  factory BookingRules.fromJson(Object? body) {
+    final json = JsonReader.of(body);
+    return BookingRules(
+      scheduleLeadTime: Duration(minutes: json.intOr('scheduleLeadMinutes', fallback.scheduleLeadTime.inMinutes)),
+      returnGap: Duration(minutes: json.intOr('returnGapMinutes', fallback.returnGap.inMinutes)),
+      bookingWindow: Duration(days: json.intOr('windowDays', fallback.bookingWindow.inDays)),
+    );
+  }
+
+  static const BookingRules fallback = BookingRules(
+    scheduleLeadTime: Duration(minutes: 15),
+    returnGap: Duration(minutes: 30),
+    bookingWindow: Duration(days: 30),
+  );
   static const int defaultHours = 2;
+
+  final Duration scheduleLeadTime;
+  final Duration returnGap;
+  final Duration bookingWindow;
+}
+
+abstract final class BookingClock {
+  static DateTime now() => ServerClock.instance.now().toLocal();
+}
+
+abstract final class BookingZone {
+  static Map<String, dynamic> of(DateTime at) => {
+    'utcOffsetMinutes': at.timeZoneOffset.inMinutes,
+    'name': at.timeZoneName,
+  };
 }
 
 enum Weekday {
@@ -26,7 +56,9 @@ enum Weekday {
 
   int get isoValue => index + 1;
 
-  static Weekday fromIso(int value) => values[value - 1];
+  static Weekday? tryFromIso(int value) => value >= 1 && value <= values.length ? values[value - 1] : null;
+
+  static Weekday fromIso(int value) => tryFromIso(value) ?? (throw JsonFormatError('Unknown weekday', value));
 }
 
 class RepeatRule {
@@ -38,15 +70,17 @@ class RepeatRule {
     this.endDate,
   });
 
-  factory RepeatRule.fromJson(Map<String, dynamic> json) {
-    final time = (json['time'] as String).split(':');
-    final end = json['endDate'] as String?;
+  factory RepeatRule.fromJson(JsonReader json) {
+    final time = json.str('time').split(':');
     return RepeatRule(
-      weekdays: {for (final day in json['weekdays'] as List) Weekday.fromIso(day as int)},
+      weekdays: {
+        for (final day in (json.raw['weekdays'] as List? ?? const []))
+          if (day is num) ?Weekday.tryFromIso(day.toInt()),
+      },
       hour: int.parse(time[0]),
       minute: int.parse(time[1]),
-      startDate: DateTime.parse(json['startDate'] as String),
-      endDate: end == null ? null : DateTime.parse(end),
+      startDate: json.time('startDate'),
+      endDate: json.timeOrNull('endDate'),
     );
   }
 
@@ -97,17 +131,18 @@ class RepeatRule {
     'time': '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}',
     'startDate': _date(startDate),
     'endDate': endDate == null ? null : _date(endDate!),
+    'timezone': BookingZone.of(DateTime(startDate.year, startDate.month, startDate.day, hour, minute)),
   };
 }
 
 class City {
   const City({required this.id, required this.name, required this.coordinates, required this.radiusKm});
 
-  factory City.fromJson(Map<String, dynamic> json) => City(
-    id: json['id'] as String,
-    name: json['name'] as String,
-    coordinates: LatLng((json['lat'] as num).toDouble(), (json['lng'] as num).toDouble()),
-    radiusKm: json['radiusKm'] as num,
+  factory City.fromJson(JsonReader json) => City(
+    id: json.str('id'),
+    name: json.str('name'),
+    coordinates: LatLng(json.number('lat').toDouble(), json.number('lng').toDouble()),
+    radiusKm: json.number('radiusKm'),
   );
 
   final String id;
@@ -138,8 +173,8 @@ enum IntercityIssue {
 class HourlyPreset {
   const HourlyPreset({required this.hours, required this.blurb});
 
-  factory HourlyPreset.fromJson(Map<String, dynamic> json) =>
-      HourlyPreset(hours: (json['hours'] as num).toInt(), blurb: json['blurb'] as String);
+  factory HourlyPreset.fromJson(JsonReader json) =>
+      HourlyPreset(hours: json.integer('hours'), blurb: json.strOr('blurb', ''));
 
   final int hours;
   final String blurb;
@@ -155,19 +190,23 @@ class HourlyCatalog {
     required this.excludes,
   });
 
-  factory HourlyCatalog.fromJson(Map<String, dynamic> json) => HourlyCatalog(
-    rates: {
-      for (final rate in json['rates'] as List)
-        RideCategory.values.byName((rate as Map)['category'] as String): rate['hourlyRate'] as num,
-    },
-    minHours: (json['minHours'] as num).toInt(),
-    maxHours: (json['maxHours'] as num).toInt(),
-    presets: [
-      for (final preset in json['presets'] as List) HourlyPreset.fromJson(Map<String, dynamic>.from(preset as Map)),
-    ],
-    includes: List<String>.from(json['includes'] as List),
-    excludes: List<String>.from(json['excludes'] as List),
-  );
+  factory HourlyCatalog.fromJson(Object? body) {
+    final json = JsonReader.of(body);
+    final rates = <RideCategory, num>{};
+    for (final rate in json.listOf('rates', (item) => item)) {
+      final category = RideCategory.values.asNameMap()[rate.strOrNull('category')];
+      final hourly = rate.numOrNull('hourlyRate');
+      if (category != null && hourly != null) rates[category] = hourly;
+    }
+    return HourlyCatalog(
+      rates: rates,
+      minHours: json.intOr('minHours', 1),
+      maxHours: json.intOr('maxHours', 12),
+      presets: json.listOf('presets', HourlyPreset.fromJson),
+      includes: json.strings('includes'),
+      excludes: json.strings('excludes'),
+    );
+  }
 
   final Map<RideCategory, num> rates;
   final int minHours;
@@ -184,11 +223,14 @@ class HourlyCatalog {
 class IntercityCatalog {
   const IntercityCatalog({required this.cities, required this.departureLead, required this.bookingWindow});
 
-  factory IntercityCatalog.fromJson(Map<String, dynamic> json) => IntercityCatalog(
-    cities: [for (final city in json['cities'] as List) City.fromJson(Map<String, dynamic>.from(city as Map))],
-    departureLead: Duration(minutes: (json['departureLeadMinutes'] as num).toInt()),
-    bookingWindow: Duration(days: (json['windowDays'] as num).toInt()),
-  );
+  factory IntercityCatalog.fromJson(Object? body) {
+    final json = JsonReader.of(body);
+    return IntercityCatalog(
+      cities: json.listOf('cities', City.fromJson),
+      departureLead: Duration(minutes: json.intOr('departureLeadMinutes', 120)),
+      bookingWindow: Duration(days: json.intOr('windowDays', BookingRules.fallback.bookingWindow.inDays)),
+    );
+  }
 
   final List<City> cities;
   final Duration departureLead;
@@ -196,10 +238,11 @@ class IntercityCatalog {
 }
 
 class BookingCatalog {
-  const BookingCatalog({required this.hourly, required this.intercity});
+  const BookingCatalog({required this.hourly, required this.intercity, required this.rules});
 
   final HourlyCatalog hourly;
   final IntercityCatalog intercity;
+  final BookingRules rules;
 }
 
 sealed class BookingCatalogState {
@@ -211,7 +254,9 @@ final class CatalogLoading extends BookingCatalogState {
 }
 
 final class CatalogFailed extends BookingCatalogState {
-  const CatalogFailed();
+  const CatalogFailed(this.problem);
+
+  final RideLoadProblem problem;
 }
 
 final class CatalogReady extends BookingCatalogState {
@@ -226,16 +271,23 @@ enum BookingProblem {
   sameCity('same_city', 'Pick a drop off in a different city.'),
   reminderTooLate('reminder_too_late', 'This ride is too close for a reminder.'),
   tooEarly('too_early', 'Your flight hasn’t landed yet. You can notify your driver once it has.'),
+  quoteExpired('quote_expired', 'Your price changed. Have a look at the new one, then go again.'),
   notFound('not_found', 'We can’t find that ride. It may already be gone.'),
-  unknown('unknown', 'We couldn’t do that. Give it another go.');
+  connection('connection', 'You’re offline. Check your connection and give it another go.'),
+  unknown('unknown', 'Something went wrong on our side. Try again in a moment.');
 
   const BookingProblem(this.code, this.message);
 
   final String code;
   final String message;
 
-  static BookingProblem fromCode(String? code) =>
-      values.firstWhere((problem) => problem.code == code, orElse: () => unknown);
+  static BookingProblem fromCode(String? code) => enumByCode(values, code, (problem) => problem.code, unknown);
+
+  static BookingProblem of(Object error) => switch (ProblemKind.of(error)) {
+    ProblemOffline() => connection,
+    ProblemRejected(:final code) => fromCode(code),
+    _ => unknown,
+  };
 }
 
 sealed class ScheduleOutcome {
@@ -253,3 +305,9 @@ final class ScheduleRejected extends ScheduleOutcome {
 
   final BookingProblem problem;
 }
+
+final class ScheduleUnconfirmed extends ScheduleOutcome {
+  const ScheduleUnconfirmed();
+}
+
+enum QuoteCheck { fresh, priceChanged, unavailable }

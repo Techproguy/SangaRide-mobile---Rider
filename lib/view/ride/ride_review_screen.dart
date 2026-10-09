@@ -4,9 +4,12 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:sanga_ride/controller/rider/ride_match_controller.dart';
 import 'package:sanga_ride/controller/rider/ride_request_controller.dart';
-import 'package:sanga_ride/core/services/toast_service.dart';
+import 'package:go_router/go_router.dart';
+import 'package:sanga_ride/core/router/booking_routes.dart';
+import 'package:sanga_ride/core/router/routes.dart';
 import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride/model/ride/booking.dart';
+import 'package:sanga_ride/model/ride/ride_load_problem.dart';
 import 'package:sanga_ride/view/airport/widgets/airport_review_lines.dart';
 import 'package:sanga_ride/view/airport/widgets/flight_summary_card.dart';
 import 'package:sanga_ride/view/ride/matching/matching_flow.dart';
@@ -27,6 +30,7 @@ class RideReviewScreen extends StatefulWidget {
 
 class _RideReviewScreenState extends State<RideReviewScreen> {
   final _match = Get.find<RideMatchController>();
+  bool _isCheckingQuote = false;
 
   @override
   void dispose() {
@@ -35,8 +39,33 @@ class _RideReviewScreenState extends State<RideReviewScreen> {
   }
 
   Future<void> _submit(RideRequestController ride) async {
+    if (_isCheckingQuote) return;
+    setState(() => _isCheckingQuote = true);
+    final check = await ride.ensureFreshQuote();
+    if (!mounted) return;
+    setState(() => _isCheckingQuote = false);
+    if (check == QuoteCheck.unavailable) {
+      SangaToast.show(ride.estimateProblem?.message ?? RideLoadProblem.unknown.message, tone: SangaToastTone.error);
+      return;
+    }
+    if (check == QuoteCheck.priceChanged && !await _confirmNewPrice(ride)) return;
+    if (!mounted) return;
     if (ride.isScheduledBooking) return _schedule(ride);
     await startMatching(context);
+  }
+
+  Future<bool> _confirmNewPrice(RideRequestController ride) {
+    final price = ride.price;
+    return showSangaPromptSheet(
+      context: context,
+      icon: Icons.sell_outlined,
+      title: 'Your price was updated',
+      message: price == null
+          ? 'Have a look at the latest price.'
+          : 'It’s now ${SangaMoney.naira(price)}. Happy with that?',
+      actionLabel: 'Sounds good',
+      dismissLabel: 'Not now',
+    );
   }
 
   Future<void> _schedule(RideRequestController ride) async {
@@ -44,10 +73,28 @@ class _RideReviewScreenState extends State<RideReviewScreen> {
     if (!mounted || outcome == null) return;
     switch (outcome) {
       case ScheduleRejected(:final problem):
-        Toast.error(problem.message);
+        if (problem == BookingProblem.quoteExpired) unawaited(ride.refreshQuote());
+        SangaToast.show(problem.message, tone: SangaToastTone.error);
+      case ScheduleUnconfirmed():
+        await _askAboutUnconfirmed(ride);
       case ScheduleSucceeded(:final booking):
         await _celebrate(ride, booking);
     }
+  }
+
+  Future<void> _askAboutUnconfirmed(RideRequestController ride) async {
+    final tryAgain = await showSangaStatusSheet(
+      context: context,
+      status: SangaStatus.caution,
+      icon: Icons.sync_problem_rounded,
+      title: 'We’re not sure it booked',
+      message: 'Try again and we won’t book it twice. Or check your scheduled rides first.',
+      actionLabel: 'Try again',
+      secondaryLabel: 'View scheduled rides',
+    );
+    if (!mounted) return;
+    if (tryAgain) return _schedule(ride);
+    unawaited(context.push(BookingRoutes.scheduledRides));
   }
 
   Future<void> _celebrate(RideRequestController ride, ScheduledBooking booking) async {
@@ -69,15 +116,7 @@ class _RideReviewScreenState extends State<RideReviewScreen> {
   Widget _layout(BuildContext context, RideRequestController ride) {
     return SangaPageLayout(
       title: 'Review your ride',
-      footer: Obx(
-        () => SangaButton.primary(
-          label: _submitLabel(ride),
-          isLoading: _match.isStarting || ride.isScheduling,
-          onPressed: ride.estimate == null || ride.pricing == null || _match.isLive || !ride.isReadyToReview
-              ? null
-              : () => _submit(ride),
-        ),
-      ),
+      footer: Obx(() => _footer(ride)),
       children: [
         Obx(() {
           final pricing = ride.pricing;
@@ -111,6 +150,34 @@ class _RideReviewScreenState extends State<RideReviewScreen> {
             ],
           );
         }),
+      ],
+    );
+  }
+
+  Widget _footer(RideRequestController ride) {
+    final starting = _match.state;
+    final isBusy = _match.isStarting || ride.isScheduling || _isCheckingQuote;
+    final isChecking = starting is MatchStarting && starting.isChecking;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        SangaButton.primary(
+          label: _submitLabel(ride),
+          isLoading: isBusy,
+          onPressed: ride.estimate == null || ride.pricing == null || _match.isLive || !ride.isReadyToReview || isBusy
+              ? null
+              : () => _submit(ride),
+        ),
+        if (isChecking)
+          const Padding(
+            padding: EdgeInsets.only(top: SangaSpacing.sm),
+            child: Text(
+              'Making sure your request went through…',
+              textAlign: TextAlign.center,
+              style: SangaTextStyles.statusMessage,
+            ),
+          ),
+        if (isBusy && !_isCheckingQuote) SangaBusyEscape(onClose: () => context.go(SangaRoutes.home)),
       ],
     );
   }
@@ -163,7 +230,7 @@ class _RideReviewScreenState extends State<RideReviewScreen> {
         ),
         RideTiming.later || RideTiming.now => SangaFareLine('When', RideTiming.now.label),
       },
-      if (rule?.firstRideAfter(DateTime.now()) case final first?)
+      if (rule?.firstRideAfter(BookingClock.now()) case final first?)
         SangaFareLine('First ride', formatRideSchedule(context, first)),
       if (returnAt != null && ride.tripType == TripType.roundTrip)
         SangaFareLine('Return', formatRideSchedule(context, returnAt)),

@@ -47,6 +47,7 @@ abstract final class MockAirport {
     {
       'id': 'los',
       'iata': 'LOS',
+      'utcOffsetMinutes': 60,
       'name': 'Murtala Muhammed International Airport',
       'city': 'Lagos',
       'country': 'Nigeria',
@@ -61,6 +62,7 @@ abstract final class MockAirport {
     {
       'id': 'abv',
       'iata': 'ABV',
+      'utcOffsetMinutes': 60,
       'name': 'Nnamdi Azikiwe International Airport',
       'city': 'Abuja',
       'country': 'Nigeria',
@@ -75,6 +77,7 @@ abstract final class MockAirport {
     {
       'id': 'phc',
       'iata': 'PHC',
+      'utcOffsetMinutes': 60,
       'name': 'Port Harcourt International Airport',
       'city': 'Port Harcourt',
       'country': 'Nigeria',
@@ -89,6 +92,7 @@ abstract final class MockAirport {
     {
       'id': 'kan',
       'iata': 'KAN',
+      'utcOffsetMinutes': 60,
       'name': 'Mallam Aminu Kano International Airport',
       'city': 'Kano',
       'country': 'Nigeria',
@@ -102,6 +106,7 @@ abstract final class MockAirport {
     {
       'id': 'enu',
       'iata': 'ENU',
+      'utcOffsetMinutes': 60,
       'name': 'Akanu Ibiam International Airport',
       'city': 'Enugu',
       'country': 'Nigeria',

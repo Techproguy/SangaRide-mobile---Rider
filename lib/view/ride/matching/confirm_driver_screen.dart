@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sanga_ride/controller/rider/ride_match_controller.dart';
 import 'package:sanga_ride/controller/rider/ride_request_controller.dart';
+import 'package:sanga_ride/core/router/routes.dart';
 import 'package:sanga_ride/core/router/trip_routes.dart';
 import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride/view/ride/matching/widgets/confirm_driver_card.dart';
@@ -47,6 +48,12 @@ class _ConfirmDriverScreenState extends State<ConfirmDriverScreen> {
     _popOnce();
   }
 
+  void _leaveWhileConfirming() {
+    if (_isLeaving || !mounted) return;
+    _isLeaving = true;
+    context.go(SangaRoutes.home);
+  }
+
   Future<void> _expired() async {
     if (_isConfirming || _isLeaving || _match.state is! MatchHolding) return;
     await _match.expireHold();
@@ -86,14 +93,20 @@ class _ConfirmDriverScreenState extends State<ConfirmDriverScreen> {
         onBack: _back,
         footer: Obx(() {
           final isConfirming = _isConfirming;
-          return SangaCountdown(
-            endsAt: hold.holdExpiresAt,
-            onFinished: _expired,
-            builder: (context, remaining) => SangaButton.primary(
-              label: 'Confirm driver (${remaining.minutesAndSeconds})',
-              isLoading: isConfirming,
-              onPressed: _confirm,
-            ),
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SangaCountdown(
+                endsAt: hold.holdExpiresAt,
+                onFinished: _expired,
+                builder: (context, remaining) => SangaButton.primary(
+                  label: 'Confirm driver (${remaining.minutesAndSeconds})',
+                  isLoading: isConfirming,
+                  onPressed: _confirm,
+                ),
+              ),
+              if (isConfirming) SangaBusyEscape(onClose: _leaveWhileConfirming),
+            ],
           );
         }),
         children: [

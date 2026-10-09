@@ -4,6 +4,7 @@ abstract final class BookingEndpoints {
   static const String scheduledRideReminder = '/rides/scheduled/:id/reminder';
   static const String hourlyRates = '/rides/hourly-rates';
   static const String cities = '/cities';
+  static const String rules = '/rides/booking-rules';
 
   static String scheduledRideOf(String id) => scheduledRide.replaceFirst(':id', id);
 

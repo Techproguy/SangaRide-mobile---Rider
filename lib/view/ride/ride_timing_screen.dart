@@ -31,6 +31,7 @@ class _RideTimingScreenState extends State<RideTimingScreen> {
     super.initState();
     final scheduledAt = _ride.scheduledAt;
     if (_ride.timing == RideTiming.later && scheduledAt != null) _schedule = scheduledAt;
+    WidgetsBinding.instance.addPostFrameCallback((_) => _ride.loadCatalog());
   }
 
   List<RideTiming> get _timings => [
@@ -38,7 +39,7 @@ class _RideTimingScreenState extends State<RideTimingScreen> {
       if (timing != RideTiming.repeat || _ride.tripType.allowsRepeat) timing,
   ];
 
-  DateTime get _earliest => DateTime.now().add(BookingRules.scheduleLeadTime);
+  DateTime get _earliest => BookingClock.now().add(_ride.rules.scheduleLeadTime);
 
   bool get _isTooSoon => _schedule?.isBefore(_earliest) ?? false;
 
@@ -65,7 +66,7 @@ class _RideTimingScreenState extends State<RideTimingScreen> {
       context: context,
       title: 'Pick up date and time',
       minimumDate: earliest,
-      maximumDate: earliest.add(BookingRules.bookingWindow),
+      maximumDate: earliest.add(_ride.rules.bookingWindow),
       initialDateTime: _isTooSoon ? null : _schedule,
     );
     if (picked == null || !mounted) return;

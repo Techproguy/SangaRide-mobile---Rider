@@ -17,7 +17,7 @@ Future<SearchOutcome?> showSearchingSheet(BuildContext context) {
   );
 }
 
-typedef _Progress = ({List<String> steps, int doneCount, DateTime? continueAt});
+typedef _Progress = ({List<String> steps, int doneCount, DateTime? continueAt, bool isReconnecting});
 
 class _SearchingSheet extends StatefulWidget {
   const _SearchingSheet();
@@ -28,7 +28,8 @@ class _SearchingSheet extends StatefulWidget {
 
 class _SearchingSheetState extends State<_SearchingSheet> {
   final _match = Get.find<RideMatchController>();
-  late _Progress _progress = _progressOf(_match.state) ?? (steps: const [], doneCount: 0, continueAt: null);
+  late _Progress _progress =
+      _progressOf(_match.state) ?? (steps: const [], doneCount: 0, continueAt: null, isReconnecting: false);
   late final Worker _worker;
   bool _isCancelling = false;
   bool _isClosed = false;
@@ -47,11 +48,17 @@ class _SearchingSheetState extends State<_SearchingSheet> {
   }
 
   _Progress? _progressOf(RideMatchState state) => switch (state) {
-    MatchSearching(:final request) => (steps: request.stepLabels, doneCount: request.stepsDone, continueAt: null),
+    MatchSearching(:final request, :final isReconnecting) => (
+      steps: request.stepLabels,
+      doneCount: request.stepsDone,
+      continueAt: null,
+      isReconnecting: isReconnecting,
+    ),
     MatchOffersReady(:final request, :final continueAt) => (
       steps: request.stepLabels,
       doneCount: request.stepsDone,
       continueAt: continueAt,
+      isReconnecting: false,
     ),
     _ => null,
   };
@@ -77,6 +84,10 @@ class _SearchingSheetState extends State<_SearchingSheet> {
     Navigator.of(context).pop(outcome);
   }
 
+  void _continue() {
+    if (!_isCancelling) _close(SearchOutcome.seeDrivers);
+  }
+
   Future<void> _cancel() async {
     if (_isCancelling) return;
     setState(() => _isCancelling = true);
@@ -90,9 +101,10 @@ class _SearchingSheetState extends State<_SearchingSheet> {
       steps: _progress.steps,
       doneCount: _progress.doneCount,
       continueAt: _progress.continueAt,
+      isReconnecting: _progress.isReconnecting,
       isCancelling: _isCancelling,
       onCancel: _cancel,
-      onContinue: () => _close(SearchOutcome.seeDrivers),
+      onContinue: _continue,
     );
   }
 }

@@ -39,7 +39,7 @@ class _IntercityScreenState extends State<IntercityScreen> {
   }
 
   Future<void> _pickDeparture(IntercityCatalog catalog) async {
-    final earliest = DateTime.now().add(catalog.departureLead);
+    final earliest = BookingClock.now().add(catalog.departureLead);
     final picked = await showSangaDateTimeSheet(
       context: context,
       title: 'Departure date and time',
@@ -54,7 +54,7 @@ class _IntercityScreenState extends State<IntercityScreen> {
     final departure = _ride.scheduledAt;
     return _ride.intercityIssue == null &&
         departure != null &&
-        !departure.isBefore(DateTime.now().add(catalog.departureLead));
+        !departure.isBefore(BookingClock.now().add(catalog.departureLead));
   }
 
   @override
@@ -88,7 +88,7 @@ class _IntercityScreenState extends State<IntercityScreen> {
     final catalog = _ride.readyCatalog?.intercity;
     if (catalog == null) return const SizedBox.shrink();
     final departure = _ride.scheduledAt;
-    final isStale = departure != null && departure.isBefore(DateTime.now().add(catalog.departureLead));
+    final isStale = departure != null && departure.isBefore(BookingClock.now().add(catalog.departureLead));
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       spacing: SangaSpacing.lg,

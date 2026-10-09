@@ -1,3 +1,6 @@
+import 'package:sanga_ride/model/ride/server_deadline.dart';
+import 'package:sanga_ride_core/sanga_ride_core.dart';
+
 enum RideForKind {
   me('Just for me', null),
   family('Family member', 'Book it for someone in your family group'),
@@ -33,7 +36,8 @@ enum PassengerFailure {
   ),
   ownNumber('own_number', 'That’s your own number. Pick Just for me instead.', needsNewCode: false),
   invalidPhone('invalid_phone', 'We can’t text that number. Check it and try again.', needsNewCode: false),
-  connection('connection', 'We couldn’t reach the server. Give it another go.', needsNewCode: false);
+  connection('connection', 'You’re offline. Check your connection and give it another go.', needsNewCode: false),
+  unknown('unknown', 'Something went wrong on our side. Try again in a moment.', needsNewCode: false);
 
   const PassengerFailure(this.code, this.message, {required this.needsNewCode});
 
@@ -41,20 +45,19 @@ enum PassengerFailure {
   final String message;
   final bool needsNewCode;
 
-  static PassengerFailure fromCode(String? code) =>
-      values.firstWhere((failure) => failure.code == code, orElse: () => connection);
+  static PassengerFailure fromCode(String? code) => enumByCode(values, code, (failure) => failure.code, unknown);
+
+  static PassengerFailure of(Object error) => switch (ProblemKind.of(error)) {
+    ProblemOffline() => connection,
+    ProblemRejected(:final code) => fromCode(code),
+    _ => unknown,
+  };
 
   String messageWith({int? attemptsLeft}) {
     if (this != otpMismatch || attemptsLeft == null) return message;
     final tries = attemptsLeft == 1 ? '1 try left' : '$attemptsLeft tries left';
     return 'That code didn’t match. $tries.';
   }
-}
-
-DateTime _localDeadline(Map<String, dynamic> json, String key) {
-  final deadline = DateTime.parse(json[key] as String);
-  final serverTime = DateTime.parse(json['serverTime'] as String);
-  return DateTime.now().add(deadline.difference(serverTime));
 }
 
 class PassengerInfo {
@@ -73,11 +76,14 @@ class PassengerInfo {
 class PassengerVerification {
   const PassengerVerification({required this.id, required this.expiresAt, required this.sentAt});
 
-  factory PassengerVerification.fromJson(Map<String, dynamic> json) => PassengerVerification(
-    id: json['verificationId'] as String,
-    expiresAt: _localDeadline(json, 'expiresAt'),
-    sentAt: DateTime.now(),
-  );
+  factory PassengerVerification.fromJson(Object? body) {
+    final json = JsonReader.of(body);
+    return PassengerVerification(
+      id: json.str('verificationId'),
+      expiresAt: deviceDeadlineAt(serverInstantOf(json, 'expiresAt')),
+      sentAt: DateTime.now(),
+    );
+  }
 
   final String id;
   final DateTime expiresAt;

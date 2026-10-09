@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:developer';
 
@@ -10,12 +11,20 @@ import 'package:sanga_ride/core/api/booking_endpoints.dart';
 import 'package:sanga_ride/core/api/app_endpoints.dart';
 import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride/model/ride/booking.dart';
+import 'package:sanga_ride/model/ride/ride_load_problem.dart';
+import 'package:sanga_ride_core/sanga_ride_core.dart';
 
 class RideRequestController extends GetxController {
   static const int maxStops = Trip.maxStops;
+  static const Duration catalogLifetime = Duration(minutes: 10);
 
   final _api = Get.find<ApiService>();
   int _estimateRequest = 0;
+  StreamSubscription<void>? _resumeSubscription;
+  DateTime? _optionsLoadedAt;
+  DateTime? _catalogLoadedAt;
+  Mutation<ScheduledBooking>? _scheduleMutation;
+  String? _scheduleSignature;
 
   final Rxn<Place> _pickup = Rxn<Place>();
   final Rxn<Place> _dropoff = Rxn<Place>();
@@ -29,8 +38,9 @@ class RideRequestController extends GetxController {
   final Rx<RideTiming> _timing = RideTiming.now.obs;
   final Rxn<DateTime> _scheduledAt = Rxn<DateTime>();
   final RxBool _isLoadingOptions = false.obs;
-  final RxBool _optionsFailed = false.obs;
+  final Rxn<RideLoadProblem> _optionsProblem = Rxn<RideLoadProblem>();
   final RxBool _isEstimating = false.obs;
+  final Rxn<RideLoadProblem> _estimateProblem = Rxn<RideLoadProblem>();
   final RxBool _isRestoring = false.obs;
   final Rxn<RepeatRule> _repeatRule = Rxn<RepeatRule>();
   final Rxn<DateTime> _returnAt = Rxn<DateTime>();
@@ -66,9 +76,13 @@ class RideRequestController extends GetxController {
 
   bool get isLoadingOptions => _isLoadingOptions.value;
 
-  bool get optionsFailed => _optionsFailed.value;
+  bool get optionsFailed => _optionsProblem.value != null;
+
+  RideLoadProblem? get optionsProblem => _optionsProblem.value;
 
   bool get isEstimating => _isEstimating.value;
+
+  RideLoadProblem? get estimateProblem => _estimateProblem.value;
 
   bool get isRestoring => _isRestoring.value;
 
@@ -100,6 +114,28 @@ class RideRequestController extends GetxController {
     CatalogLoading() || CatalogFailed() => null,
   };
 
+  BookingRules get rules => readyCatalog?.rules ?? BookingRules.fallback;
+
+  @override
+  void onInit() {
+    super.onInit();
+    _resumeSubscription = AppLifecycle.instance.onResume.listen((_) => _expireCatalogs());
+  }
+
+  @override
+  void onClose() {
+    _resumeSubscription?.cancel();
+    _scheduleMutation?.dispose();
+    super.onClose();
+  }
+
+  void _expireCatalogs() {
+    _optionsLoadedAt = null;
+    _catalogLoadedAt = null;
+  }
+
+  bool _isFresh(DateTime? loadedAt) => loadedAt != null && DateTime.now().difference(loadedAt) < catalogLifetime;
+
   String rateLabel(RideOption option) {
     final hourly = tripType == TripType.hourly ? readyCatalog?.hourly.rates[option.category] : null;
     return hourly == null ? SangaMoney.perKm(option.pricePerKm) : SangaMoney.perHour(hourly);
@@ -128,9 +164,9 @@ class RideRequestController extends GetxController {
 
   bool get isScheduledBooking => timing.isScheduled || tripType.isAlwaysScheduled;
 
-  DateTime? get departureAt => timing == RideTiming.now ? DateTime.now() : scheduledAt;
+  DateTime? get departureAt => timing == RideTiming.now ? BookingClock.now() : scheduledAt;
 
-  DateTime? get earliestReturn => departureAt?.add(BookingRules.returnGap);
+  DateTime? get earliestReturn => departureAt?.add(rules.returnGap);
 
   bool get isReadyToReview => switch (tripType) {
     TripType.oneWay => timing != RideTiming.later || scheduledAt != null,
@@ -293,6 +329,7 @@ class RideRequestController extends GetxController {
     _estimateRequest++;
     _isEstimating.value = false;
     _estimate.value = null;
+    _estimateProblem.value = null;
     _pricing.value = null;
   }
 
@@ -312,27 +349,33 @@ class RideRequestController extends GetxController {
     if (earliest != null && (returnAt?.isBefore(earliest) ?? false)) _returnAt.value = null;
   }
 
-  Future<void> loadCatalog() async {
-    if (catalog is CatalogReady) return;
-    _catalog.value = const CatalogLoading();
+  Future<void> loadCatalog({bool force = false}) async {
+    if (catalog is CatalogReady && !force && _isFresh(_catalogLoadedAt)) return;
+    if (catalog is! CatalogReady) _catalog.value = const CatalogLoading();
     try {
-      final responses = await Future.wait([_api.get(BookingEndpoints.hourlyRates), _api.get(BookingEndpoints.cities)]);
+      final responses = await Future.wait([
+        _api.get(BookingEndpoints.hourlyRates),
+        _api.get(BookingEndpoints.cities),
+        _api.get(BookingEndpoints.rules),
+      ]);
       _catalog.value = CatalogReady(
         BookingCatalog(
           hourly: HourlyCatalog.fromJson(_dataOf(responses[0].data)),
           intercity: IntercityCatalog.fromJson(_dataOf(responses[1].data)),
+          rules: BookingRules.fromJson(_dataOf(responses[2].data)),
         ),
       );
+      _catalogLoadedAt = DateTime.now();
     } catch (e) {
       log('loadCatalog failed: $e');
-      _catalog.value = const CatalogFailed();
+      if (catalog is! CatalogReady) _catalog.value = CatalogFailed(RideLoadProblem.of(e));
     }
   }
 
   Map<String, dynamic> get bookingJson => {
     'tripType': tripType.name,
     'timing': timing.name,
-    if (scheduledAt case final at?) 'scheduledAt': at.toUtc().toIso8601String(),
+    if (scheduledAt case final at?) ...{'scheduledAt': at.toUtc().toIso8601String(), 'timezone': BookingZone.of(at)},
     if (repeatRule case final rule?) 'repeat': rule.toJson(),
     if (tripType == TripType.hourly) ...{'hours': hours, 'stayWithMe': staysWithRider},
     if (tripType == TripType.intercity) ...{'fromCityId': fromCity?.id, 'toCityId': toCity?.id},
@@ -374,6 +417,7 @@ class RideRequestController extends GetxController {
       'rideFor': Get.find<RideForController>().rideFor.toJson(),
       'pricingMode': pricing.name,
       'proposedFare': price.round(),
+      'quoteId': ?estimate?.quoteId,
       ...bookingJson,
     };
   }
@@ -382,38 +426,73 @@ class RideRequestController extends GetxController {
     if (isScheduling || !isScheduledBooking) return null;
     final payload = requestPayload();
     if (payload == null) return const ScheduleRejected(BookingProblem.unknown);
+    final mutation = _scheduleMutationFor(payload);
     _isScheduling.value = true;
     try {
-      final response = await _api.post(BookingEndpoints.scheduledRides, data: payload, suppressErrorToast: true);
-      return ScheduleSucceeded(ScheduledBooking.fromJson(_dataOf(response.data)));
-    } on ApiException catch (e) {
-      log('scheduleBooking failed: $e');
-      return ScheduleRejected(BookingProblem.fromCode(e.code));
-    } catch (e) {
-      log('scheduleBooking failed: $e');
-      return const ScheduleRejected(BookingProblem.unknown);
+      final result = await mutation.start();
+      return switch (result) {
+        MutationDone<ScheduledBooking>(:final value) => ScheduleSucceeded(value),
+        MutationRejected<ScheduledBooking>(:final error) => _scheduleRejection(error),
+        MutationFailed<ScheduledBooking>(:final error) => ScheduleRejected(BookingProblem.of(error)),
+        MutationUnknown<ScheduledBooking>() => const ScheduleUnconfirmed(),
+        MutationIdle<ScheduledBooking>() ||
+        MutationRunning<ScheduledBooking>() ||
+        MutationChecking<ScheduledBooking>() => const ScheduleUnconfirmed(),
+      };
     } finally {
       _isScheduling.value = false;
     }
   }
 
+  ScheduleOutcome _scheduleRejection(ApiException error) {
+    final problem = BookingProblem.of(error);
+    if (problem == BookingProblem.quoteExpired) _estimate.value = null;
+    return ScheduleRejected(problem);
+  }
+
+  Mutation<ScheduledBooking> _scheduleMutationFor(Map<String, dynamic> payload) {
+    final signature = jsonEncode(payload);
+    final existing = _scheduleMutation;
+    if (existing != null && _scheduleSignature == signature) return existing;
+    existing?.dispose();
+    _scheduleSignature = signature;
+    return _scheduleMutation = Mutation<ScheduledBooking>(
+      intent: 'schedule-ride',
+      run: (key) async {
+        final response = await _api.post(
+          BookingEndpoints.scheduledRides,
+          data: payload,
+          key: key,
+          suppressErrorToast: true,
+        );
+        return ScheduledBooking.fromJson(_dataOf(response.data));
+      },
+    );
+  }
+
   Map<String, dynamic> _dataOf(dynamic body) => Map<String, dynamic>.from((body as Map)['data'] as Map);
 
-  Future<void> loadOptions() async {
-    if (_options.isNotEmpty) return;
-    _optionsFailed.value = false;
+  Future<void> loadOptions({bool force = false}) async {
+    if (_options.isNotEmpty && !force && _isFresh(_optionsLoadedAt)) return;
+    if (_isLoadingOptions.value) return;
+    _optionsProblem.value = null;
     _isLoadingOptions.value = true;
     try {
-      final response = await _api.get(AppEndpoints.rideOptions);
-      final data = response.data['data'] as List;
-      _options.assignAll(data.map((json) => RideOption.fromJson(Map<String, dynamic>.from(json as Map))));
+      final response = await _api.get(AppEndpoints.rideOptions, suppressErrorToast: true);
+      final loaded = JsonReader.of({'options': (response.data as Map)['data']}).listOf('options', RideOption.fromJson);
+      _options.assignAll(loaded);
+      _optionsLoadedAt = DateTime.now();
       final preferred = _preferredCategory;
       if (preferred != null && _optionId.value == null) {
         _optionId.value = _options.firstWhereOrNull((o) => o.category == preferred)?.id;
       }
+      if (_optionId.value != null && _options.every((option) => option.id != _optionId.value)) {
+        _optionId.value = null;
+        _clearQuote();
+      }
     } catch (e) {
       log('loadOptions failed: $e');
-      _optionsFailed.value = true;
+      if (_options.isEmpty) _optionsProblem.value = RideLoadProblem.of(e);
     } finally {
       _isLoadingOptions.value = false;
     }
@@ -426,6 +505,7 @@ class RideRequestController extends GetxController {
     if (pickup == null || dropoff == null || option == null) return false;
     final request = ++_estimateRequest;
     _isEstimating.value = true;
+    _estimateProblem.value = null;
     try {
       final response = await _api.post(
         AppEndpoints.rideEstimate,
@@ -438,17 +518,33 @@ class RideRequestController extends GetxController {
           'preferences': preferences.toJson(),
           ...bookingJson,
         },
+        suppressErrorToast: true,
       );
       if (request != _estimateRequest) return false;
-      final estimate = FareEstimate.fromJson(Map<String, dynamic>.from(response.data['data'] as Map));
+      final estimate = FareEstimate.fromJson((response.data as Map)['data']);
       _estimate.value = estimate;
       if (estimate.meetGreetFee != null) _knownMeetGreetFee.value = estimate.meetGreetFee;
       return true;
     } catch (e) {
       log('loadEstimate failed: $e');
+      if (request == _estimateRequest) _estimateProblem.value = RideLoadProblem.of(e);
       return false;
     } finally {
       if (request == _estimateRequest) _isEstimating.value = false;
     }
+  }
+
+  Future<QuoteCheck> ensureFreshQuote() async {
+    final current = estimate;
+    if (current != null && !current.isExpired) return QuoteCheck.fresh;
+    return refreshQuote();
+  }
+
+  Future<QuoteCheck> refreshQuote() async {
+    final before = price;
+    final isLoaded = await loadEstimate();
+    final after = price;
+    if (!isLoaded || after == null) return QuoteCheck.unavailable;
+    return before != null && before != after ? QuoteCheck.priceChanged : QuoteCheck.fresh;
   }
 }

@@ -1,5 +1,7 @@
 import 'package:google_maps_flutter/google_maps_flutter.dart' show LatLng;
 import 'package:sanga_ride/model/location/place.dart';
+import 'package:sanga_ride/model/ride/ride_load_problem.dart';
+import 'package:sanga_ride_core/sanga_ride_core.dart';
 
 abstract final class AirportRules {
   static const int maxPassengers = 6;
@@ -11,8 +13,10 @@ abstract final class AirportRules {
 class AirportTerminal {
   const AirportTerminal({required this.id, required this.name, required this.kind});
 
-  factory AirportTerminal.fromJson(Map<String, dynamic> json) =>
-      AirportTerminal(id: json['id'] as String, name: json['name'] as String, kind: json['kind'] as String);
+  factory AirportTerminal.fromJson(Map<String, dynamic> raw) {
+    final json = JsonReader(raw);
+    return AirportTerminal(id: json.str('id'), name: json.str('name'), kind: json.strOr('kind', ''));
+  }
 
   final String id;
   final String name;
@@ -29,21 +33,23 @@ class Airport {
     required this.terminals,
     required this.meetPoint,
     this.country,
+    this.utcOffsetMinutes,
   });
 
-  factory Airport.fromJson(Map<String, dynamic> json) => Airport(
-    id: json['id'] as String,
-    iata: json['iata'] as String,
-    name: json['name'] as String,
-    city: json['city'] as String,
-    country: json['country'] as String?,
-    coordinates: LatLng((json['lat'] as num).toDouble(), (json['lng'] as num).toDouble()),
-    terminals: [
-      for (final terminal in json['terminals'] as List)
-        AirportTerminal.fromJson(Map<String, dynamic>.from(terminal as Map)),
-    ],
-    meetPoint: json['meetPoint'] as String,
-  );
+  factory Airport.fromJson(Map<String, dynamic> raw) {
+    final json = JsonReader(raw);
+    return Airport(
+      id: json.str('id'),
+      iata: json.str('iata'),
+      name: json.str('name'),
+      city: json.str('city'),
+      country: json.strOrNull('country'),
+      coordinates: LatLng(json.number('lat').toDouble(), json.number('lng').toDouble()),
+      terminals: json.listOf('terminals', (item) => AirportTerminal.fromJson(item.raw)),
+      meetPoint: json.strOr('meetPoint', ''),
+      utcOffsetMinutes: json.intOrNull('utcOffsetMinutes'),
+    );
+  }
 
   final String id;
   final String iata;
@@ -53,6 +59,13 @@ class Airport {
   final LatLng coordinates;
   final List<AirportTerminal> terminals;
   final String meetPoint;
+  final int? utcOffsetMinutes;
+
+  DateTime localToday(DateTime serverNow) {
+    final offset = utcOffsetMinutes;
+    final local = offset == null ? serverNow.toLocal() : serverNow.toUtc().add(Duration(minutes: offset));
+    return DateTime(local.year, local.month, local.day);
+  }
 
   String get location => country == null ? city : '$city, $country';
 
@@ -73,8 +86,10 @@ class Airport {
 class Airline {
   const Airline({required this.code, required this.name});
 
-  factory Airline.fromJson(Map<String, dynamic> json) =>
-      Airline(code: json['code'] as String, name: json['name'] as String);
+  factory Airline.fromJson(Map<String, dynamic> raw) {
+    final json = JsonReader(raw);
+    return Airline(code: json.str('code'), name: json.str('name'));
+  }
 
   final String code;
   final String name;
@@ -108,7 +123,9 @@ final class AirportCatalogLoading extends AirportCatalogState {
 }
 
 final class AirportCatalogFailed extends AirportCatalogState {
-  const AirportCatalogFailed();
+  const AirportCatalogFailed({this.problem = RideLoadProblem.connection});
+
+  final RideLoadProblem problem;
 }
 
 final class AirportCatalogReady extends AirportCatalogState {
@@ -239,15 +256,21 @@ enum FlightProblem {
   wrongAirport('wrong_airport', 'That flight lands at a different airport. Check your flight or pick another airport.'),
   dateOutOfRange('date_out_of_range', 'We can only plan pick ups from today up to 30 days ahead.'),
   alreadyArrived('flight_already_arrived', 'That flight landed a while ago. Check the date and number.'),
-  connection('connection', 'We couldn’t check that flight. Check your connection and give it another go.');
+  connection('connection', 'You’re offline. Check your connection and give it another go.'),
+  unknown('unknown', 'We couldn’t check that flight. Try again in a moment.');
 
   const FlightProblem(this.code, this.message);
 
   final String code;
   final String message;
 
-  static FlightProblem fromCode(String? code) =>
-      values.firstWhere((problem) => problem.code == code, orElse: () => connection);
+  static FlightProblem fromCode(String? code) => enumByCode(values, code, (problem) => problem.code, unknown);
+
+  static FlightProblem of(Object error) => switch (ProblemKind.of(error)) {
+    ProblemOffline() => connection,
+    ProblemRejected(:final code) => fromCode(code),
+    _ => unknown,
+  };
 }
 
 sealed class FlightLookupState {

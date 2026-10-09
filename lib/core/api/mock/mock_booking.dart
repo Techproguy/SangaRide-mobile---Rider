@@ -10,9 +10,12 @@ abstract final class MockBooking {
     MockRoute.post(BookingEndpoints.scheduledRideReminder, _remind),
     MockRoute.get(BookingEndpoints.hourlyRates, (_) => hourlyRates),
     MockRoute.get(BookingEndpoints.cities, (_) => cities),
+    MockRoute.get(BookingEndpoints.rules, (_) => rules),
   ];
 
   static const Duration _reminderLead = Duration(minutes: 30);
+
+  static const Map<String, dynamic> rules = {'scheduleLeadMinutes': 15, 'returnGapMinutes': 30, 'windowDays': 30};
 
   static const Map<String, dynamic> hourlyRates = {
     'minHours': 1,

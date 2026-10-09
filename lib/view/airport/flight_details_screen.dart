@@ -4,9 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sanga_ride/controller/rider/airport_controller.dart';
+import 'package:sanga_ride/controller/rider/ride_request_controller.dart';
+import 'package:sanga_ride_core/sanga_ride_core.dart' show ServerClock;
 import 'package:sanga_ride/core/router/booking_routes.dart';
 import 'package:sanga_ride/model/models.dart';
-import 'package:sanga_ride/model/ride/booking.dart';
 import 'package:sanga_ride/view/airport/widgets/flight_number_formatter.dart';
 import 'package:sanga_ride/view/ride/widgets/booking_picker_field.dart';
 import 'package:sanga_ride/view/ride/widgets/ride_option_async_state.dart';
@@ -47,8 +48,11 @@ class _FlightDetailsScreenState extends State<FlightDetailsScreen> {
   }
 
   DateTime get _today {
-    final now = DateTime.now();
-    return DateTime(now.year, now.month, now.day);
+    final airport = _airport.draft.airport;
+    final now = ServerClock.instance.now();
+    if (airport != null) return airport.localToday(now);
+    final local = now.toLocal();
+    return DateTime(local.year, local.month, local.day);
   }
 
   Future<void> _pickDate() async {
@@ -58,7 +62,7 @@ class _FlightDetailsScreenState extends State<FlightDetailsScreen> {
       title: 'Arrival date',
       initialDate: _airport.draft.arrivalDate ?? today,
       firstDate: today,
-      lastDate: today.add(BookingRules.bookingWindow),
+      lastDate: today.add(Get.find<RideRequestController>().rules.bookingWindow),
     );
     if (picked != null) _airport.setArrivalDate(picked);
   }

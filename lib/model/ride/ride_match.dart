@@ -1,4 +1,7 @@
 import 'package:sanga_ride/model/groups/group_models.dart';
+import 'package:sanga_ride/model/ride/ride_load_problem.dart';
+import 'package:sanga_ride/model/ride/server_deadline.dart';
+import 'package:sanga_ride_core/sanga_ride_core.dart';
 
 enum RideRequestStatus {
   searching('searching'),
@@ -6,7 +9,8 @@ enum RideRequestStatus {
   sending('sending'),
   offers('offers'),
   noDriverFound('no_driver_found'),
-  cancelled('cancelled');
+  cancelled('cancelled'),
+  unknown('unknown');
 
   const RideRequestStatus(this.code);
 
@@ -14,30 +18,26 @@ enum RideRequestStatus {
 
   bool get isSearching => this == searching || this == checking || this == sending;
 
-  static RideRequestStatus fromCode(String code) => values.firstWhere(
-    (status) => status.code == code,
-    orElse: () => throw FormatException('Unknown ride request status: $code'),
-  );
+  static RideRequestStatus fromCode(String? code) => enumByCode(values, code, (status) => status.code, unknown);
 }
 
 enum OfferStatus {
   pending('pending'),
-  withdrawn('withdrawn');
+  withdrawn('withdrawn'),
+  unknown('unknown');
 
   const OfferStatus(this.code);
 
   final String code;
 
-  static OfferStatus fromCode(String code) => values.firstWhere(
-    (status) => status.code == code,
-    orElse: () => throw FormatException('Unknown offer status: $code'),
-  );
+  static OfferStatus fromCode(String? code) => enumByCode(values, code, (status) => status.code, unknown);
 }
 
 enum OfferUnavailableReason {
   offerUnavailable('offer_unavailable', 'That driver is no longer available.'),
   holdExpired('hold_expired', 'That hold ran out. Pick a driver again.'),
-  unknown('unknown', 'Something went wrong with that driver. Give it another go.');
+  connection('connection', 'You’re offline. Check your connection and give it another go.'),
+  unknown('unknown', 'Something went wrong on our side. Try again in a moment.');
 
   const OfferUnavailableReason(this.code, this.message);
 
@@ -46,32 +46,44 @@ enum OfferUnavailableReason {
 
   bool get removesOffer => this == offerUnavailable;
 
-  static OfferUnavailableReason fromCode(String? code) =>
-      values.firstWhere((reason) => reason.code == code, orElse: () => unknown);
+  static OfferUnavailableReason fromCode(String? code) => enumByCode(values, code, (reason) => reason.code, unknown);
+
+  static OfferUnavailableReason of(Object error) => switch (ProblemKind.of(error)) {
+    ProblemOffline() => connection,
+    ProblemRejected(:final code) => fromCode(code),
+    _ => unknown,
+  };
 }
 
 enum MatchFailure {
   noDriverFound('No driver found', 'Drivers are busy right now. Give it another go in a moment.'),
-  couldNotStart('We couldn’t start your search', 'Check your connection and give it another go.'),
-  connectionLost('We lost the connection', 'We stopped your request. Check your connection and give it another go.');
+  offline('You’re offline', 'Check your connection and give it another go.'),
+  serverTrouble('We couldn’t start your search', 'Something went wrong on our side. Try again in a moment.'),
+  couldNotStart('We couldn’t start your search', 'Something went wrong on our side. Try again in a moment.'),
+  connectionLost(
+    'We lost the connection',
+    'Your request may still be running. Check your connection and we’ll look again.',
+  ),
+  unconfirmed('We’re not sure it went through', 'We’ll check again. We won’t send your request twice.'),
+  quoteExpired('Your price changed', 'We updated it. Have a look, then go again.');
 
   const MatchFailure(this.title, this.message);
 
   final String title;
   final String message;
-}
 
-DateTime _localDeadline(Map<String, dynamic> json, String key) {
-  final deadline = DateTime.parse(json[key] as String);
-  final serverTime = DateTime.parse(json['serverTime'] as String);
-  return DateTime.now().add(deadline.difference(serverTime));
+  static MatchFailure of(Object error) => switch (ProblemKind.of(error)) {
+    ProblemOffline() => offline,
+    ProblemServer() => serverTrouble,
+    _ => couldNotStart,
+  };
 }
 
 class MatchStep {
   const MatchStep({required this.key, required this.label, required this.isDone});
 
-  factory MatchStep.fromJson(Map<String, dynamic> json) =>
-      MatchStep(key: json['key'] as String, label: json['label'] as String, isDone: json['done'] as bool);
+  factory MatchStep.fromJson(JsonReader json) =>
+      MatchStep(key: json.str('key'), label: json.str('label'), isDone: json.boolOr('done', false));
 
   final String key;
   final String label;
@@ -79,25 +91,28 @@ class MatchStep {
 }
 
 class MatchRequest {
-  const MatchRequest({required this.id, required this.status, required this.steps, required this.searchExpiresAt});
+  const MatchRequest({required this.id, required this.status, required this.steps, required this.searchDeadline});
 
-  factory MatchRequest.fromJson(Map<String, dynamic> json) => MatchRequest(
-    id: json['id'] as String,
-    status: RideRequestStatus.fromCode(json['status'] as String),
-    steps: [for (final step in json['steps'] as List) MatchStep.fromJson(Map<String, dynamic>.from(step as Map))],
-    searchExpiresAt: _localDeadline(json, 'searchExpiresAt'),
-  );
+  factory MatchRequest.fromJson(Object? body) {
+    final json = JsonReader.of(body);
+    return MatchRequest(
+      id: json.str('id'),
+      status: RideRequestStatus.fromCode(json.strOrNull('status')),
+      steps: json.listOf('steps', MatchStep.fromJson),
+      searchDeadline: serverInstantOrNull(json, 'searchExpiresAt') ?? ServerClock.instance.now(),
+    );
+  }
 
   final String id;
   final RideRequestStatus status;
   final List<MatchStep> steps;
-  final DateTime searchExpiresAt;
+  final DateTime searchDeadline;
 
   int get stepsDone => steps.where((step) => step.isDone).length;
 
   List<String> get stepLabels => [for (final step in steps) step.label];
 
-  bool get hasSearchExpired => status.isSearching && DateTime.now().isAfter(searchExpiresAt);
+  bool get hasSearchExpired => status.isSearching && hasServerPassed(searchDeadline);
 }
 
 class OfferDriver {
@@ -111,15 +126,18 @@ class OfferDriver {
     required this.ridesCompleted,
   });
 
-  factory OfferDriver.fromJson(Map<String, dynamic> json) => OfferDriver(
-    id: json['id'] as String,
-    name: json['name'] as String,
-    firstName: json['firstName'] as String,
-    photoUrl: json['photoUrl'] as String?,
-    isVerified: json['verified'] as bool,
-    rating: (json['rating'] as num).toDouble(),
-    ridesCompleted: (json['ridesCompleted'] as num).toInt(),
-  );
+  factory OfferDriver.fromJson(Object? body) {
+    final json = JsonReader.of(body);
+    return OfferDriver(
+      id: json.str('id'),
+      name: json.str('name'),
+      firstName: json.strOr('firstName', json.strOr('name', '').split(' ').first),
+      photoUrl: json.strOrNull('photoUrl'),
+      isVerified: json.boolOr('verified', false),
+      rating: json.doubleOr('rating', 0),
+      ridesCompleted: json.intOr('ridesCompleted', 0),
+    );
+  }
 
   final String id;
   final String name;
@@ -146,13 +164,13 @@ class DriverOffer {
     required this.driver,
   });
 
-  factory DriverOffer.fromJson(Map<String, dynamic> json) => DriverOffer(
-    id: json['id'] as String,
-    status: OfferStatus.fromCode(json['status'] as String),
-    counterOffer: (json['counterOffer'] as num?)?.toInt(),
-    etaMinutes: (json['etaMinutes'] as num).toInt(),
-    distanceKm: (json['distanceKm'] as num).toDouble(),
-    driver: OfferDriver.fromJson(Map<String, dynamic>.from(json['driver'] as Map)),
+  factory DriverOffer.fromJson(JsonReader json) => DriverOffer(
+    id: json.str('id'),
+    status: OfferStatus.fromCode(json.strOrNull('status')),
+    counterOffer: json.intOrNull('counterOffer'),
+    etaMinutes: json.intOr('etaMinutes', 0),
+    distanceKm: json.doubleOr('distanceKm', 0),
+    driver: OfferDriver.fromJson(json.object('driver')),
   );
 
   final String id;
@@ -195,14 +213,17 @@ class DriverVehicle {
     required this.features,
   });
 
-  factory DriverVehicle.fromJson(Map<String, dynamic> json) => DriverVehicle(
-    make: json['make'] as String,
-    model: json['model'] as String,
-    year: (json['year'] as num).toInt(),
-    colour: json['colour'] as String,
-    plate: json['plate'] as String,
-    features: [for (final feature in json['features'] as List) feature as String],
-  );
+  factory DriverVehicle.fromJson(Object? body) {
+    final json = JsonReader.of(body);
+    return DriverVehicle(
+      make: json.strOr('make', ''),
+      model: json.strOr('model', ''),
+      year: json.intOr('year', 0),
+      colour: json.strOr('colour', ''),
+      plate: json.strOr('plate', ''),
+      features: json.strings('features'),
+    );
+  }
 
   static final RegExp _plateBreaks = RegExp(r'(?<=[A-Za-z])(?=\d)|(?<=\d)(?=[A-Za-z])');
 
@@ -213,7 +234,7 @@ class DriverVehicle {
   final String plate;
   final List<String> features;
 
-  String get title => '$make $model ($year)';
+  String get title => year == 0 ? '$make $model' : '$make $model ($year)';
 
   String get colourLabel => colour.isEmpty ? colour : '${colour[0].toUpperCase()}${colour.substring(1)}';
 
@@ -230,20 +251,23 @@ class DriverHold {
     required this.distanceAwayKm,
     required this.driver,
     required this.vehicle,
+    this.etaMinutes = 0,
   });
 
-  factory DriverHold.fromJson(Map<String, dynamic> json) {
-    final hold = Map<String, dynamic>.from(json['hold'] as Map);
-    final card = Map<String, dynamic>.from(json['driver'] as Map);
+  factory DriverHold.fromJson(Object? body, {int etaMinutes = 0}) {
+    final json = JsonReader.of(body);
+    final hold = json.object('hold');
+    final card = json.object('driver');
     return DriverHold(
-      offerId: hold['offerId'] as String,
-      holdExpiresAt: _localDeadline(hold, 'holdExpiresAt'),
-      fare: (hold['fare'] as num).toInt(),
-      counterOffer: (hold['counterOffer'] as num?)?.toInt(),
-      matchLabel: hold['matchLabel'] as String?,
-      distanceAwayKm: (card['distanceAwayKm'] as num).toDouble(),
+      offerId: hold.str('offerId'),
+      holdExpiresAt: deviceDeadlineAt(serverInstantOf(hold, 'holdExpiresAt')),
+      fare: hold.integer('fare'),
+      counterOffer: hold.intOrNull('counterOffer'),
+      matchLabel: hold.strOrNull('matchLabel'),
+      distanceAwayKm: card.doubleOr('distanceAwayKm', 0),
       driver: OfferDriver.fromJson(card),
-      vehicle: DriverVehicle.fromJson(Map<String, dynamic>.from(card['vehicle'] as Map)),
+      vehicle: DriverVehicle.fromJson(card.raw['vehicle']),
+      etaMinutes: etaMinutes,
     );
   }
 
@@ -255,16 +279,32 @@ class DriverHold {
   final double distanceAwayKm;
   final OfferDriver driver;
   final DriverVehicle vehicle;
+  final int etaMinutes;
+
+  DriverHold withEta(int minutes) => DriverHold(
+    offerId: offerId,
+    holdExpiresAt: holdExpiresAt,
+    fare: fare,
+    counterOffer: counterOffer,
+    matchLabel: matchLabel,
+    distanceAwayKm: distanceAwayKm,
+    driver: driver,
+    vehicle: vehicle,
+    etaMinutes: minutes,
+  );
 }
 
 class ConfirmedTrip {
   const ConfirmedTrip({required this.tripId, required this.etaMinutes, required this.driver});
 
-  factory ConfirmedTrip.fromJson(Map<String, dynamic> json) => ConfirmedTrip(
-    tripId: json['tripId'] as String,
-    etaMinutes: (json['etaMinutes'] as num).toInt(),
-    driver: OfferDriver.fromJson(Map<String, dynamic>.from(json['driver'] as Map)),
-  );
+  factory ConfirmedTrip.fromJson(Object? body) {
+    final json = JsonReader.of(body);
+    return ConfirmedTrip(
+      tripId: json.str('tripId'),
+      etaMinutes: json.intOr('etaMinutes', 0),
+      driver: OfferDriver.fromJson(json.object('driver')),
+    );
+  }
 
   final String tripId;
   final int etaMinutes;
@@ -274,11 +314,29 @@ class ConfirmedTrip {
 class ScheduledBooking {
   const ScheduledBooking({required this.id, required this.scheduledAt});
 
-  factory ScheduledBooking.fromJson(Map<String, dynamic> json) =>
-      ScheduledBooking(id: json['id'] as String, scheduledAt: DateTime.parse(json['scheduledAt'] as String).toLocal());
+  factory ScheduledBooking.fromJson(Object? body) {
+    final json = JsonReader.of(body);
+    return ScheduledBooking(id: json.str('id'), scheduledAt: json.time('scheduledAt').toLocal());
+  }
 
   final String id;
   final DateTime scheduledAt;
+}
+
+sealed class CreateOutcome {
+  const CreateOutcome();
+}
+
+final class RequestCreated extends CreateOutcome {
+  const RequestCreated(this.request);
+
+  final MatchRequest request;
+}
+
+final class RequestScheduled extends CreateOutcome {
+  const RequestScheduled(this.booking);
+
+  final ScheduledBooking booking;
 }
 
 sealed class RideMatchState {
@@ -290,13 +348,22 @@ final class MatchIdle extends RideMatchState {
 }
 
 final class MatchStarting extends RideMatchState {
-  const MatchStarting();
+  const MatchStarting({this.isChecking = false});
+
+  final bool isChecking;
+}
+
+final class MatchResuming extends RideMatchState {
+  const MatchResuming();
 }
 
 final class MatchSearching extends RideMatchState {
-  const MatchSearching(this.request);
+  const MatchSearching(this.request, {this.link = LinkState.live});
 
   final MatchRequest request;
+  final LinkState link;
+
+  bool get isReconnecting => link != LinkState.live;
 }
 
 final class MatchOffersReady extends RideMatchState {
@@ -317,7 +384,9 @@ final class MatchNoDriver extends RideMatchState {
 }
 
 final class MatchCancelled extends RideMatchState {
-  const MatchCancelled();
+  const MatchCancelled({this.isConfirmed = true});
+
+  final bool isConfirmed;
 }
 
 final class MatchAwaitingApproval extends RideMatchState {
@@ -345,7 +414,9 @@ final class MatchOffersLoading extends RideMatchState {
 }
 
 final class MatchOffersFailed extends RideMatchState {
-  const MatchOffersFailed();
+  const MatchOffersFailed({this.problem = RideLoadProblem.connection});
+
+  final RideLoadProblem problem;
 }
 
 sealed class MatchBrowsing extends RideMatchState {

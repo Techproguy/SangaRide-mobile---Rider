@@ -32,7 +32,7 @@ class _RepeatSetupScreenState extends State<RepeatSetupScreen> {
     final rule = _ride.repeatRule;
     _days = {...?rule?.weekdays};
     _time = rule?.timeOfDay;
-    _start = rule == null ? _dateOnly(DateTime.now()) : _dateOnly(rule.startDate);
+    _start = rule == null ? _dateOnly(BookingClock.now()) : _dateOnly(rule.startDate);
     _end = rule?.endDate;
   }
 
@@ -47,7 +47,7 @@ class _RepeatSetupScreenState extends State<RepeatSetupScreen> {
   }
 
   Future<void> _pickTime() async {
-    final today = _dateOnly(DateTime.now());
+    final today = _dateOnly(BookingClock.now());
     final time = _time;
     final picked = await showSangaDateTimeSheet(
       context: context,
@@ -62,13 +62,13 @@ class _RepeatSetupScreenState extends State<RepeatSetupScreen> {
   }
 
   Future<void> _pickStart() async {
-    final today = _dateOnly(DateTime.now());
+    final today = _dateOnly(BookingClock.now());
     final picked = await showSangaDateSheet(
       context: context,
       title: 'Start date',
       initialDate: _start.isBefore(today) ? today : _start,
       firstDate: today,
-      lastDate: today.add(BookingRules.bookingWindow),
+      lastDate: today.add(_ride.rules.bookingWindow),
     );
     if (picked == null) return;
     setState(() {
@@ -97,7 +97,7 @@ class _RepeatSetupScreenState extends State<RepeatSetupScreen> {
   Widget build(BuildContext context) {
     final rule = _rule;
     final time = _time;
-    final firstRide = rule?.firstRideAfter(DateTime.now());
+    final firstRide = rule?.firstRideAfter(BookingClock.now());
     return SangaPageLayout(
       title: 'When do you want to ride?',
       footer: SangaButton.primary(label: 'Confirm', onPressed: rule == null ? null : () => _confirm(rule)),

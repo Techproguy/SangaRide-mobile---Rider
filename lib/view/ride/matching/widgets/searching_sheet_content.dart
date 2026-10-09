@@ -8,6 +8,7 @@ class SearchingSheetContent extends StatelessWidget {
     required this.doneCount,
     required this.continueAt,
     required this.isCancelling,
+    this.isReconnecting = false,
     required this.onCancel,
     required this.onContinue,
   });
@@ -16,6 +17,7 @@ class SearchingSheetContent extends StatelessWidget {
   final int doneCount;
   final DateTime? continueAt;
   final bool isCancelling;
+  final bool isReconnecting;
   final VoidCallback onCancel;
   final VoidCallback onContinue;
 
@@ -35,6 +37,21 @@ class SearchingSheetContent extends StatelessWidget {
         ),
         const SizedBox(height: SangaSpacing.xl),
         SangaChecklist(items: steps, doneCount: doneCount),
+        AnimatedSize(
+          duration: SangaMotion.quick,
+          curve: SangaMotion.springBlock,
+          alignment: Alignment.topCenter,
+          child: isReconnecting
+              ? const Padding(
+                  padding: EdgeInsets.only(top: SangaSpacing.md),
+                  child: SangaNotice(
+                    message: 'Reconnecting. We’re still looking for your driver.',
+                    tone: SangaTone.warning,
+                    icon: Icons.sync_rounded,
+                  ),
+                )
+              : const SizedBox(width: double.infinity),
+        ),
         const SizedBox(height: SangaSpacing.xl),
         SangaButton.muted(label: 'Cancel request', isLoading: isCancelling, onPressed: onCancel),
         const SizedBox(height: SangaSpacing.sm),

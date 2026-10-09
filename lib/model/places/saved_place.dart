@@ -1,4 +1,6 @@
 import 'package:sanga_ride/model/location/place.dart';
+import 'package:sanga_ride/model/ride/ride_load_problem.dart';
+import 'package:sanga_ride_core/sanga_ride_core.dart';
 
 enum SavedPlaceKind {
   home('home', 'Home'),
@@ -12,20 +14,17 @@ enum SavedPlaceKind {
 
   bool get isSlot => this != other;
 
-  static SavedPlaceKind fromCode(String code) => values.firstWhere(
-    (kind) => kind.code == code,
-    orElse: () => throw FormatException('Unknown saved place kind: $code'),
-  );
+  static SavedPlaceKind fromCode(String? code) => enumByCode(values, code, (kind) => kind.code, other);
 }
 
 class SavedPlace {
   const SavedPlace({required this.id, required this.kind, required this.label, required this.place});
 
-  factory SavedPlace.fromJson(Map<String, dynamic> json) => SavedPlace(
-    id: json['id'] as String,
-    kind: SavedPlaceKind.fromCode(json['kind'] as String),
-    label: json['label'] as String,
-    place: Place.fromJson(Map<String, dynamic>.from(json['place'] as Map)),
+  factory SavedPlace.fromJson(JsonReader json) => SavedPlace(
+    id: json.str('id'),
+    kind: SavedPlaceKind.fromCode(json.strOrNull('kind')),
+    label: json.strOr('label', ''),
+    place: Place.fromJson(json.object('place').raw),
   );
 
   final String id;
@@ -40,10 +39,10 @@ class SavedPlace {
 class SavedPlaceBook {
   const SavedPlaceBook({required this.places, required this.maxOthers});
 
-  factory SavedPlaceBook.fromJson(Map<String, dynamic> json) => SavedPlaceBook(
-    places: [for (final place in json['places'] as List) SavedPlace.fromJson(Map<String, dynamic>.from(place as Map))],
-    maxOthers: (json['maxOthers'] as num).toInt(),
-  );
+  factory SavedPlaceBook.fromJson(Object? body) {
+    final json = JsonReader.of(body);
+    return SavedPlaceBook(places: json.listOf('places', SavedPlace.fromJson), maxOthers: json.intOr('maxOthers', 5));
+  }
 
   static const int maxLabelLength = 24;
 
@@ -105,15 +104,21 @@ enum SavedPlaceProblem {
   invalidLabel('invalid_label', 'Give this place a short name.'),
   invalidPlace('invalid_place', 'We couldn’t use that location. Pick another one.'),
   notFound('not_found', 'We can’t find that place. It may already be gone.'),
-  unknown('unknown', 'We couldn’t do that. Give it another go.');
+  connection('connection', 'You’re offline. Check your connection and give it another go.'),
+  unknown('unknown', 'Something went wrong on our side. Try again in a moment.');
 
   const SavedPlaceProblem(this.code, this.message);
 
   final String code;
   final String message;
 
-  static SavedPlaceProblem fromCode(String? code) =>
-      values.firstWhere((problem) => problem.code == code, orElse: () => unknown);
+  static SavedPlaceProblem fromCode(String? code) => enumByCode(values, code, (problem) => problem.code, unknown);
+
+  static SavedPlaceProblem of(Object error) => switch (ProblemKind.of(error)) {
+    ProblemOffline() => connection,
+    ProblemRejected(:final code) => fromCode(code),
+    _ => unknown,
+  };
 }
 
 sealed class SavedPlacesState {
@@ -125,7 +130,9 @@ final class SavedPlacesLoading extends SavedPlacesState {
 }
 
 final class SavedPlacesFailed extends SavedPlacesState {
-  const SavedPlacesFailed();
+  const SavedPlacesFailed({this.problem = RideLoadProblem.connection});
+
+  final RideLoadProblem problem;
 }
 
 final class SavedPlacesLoaded extends SavedPlacesState {

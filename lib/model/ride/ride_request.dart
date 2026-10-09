@@ -1,3 +1,6 @@
+import 'package:sanga_ride/model/ride/server_deadline.dart';
+import 'package:sanga_ride_core/sanga_ride_core.dart';
+
 enum TripType {
   oneWay('One way', 'Go to a destination'),
   roundTrip('Round trip', 'Go there and come back'),
@@ -37,14 +40,18 @@ class RideOption {
     required this.pricePerKm,
   });
 
-  factory RideOption.fromJson(Map<String, dynamic> json) => RideOption(
-    id: json['id'] as String,
-    category: RideCategory.values.byName(json['category'] as String),
-    name: json['name'] as String,
-    description: json['description'] as String,
-    seats: json['seats'] as String,
-    pricePerKm: json['pricePerKm'] as num,
-  );
+  factory RideOption.fromJson(JsonReader json) {
+    final category = RideCategory.values.asNameMap()[json.strOrNull('category')];
+    if (category == null) throw JsonFormatError('Unknown ride category', json.raw['category']);
+    return RideOption(
+      id: json.str('id'),
+      category: category,
+      name: json.str('name'),
+      description: json.strOr('description', ''),
+      seats: json.strOr('seats', '1'),
+      pricePerKm: json.number('pricePerKm'),
+    );
+  }
 
   final String id;
   final RideCategory category;
@@ -159,24 +166,34 @@ class FareEstimate {
     this.hours,
     this.hourlyRate,
     this.meetGreetFee,
+    this.quoteId,
+    this.expiresAt,
   });
 
-  factory FareEstimate.fromJson(Map<String, dynamic> json) => FareEstimate(
-    baseFare: json['baseFare'] as num,
-    distanceKm: json['distanceKm'] as num,
-    distanceFare: json['distanceFare'] as num,
-    discount: json['discount'] as num,
-    boost: json['boost'] as num,
-    total: json['total'] as num,
-    ratePerKm: json['ratePerKm'] as num?,
-    hours: (json['hours'] as num?)?.toInt(),
-    hourlyRate: json['hourlyRate'] as num?,
-    meetGreetFee: json['meetGreetFee'] as num?,
-    pricing: {
-      for (final MapEntry(:key, :value) in (json['pricing'] as Map).entries)
-        PricingOption.values.byName(key as String): value as num,
-    },
-  );
+  factory FareEstimate.fromJson(Object? body) {
+    final json = JsonReader.of(body);
+    final pricing = <PricingOption, num>{};
+    final rawPricing = json.objectOrNull('pricing')?.raw ?? const <String, dynamic>{};
+    for (final MapEntry(:key, :value) in rawPricing.entries) {
+      final option = PricingOption.values.asNameMap()[key];
+      if (option != null && value is num) pricing[option] = value;
+    }
+    return FareEstimate(
+      baseFare: json.numOrNull('baseFare') ?? 0,
+      distanceKm: json.numOrNull('distanceKm') ?? 0,
+      distanceFare: json.numOrNull('distanceFare') ?? 0,
+      discount: json.numOrNull('discount') ?? 0,
+      boost: json.numOrNull('boost') ?? 0,
+      total: json.number('total'),
+      ratePerKm: json.numOrNull('ratePerKm'),
+      hours: json.intOrNull('hours'),
+      hourlyRate: json.numOrNull('hourlyRate'),
+      meetGreetFee: json.numOrNull('meetGreetFee'),
+      quoteId: json.strOrNull('quoteId'),
+      expiresAt: serverInstantOrNull(json, 'expiresAt'),
+      pricing: pricing,
+    );
+  }
 
   final num baseFare;
   final num distanceKm;
@@ -189,6 +206,10 @@ class FareEstimate {
   final int? hours;
   final num? hourlyRate;
   final num? meetGreetFee;
+  final String? quoteId;
+  final DateTime? expiresAt;
+
+  bool get isExpired => expiresAt != null && hasServerPassed(expiresAt!);
 
   bool get isHourly => hours != null && hourlyRate != null;
 

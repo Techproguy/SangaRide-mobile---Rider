@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:developer';
 import 'dart:math' as math;
 
@@ -6,6 +7,8 @@ import 'package:sanga_ride/controller/rider/ride_request_controller.dart';
 import 'package:sanga_ride/core/api/airport_endpoints.dart';
 import 'package:sanga_ride/core/api/api.dart';
 import 'package:sanga_ride/model/models.dart';
+import 'package:sanga_ride/model/ride/ride_load_problem.dart';
+import 'package:sanga_ride_core/sanga_ride_core.dart';
 
 class AirportController extends GetxController {
   final _api = Get.find<ApiService>();
@@ -14,6 +17,20 @@ class AirportController extends GetxController {
   final Rx<AirportDraft> _draft = Rx<AirportDraft>(const AirportDraft());
   final Rx<FlightLookupState> _lookup = Rx<FlightLookupState>(const FlightIdle());
   int _lookupRequest = 0;
+  DateTime? _catalogLoadedAt;
+  StreamSubscription<void>? _resumeSubscription;
+
+  @override
+  void onInit() {
+    super.onInit();
+    _resumeSubscription = AppLifecycle.instance.onResume.listen((_) => _catalogLoadedAt = null);
+  }
+
+  @override
+  void onClose() {
+    _resumeSubscription?.cancel();
+    super.onClose();
+  }
 
   AirportCatalogState get catalog => _catalog.value;
 
@@ -50,27 +67,29 @@ class AirportController extends GetxController {
     _lookup.value = const FlightIdle();
   }
 
-  Future<void> loadCatalog() async {
-    if (catalog is AirportCatalogReady) return;
-    _catalog.value = const AirportCatalogLoading();
+  Future<void> loadCatalog({bool force = false}) async {
+    final loadedAt = _catalogLoadedAt;
+    final isFresh = loadedAt != null && DateTime.now().difference(loadedAt) < RideRequestController.catalogLifetime;
+    if (catalog is AirportCatalogReady && isFresh && !force) return;
+    if (catalog is! AirportCatalogReady) _catalog.value = const AirportCatalogLoading();
     try {
-      final responses = await Future.wait([_api.get(AirportEndpoints.airports), _api.get(AirportEndpoints.airlines)]);
-      final airports = _dataOf(responses[0].data);
-      final airlines = _dataOf(responses[1].data);
+      final responses = await Future.wait([
+        _api.get(AirportEndpoints.airports, suppressErrorToast: true),
+        _api.get(AirportEndpoints.airlines, suppressErrorToast: true),
+      ]);
+      final airports = JsonReader.of((responses[0].data as Map)['data']);
+      final airlines = JsonReader.of((responses[1].data as Map)['data']);
       _catalog.value = AirportCatalogReady(
         AirportCatalog(
-          airports: [
-            for (final json in airports['airports'] as List) Airport.fromJson(Map<String, dynamic>.from(json as Map)),
-          ],
-          popularIds: List<String>.from(airports['popular'] as List),
-          airlines: [
-            for (final json in airlines['airlines'] as List) Airline.fromJson(Map<String, dynamic>.from(json as Map)),
-          ],
+          airports: airports.listOf('airports', (item) => Airport.fromJson(item.raw)),
+          popularIds: airports.strings('popular'),
+          airlines: airlines.listOf('airlines', (item) => Airline.fromJson(item.raw)),
         ),
       );
+      _catalogLoadedAt = DateTime.now();
     } catch (e) {
       log('loadCatalog failed: $e');
-      _catalog.value = const AirportCatalogFailed();
+      if (catalog is! AirportCatalogReady) _catalog.value = AirportCatalogFailed(problem: RideLoadProblem.of(e));
     }
   }
 
@@ -137,18 +156,14 @@ class AirportController extends GetxController {
       final data = _dataOf(response.data);
       _lookup.value = FlightFound(Flight.fromJson(Map<String, dynamic>.from(data['flight'] as Map)));
       return true;
-    } on ApiException catch (e) {
+    } catch (e) {
       log('lookupFlight failed: $e');
       if (request == _lookupRequest) {
         _lookup.value = FlightLookupFailed(
-          FlightProblem.fromCode(e.code),
-          destination: e.data['destination'] as String?,
+          FlightProblem.of(e),
+          destination: e is ApiException ? e.data['destination'] as String? : null,
         );
       }
-      return false;
-    } catch (e) {
-      log('lookupFlight failed: $e');
-      if (request == _lookupRequest) _lookup.value = const FlightLookupFailed(FlightProblem.connection);
       return false;
     }
   }

@@ -1,10 +1,12 @@
+import 'dart:async';
 import 'dart:developer';
 
-import 'package:dio/dio.dart' show Options;
 import 'package:get/get.dart';
 import 'package:sanga_ride/core/api/api.dart';
 import 'package:sanga_ride/core/api/booking_endpoints.dart';
 import 'package:sanga_ride/model/ride/booking.dart';
+import 'package:sanga_ride/model/ride/ride_load_problem.dart';
+import 'package:sanga_ride_core/sanga_ride_core.dart';
 import 'package:sanga_ride/model/ride/scheduled_ride.dart';
 
 class ScheduledRidesController extends GetxController {
@@ -18,26 +20,27 @@ class ScheduledRidesController extends GetxController {
     if (state is! ScheduledLoaded) _state.value = const ScheduledLoading();
     try {
       final response = await _api.get(BookingEndpoints.scheduledRides, suppressErrorToast: true);
-      final data = Map<String, dynamic>.from((response.data as Map)['data'] as Map);
-      final rides = [
-        for (final json in data['rides'] as List) ScheduledRide.fromJson(Map<String, dynamic>.from(json as Map)),
-      ];
+      final rides = JsonReader.of((response.data as Map)['data'])
+          .listOf('rides', ScheduledRide.fromJson, onSkip: (key, error) => log('skipped a scheduled ride: $error'));
       _state.value = ScheduledLoaded(rides);
     } catch (e) {
       log('load scheduled rides failed: $e');
-      if (state is! ScheduledLoaded) _state.value = const ScheduledFailed();
+      if (state is! ScheduledLoaded) _state.value = ScheduledFailed(problem: RideLoadProblem.of(e));
     }
   }
 
   Future<BookingProblem?> cancel(String id) => _act(id, ScheduledAction.cancel, () async {
-    await _api.delete(BookingEndpoints.scheduledRideOf(id), options: Options(extra: {'suppressErrorToast': true}));
+    await _api.delete(BookingEndpoints.scheduledRideOf(id), suppressErrorToast: true);
     return null;
   });
 
   Future<BookingProblem?> remind(String id) => _act(id, ScheduledAction.remind, () async {
-    final response = await _api.post(BookingEndpoints.scheduledRideReminderOf(id), suppressErrorToast: true);
-    final data = Map<String, dynamic>.from((response.data as Map)['data'] as Map);
-    return ScheduledRide.fromJson(data);
+    final response = await _api.post(
+      BookingEndpoints.scheduledRideReminderOf(id),
+      key: IdempotencyKey.newFor('remind-ride'),
+      suppressErrorToast: true,
+    );
+    return ScheduledRide.fromJson(JsonReader.of((response.data as Map)['data']));
   });
 
   Future<BookingProblem?> _act(String id, ScheduledAction action, Future<ScheduledRide?> Function() request) async {
@@ -54,9 +57,9 @@ class ScheduledRidesController extends GetxController {
         ],
       );
       return null;
-    } on ApiException catch (e) {
+    } catch (e) {
       log('$action on $id failed: $e');
-      final problem = BookingProblem.fromCode(e.code);
+      final problem = BookingProblem.of(e);
       _settle(
         id,
         (rides) => problem == BookingProblem.notFound
@@ -66,11 +69,8 @@ class ScheduledRidesController extends GetxController {
               ]
             : rides,
       );
+      if (e is ApiException && e.outcomeUnknown) unawaited(load());
       return problem;
-    } catch (e) {
-      log('$action on $id failed: $e');
-      _settle(id, (rides) => rides);
-      return BookingProblem.unknown;
     }
   }
 

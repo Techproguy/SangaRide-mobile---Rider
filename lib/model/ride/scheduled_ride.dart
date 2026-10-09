@@ -1,6 +1,8 @@
 import 'package:sanga_ride/model/ride/airport.dart';
 import 'package:sanga_ride/model/ride/booking.dart';
+import 'package:sanga_ride/model/ride/ride_load_problem.dart';
 import 'package:sanga_ride/model/ride/ride_request.dart';
+import 'package:sanga_ride_core/sanga_ride_core.dart';
 
 enum ScheduledRideKind {
   oneTime('one_time'),
@@ -10,17 +12,14 @@ enum ScheduledRideKind {
 
   final String code;
 
-  static ScheduledRideKind fromCode(String code) => values.firstWhere(
-    (kind) => kind.code == code,
-    orElse: () => throw FormatException('Unknown scheduled ride kind: $code'),
-  );
+  static ScheduledRideKind fromCode(String? code) => enumByCode(values, code, (kind) => kind.code, oneTime);
 }
 
 class ScheduledStop {
   const ScheduledStop({required this.name, required this.address});
 
-  factory ScheduledStop.fromJson(Map<String, dynamic> json) =>
-      ScheduledStop(name: json['name'] as String, address: json['address'] as String);
+  factory ScheduledStop.fromJson(JsonReader json) =>
+      ScheduledStop(name: json.strOr('name', ''), address: json.strOr('address', ''));
 
   final String name;
   final String address;
@@ -43,24 +42,27 @@ class ScheduledRide {
     this.airport,
   });
 
-  factory ScheduledRide.fromJson(Map<String, dynamic> json) {
-    final repeat = json['repeat'] as Map?;
-    final reminderAt = json['reminderAt'] as String?;
-    final airport = json['airport'] as Map?;
+  factory ScheduledRide.fromJson(JsonReader json) {
+    final airport = json.objectOrNull('airport');
     return ScheduledRide(
-      id: json['id'] as String,
-      kind: ScheduledRideKind.fromCode(json['kind'] as String),
-      tripType: TripType.values.byName(json['tripType'] as String),
-      category: RideCategory.values.byName(json['category'] as String),
-      scheduledAt: DateTime.parse(json['scheduledAt'] as String).toLocal(),
-      pickup: ScheduledStop.fromJson(Map<String, dynamic>.from(json['pickup'] as Map)),
-      dropoff: ScheduledStop.fromJson(Map<String, dynamic>.from(json['dropoff'] as Map)),
-      fare: json['fare'] as num,
-      canRemind: json['canRemind'] as bool,
-      repeat: repeat == null ? null : RepeatRule.fromJson(Map<String, dynamic>.from(repeat)),
-      hours: (json['hours'] as num?)?.toInt(),
-      reminderAt: reminderAt == null ? null : DateTime.parse(reminderAt).toLocal(),
-      airport: airport == null ? null : ScheduledAirport.fromJson(Map<String, dynamic>.from(airport)),
+      id: json.str('id'),
+      kind: ScheduledRideKind.fromCode(json.strOrNull('kind')),
+      tripType: enumByCode(TripType.values, json.strOrNull('tripType'), (type) => type.name, TripType.oneWay),
+      category: enumByCode(
+        RideCategory.values,
+        json.strOrNull('category'),
+        (category) => category.name,
+        RideCategory.go,
+      ),
+      scheduledAt: json.time('scheduledAt').toLocal(),
+      pickup: ScheduledStop.fromJson(json.object('pickup')),
+      dropoff: ScheduledStop.fromJson(json.object('dropoff')),
+      fare: json.numOrNull('fare') ?? 0,
+      canRemind: json.boolOr('canRemind', false),
+      repeat: json.objectOrNull('repeat') == null ? null : RepeatRule.fromJson(json.object('repeat')),
+      hours: json.intOrNull('hours'),
+      reminderAt: json.timeOrNull('reminderAt')?.toLocal(),
+      airport: airport == null ? null : ScheduledAirport.fromJson(airport.raw),
     );
   }
 
@@ -94,7 +96,9 @@ final class ScheduledLoading extends ScheduledRidesState {
 }
 
 final class ScheduledFailed extends ScheduledRidesState {
-  const ScheduledFailed();
+  const ScheduledFailed({this.problem = RideLoadProblem.connection});
+
+  final RideLoadProblem problem;
 }
 
 enum ScheduledAction { cancel, remind }
