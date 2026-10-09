@@ -134,7 +134,7 @@ class TripController extends GetxController {
   }
 
   bool get _isTerminal => switch (state) {
-    TripCompleted() || TripCancelled() || TripRefused() || TripFailed() => true,
+    TripCompleted() || TripCancelled() || TripRefused() || TripReturned() || TripFailed() => true,
     _ => false,
   };
 
@@ -178,7 +178,10 @@ class TripController extends GetxController {
   void _accept(Trip incoming, int seq) {
     if (seq <= _applied) return;
     final current = trip;
-    if (current != null && TripStatus.advance(current.status, incoming.status) != incoming.status) return;
+    final isReturnLeg = incoming.delivery?.stage.isReturn ?? false;
+    if (current != null && !isReturnLeg && TripStatus.advance(current.status, incoming.status) != incoming.status) {
+      return;
+    }
     _applied = seq;
     _state.value = TripState.of(incoming);
     if (incoming.status.isTerminal) {

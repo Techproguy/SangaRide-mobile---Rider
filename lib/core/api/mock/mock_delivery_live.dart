@@ -11,6 +11,8 @@ class MockDeliveryClock {
     required this.pinVerifiedAt,
     required this.arrivedDropoffAt,
     required this.completedAt,
+    required this.returnStartedAt,
+    required this.returnedAt,
     required this.dropoff,
   });
 
@@ -21,6 +23,8 @@ class MockDeliveryClock {
   final DateTime? pinVerifiedAt;
   final DateTime? arrivedDropoffAt;
   final DateTime? completedAt;
+  final DateTime? returnStartedAt;
+  final DateTime? returnedAt;
   final Map<String, dynamic> dropoff;
 }
 
@@ -33,6 +37,7 @@ abstract final class MockDeliveryLive {
   ];
 
   static const String refuseHook = '#refuse';
+  static const String returnHook = '#return';
 
   static const String pickupProofAsset = 'assets/images/delivery_pickup_proof.webp';
   static const String deliveryProofAsset = 'assets/images/delivery_proof.webp';
@@ -41,6 +46,7 @@ abstract final class MockDeliveryLive {
   static const Duration _driverWaitsForSender = Duration(seconds: 90);
   static const Duration _verifyingAfterArrival = Duration(seconds: 6);
   static const Duration _handedOverAfterArrival = Duration(seconds: 12);
+  static const Duration returnAfterArrival = Duration(seconds: 12);
   static const Duration _investigatingAfter = Duration(seconds: 5);
   static const Duration _actionNeededAfter = Duration(seconds: 15);
   static const double _proofOffsetDegrees = 0.0003;
@@ -106,9 +112,13 @@ abstract final class MockDeliveryLive {
 
   static bool isDelivery(String id) => _deliveries.containsKey(id);
 
+  static String itemNameOf(String id) => _itemName(id);
+
   static String _itemName(String id) => _asMap(_asMap(_deliveries[id])['item'])['name'] as String? ?? 'Package';
 
   static bool _refuses(String id) => _itemName(id).toLowerCase().contains(refuseHook);
+
+  static bool returnsFromDropoff(String id) => isDelivery(id) && _itemName(id).toLowerCase().contains(returnHook);
 
   static DateTime? refusedAt(String id, DateTime? pinVerifiedAt) {
     if (!isDelivery(id) || !_refuses(id) || pinVerifiedAt == null) return null;
@@ -128,6 +138,8 @@ abstract final class MockDeliveryLive {
     final now = clock.now;
     final refused = refusedAt(id, clock.pinVerifiedAt);
     if (_isStarted(refused, now)) return 'refused';
+    if (_isStarted(clock.returnedAt, now)) return 'returned';
+    if (_isStarted(clock.returnStartedAt, now)) return 'returning';
     return switch (clock.status) {
       'driver_en_route' => 'to_pickup',
       'driver_arrived' => 'at_pickup',
@@ -149,7 +161,8 @@ abstract final class MockDeliveryLive {
 
   static bool canComplete(String id, MockDeliveryClock clock) => _stage(id, clock) == 'delivered';
 
-  static DateTime? _handedOverAt(MockDeliveryClock clock) => clock.arrivedDropoffAt?.add(_handedOverAfterArrival);
+  static DateTime? _handedOverAt(MockDeliveryClock clock) =>
+      clock.returnStartedAt == null ? clock.arrivedDropoffAt?.add(_handedOverAfterArrival) : null;
 
   static Map<String, dynamic> _item(String id) {
     final item = _asMap(_asMap(_deliveries[id])['item']);
@@ -222,6 +235,8 @@ abstract final class MockDeliveryLive {
       ('arrived_dropoff', clock.arrivedDropoffAt),
       ('handed_over', handedOverAt),
       ('delivered', clock.completedAt),
+      if (clock.returnStartedAt != null) ('return_started', clock.returnStartedAt),
+      if (clock.returnStartedAt != null) ('returned', clock.returnedAt),
     ];
     return [
       for (final (type, at) in candidates) {'type': type, 'at': _isStarted(at, clock.now) ? _iso(at!) : null},
@@ -312,7 +327,7 @@ abstract final class MockDeliveryLive {
       case 'reassign':
         link.reassign(issue.tripId);
       case 'return_to_sender':
-        link.cancel(issue.tripId, reason: 'delivery_returned');
+        link.startReturn(issue.tripId);
       case 'cancel':
         link.cancel(issue.tripId, reason: 'delivery_cancelled');
     }
@@ -402,10 +417,12 @@ class MockDeliveryLink {
     required this.payloadOf,
     required this.cancel,
     required this.reassign,
+    required this.startReturn,
   });
 
   final MockDeliveryClock Function(String id) clockOf;
   final Map<String, dynamic> Function(String id) payloadOf;
   final void Function(String id, {required String reason}) cancel;
   final void Function(String id) reassign;
+  final void Function(String id) startReturn;
 }

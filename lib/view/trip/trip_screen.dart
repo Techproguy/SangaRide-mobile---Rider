@@ -107,6 +107,8 @@ class _TripScreenState extends State<TripScreen> {
       case TripRefused(:final refusal) when previous is! TripRefused:
         _popPagesAbove();
         unawaited(_showRefused(refusal));
+      case TripReturned() when previous is! TripReturned:
+        _popPagesAbove();
       case TripCancelled(:final reason, :final trip)
           when previous is! TripCancelled && reason != TripCancelReason.riderCancelled:
         if (trip.isDelivery) _popPagesAbove();
@@ -458,6 +460,7 @@ class _TripScreenState extends State<TripScreen> {
       ),
       TripCancelled(:final reason) => TripEndedPanel(reason: reason, onHome: _goHome),
       TripRefused() => TripEndedPanel(reason: TripCancelReason.packageRefused, onHome: _goHome),
+      TripReturned() => TripEndedPanel(reason: TripCancelReason.deliveryReturned, onHome: _goHome),
     };
   }
 

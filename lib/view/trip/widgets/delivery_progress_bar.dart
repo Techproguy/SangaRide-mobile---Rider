@@ -12,7 +12,8 @@ class DeliveryProgressBar extends StatelessWidget {
     SangaTripStage(Icons.check_rounded, 'Delivery complete'),
   ];
 
-  static bool isShownFor(DeliveryPhase phase) => phase.index >= DeliveryPhase.onTheWay.index;
+  static bool isShownFor(DeliveryPhase phase) =>
+      phase.index >= DeliveryPhase.onTheWay.index && phase != DeliveryPhase.returning;
 
   final DeliveryPhase phase;
 

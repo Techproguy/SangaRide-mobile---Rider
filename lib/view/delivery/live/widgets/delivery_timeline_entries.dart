@@ -11,16 +11,19 @@ abstract final class DeliveryTimelineEntries {
     DeliveryEventType.arrivedDropoff: Icons.location_on_rounded,
     DeliveryEventType.handedOver: Icons.how_to_reg_rounded,
     DeliveryEventType.delivered: Icons.check_rounded,
+    DeliveryEventType.returnStarted: Icons.u_turn_left_rounded,
+    DeliveryEventType.returned: Icons.assignment_return_rounded,
   };
 
   static List<SangaTimelineEntry> of(TripDelivery delivery) {
+    final path = delivery.stage.isReturn ? DeliveryEventType.returnLeg : DeliveryEventType.outbound;
     final done = [
-      for (final type in DeliveryEventType.values)
+      for (final type in path)
         if (delivery.hasEvent(type)) type,
     ];
     final ending = _endingOf(delivery);
     final remaining = [
-      for (final type in DeliveryEventType.values)
+      for (final type in path)
         if (!done.contains(type)) type,
     ];
     return [
@@ -51,11 +54,6 @@ abstract final class DeliveryTimelineEntries {
         state: SangaTimelineState.alert,
         icon: Icons.block_rounded,
         time: _clock(refusal?.at),
-      ),
-      DeliveryStage.failed => const SangaTimelineEntry.step(
-        title: 'Delivery couldn’t be completed',
-        state: SangaTimelineState.alert,
-        icon: Icons.close_rounded,
       ),
       _ => null,
     };

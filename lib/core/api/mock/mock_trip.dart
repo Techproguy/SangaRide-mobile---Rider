@@ -4,9 +4,11 @@ import 'package:sanga_ride/core/api/mock/mock_airport.dart';
 import 'package:sanga_ride/core/api/mock/mock_data.dart';
 import 'package:sanga_ride/core/api/mock/mock_delivery_live.dart';
 import 'package:sanga_ride/core/api/mock/mock_endpoints.dart';
+import 'package:sanga_ride/core/api/mock/mock_history.dart';
 import 'package:sanga_ride/core/api/mock/mock_server.dart';
 import 'package:sanga_ride/core/api/mock/mock_trip_changes.dart';
 import 'package:sanga_ride/core/api/mock/mock_trip_state.dart';
+import 'package:sanga_ride/core/api/mock/mock_trip_wrapup.dart';
 
 abstract final class MockTrip {
   static final List<MockRoute> routes = [
@@ -35,12 +37,14 @@ abstract final class MockTrip {
   static final Set<String> _failedOnce = {};
   static final Map<String, int> _pinIndex = {};
   static final Map<String, _RideLeg> _legs = {};
+  static final Map<String, _RideLeg> _returnLegs = {};
   static final Map<String, String> _cancelledBy = {};
 
   static const Duration _arrivalAfter = Duration(seconds: 15);
   static const Duration _pinVerifiedAfter = Duration(seconds: 6);
   static const Duration _rideDuration = Duration(seconds: 20);
   static const Duration _legExtra = Duration(seconds: 8);
+  static const Duration _returnDuration = Duration(seconds: 30);
   static const Duration _pinWindow = Duration(minutes: 5);
 
   static const List<String> _pinCodes = ['5428', '7391', '2064', '8815'];
@@ -91,6 +95,7 @@ abstract final class MockTrip {
       'id': tripId,
       'createdAt': _iso(now),
       'category': category,
+      'rideFor': request['rideFor'],
       'driver': {...driverCard}
         ..remove('vehicle')
         ..remove('distanceAwayKm'),
@@ -115,6 +120,7 @@ abstract final class MockTrip {
         payloadOf: _payload,
         cancel: (id, {required reason}) => cancel(id, reason: reason, by: 'system'),
         reassign: _reassignDriver,
+        startReturn: _startReturn,
       ),
     );
   }
@@ -123,6 +129,7 @@ abstract final class MockTrip {
     final trip = _stored(id);
     final now = DateTime.now();
     final created = _createdAt(trip);
+    final back = _returnLegOf(id);
     return MockDeliveryClock(
       now: now,
       status: _status(id, now),
@@ -131,8 +138,43 @@ abstract final class MockTrip {
       pinVerifiedAt: _pinVerifiedAt(id),
       arrivedDropoffAt: _legOf(id)?.endAt,
       completedAt: _completedAt[id],
+      returnStartedAt: back?.startedAt,
+      returnedAt: back?.endAt,
       dropoff: trip['dropoff'] as Map<String, dynamic>,
     );
+  }
+
+  static void _startReturn(String id) {
+    final trip = _stored(id);
+    final now = DateTime.now();
+    _returnLegs[id] = _RideLeg(
+      startedAt: now,
+      endAt: now.add(_returnDuration),
+      from: _driverPosition(trip, _status(id, now), now),
+      targets: [trip['pickup'] as Map<String, dynamic>],
+      reachedBefore: 0,
+    );
+  }
+
+  static _RideLeg? _returnLegOf(String id) {
+    final explicit = _returnLegs[id];
+    if (explicit != null) return explicit;
+    final arrivedAt = _legOf(id)?.endAt;
+    if (arrivedAt == null || !MockDeliveryLive.returnsFromDropoff(id)) return null;
+    final trip = _stored(id);
+    final startedAt = arrivedAt.add(MockDeliveryLive.returnAfterArrival);
+    return _RideLeg(
+      startedAt: startedAt,
+      endAt: startedAt.add(_returnDuration),
+      from: trip['dropoff'] as Map<String, dynamic>,
+      targets: [trip['pickup'] as Map<String, dynamic>],
+      reachedBefore: 0,
+    );
+  }
+
+  static _RideLeg? _activeReturnOf(String id, DateTime now) {
+    final back = _returnLegOf(id);
+    return back == null || now.isBefore(back.startedAt) ? null : back;
   }
 
   static DateTime? _pinVerifiedAt(String id) => _detailsConfirmedAt[id]?.add(_pinVerifiedAfter);
@@ -172,6 +214,9 @@ abstract final class MockTrip {
   static String statusOf(String id) => _status(id, DateTime.now());
 
   static DateTime? completedAt(String id) => _completedAt[id];
+
+  static String? deliveryItemName(String id) =>
+      MockDeliveryLive.isDelivery(id) ? MockDeliveryLive.itemNameOf(id) : null;
 
   static Map<String, dynamic>? deliveryReceiptBlock(String id) =>
       MockDeliveryLive.receiptBlock(id, () => _deliveryClock(id));
@@ -243,6 +288,8 @@ abstract final class MockTrip {
     if (_completedAt.containsKey(id)) return 'completed';
     final refusedAt = MockDeliveryLive.refusedAt(id, _pinVerifiedAt(id));
     if (refusedAt != null && !now.isBefore(refusedAt)) return 'cancelled';
+    final back = _activeReturnOf(id, now);
+    if (back != null) return now.isBefore(back.endAt) ? 'in_progress' : 'completed';
     final leg = _legOf(id);
     if (leg != null) return now.isBefore(leg.endAt) ? 'in_progress' : 'arrived_dropoff';
     final confirmedAt = _detailsConfirmedAt[id];
@@ -270,7 +317,7 @@ abstract final class MockTrip {
       if (showsPin) 'pin': trip['pin'],
       if (showsPin) 'pinExpiresAt': trip['pinExpiresAt'],
       if (status == 'driver_en_route') 'etaAt': _iso(now.add(_travelTime(_distanceRemaining(trip, status, position)))),
-      if (status == 'in_progress') 'etaAt': _iso(_legOf(id)!.endAt),
+      if (status == 'in_progress') 'etaAt': _iso((_activeReturnOf(id, now) ?? _legOf(id)!).endAt),
       'distanceRemainingKm': _distanceRemaining(trip, status, position),
       'driverPosition': position,
       'unreadMessages': _unread(id, now),
@@ -340,6 +387,7 @@ abstract final class MockTrip {
       throw const MockFailure(409, 'Your driver is still handing over the package.', code: 'wrong_stage');
     }
     _completedAt[id] = DateTime.now();
+    MockHistory.recordTrip(id, () => MockTripWrapUp.historyDetail(id));
     return _payload(id);
   }
 
@@ -348,6 +396,8 @@ abstract final class MockTrip {
     final pickup = trip['pickup'] as Map<String, dynamic>;
     final dropoff = trip['dropoff'] as Map<String, dynamic>;
     final id = trip['id'] as String;
+    final back = _activeReturnOf(id, now);
+    if (back != null) return _legPosition(back, now);
     switch (status) {
       case 'driver_en_route':
         final progress = _progress(now.difference(_createdAt(trip)), _arrivalAfter);
@@ -459,12 +509,14 @@ abstract final class MockTrip {
   static double? _distanceRemaining(Map<String, dynamic> trip, String status, Map<String, dynamic> position) {
     final target = switch (status) {
       'driver_en_route' => trip['pickup'],
-      'in_progress' => trip['dropoff'],
+      'in_progress' => _isReturning(trip) ? trip['pickup'] : trip['dropoff'],
       _ => null,
     };
     if (target == null) return null;
     return double.parse((_distanceKm(position, target as Map<String, dynamic>) * _routeDetour).toStringAsFixed(1));
   }
+
+  static bool _isReturning(Map<String, dynamic> trip) => _activeReturnOf(trip['id'] as String, DateTime.now()) != null;
 
   static double _distanceKm(Map a, Map b) {
     const earthRadiusKm = 6371.0;

@@ -130,7 +130,8 @@ class DeliveryTripPanel extends StatelessWidget {
       DeliveryPhase.payment => [SangaButton.primary(label: 'Make payment', onPressed: actions.onMakePayment)],
       DeliveryPhase.onTheWay ||
       DeliveryPhase.atDropoff ||
-      DeliveryPhase.verifying => [SangaButton.primary(label: 'See details', onPressed: actions.onSeeDetails)],
+      DeliveryPhase.verifying ||
+      DeliveryPhase.returning => [SangaButton.primary(label: 'See details', onPressed: actions.onSeeDetails)],
       DeliveryPhase.handedOver => [SangaButton.primary(label: 'See delivery proof', onPressed: actions.onSeeProof)],
     };
   }

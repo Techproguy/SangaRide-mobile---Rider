@@ -99,8 +99,8 @@ enum TripCancelReason {
   deliveryCancelled('delivery_cancelled', 'Delivery cancelled', 'This delivery was cancelled.'),
   deliveryReturned(
     'delivery_returned',
-    'Package heading back',
-    'Your driver couldn’t hand the package over, so it’s going back to the pickup location.',
+    'Package returned',
+    'Your driver couldn’t hand the package over, so they brought it back to the pickup.',
   ),
   other('other', 'Trip cancelled', 'This trip was cancelled. You won’t be charged.');
 
@@ -260,9 +260,10 @@ class Trip {
 
   DeliveryPhase? get deliveryPhase {
     final delivery = this.delivery;
-    if (delivery == null || delivery.stage == DeliveryStage.refused || delivery.stage == DeliveryStage.failed) {
+    if (delivery == null || delivery.stage == DeliveryStage.refused || delivery.stage == DeliveryStage.returned) {
       return null;
     }
+    if (delivery.stage == DeliveryStage.returning) return DeliveryPhase.returning;
     return switch (status) {
       TripStatus.driverEnRoute => DeliveryPhase.heading,
       TripStatus.driverArrived => pin == null ? DeliveryPhase.atPickup : DeliveryPhase.sharingPin,
@@ -294,6 +295,7 @@ sealed class TripState {
   factory TripState.of(Trip trip) {
     final refusal = trip.delivery?.refusal;
     if (trip.delivery?.stage == DeliveryStage.refused && refusal != null) return TripRefused(trip, refusal);
+    if (trip.delivery?.stage == DeliveryStage.returned) return TripReturned(trip);
     return _byStatus(trip);
   }
 
@@ -362,4 +364,8 @@ final class TripRefused extends TripLoaded {
   const TripRefused(super.trip, this.refusal);
 
   final DeliveryRefusal refusal;
+}
+
+final class TripReturned extends TripLoaded {
+  const TripReturned(super.trip);
 }

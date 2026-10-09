@@ -11,7 +11,8 @@ enum DeliveryStage {
   verifyingRecipient('verifying_recipient'),
   delivered('delivered'),
   refused('refused'),
-  failed('failed');
+  returning('returning'),
+  returned('returned');
 
   const DeliveryStage(this.code);
 
@@ -19,9 +20,11 @@ enum DeliveryStage {
 
   bool get canCancel => this == toPickup || this == atPickup;
 
-  bool get isPastPickup => index >= pickedUp.index && this != refused && this != failed;
+  bool get isPastPickup => index >= pickedUp.index && this != refused;
 
-  bool get isEnded => this == delivered || this == refused || this == failed;
+  bool get isReturn => this == returning || this == returned;
+
+  bool get isEnded => this == delivered || this == refused || this == returned;
 
   static DeliveryStage fromCode(String code) => values.firstWhere(
     (stage) => stage.code == code,
@@ -35,9 +38,29 @@ enum DeliveryEventType {
   pickedUp('picked_up', 'Package picked up'),
   arrivedDropoff('arrived_dropoff', 'Arrived at drop off'),
   handedOver('handed_over', 'Handed over to recipient'),
-  delivered('delivered', 'Delivery completed');
+  delivered('delivered', 'Delivery completed'),
+  returnStarted('return_started', 'Heading back to pickup'),
+  returned('returned', 'Package back at pickup');
 
   const DeliveryEventType(this.code, this.label);
+
+  static const List<DeliveryEventType> outbound = [
+    accepted,
+    arrivedPickup,
+    pickedUp,
+    arrivedDropoff,
+    handedOver,
+    delivered,
+  ];
+
+  static const List<DeliveryEventType> returnLeg = [
+    accepted,
+    arrivedPickup,
+    pickedUp,
+    arrivedDropoff,
+    returnStarted,
+    returned,
+  ];
 
   final String code;
   final String label;
@@ -313,16 +336,17 @@ enum DeliveryPhase {
   onTheWay('On the way to the drop off', DeliveryPhaseTone.neutral),
   atDropoff('Your driver is at the drop off', DeliveryPhaseTone.success),
   verifying('Your driver is meeting the recipient', DeliveryPhaseTone.neutral),
-  handedOver('Package handed over to recipient', DeliveryPhaseTone.success);
+  handedOver('Package handed over to recipient', DeliveryPhaseTone.success),
+  returning('Your package is heading back to the pickup', DeliveryPhaseTone.neutral);
 
   const DeliveryPhase(this.statusLine, this.tone);
 
   final String statusLine;
   final DeliveryPhaseTone tone;
 
-  bool get showsEta => this == heading || this == onTheWay;
+  bool get showsEta => this == heading || this == onTheWay || this == returning;
 
-  bool get canReport => this != atPickup && this != sharingPin;
+  bool get canReport => this != atPickup && this != sharingPin && this != returning;
 
   int get progressStage => switch (this) {
     atDropoff || verifying => 1,
