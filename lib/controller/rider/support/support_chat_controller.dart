@@ -1,11 +1,11 @@
 import 'dart:async';
-import 'dart:developer';
 
 import 'package:get/get.dart';
 import 'package:sanga_ride/controller/rider/account/account_api.dart';
 import 'package:sanga_ride/core/api/api.dart';
 import 'package:sanga_ride/core/api/support_endpoints.dart';
 import 'package:sanga_ride/model/models.dart';
+import 'package:sanga_ride_core/sanga_ride_core.dart';
 
 class SupportChatController extends GetxController {
   static const Duration _pollEvery = Duration(seconds: 3);
@@ -13,42 +13,55 @@ class SupportChatController extends GetxController {
   final _api = Get.find<ApiService>();
 
   final Rx<ChatState> _state = Rx<ChatState>(const ChatConnecting());
+  final Rx<LinkState> _link = Rx<LinkState>(LinkState.live);
 
-  Timer? _poll;
-  int _pollingEpoch = -1;
+  LivePoller? _poller;
+  Mutation<SupportChat>? _opening;
+  String? _openingSignature;
+  String? _cursor;
   int _clientSerial = 0;
   int _epoch = 0;
 
   ChatState get state => _state.value;
 
+  Rx<LinkState> get linkRx => _link;
+
   @override
   void onClose() {
-    _poll?.cancel();
+    _stopPolling();
+    _opening?.dispose();
     super.onClose();
   }
 
   Future<void> open({String? ticketId, String? tripId}) async {
-    _poll?.cancel();
+    _stopPolling();
     final epoch = ++_epoch;
+    _cursor = null;
     _state.value = const ChatConnecting();
-    try {
-      final response = await _api.post(
-        SupportEndpoints.chats,
-        data: {'ticketId': ticketId, 'tripId': tripId},
-        options: quietOptions,
-      );
-      if (epoch != _epoch) return;
-      _state.value = ChatLive(SupportChat.fromJson(dataOf(response)), const []);
-      await _fetch(epoch);
-    } catch (error) {
-      log('chat open failed: $error');
-      if (epoch == _epoch) _state.value = ChatUnavailable(_problemOf(error));
+    final mutation = _openingFor(ticketId, tripId);
+    final result = await mutation.start();
+    if (epoch != _epoch) return;
+    switch (result) {
+      case MutationDone<SupportChat>(:final value):
+        _state.value = ChatLive(value, const []);
+        _startPolling(epoch);
+      case MutationRejected<SupportChat>(:final error):
+        mutation.reset();
+        _state.value = ChatUnavailable(SupportProblem.of(error));
+      case MutationFailed<SupportChat>(:final error):
+        mutation.reset(keepKey: true);
+        _state.value = ChatUnavailable(SupportProblem.of(error));
+      case MutationUnknown<SupportChat>():
+        mutation.reset(keepKey: true);
+        _state.value = const ChatUnavailable(SupportProblem.unconfirmed);
+      case MutationIdle<SupportChat>() || MutationRunning<SupportChat>() || MutationChecking<SupportChat>():
+        break;
     }
   }
 
   void close() {
     _epoch++;
-    _poll?.cancel();
+    _stopPolling();
   }
 
   Future<void> send(String text) async {
@@ -78,18 +91,40 @@ class SupportChatController extends GetxController {
     try {
       final response = await _api.post(
         SupportEndpoints.of(SupportEndpoints.chatEnd, live.chat.id),
+        key: IdempotencyKey('chat-end-${live.chat.id}'),
         options: quietOptions,
       );
-      _poll?.cancel();
+      _stopPolling();
       final current = _live ?? live;
       _state.value = current.copyWith(chat: SupportChat.fromJson(dataOf(response)), isEnding: false);
-      await _fetch(_epoch, reschedule: false);
+      await _fetch();
       return true;
-    } catch (error) {
-      log('chat end failed: $error');
-      _state.value = (_live ?? live).copyWith(isEnding: false, problem: _problemOf(error));
+    } on Object catch (error) {
+      _state.value = (_live ?? live).copyWith(isEnding: false, problem: SupportProblem.of(error));
       return false;
     }
+  }
+
+  Mutation<SupportChat> _openingFor(String? ticketId, String? tripId) {
+    final signature = '${ticketId ?? ''}|${tripId ?? ''}';
+    final existing = _opening;
+    if (existing != null && _openingSignature == signature && !existing.isBusy) {
+      return existing..reset(keepKey: existing.state.value is! MutationDone<SupportChat>);
+    }
+    existing?.dispose();
+    _openingSignature = signature;
+    return _opening = Mutation<SupportChat>(
+      intent: 'support-chat',
+      run: (key) async {
+        final response = await _api.post(
+          SupportEndpoints.chats,
+          data: {'ticketId': ticketId, 'tripId': tripId},
+          key: key,
+          options: quietOptions,
+        );
+        return SupportChat.fromJson(dataOf(response));
+      },
+    );
   }
 
   ChatLive? get _live => switch (_state.value) {
@@ -101,72 +136,123 @@ class SupportChatController extends GetxController {
     final live = _live;
     final clientId = pending.clientId;
     if (live == null || clientId == null) return;
+    if (ConnectionMonitor.current?.isOnline == false) {
+      _replace(clientId, pending.withDelivery(ChatDelivery.failed));
+      return;
+    }
     try {
       final response = await _api.post(
         SupportEndpoints.of(SupportEndpoints.chatMessages, live.chat.id),
         data: {'text': pending.text, 'clientId': clientId},
+        key: IdempotencyKey('chat-msg-$clientId'),
         options: quietOptions,
       );
-      final sent = ChatMessage.fromJson(dataOf(response));
-      _replace(clientId, sent);
-    } catch (error) {
-      log('chat send failed: $error');
+      _confirm(clientId, ChatMessage.fromJson(dataOf(response)));
+    } on Object catch (error) {
+      _replace(clientId, pending.withDelivery(ChatDelivery.failed));
       if (error is ApiException && error.code == 'chat_ended') {
         final current = _live;
         if (current != null) _state.value = current.copyWith(problem: SupportProblem.chatEnded);
+        await _fetch();
       }
-      _replace(clientId, pending.withDelivery(ChatDelivery.failed));
     }
+  }
+
+  void _confirm(String clientId, ChatMessage sent) {
+    final live = _live;
+    if (live == null) return;
+    final withoutLocal = [
+      for (final message in live.messages)
+        if (message.clientId != clientId) message,
+    ];
+    final alreadyKnown = withoutLocal.any((message) => message.id == sent.id);
+    final confirmed = [
+      for (final message in withoutLocal)
+        if (_isConfirmed(message)) message,
+      if (!alreadyKnown) sent,
+    ];
+    final outbox = [
+      for (final message in withoutLocal)
+        if (!_isConfirmed(message)) message,
+    ];
+    _state.value = live.copyWith(messages: [...confirmed, ...outbox]);
   }
 
   void _replace(String clientId, ChatMessage message) {
     final live = _live;
     if (live == null) return;
-    final exists = live.messages.any((existing) => existing.clientId == clientId);
     _state.value = live.copyWith(
       messages: [
         for (final existing in live.messages)
           if (existing.clientId == clientId) message else existing,
-        if (!exists) message,
       ],
     );
   }
 
-  Future<void> _fetch(int epoch, {bool reschedule = true}) async {
-    if (_pollingEpoch == epoch) return;
-    _pollingEpoch = epoch;
-    try {
-      final live = _live;
-      if (live == null || epoch != _epoch) return;
-      final lastServerId = live.messages
-          .where((message) => message.delivery != ChatDelivery.sending && message.delivery != ChatDelivery.failed)
-          .lastOrNull
-          ?.id;
-      final response = await _api.get(
-        SupportEndpoints.of(SupportEndpoints.chatMessages, live.chat.id),
-        queryParameters: {'after': ?lastServerId},
-        options: quietOptions,
-      );
-      if (epoch != _epoch) return;
-      final update = ChatUpdate.fromJson(dataOf(response));
-      final current = _live ?? live;
-      final known = {for (final message in current.messages) message.id};
-      final clientIds = {for (final message in current.messages) ?message.clientId};
-      final fresh = [
-        for (final message in update.messages)
-          if (!known.contains(message.id) && !(message.isMine && clientIds.contains(message.clientId))) message,
-      ];
-      final merged = [...current.messages, ...fresh]..sort((a, b) => a.sentAt.compareTo(b.sentAt));
-      _state.value = current.copyWith(chat: update.chat, messages: merged);
-      if (update.chat.status == ChatStatus.ended) return;
-    } catch (error) {
-      log('chat poll failed: $error');
-    } finally {
-      if (_pollingEpoch == epoch) _pollingEpoch = -1;
-    }
-    if (reschedule && epoch == _epoch) _poll = Timer(_pollEvery, () => _fetch(epoch));
+  bool _isConfirmed(ChatMessage message) =>
+      message.delivery != ChatDelivery.sending && message.delivery != ChatDelivery.failed;
+
+  void _startPolling(int epoch) {
+    _stopPolling();
+    final poller = LivePoller(fetch: () => _fetchFor(epoch), interval: _pollEvery);
+    poller.link.addListener(() => _link.value = poller.link.value);
+    _poller = poller;
+    poller.start();
   }
 
-  SupportProblem _problemOf(Object error) =>
-      error is ApiException ? SupportProblem.fromCode(error.code) : SupportProblem.connection;
+  void _stopPolling() {
+    final poller = _poller;
+    _poller = null;
+    _link.value = LinkState.live;
+    if (poller != null) Future<void>.microtask(poller.dispose);
+  }
+
+  Future<void> _fetch() => _fetchFor(_epoch);
+
+  Future<void> _fetchFor(int epoch) async {
+    final live = _live;
+    if (live == null || epoch != _epoch) return;
+    final response = await _api.get(
+      SupportEndpoints.of(SupportEndpoints.chatMessages, live.chat.id),
+      queryParameters: {'after': ?_cursor},
+      options: quietOptions,
+    );
+    if (epoch != _epoch) return;
+    final update = ChatUpdate.fromJson(dataOf(response));
+    final cursor = update.cursor;
+    if (cursor != null) _cursor = cursor;
+    _merge(update);
+    if (update.chat.status == ChatStatus.ended) _stopPolling();
+  }
+
+  void _merge(ChatUpdate update) {
+    final current = _live;
+    if (current == null) return;
+    final known = {
+      for (final message in current.messages)
+        if (_isConfirmed(message)) message.id,
+    };
+    final outboxByClientId = {
+      for (final message in current.messages)
+        if (!_isConfirmed(message) && message.clientId != null) message.clientId!: message,
+    };
+    final fresh = <ChatMessage>[];
+    final answered = <String>{};
+    for (final message in update.messages) {
+      if (known.contains(message.id)) continue;
+      fresh.add(message);
+      final clientId = message.clientId;
+      if (message.isMine && clientId != null && outboxByClientId.containsKey(clientId)) answered.add(clientId);
+    }
+    final confirmed = [
+      for (final message in current.messages)
+        if (_isConfirmed(message)) message,
+      ...fresh,
+    ];
+    final outbox = [
+      for (final message in current.messages)
+        if (!_isConfirmed(message) && !answered.contains(message.clientId)) message,
+    ];
+    _state.value = current.copyWith(chat: update.chat, messages: [...confirmed, ...outbox]);
+  }
 }

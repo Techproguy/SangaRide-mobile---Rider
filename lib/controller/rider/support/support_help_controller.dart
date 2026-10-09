@@ -1,5 +1,3 @@
-import 'dart:developer';
-
 import 'package:get/get.dart';
 import 'package:sanga_ride/controller/rider/account/account_api.dart';
 import 'package:sanga_ride/core/api/api.dart';
@@ -24,9 +22,8 @@ class SupportHelpController extends GetxController {
     try {
       final response = await _api.get(SupportEndpoints.home, options: quietOptions);
       _home.value = SupportHomeLoaded(SupportHome.fromJson(dataOf(response)));
-    } catch (error) {
-      log('support home failed: $error');
-      if (_home.value is! SupportHomeLoaded) _home.value = const SupportHomeFailed();
+    } on Object catch (error) {
+      if (_home.value is! SupportHomeLoaded) _home.value = SupportHomeFailed(SupportProblem.of(error));
     }
   }
 
@@ -35,9 +32,8 @@ class SupportHelpController extends GetxController {
     try {
       final page = await _fetchArticles(query, 1);
       _articles[query] = ArticlesLoaded(page.items, page: page.page, hasMore: page.hasMore);
-    } catch (error) {
-      log('articles failed: $error');
-      _articles[query] = const ArticlesFailed();
+    } on Object catch (error) {
+      _articles[query] = ArticlesFailed(SupportProblem.of(error));
     }
   }
 
@@ -48,8 +44,7 @@ class SupportHelpController extends GetxController {
     try {
       final page = await _fetchArticles(query, current.page + 1);
       _articles[query] = ArticlesLoaded([...current.items, ...page.items], page: page.page, hasMore: page.hasMore);
-    } catch (error) {
-      log('articles page failed: $error');
+    } on Object {
       _articles[query] = current.copyWith(isLoadingMore: false, loadMoreFailed: true);
     }
   }
@@ -63,9 +58,8 @@ class SupportHelpController extends GetxController {
         SupportArticle.fromJson(dataOf(response)),
         vote: current is ArticleLoaded ? current.vote : ArticleVote.none,
       );
-    } catch (error) {
-      log('article failed: $error');
-      if (_details[id] is! ArticleLoaded) _details[id] = ArticleFailed(_problemOf(error));
+    } on Object catch (error) {
+      if (_details[id] is! ArticleLoaded) _details[id] = ArticleFailed(SupportProblem.of(error));
     }
   }
 
@@ -81,8 +75,7 @@ class SupportHelpController extends GetxController {
         options: quietOptions,
       );
       _details[id] = ArticleLoaded(SupportArticle.fromJson(dataOf(response)), vote: vote);
-    } catch (error) {
-      log('article feedback failed: $error');
+    } on Object {
       _details[id] = ArticleLoaded(current.article, vote: vote);
     }
   }
@@ -95,7 +88,4 @@ class SupportHelpController extends GetxController {
     );
     return ArticlePage.fromJson(dataOf(response));
   }
-
-  SupportProblem _problemOf(Object error) =>
-      error is ApiException ? SupportProblem.fromCode(error.code) : SupportProblem.connection;
 }

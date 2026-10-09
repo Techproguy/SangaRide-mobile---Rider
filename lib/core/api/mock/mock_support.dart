@@ -164,6 +164,7 @@ abstract final class MockSupport {
       context: context,
       createdAt: DateTime.now(),
       tripId: request.body['tripId'] as String?,
+      intentKey: request.headers['Idempotency-Key'] as String?,
     );
     _created.add(ticket);
     return _ticketJson(ticket, DateTime.now());
@@ -171,7 +172,11 @@ abstract final class MockSupport {
 
   static Object? _tickets(MockRequest request) {
     final page = (int.tryParse('${request.query['page']}') ?? 1).clamp(1, 1000);
-    final all = _all;
+    final intentKey = request.query['idempotencyKey'];
+    final all = [
+      for (final ticket in _all)
+        if (intentKey == null || ticket.intentKey == intentKey) ticket,
+    ];
     final start = (page - 1) * _pageSize;
     final now = DateTime.now();
     return {
@@ -294,6 +299,7 @@ class _Ticket {
     required this.context,
     required this.createdAt,
     this.tripId,
+    this.intentKey,
     this.chosen,
     this.chosenAt,
     this.isClosed = false,
@@ -305,6 +311,7 @@ class _Ticket {
   final String context;
   final DateTime createdAt;
   final String? tripId;
+  final String? intentKey;
   final bool isClosed;
   String? chosen;
   DateTime? chosenAt;

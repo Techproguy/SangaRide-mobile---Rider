@@ -1,4 +1,5 @@
 import 'package:sanga_ride/model/support/support_problem.dart';
+import 'package:sanga_ride_core/sanga_ride_core.dart';
 
 enum IssueContext {
   trip('trip'),
@@ -10,7 +11,7 @@ enum IssueContext {
 
   final String code;
 
-  static IssueContext fromCode(String? code) => values.where((value) => value.code == code).firstOrNull ?? trip;
+  static IssueContext fromCode(String? code) => enumByCode(values, code, (value) => value.code, IssueContext.trip);
 }
 
 enum IssueIcon {
@@ -29,17 +30,17 @@ enum IssueIcon {
 
   final String code;
 
-  static IssueIcon fromCode(Object? code) => values.where((icon) => icon.code == '$code').firstOrNull ?? other;
+  static IssueIcon fromCode(Object? code) => enumByCode(values, '$code', (icon) => icon.code, IssueIcon.other);
 }
 
 class IssueType {
   const IssueType({required this.id, required this.label, required this.hint, required this.icon});
 
-  factory IssueType.fromJson(Map<String, dynamic> json) => IssueType(
-    id: json['id'] as String,
-    label: json['label'] as String,
-    hint: json['hint'] as String? ?? '',
-    icon: IssueIcon.fromCode(json['icon']),
+  factory IssueType.fromReader(JsonReader reader) => IssueType(
+    id: reader.str('id'),
+    label: reader.str('label'),
+    hint: reader.strOr('hint', ''),
+    icon: IssueIcon.fromCode(reader.strOrNull('icon')),
   );
 
   final String id;
@@ -53,7 +54,8 @@ enum TicketStatus {
   investigating('investigating'),
   actionNeeded('action_needed'),
   resolved('resolved'),
-  closed('closed');
+  closed('closed'),
+  unknown('unknown');
 
   const TicketStatus(this.code);
 
@@ -64,7 +66,7 @@ enum TicketStatus {
   bool get isWaiting => this == reported || this == investigating;
 
   static TicketStatus fromCode(Object? code) =>
-      values.where((status) => status.code == '$code').firstOrNull ?? reported;
+      enumByCode(values, '$code', (status) => status.code, TicketStatus.unknown);
 }
 
 enum TicketEventType {
@@ -78,7 +80,12 @@ enum TicketEventType {
 
   final String code;
 
-  static TicketEventType? fromCode(Object? code) => values.where((type) => type.code == '$code').firstOrNull;
+  static TicketEventType? fromCode(Object? code) {
+    for (final type in values) {
+      if (type.code == '$code') return type;
+    }
+    return null;
+  }
 }
 
 class TicketEvent {
@@ -88,22 +95,18 @@ class TicketEvent {
   final DateTime? at;
   final String detail;
 
-  static TicketEvent? fromJson(Map<String, dynamic> json) {
-    final type = TicketEventType.fromCode(json['type']);
+  static TicketEvent? tryFromReader(JsonReader reader) {
+    final type = TicketEventType.fromCode(reader.strOrNull('type'));
     if (type == null) return null;
-    return TicketEvent(
-      type: type,
-      at: json['at'] == null ? null : DateTime.parse('${json['at']}').toLocal(),
-      detail: json['detail'] as String? ?? '',
-    );
+    return TicketEvent(type: type, at: reader.timeOrNull('at')?.toLocal(), detail: reader.strOr('detail', ''));
   }
 }
 
 class ResolutionOption {
   const ResolutionOption({required this.id, required this.label, required this.hint});
 
-  factory ResolutionOption.fromJson(Map<String, dynamic> json) =>
-      ResolutionOption(id: json['id'] as String, label: json['label'] as String, hint: json['hint'] as String? ?? '');
+  factory ResolutionOption.fromReader(JsonReader reader) =>
+      ResolutionOption(id: reader.str('id'), label: reader.str('label'), hint: reader.strOr('hint', ''));
 
   final String id;
   final String label;
@@ -122,23 +125,19 @@ class SupportTicket {
     required this.tripId,
   });
 
-  factory SupportTicket.fromJson(Map<String, dynamic> json) => SupportTicket(
-    id: json['id'] as String,
-    reference: json['reference'] as String,
-    type: json['type'] as String,
-    typeLabel: json['typeLabel'] as String? ?? '',
-    status: TicketStatus.fromCode(json['status']),
-    events: [
-      for (final event in json['events'] as List) ?TicketEvent.fromJson(Map<String, dynamic>.from(event as Map)),
-    ],
-    resolutionOptions: json['resolutionOptions'] == null
-        ? const []
-        : [
-            for (final option in json['resolutionOptions'] as List)
-              ResolutionOption.fromJson(Map<String, dynamic>.from(option as Map)),
-          ],
-    tripId: json['tripId'] as String?,
-  );
+  factory SupportTicket.fromJson(Map<String, dynamic> json) {
+    final reader = JsonReader(json);
+    return SupportTicket(
+      id: reader.str('id'),
+      reference: reader.strOr('reference', ''),
+      type: reader.strOr('type', ''),
+      typeLabel: reader.strOr('typeLabel', ''),
+      status: TicketStatus.fromCode(reader.strOrNull('status')),
+      events: [for (final event in reader.listOf('events', TicketEvent.tryFromReader)) ?event],
+      resolutionOptions: reader.listOf('resolutionOptions', ResolutionOption.fromReader),
+      tripId: reader.strOrNull('tripId'),
+    );
+  }
 
   final String id;
   final String reference;
@@ -163,12 +162,12 @@ class TicketSummary {
     required this.createdAt,
   });
 
-  factory TicketSummary.fromJson(Map<String, dynamic> json) => TicketSummary(
-    id: json['id'] as String,
-    reference: json['reference'] as String,
-    typeLabel: json['typeLabel'] as String,
-    status: TicketStatus.fromCode(json['status']),
-    createdAt: DateTime.parse('${json['createdAt']}').toLocal(),
+  factory TicketSummary.fromReader(JsonReader reader) => TicketSummary(
+    id: reader.str('id'),
+    reference: reader.strOr('reference', ''),
+    typeLabel: reader.strOr('typeLabel', ''),
+    status: TicketStatus.fromCode(reader.strOrNull('status')),
+    createdAt: reader.time('createdAt').toLocal(),
   );
 
   final String id;
@@ -181,11 +180,14 @@ class TicketSummary {
 class TicketsPage {
   const TicketsPage({required this.items, required this.page, required this.hasMore});
 
-  factory TicketsPage.fromJson(Map<String, dynamic> json) => TicketsPage(
-    items: [for (final item in json['items'] as List) TicketSummary.fromJson(Map<String, dynamic>.from(item as Map))],
-    page: (json['page'] as num).toInt(),
-    hasMore: json['hasMore'] == true,
-  );
+  factory TicketsPage.fromJson(Map<String, dynamic> json) {
+    final reader = JsonReader(json);
+    return TicketsPage(
+      items: reader.listOf('items', TicketSummary.fromReader),
+      page: reader.intOr('page', 1),
+      hasMore: reader.boolOr('hasMore', false),
+    );
+  }
 
   final List<TicketSummary> items;
   final int page;
@@ -201,7 +203,9 @@ final class TicketsLoading extends TicketsState {
 }
 
 final class TicketsFailed extends TicketsState {
-  const TicketsFailed();
+  const TicketsFailed(this.problem);
+
+  final SupportProblem problem;
 }
 
 final class TicketsLoaded extends TicketsState {
@@ -211,6 +215,7 @@ final class TicketsLoaded extends TicketsState {
     required this.hasMore,
     this.isLoadingMore = false,
     this.loadMoreFailed = false,
+    this.isStale = false,
   });
 
   final List<TicketSummary> items;
@@ -218,13 +223,15 @@ final class TicketsLoaded extends TicketsState {
   final bool hasMore;
   final bool isLoadingMore;
   final bool loadMoreFailed;
+  final bool isStale;
 
-  TicketsLoaded copyWith({bool? isLoadingMore, bool? loadMoreFailed}) => TicketsLoaded(
+  TicketsLoaded copyWith({bool? isLoadingMore, bool? loadMoreFailed, bool? isStale}) => TicketsLoaded(
     items,
     page: page,
     hasMore: hasMore,
     isLoadingMore: isLoadingMore ?? this.isLoadingMore,
     loadMoreFailed: loadMoreFailed ?? this.loadMoreFailed,
+    isStale: isStale ?? this.isStale,
   );
 }
 

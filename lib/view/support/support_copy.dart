@@ -43,17 +43,22 @@ abstract final class SupportCopy {
     TicketStatus.actionNeeded => 'Your move',
     TicketStatus.resolved => 'Resolved',
     TicketStatus.closed => 'Closed',
+    TicketStatus.unknown => 'Updating',
   };
 
   static Widget statusTagOf(TicketStatus status) {
     final label = statusLabelOf(status);
     return switch (status) {
       TicketStatus.reported ||
-      TicketStatus.investigating => SangaTag.scheduled(label: label, icon: Icons.schedule_rounded),
+      TicketStatus.investigating ||
+      TicketStatus.unknown => SangaTag.scheduled(label: label, icon: Icons.schedule_rounded),
       TicketStatus.actionNeeded => SangaTag.urgent(label: label, icon: Icons.touch_app_outlined),
       TicketStatus.resolved || TicketStatus.closed => SangaTag.success(label: label),
     };
   }
+
+  static const String chatReconnecting = 'Trouble reaching support. We’ll keep trying.';
+  static const String chatLost = 'You’re offline. Messages will send when you’re back.';
 
   static String waitLine(SupportChat chat, SupportContact? contact) {
     final position = chat.queuePosition;

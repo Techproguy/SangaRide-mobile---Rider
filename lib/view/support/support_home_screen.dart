@@ -6,7 +6,6 @@ import 'package:go_router/go_router.dart';
 import 'package:sanga_ride/controller/rider/support/support_help_controller.dart';
 import 'package:sanga_ride/core/router/support_routes.dart';
 import 'package:sanga_ride/model/models.dart';
-import 'package:sanga_ride/view/account/widgets/load_state.dart';
 import 'package:sanga_ride/view/support/widgets/article_row.dart';
 import 'package:sanga_ride/view/support/widgets/support_topic_grid.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
@@ -96,9 +95,9 @@ class _SupportHomeScreenState extends State<SupportHomeScreen> {
         title: 'Support',
         children: [
           switch (state) {
-            SupportHomeLoading() => const LoadingIndicator(),
-            SupportHomeFailed() => LoadFailure(
-              message: SupportProblem.connection.message,
+            SupportHomeLoading() => const SangaSkeleton.heights([48, 120, 56, 56]),
+            SupportHomeFailed(:final problem) => SangaFailureMessage(
+              message: problem.message,
               onRetry: _controller.loadHome,
             ),
             SupportHomeLoaded(:final home) => _loaded(home),

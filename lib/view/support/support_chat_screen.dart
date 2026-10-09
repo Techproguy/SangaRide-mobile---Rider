@@ -6,9 +6,8 @@ import 'package:go_router/go_router.dart';
 import 'package:sanga_ride/controller/rider/support/support_chat_controller.dart';
 import 'package:sanga_ride/controller/rider/support/support_help_controller.dart';
 import 'package:sanga_ride/core/router/support_routes.dart';
-import 'package:sanga_ride/core/services/toast_service.dart';
 import 'package:sanga_ride/model/models.dart';
-import 'package:sanga_ride/view/account/widgets/load_state.dart';
+import 'package:sanga_ride_core/sanga_ride_core.dart' show LinkState;
 import 'package:sanga_ride/view/support/support_copy.dart';
 import 'package:sanga_ride/view/support/widgets/support_message_list.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
@@ -55,7 +54,9 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
     final phone = _contact?.phone;
     if (phone == null) return;
     final isLaunched = await launchUrl(Uri(scheme: 'tel', path: phone));
-    if (!isLaunched) Toast.error('We couldn’t open your phone app. You can reach us on $phone.');
+    if (!isLaunched) {
+      SangaToast.show('We couldn’t open your phone app. You can reach us on $phone.', tone: SangaToastTone.error);
+    }
   }
 
   Future<void> _end() async {
@@ -69,7 +70,7 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
     );
     if (!isConfirmed || !mounted) return;
     final isEnded = await _controller.end();
-    if (!isEnded && mounted) Toast.error(SupportProblem.connection.message);
+    if (!isEnded && mounted) SangaToast.show(SupportProblem.connection.message, tone: SangaToastTone.error);
   }
 
   String _title(ChatState state) => switch (state) {
@@ -120,6 +121,16 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
       ChatStatus.active => null,
     };
     final problem = live.problem;
+    final link = _controller.linkRx.value;
+    if (link != LinkState.live && chat.status != ChatStatus.ended) {
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(SangaSpacing.gutter, SangaSpacing.sm, SangaSpacing.gutter, 0),
+        child: SangaNotice(
+          tone: SangaTone.warning,
+          message: link == LinkState.lost ? SupportCopy.chatLost : SupportCopy.chatReconnecting,
+        ),
+      );
+    }
     if (text == null && problem == null) return const SizedBox.shrink();
     return Padding(
       padding: const EdgeInsets.fromLTRB(SangaSpacing.gutter, SangaSpacing.sm, SangaSpacing.gutter, 0),
@@ -134,13 +145,10 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
   Widget _empty(ChatLive live) {
     final isQueued = live.chat.status == ChatStatus.queued;
     return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(SangaSpacing.xl),
-        child: Text(
-          isQueued ? 'Hang tight. An agent will join you shortly.' : 'Say hi and tell us what’s going on.',
-          textAlign: TextAlign.center,
-          style: SangaTextStyles.statusMessage,
-        ),
+      child: SangaEmptyMessage(
+        icon: Icons.chat_bubble_outline_rounded,
+        title: isQueued ? 'Hang tight' : 'Say hi',
+        message: isQueued ? 'An agent will join you shortly.' : 'Tell us what’s going on.',
       ),
     );
   }
@@ -190,12 +198,10 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
           mainAxisSize: MainAxisSize.min,
           spacing: SangaSpacing.md,
           children: [
-            Text('Chat isn’t available', style: SangaTextStyles.statusTitle, textAlign: TextAlign.center),
-            Text(problem.message, style: SangaTextStyles.statusMessage, textAlign: TextAlign.center),
-            SangaButton.primary(
-              label: 'Try again',
-              size: SangaButtonSize.compact,
-              onPressed: () => _controller.open(ticketId: widget.ticketId, tripId: widget.tripId),
+            SangaFailureMessage(
+              title: 'Chat isn’t available',
+              message: problem.message,
+              onRetry: () => _controller.open(ticketId: widget.ticketId, tripId: widget.tripId),
             ),
             SangaButton.outline(
               label: 'Report an issue',
@@ -222,7 +228,7 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
                 _header(state),
                 Expanded(
                   child: switch (state) {
-                    ChatConnecting() => const LoadingIndicator(),
+                    ChatConnecting() => const Center(child: SangaActivityIndicator(size: 36)),
                     ChatUnavailable(:final problem) => _unavailable(problem),
                     final ChatLive live => _live(live),
                   },

@@ -6,7 +6,6 @@ import 'package:go_router/go_router.dart';
 import 'package:sanga_ride/controller/rider/support/support_report_controller.dart';
 import 'package:sanga_ride/core/router/support_routes.dart';
 import 'package:sanga_ride/model/models.dart';
-import 'package:sanga_ride/view/account/widgets/load_state.dart';
 import 'package:sanga_ride/view/support/support_copy.dart';
 import 'package:sanga_ride/view/support/widgets/issue_type_list.dart';
 import 'package:sanga_ride/view/support/widgets/trip_link_list.dart';
@@ -139,8 +138,8 @@ class _SupportReportScreenState extends State<SupportReportScreen> {
                 ),
               ),
               switch (state) {
-                SupportReportLoading() => const LoadingIndicator(),
-                SupportReportFailed(:final problem) => LoadFailure(
+                SupportReportLoading() => const SangaSkeleton.heights([56, 56, 56]),
+                SupportReportFailed(:final problem) => SangaFailureMessage(
                   message: problem.message,
                   onRetry: _controller.reload,
                 ),

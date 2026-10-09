@@ -6,7 +6,6 @@ import 'package:go_router/go_router.dart';
 import 'package:sanga_ride/controller/rider/support/support_tickets_controller.dart';
 import 'package:sanga_ride/core/router/support_routes.dart';
 import 'package:sanga_ride/model/models.dart';
-import 'package:sanga_ride/view/account/widgets/load_state.dart';
 import 'package:sanga_ride/view/support/support_copy.dart';
 import 'package:sanga_ride/view/support/widgets/issue_timeline.dart';
 import 'package:sanga_ride/view/support/widgets/resolution_options.dart';
@@ -129,8 +128,8 @@ class _SupportTicketScreenState extends State<SupportTicketScreen> {
         footer: _footer(state),
         children: [
           switch (state) {
-            TicketLoading() => const LoadingIndicator(),
-            TicketFailed(:final problem) => LoadFailure(message: problem.message, onRetry: _controller.reload),
+            TicketLoading() => const SangaSkeleton.heights([120, 200]),
+            TicketFailed(:final problem) => SangaFailureMessage(message: problem.message, onRetry: _controller.reload),
             final TicketLoaded loaded => _loaded(loaded),
           },
         ],

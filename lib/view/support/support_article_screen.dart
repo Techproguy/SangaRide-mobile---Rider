@@ -6,7 +6,6 @@ import 'package:go_router/go_router.dart';
 import 'package:sanga_ride/controller/rider/support/support_help_controller.dart';
 import 'package:sanga_ride/core/router/support_routes.dart';
 import 'package:sanga_ride/model/models.dart';
-import 'package:sanga_ride/view/account/widgets/load_state.dart';
 import 'package:sanga_ride/view/support/widgets/article_body.dart';
 import 'package:sanga_ride/view/support/widgets/article_feedback.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
@@ -58,8 +57,8 @@ class _SupportArticleScreenState extends State<SupportArticleScreen> {
         title: 'Help article',
         children: [
           switch (state) {
-            ArticleLoading() => const LoadingIndicator(),
-            ArticleFailed(:final problem) => LoadFailure(
+            ArticleLoading() => const SangaSkeleton.heights([32, 120, 56]),
+            ArticleFailed(:final problem) => SangaFailureMessage(
               message: problem.message,
               onRetry: () => _controller.loadArticle(widget.id),
             ),

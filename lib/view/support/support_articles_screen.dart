@@ -6,7 +6,6 @@ import 'package:go_router/go_router.dart';
 import 'package:sanga_ride/controller/rider/support/support_help_controller.dart';
 import 'package:sanga_ride/core/router/support_routes.dart';
 import 'package:sanga_ride/model/models.dart';
-import 'package:sanga_ride/view/account/widgets/load_state.dart';
 import 'package:sanga_ride/view/support/widgets/article_row.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
@@ -81,9 +80,9 @@ class _SupportArticlesScreenState extends State<SupportArticlesScreen> {
               ArticleRow(article: article, onTap: () => context.push(SupportRoutes.articleOf(article.id))),
           ],
         ),
-        if (state.isLoadingMore) const LoadingIndicator(),
+        if (state.isLoadingMore) const SangaSkeleton.heights([56]),
         if (state.loadMoreFailed)
-          LoadFailure(
+          SangaFailureMessage(
             message: SupportProblem.connection.message,
             title: 'We couldn’t load more',
             onRetry: () => _controller.loadMoreArticles(_query),
@@ -94,7 +93,8 @@ class _SupportArticlesScreenState extends State<SupportArticlesScreen> {
 
   Widget _empty() {
     final hasText = _text.isNotEmpty;
-    return SangaInlineMessage(
+    return SangaEmptyMessage(
+      icon: Icons.search_off_rounded,
       title: hasText ? 'Nothing found for “$_text”' : 'No articles here yet',
       message: hasText ? 'Try different words, or talk to our team.' : 'Check back soon, or talk to our team.',
       actionLabel: 'Contact support',
@@ -123,9 +123,9 @@ class _SupportArticlesScreenState extends State<SupportArticlesScreen> {
                   onCleared: () => _apply(''),
                 ),
                 switch (state) {
-                  ArticlesLoading() => const LoadingIndicator(),
-                  ArticlesFailed() => LoadFailure(
-                    message: SupportProblem.connection.message,
+                  ArticlesLoading() => const SangaSkeleton.heights([56, 56, 56]),
+                  ArticlesFailed(:final problem) => SangaFailureMessage(
+                    message: problem.message,
                     onRetry: () => _controller.loadArticles(_query),
                   ),
                   final ArticlesLoaded loaded => _list(loaded),

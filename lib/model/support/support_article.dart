@@ -1,12 +1,13 @@
 import 'package:sanga_ride/model/support/support_home.dart';
 import 'package:sanga_ride/model/support/support_problem.dart';
+import 'package:sanga_ride_core/sanga_ride_core.dart';
 
 sealed class ArticleBlock {
   const ArticleBlock();
 
-  factory ArticleBlock.fromJson(Map<String, dynamic> json) => switch (json['type']) {
-    'bullets' => BulletsBlock([for (final item in json['items'] as List) '$item']),
-    _ => ParagraphBlock('${json['text']}'),
+  factory ArticleBlock.fromReader(JsonReader reader) => switch (reader.strOrNull('type')) {
+    'bullets' => BulletsBlock(reader.strings('items')),
+    _ => ParagraphBlock(reader.str('text')),
   };
 }
 
@@ -31,13 +32,16 @@ class SupportArticle {
     required this.notHelpfulCount,
   });
 
-  factory SupportArticle.fromJson(Map<String, dynamic> json) => SupportArticle(
-    id: json['id'] as String,
-    title: json['title'] as String,
-    blocks: [for (final block in json['body'] as List) ArticleBlock.fromJson(Map<String, dynamic>.from(block as Map))],
-    helpfulCount: (json['helpfulCount'] as num?)?.toInt() ?? 0,
-    notHelpfulCount: (json['notHelpfulCount'] as num?)?.toInt() ?? 0,
-  );
+  factory SupportArticle.fromJson(Map<String, dynamic> json) {
+    final reader = JsonReader(json);
+    return SupportArticle(
+      id: reader.str('id'),
+      title: reader.str('title'),
+      blocks: reader.listOf('body', ArticleBlock.fromReader),
+      helpfulCount: reader.intOr('helpfulCount', 0),
+      notHelpfulCount: reader.intOr('notHelpfulCount', 0),
+    );
+  }
 
   final String id;
   final String title;
@@ -75,11 +79,14 @@ typedef ArticleQuery = ({String? topic, String text});
 class ArticlePage {
   const ArticlePage({required this.items, required this.page, required this.hasMore});
 
-  factory ArticlePage.fromJson(Map<String, dynamic> json) => ArticlePage(
-    items: [for (final item in json['items'] as List) ArticleSummary.fromJson(Map<String, dynamic>.from(item as Map))],
-    page: (json['page'] as num).toInt(),
-    hasMore: json['hasMore'] == true,
-  );
+  factory ArticlePage.fromJson(Map<String, dynamic> json) {
+    final reader = JsonReader(json);
+    return ArticlePage(
+      items: reader.listOf('items', ArticleSummary.fromReader),
+      page: reader.intOr('page', 1),
+      hasMore: reader.boolOr('hasMore', false),
+    );
+  }
 
   final List<ArticleSummary> items;
   final int page;
@@ -95,7 +102,9 @@ final class ArticlesLoading extends ArticlesState {
 }
 
 final class ArticlesFailed extends ArticlesState {
-  const ArticlesFailed();
+  const ArticlesFailed(this.problem);
+
+  final SupportProblem problem;
 }
 
 final class ArticlesLoaded extends ArticlesState {

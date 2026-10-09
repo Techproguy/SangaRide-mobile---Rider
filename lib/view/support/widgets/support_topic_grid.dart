@@ -6,22 +6,36 @@ import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 class SupportTopicGrid extends StatelessWidget {
   const SupportTopicGrid({super.key, required this.topics, required this.onSelected});
 
-  static const int _columns = 3;
+  static const int _columns = 2;
   static const double _tileHeight = 92;
 
   final List<SupportTopic> topics;
   final ValueChanged<SupportTopic> onSelected;
 
+  List<List<SupportTopic>> get _rows => [
+    for (var start = 0; start < topics.length; start += _columns)
+      topics.sublist(start, (start + _columns).clamp(0, topics.length)),
+  ];
+
   @override
   Widget build(BuildContext context) {
-    return GridView.count(
-      crossAxisCount: _columns,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      mainAxisSpacing: SangaSpacing.sm,
-      crossAxisSpacing: SangaSpacing.sm,
-      mainAxisExtent: _tileHeight,
-      children: [for (final topic in topics) _TopicTile(topic: topic, onTap: () => onSelected(topic))],
+    return Column(
+      spacing: SangaSpacing.sm,
+      children: [
+        for (final row in _rows)
+          SizedBox(
+            height: _tileHeight,
+            child: Row(
+              spacing: SangaSpacing.sm,
+              children: [
+                for (final topic in row)
+                  Expanded(
+                    child: _TopicTile(topic: topic, onTap: () => onSelected(topic)),
+                  ),
+              ],
+            ),
+          ),
+      ],
     );
   }
 }

@@ -6,7 +6,6 @@ import 'package:go_router/go_router.dart';
 import 'package:sanga_ride/controller/rider/support/support_tickets_controller.dart';
 import 'package:sanga_ride/core/router/support_routes.dart';
 import 'package:sanga_ride/model/models.dart';
-import 'package:sanga_ride/view/account/widgets/load_state.dart';
 import 'package:sanga_ride/view/support/widgets/ticket_row.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
@@ -37,7 +36,8 @@ class _SupportTicketsScreenState extends State<SupportTicketsScreen> {
 
   Widget _list(TicketsLoaded state) {
     if (state.items.isEmpty) {
-      return SangaInlineMessage(
+      return SangaEmptyMessage(
+        icon: Icons.assignment_outlined,
         title: 'No reports yet',
         message: 'If something goes wrong on a trip, you can tell us here.',
         actionLabel: 'Report an issue',
@@ -53,9 +53,10 @@ class _SupportTicketsScreenState extends State<SupportTicketsScreen> {
               TicketRow(ticket: ticket, onTap: () => context.push(SupportRoutes.ticketOf(ticket.id))),
           ],
         ),
-        if (state.isLoadingMore) const LoadingIndicator(),
+        if (state.isStale) SangaStaleNotice(onRetry: _controller.loadList),
+        if (state.isLoadingMore) const SangaSkeleton.heights([56]),
         if (state.loadMoreFailed)
-          LoadFailure(
+          SangaFailureMessage(
             title: 'We couldn’t load more',
             message: SupportProblem.connection.message,
             onRetry: _controller.loadMore,
@@ -78,9 +79,9 @@ class _SupportTicketsScreenState extends State<SupportTicketsScreen> {
           ),
           children: [
             switch (state) {
-              TicketsLoading() => const LoadingIndicator(),
-              TicketsFailed() => LoadFailure(
-                message: SupportProblem.connection.message,
+              TicketsLoading() => const SangaSkeleton.heights([56, 56, 56]),
+              TicketsFailed(:final problem) => SangaFailureMessage(
+                message: problem.message,
                 onRetry: _controller.retryList,
               ),
               final TicketsLoaded loaded => _list(loaded),

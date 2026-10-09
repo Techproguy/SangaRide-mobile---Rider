@@ -1,4 +1,5 @@
 import 'package:sanga_ride/model/support/support_problem.dart';
+import 'package:sanga_ride_core/sanga_ride_core.dart';
 
 enum ChatStatus {
   queued('queued'),
@@ -9,7 +10,7 @@ enum ChatStatus {
 
   final String code;
 
-  static ChatStatus fromCode(Object? code) => values.where((status) => status.code == '$code').firstOrNull ?? queued;
+  static ChatStatus fromCode(Object? code) => enumByCode(values, '$code', (status) => status.code, ChatStatus.queued);
 }
 
 enum ChatDelivery { sending, sent, read, failed }
@@ -23,14 +24,17 @@ enum ChatRole {
 
   final String code;
 
-  static ChatRole fromCode(Object? code) => values.where((role) => role.code == '$code').firstOrNull ?? system;
+  static ChatRole fromCode(Object? code) => enumByCode(values, '$code', (role) => role.code, ChatRole.system);
 }
 
 class ChatAgent {
   const ChatAgent({required this.name, required this.photoUrl});
 
-  factory ChatAgent.fromJson(Map<String, dynamic> json) =>
-      ChatAgent(name: json['name'] as String, photoUrl: json['photoUrl'] as String?);
+  static ChatAgent? tryFromReader(JsonReader? reader) {
+    final name = reader?.strOrNull('name');
+    if (reader == null || name == null) return null;
+    return ChatAgent(name: name, photoUrl: reader.strOrNull('photoUrl'));
+  }
 
   final String name;
   final String? photoUrl;
@@ -39,12 +43,15 @@ class ChatAgent {
 class SupportChat {
   const SupportChat({required this.id, required this.status, required this.agent, required this.queuePosition});
 
-  factory SupportChat.fromJson(Map<String, dynamic> json) => SupportChat(
-    id: json['id'] as String,
-    status: ChatStatus.fromCode(json['status']),
-    agent: json['agent'] == null ? null : ChatAgent.fromJson(Map<String, dynamic>.from(json['agent'] as Map)),
-    queuePosition: (json['queuePosition'] as num?)?.toInt() ?? 0,
-  );
+  factory SupportChat.fromJson(Map<String, dynamic> json) {
+    final reader = JsonReader(json);
+    return SupportChat(
+      id: reader.str('id'),
+      status: ChatStatus.fromCode(reader.strOrNull('status')),
+      agent: ChatAgent.tryFromReader(reader.objectOrNull('agent')),
+      queuePosition: reader.intOr('queuePosition', 0),
+    );
+  }
 
   final String id;
   final ChatStatus status;
@@ -62,14 +69,17 @@ class ChatMessage {
     required this.delivery,
   });
 
-  factory ChatMessage.fromJson(Map<String, dynamic> json) => ChatMessage(
-    id: json['id'] as String,
-    clientId: json['clientId'] as String?,
-    text: json['text'] as String,
-    role: ChatRole.fromCode(json['senderRole']),
-    sentAt: DateTime.parse('${json['createdAt']}').toLocal(),
-    delivery: json['status'] == 'read' ? ChatDelivery.read : ChatDelivery.sent,
-  );
+  factory ChatMessage.fromJson(Map<String, dynamic> json) {
+    final reader = JsonReader(json);
+    return ChatMessage(
+      id: reader.str('id'),
+      clientId: reader.strOrNull('clientId'),
+      text: reader.strOr('text', ''),
+      role: ChatRole.fromCode(reader.strOrNull('senderRole')),
+      sentAt: reader.timeOrNull('createdAt')?.toLocal() ?? DateTime.now(),
+      delivery: reader.strOrNull('status') == 'read' ? ChatDelivery.read : ChatDelivery.sent,
+    );
+  }
 
   factory ChatMessage.pending({required String clientId, required String text}) => ChatMessage(
     id: clientId,
@@ -94,17 +104,21 @@ class ChatMessage {
 }
 
 class ChatUpdate {
-  const ChatUpdate({required this.chat, required this.messages});
+  const ChatUpdate({required this.chat, required this.messages, this.cursor});
 
-  factory ChatUpdate.fromJson(Map<String, dynamic> json) => ChatUpdate(
-    chat: SupportChat.fromJson(Map<String, dynamic>.from(json['chat'] as Map)),
-    messages: [
-      for (final message in json['messages'] as List) ChatMessage.fromJson(Map<String, dynamic>.from(message as Map)),
-    ],
-  );
+  factory ChatUpdate.fromJson(Map<String, dynamic> json) {
+    final reader = JsonReader(json);
+    final raw = reader.raw['messages'];
+    return ChatUpdate(
+      chat: SupportChat.fromJson(reader.object('chat').raw),
+      messages: reader.listOf('messages', (item) => ChatMessage.fromJson(item.raw)),
+      cursor: raw is List && raw.isNotEmpty ? JsonReader.of(raw.last).strOrNull('id') : null,
+    );
+  }
 
   final SupportChat chat;
   final List<ChatMessage> messages;
+  final String? cursor;
 }
 
 sealed class ChatState {
