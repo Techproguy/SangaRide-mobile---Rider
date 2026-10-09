@@ -86,7 +86,7 @@ class _StopsRouteRow extends StatelessWidget {
               padding: EdgeInsets.only(bottom: isLast ? 0 : SangaSpacing.md),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                spacing: 2,
+                spacing: SangaSpacing.xxs,
                 children: [
                   Text(entry.label, style: SangaTextStyles.cardSubtitle),
                   Text(entry.value, style: SangaTextStyles.cardTitle),

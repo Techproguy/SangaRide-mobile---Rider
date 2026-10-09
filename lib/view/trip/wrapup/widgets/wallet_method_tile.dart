@@ -86,11 +86,7 @@ class _UnavailableTile extends StatelessWidget {
               ),
             ),
           ),
-          if (label != null)
-            TextButton(
-              onPressed: onAction,
-              child: Text(label, style: SangaTextStyles.label.copyWith(color: SangaColors.primary)),
-            ),
+          if (label != null) SangaTextAction(label: label, onPressed: onAction),
         ],
       ),
     );

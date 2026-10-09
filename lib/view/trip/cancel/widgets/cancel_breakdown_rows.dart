@@ -17,13 +17,13 @@ class CancelBreakdownRows extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final feeStyle = SangaTextStyles.cardTitle.copyWith(
-      color: review.hasFee ? SangaColors.dangerStrong : SangaColors.success,
+      color: review.hasFee ? SangaColors.danger : SangaColors.success,
     );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       spacing: SangaSpacing.xs,
       children: [
-        Text('Fare breakdown', style: SangaTextStyles.cardHeading),
+        const SangaSectionHeader('Fare breakdown'),
         _Row(label: 'Cancellation fee', value: review.hasFee ? SangaMoney.naira(review.fee) : 'Free', style: feeStyle),
         _Row(label: 'Payment method', value: review.paymentMethod?.label ?? 'Not set yet'),
         _Row(label: 'Refund', value: _refundLabel),

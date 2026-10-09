@@ -12,7 +12,7 @@ class TripLoadingPanel extends StatelessWidget {
     return const TripPanelBody(
       children: [
         SizedBox(height: SangaSpacing.md),
-        Center(child: SangaActivityIndicator(size: 40)),
+        Center(child: SangaActivityIndicator(size: 32)),
         SizedBox(height: SangaSpacing.md),
       ],
     );

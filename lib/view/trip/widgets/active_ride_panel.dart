@@ -34,7 +34,7 @@ class ActiveRidePanel extends StatelessWidget {
   Widget build(BuildContext context) {
     return TripPanelBody(
       children: [
-        Text('Active ride', textAlign: TextAlign.center, style: SangaTextStyles.sheetTitle),
+        Text('Active ride', textAlign: TextAlign.center, style: SangaTextStyles.statusTitle),
         TripDriverHeader(
           driver: trip.driver,
           trailing: Row(

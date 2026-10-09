@@ -53,7 +53,7 @@ class _CancelReasonsViewState extends State<CancelReasonsView> {
         onPressed: widget.canContinue ? widget.onContinue : null,
       ),
       children: [
-        Text('Why are you cancelling?', style: SangaTextStyles.tileTitleLarge),
+        const SangaSectionHeader('Why are you cancelling?'),
         const SizedBox(height: SangaSpacing.sm),
         SangaListGroup(
           children: [

@@ -14,7 +14,7 @@ class RatingTagWrap extends StatelessWidget {
   Widget build(BuildContext context) {
     return Wrap(
           alignment: WrapAlignment.center,
-          spacing: SangaSpacing.xs,
+          spacing: SangaSpacing.sm,
           runSpacing: SangaSpacing.xs,
           children: [
             for (final tag in tags)

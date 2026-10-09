@@ -48,7 +48,7 @@ class TripTimelineScreen extends StatelessWidget {
             else ...[
               SangaTimeline(entries: _entries(trip)),
               const SizedBox(height: SangaSpacing.xl),
-              Text('Safety and verification', style: SangaTextStyles.titleSmall),
+              const SangaSectionHeader('Safety and verification'),
               const SizedBox(height: SangaSpacing.md),
               Column(
                 spacing: SangaSpacing.md,

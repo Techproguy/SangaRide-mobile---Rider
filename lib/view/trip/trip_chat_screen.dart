@@ -72,26 +72,13 @@ class _TripChatScreenState extends State<TripChatScreen> {
             children: [
               Obx(() {
                 final driver = _trip.trip?.driver;
-                return Padding(
-                  padding: const EdgeInsets.fromLTRB(SangaSpacing.gutter, SangaSpacing.md, SangaSpacing.xs, 0),
-                  child: Row(
-                    children: [
-                      const SangaCircleButton.back(),
-                      Expanded(
-                        child: Text(
-                          driver?.name ?? '',
-                          textAlign: TextAlign.center,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: SangaTextStyles.toolbarTitle,
-                        ),
-                      ),
-                      IconButton(
-                        tooltip: 'Call',
-                        onPressed: driver == null ? null : () => callDriver(context, firstName: driver.firstName),
-                        icon: const Icon(Icons.phone_rounded, color: SangaColors.primary),
-                      ),
-                    ],
+                return SangaPageHeader(
+                  title: driver?.name ?? '',
+                  trailing: IconButton(
+                    tooltip: 'Call',
+                    padding: EdgeInsets.zero,
+                    onPressed: driver == null ? null : () => callDriver(context, firstName: driver.firstName),
+                    icon: const Icon(Icons.phone_rounded, color: SangaColors.primary),
                   ),
                 );
               }),

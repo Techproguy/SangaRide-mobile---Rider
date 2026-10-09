@@ -48,10 +48,7 @@ class _TripCompletedScreenState extends State<TripCompletedScreen> {
                   alignment: Alignment.centerRight,
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(SangaSpacing.gutter, SangaSpacing.xs, SangaSpacing.sm, 0),
-                    child: TextButton(
-                      onPressed: _home,
-                      child: Text('Done', style: SangaTextStyles.label.copyWith(color: SangaColors.primary)),
-                    ),
+                    child: SangaTextAction(label: 'Done', onPressed: _home),
                   ),
                 ),
                 Expanded(

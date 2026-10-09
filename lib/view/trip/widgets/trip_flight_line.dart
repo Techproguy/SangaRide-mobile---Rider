@@ -40,7 +40,7 @@ class TripFlightLine extends StatelessWidget {
                   ),
                 ),
                 FlightStatusTag(status: airport.status),
-                const Icon(Icons.chevron_right_rounded, size: 20, color: SangaColors.textPrimary),
+                SangaListRow.chevron,
               ],
             ),
           ),

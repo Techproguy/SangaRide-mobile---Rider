@@ -109,7 +109,7 @@ class _ExpiryLine extends StatelessWidget {
       children: [
         const Icon(Icons.schedule_rounded, size: 18, color: SangaColors.textPrimary),
         if (isExpired)
-          Text('PIN expired', style: SangaTextStyles.label.copyWith(color: SangaColors.dangerStrong))
+          Text('PIN expired', style: SangaTextStyles.label.copyWith(color: SangaColors.danger))
         else
           Text.rich(
             TextSpan(
@@ -118,7 +118,7 @@ class _ExpiryLine extends StatelessWidget {
                 const TextSpan(text: 'Expires in '),
                 TextSpan(
                   text: remaining.minutesAndSeconds,
-                  style: const TextStyle(color: SangaColors.dangerStrong),
+                  style: const TextStyle(color: SangaColors.danger),
                 ),
               ],
             ),

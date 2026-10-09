@@ -76,7 +76,7 @@ class _StopLocationConfirmState extends State<StopLocationConfirm> {
               alignment: Alignment.bottomCenter,
               child: SangaMapPanel(
                 children: [
-                  Text('Selected location', textAlign: TextAlign.center, style: SangaTextStyles.sheetTitle),
+                  Text('Selected location', textAlign: TextAlign.center, style: SangaTextStyles.statusTitle),
                   const SizedBox(height: SangaSpacing.md),
                   SangaLocationRow(
                     kind: SangaStopKind.stop,

@@ -29,7 +29,7 @@ class _ReportSheetState extends State<ReportSheet> {
         children: [
           Row(
             children: [
-              Expanded(child: Text('Report an issue', style: SangaTextStyles.sheetTitle)),
+              Expanded(child: Text('Report an issue', style: SangaTextStyles.statusTitle)),
               SangaCircleButton.close(onPressed: widget.onDismiss),
             ],
           ),

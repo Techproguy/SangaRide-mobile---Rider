@@ -77,10 +77,7 @@ class _RateScreenState extends State<RateScreen> {
               isLoading: isSubmitting,
               onPressed: driver != null && ratingState.rating.hasStars ? () => _submit(driver) : null,
             ),
-            TextButton(
-              onPressed: isSubmitting ? null : _home,
-              child: Text('Skip', style: SangaTextStyles.label.copyWith(color: SangaColors.textMuted)),
-            ),
+            SangaTextAction(label: 'Skip', onPressed: isSubmitting ? null : _home),
           ],
         ),
         children: [

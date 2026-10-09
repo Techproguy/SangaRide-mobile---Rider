@@ -22,23 +22,18 @@ class TripTimelineLink extends StatelessWidget {
           child: Row(
             spacing: SangaSpacing.sm,
             children: [
-              Container(
-                width: 32,
-                height: 32,
-                decoration: const BoxDecoration(color: SangaColors.primaryTint, borderRadius: SangaRadii.digit),
-                child: const Icon(Icons.timeline_rounded, size: 18, color: SangaColors.primary),
-              ),
+              const SangaIconBadge(child: Icon(Icons.timeline_rounded)),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  spacing: 2,
+                  spacing: SangaSpacing.xxs,
                   children: [
                     Text('Trip timeline', style: SangaTextStyles.cardTitle),
                     Text('See key events during your ride', style: SangaTextStyles.cardSubtitle),
                   ],
                 ),
               ),
-              const Icon(Icons.chevron_right_rounded, size: 22, color: SangaColors.textPrimary),
+              SangaListRow.chevron,
             ],
           ),
         ),
