@@ -4,7 +4,6 @@ import 'package:url_launcher/url_launcher.dart';
 enum SangaLegal {
   terms('https://sangatechnologies.com/legal/terms'),
   privacy('https://sangatechnologies.com/legal/privacy'),
-  driverAgreement('https://sangatechnologies.com/legal/driver-agreement'),
   guidelines('https://sangatechnologies.com/legal/community-guidelines');
 
   const SangaLegal(this.url);

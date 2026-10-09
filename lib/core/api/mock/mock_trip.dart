@@ -22,7 +22,6 @@ abstract final class MockTrip {
     MockRoute.post(AppEndpoints.tripShare, _share),
     MockRoute.get(AppEndpoints.liveTripMessages, _messages),
     MockRoute.post(AppEndpoints.liveTripMessages, _sendMessage),
-    MockRoute.get(AppEndpoints.liveTripEvents, (request) => {'events': _events(request.params['id']!)}),
     ...MockTripChanges.routes,
     ...MockDeliveryLive.routes,
   ];

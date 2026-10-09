@@ -48,8 +48,6 @@ class AuthController extends GetxController {
 
   String? get requestError => _requestError.value;
 
-  bool get isSignedIn => SessionStorage.tokens.hasSession;
-
   void clearOtpError() => _otpError.value = null;
 
   void clearPhoneError() {

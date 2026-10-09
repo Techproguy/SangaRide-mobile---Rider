@@ -11,9 +11,6 @@ abstract final class HistoryRoutes {
 
   static const String _tabKey = 'tab';
 
-  static String historyOf({HistoryTab tab = HistoryTab.completed}) =>
-      tab == HistoryTab.completed ? history : Uri(path: history, queryParameters: {_tabKey: tab.name}).toString();
-
   static String detailOf(String id) => detail.replaceFirst(':id', id);
 
   static String actionsOf(String id) => actions.replaceFirst(':id', id);

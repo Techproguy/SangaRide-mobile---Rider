@@ -29,7 +29,6 @@ class AppEndpoints {
   static const String rideEstimate = '/rides/estimate';
 
   static const String rideRequests = '/rides/requests';
-  static const String rideRequestsScheduled = '/rides/requests/scheduled';
   static const String _rideRequest = '/rides/requests/:id';
   static const String _rideOffer = '/rides/requests/:id/offers/:offerId';
 
@@ -68,7 +67,6 @@ class AppEndpoints {
   static const String liveTripComplete = '$_liveTrip/complete';
   static const String liveTripCall = '$_liveTrip/call';
   static const String liveTripMessages = '$_liveTrip/messages';
-  static const String liveTripEvents = '$_liveTrip/events';
   static const String liveTripStopsQuote = '$_liveTrip/stops/quote';
   static const String liveTripStops = '$_liveTrip/stops';
   static const String liveTripCancellation = '$_liveTrip/cancellation';
@@ -87,8 +85,6 @@ class AppEndpoints {
   static String liveTripCallOf(String id) => liveTripCall.replaceFirst(':id', id);
 
   static String liveTripMessagesOf(String id) => liveTripMessages.replaceFirst(':id', id);
-
-  static String liveTripEventsOf(String id) => liveTripEvents.replaceFirst(':id', id);
 
   static String liveTripStopsQuoteOf(String id) => liveTripStopsQuote.replaceFirst(':id', id);
 

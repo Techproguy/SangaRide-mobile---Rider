@@ -17,8 +17,6 @@ class LocationResult {
 class LocationService {
   static const _fixSettings = LocationSettings(accuracy: LocationAccuracy.high, timeLimit: Duration(seconds: 10));
 
-  Future<bool> isLocationServiceEnabled() => Geolocator.isLocationServiceEnabled();
-
   static Future<LocationResult>? _inFlight;
 
   Future<LocationResult> resolveCurrentLocation({bool mayPrompt = false}) =>

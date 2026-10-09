@@ -13,11 +13,8 @@ class UserController extends GetxController {
   final _storage = GetStorage();
 
   final Rx<UserModel?> _user = Rx<UserModel?>(null);
-  final RxBool _isSaving = false.obs;
 
   UserModel? get user => _user.value;
-
-  bool get isSaving => _isSaving.value;
 
   @override
   void onInit() {
@@ -34,20 +31,6 @@ class UserController extends GetxController {
       await setUser(UserModel.fromJson(response.data['data'] as Map<String, dynamic>));
     } catch (e) {
       log('fetchMe failed: $e');
-    }
-  }
-
-  Future<bool> updateProfile(Map<String, dynamic> fields) async {
-    _isSaving.value = true;
-    try {
-      final response = await _api.patch(AppEndpoints.me, data: fields);
-      await setUser(UserModel.fromJson(response.data['data'] as Map<String, dynamic>));
-      return true;
-    } catch (e) {
-      log('updateProfile failed: $e');
-      return false;
-    } finally {
-      _isSaving.value = false;
     }
   }
 

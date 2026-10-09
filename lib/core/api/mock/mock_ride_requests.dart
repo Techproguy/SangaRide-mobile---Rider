@@ -16,7 +16,6 @@ abstract final class MockRideRequests {
     MockRoute.get(AppEndpoints.rideOptions, (_) => MockData.rideOptions),
     MockRoute.post(AppEndpoints.rideEstimate, _rideEstimate),
     MockRoute.post(AppEndpoints.rideRequests, _createRideRequest),
-    MockRoute.post(AppEndpoints.rideRequestsScheduled, _scheduleRide),
     MockRoute.get(AppEndpoints.rideRequest, _rideRequestStatus),
     MockRoute.get(AppEndpoints.rideRequestOffers, _rideOffers),
     MockRoute.post(AppEndpoints.rideOfferIgnore, (_) => null),
@@ -109,17 +108,6 @@ abstract final class MockRideRequests {
       isFixedFare: request.body['delivery'] != null,
     );
     return {..._requestPayload(id, 'searching', 1), 'createdAt': _isoNow()};
-  }
-
-  static Object? _scheduleRide(MockRequest request) {
-    final scheduledAt = request.body['scheduledAt'];
-    if (scheduledAt == null) throw const MockFailure(422, 'Pick a time for your ride.');
-    return {
-      'id': 'sched_${_rideRequests.length + 1}',
-      'status': 'scheduled',
-      'scheduledAt': scheduledAt,
-      'serverTime': _isoNow(),
-    };
   }
 
   static Object? _rideRequestStatus(MockRequest request) {

@@ -11,8 +11,6 @@ class MapCamera {
   EdgeInsets visibleInsets = EdgeInsets.zero;
   Size mapSize = Size.zero;
 
-  bool get isAttached => _controller != null;
-
   void attach(GoogleMapController controller) => _controller = controller;
 
   void detach(GoogleMapController? controller) {
