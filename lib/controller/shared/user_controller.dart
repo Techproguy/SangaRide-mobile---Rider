@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:sanga_ride/core/api/api.dart';
 import 'package:sanga_ride/core/api/app_endpoints.dart';
+import 'package:sanga_ride/core/services/session_storage.dart';
 import 'package:sanga_ride/core/storage_keys.dart';
 import 'package:sanga_ride/model/models.dart';
 
@@ -22,7 +23,9 @@ class UserController extends GetxController {
   void onInit() {
     super.onInit();
     final cached = _storage.read<Map<String, dynamic>>(SangaStorageKeys.user);
-    if (cached != null) _user.value = UserModel.fromJson(cached);
+    if (cached == null) return;
+    _user.value = UserModel.fromJson(cached);
+    SessionStorage.drafts.userScope = _user.value?.id;
   }
 
   Future<void> fetchMe() async {
@@ -50,6 +53,7 @@ class UserController extends GetxController {
 
   Future<void> setUser(UserModel user) async {
     _user.value = user;
+    SessionStorage.drafts.userScope = user.id;
     await _storage.write(SangaStorageKeys.user, user.toJson());
   }
 

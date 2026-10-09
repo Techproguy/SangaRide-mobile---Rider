@@ -20,6 +20,8 @@ class AppAssets {
   static const String serviceAirport = '$images/service_airport.webp';
   static const String serviceSomeone = '$images/service_someone.webp';
 
+  static const String bootSplash = '$images/boot_splash.webp';
+
   static const String promoLux = '$images/promo_lux.webp';
 
   static const String packagePhoto = '$images/package_photo.webp';

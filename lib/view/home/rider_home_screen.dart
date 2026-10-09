@@ -9,13 +9,11 @@ import 'package:sanga_ride/controller/rider/ride_for_controller.dart';
 import 'package:sanga_ride/controller/rider/ride_request_controller.dart';
 import 'package:sanga_ride/controller/rider/rider_home_controller.dart';
 import 'package:sanga_ride/controller/rider/saved_places_controller.dart';
-import 'package:sanga_ride/controller/rider/trip/trip_controller.dart';
 import 'package:sanga_ride/controller/shared/map_controller.dart';
 import 'package:sanga_ride/controller/shared/user_controller.dart';
 import 'package:sanga_ride/core/router/menu_routes.dart';
 import 'package:sanga_ride/core/router/places_routes.dart';
 import 'package:sanga_ride/core/router/routes.dart';
-import 'package:sanga_ride/core/router/trip_routes.dart';
 import 'package:sanga_ride/core/router/who_for_routes.dart';
 import 'package:sanga_ride/core/services/toast_service.dart';
 import 'package:sanga_ride/model/models.dart';
@@ -53,14 +51,7 @@ class _RiderHomeScreenState extends State<RiderHomeScreen> {
     _placeWorker = ever(_home.currentPlaceObs, (_) => _showCurrentPlace());
     _showCurrentPlace();
     WidgetsBinding.instance.addPostFrameCallback((_) => _syncPanelInset());
-    unawaited(_resumeActiveTrip());
     WidgetsBinding.instance.addPostFrameCallback((_) => unawaited(_notifications.reload()));
-  }
-
-  Future<void> _resumeActiveTrip() async {
-    final trip = await Get.find<TripController>().loadActive();
-    if (!mounted || trip == null) return;
-    unawaited(context.push(TripRoutes.tripOf(trip.id)));
   }
 
   @override

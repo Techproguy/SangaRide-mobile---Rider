@@ -1,43 +1,41 @@
-import 'dart:async';
-import 'dart:io';
-
-import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
+import 'package:sanga_ride_core/sanga_ride_core.dart';
+import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 class ConnectivityService extends GetxService {
-  final Connectivity _connectivity = Connectivity();
-  StreamSubscription<List<ConnectivityResult>>? _sub;
+  ConnectivityService(this.monitor);
+
+  final ConnectionMonitor monitor;
 
   final RxBool isOnline = true.obs;
   final RxBool hasLink = true.obs;
+  final ValueNotifier<SangaConnectionState> bannerState = ValueNotifier(SangaConnectionState.online);
 
   @override
   void onInit() {
     super.onInit();
-    _sub = _connectivity.onConnectivityChanged.listen(_handle);
-    _connectivity.checkConnectivity().then(_handle);
+    monitor.status.addListener(_sync);
+    _sync();
   }
 
   @override
   void onClose() {
-    _sub?.cancel();
+    monitor.status.removeListener(_sync);
+    bannerState.dispose();
     super.onClose();
   }
 
-  Future<void> refresh() async => _handle(await _connectivity.checkConnectivity());
+  Future<void> refresh() => monitor.recheck();
 
-  Future<void> _handle(List<ConnectivityResult> results) async {
-    final linked = results.any((r) => r != ConnectivityResult.none);
-    hasLink.value = linked;
-    isOnline.value = linked && await _probeUpstream();
-  }
-
-  Future<bool> _probeUpstream() async {
-    try {
-      final result = await InternetAddress.lookup('google.com').timeout(const Duration(seconds: 2));
-      return result.isNotEmpty && result[0].rawAddress.isNotEmpty;
-    } catch (_) {
-      return false;
-    }
+  void _sync() {
+    final status = monitor.status.value;
+    isOnline.value = status == ConnectionStatus.online;
+    hasLink.value = status != ConnectionStatus.offline;
+    bannerState.value = switch (status) {
+      ConnectionStatus.online => SangaConnectionState.online,
+      ConnectionStatus.offline => SangaConnectionState.offline,
+      ConnectionStatus.degraded => SangaConnectionState.degraded,
+    };
   }
 }

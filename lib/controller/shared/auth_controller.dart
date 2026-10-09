@@ -1,15 +1,14 @@
 import 'dart:async';
 import 'dart:developer';
 
-import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 import 'package:sanga_ride/controller/shared/user_controller.dart';
 import 'package:sanga_ride/core/api/api.dart';
 import 'package:sanga_ride/core/api/app_endpoints.dart';
-import 'package:sanga_ride/core/router/router.dart';
-import 'package:sanga_ride/core/router/routes.dart';
-import 'package:sanga_ride/core/services/secure_token_store.dart';
+import 'package:sanga_ride/core/services/session_restore.dart';
+import 'package:sanga_ride/core/services/session_storage.dart';
 import 'package:sanga_ride/model/models.dart';
+import 'package:sanga_ride_core/sanga_ride_core.dart' show SessionEndReason, SessionHub;
 
 enum AuthProvider { google, apple }
 
@@ -17,6 +16,7 @@ enum OtpPurpose { login, registration }
 
 class AuthController extends GetxController {
   static const otpLength = 4;
+  static const Duration logoutRevokeCap = Duration(seconds: 3);
 
   final _api = Get.find<ApiService>();
 
@@ -36,7 +36,7 @@ class AuthController extends GetxController {
 
   String? get phoneError => _phoneError.value;
 
-  bool get isSignedIn => SecureTokenStore.instance.hasSession;
+  bool get isSignedIn => SessionStorage.tokens.hasSession;
 
   void clearOtpError() => _otpError.value = null;
 
@@ -110,23 +110,25 @@ class AuthController extends GetxController {
   }
 
   Future<void> logout() async {
+    await _revokeSession();
+    await SessionHub.instance.end(SessionEndReason.loggedOut);
+  }
+
+  Future<void> _revokeSession() async {
     try {
-      await _api.post(AppEndpoints.logout);
+      await _api.post(AppEndpoints.logout, suppressErrorToast: true).timeout(logoutRevokeCap);
     } catch (e) {
-      log('logout request failed: $e');
+      log('logout request failed: ${e.runtimeType}');
     }
-    await SecureTokenStore.instance.clear();
-    await Get.find<UserController>().clear();
-    SangaRouter.router.go(SangaRoutes.onboarding);
-    WidgetsBinding.instance.addPostFrameCallback((_) => unawaited(Get.deleteAll()));
   }
 
   Future<void> _startSession(Map<String, dynamic> data) async {
     final tokens = data['tokens'] as Map<String, dynamic>;
-    await SecureTokenStore.instance.saveSession(
+    await SessionStorage.tokens.save(
       accessToken: tokens['accessToken'] as String,
       refreshToken: tokens['refreshToken'] as String?,
     );
     await Get.find<UserController>().setUser(UserModel.fromJson(data['user'] as Map<String, dynamic>));
+    unawaited(Get.find<SessionRestore>().refreshQuietly());
   }
 }

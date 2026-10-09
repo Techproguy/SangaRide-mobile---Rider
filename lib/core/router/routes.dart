@@ -1,5 +1,7 @@
 import 'package:go_router/go_router.dart';
 import 'package:sanga_ride/core/router/account_routes.dart';
+import 'package:sanga_ride/core/router/boot_routes.dart';
+import 'package:sanga_ride/core/router/dev_routes.dart';
 import 'package:sanga_ride/core/router/booking_routes.dart';
 import 'package:sanga_ride/core/router/group_routes.dart';
 import 'package:sanga_ride/core/router/history_routes.dart';
@@ -48,6 +50,11 @@ class SangaRoutes {
   static const String selfie = '/sign-up/selfie';
   static const String homeLocation = '/sign-up/home';
 
+  static const String boot = BootRoutes.boot;
+  static const String dev = DevRoutes.dev;
+
+  static const Set<String> publicPaths = {onboarding, signIn, signUp, verifyOtp, boot, dev};
+
   static const String rideSearch = '/ride/search';
   static const String rideRoute = '/ride/route';
   static const String tripType = '/ride/trip-type';
@@ -63,6 +70,8 @@ class SangaRoutes {
   static const String home = '/home';
 
   static final List<RouteBase> allRoutes = [
+    ...BootRoutes.all,
+    ...DevRoutes.all,
     ...BookingRoutes.all,
     ...DeliveryRoutes.all,
     ...WhoForRoutes.all,
