@@ -6,6 +6,7 @@ class SangaConstants {
   SangaConstants._();
 
   static const String appName = 'Sanga Ride';
+  static const String userType = 'rider';
 
   static const String baseUrl = String.fromEnvironment('BASE_URL');
 

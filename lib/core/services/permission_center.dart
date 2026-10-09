@@ -5,6 +5,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:permission_handler/permission_handler.dart' as handler;
+import 'package:sanga_ride/core/storage_keys.dart';
 import 'package:sanga_ride_core/sanga_ride_core.dart' show AppLifecycle;
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
@@ -60,9 +61,6 @@ class PermissionCenter extends GetxService {
     ),
   };
 
-  static const String _primedKeyPrefix = 'permission_primed_';
-  static const String _offeredKeyPrefix = 'permission_offered_';
-
   final GetStorage _box = GetStorage();
   final Map<PermissionKind, Rx<PermissionAccess>> _statuses = {
     for (final kind in PermissionKind.values) kind: PermissionAccess.denied.obs,
@@ -111,13 +109,13 @@ class PermissionCenter extends GetxService {
         actionLabel: primer.actionLabel,
       );
       if (!accepted) return current;
-      await _box.write('$_primedKeyPrefix${kind.name}', true);
+      await _box.write('$SangaStorageKeys.permissionPrimedPrefix${kind.name}', true);
     }
     return request(kind);
   }
 
   Future<PermissionAccess> offer(PermissionKind kind, BuildContext context) async {
-    final offeredKey = '$_offeredKeyPrefix${kind.name}';
+    final offeredKey = '$SangaStorageKeys.permissionOfferedPrefix${kind.name}';
     if (_box.read<bool>(offeredKey) ?? false) return check(kind);
     await _box.write(offeredKey, true);
     if (!context.mounted) return check(kind);
@@ -133,7 +131,8 @@ class PermissionCenter extends GetxService {
     await handler.openAppSettings();
   }
 
-  bool _wasPrimed(PermissionKind kind) => _box.read<bool>('$_primedKeyPrefix${kind.name}') ?? false;
+  bool _wasPrimed(PermissionKind kind) =>
+      _box.read<bool>('$SangaStorageKeys.permissionPrimedPrefix${kind.name}') ?? false;
 
   Future<void> _ask(PermissionKind kind) async {
     switch (kind) {

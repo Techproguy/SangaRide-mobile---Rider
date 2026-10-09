@@ -1,7 +1,6 @@
 import 'dart:io';
 
 import 'package:get/get.dart';
-import 'package:sanga_ride/controller/rider/account/account_api.dart';
 import 'package:sanga_ride/core/api/api.dart';
 import 'package:sanga_ride/core/api/idempotency_intents.dart';
 import 'package:sanga_ride/core/api/server_codes.dart';
@@ -26,7 +25,7 @@ class SelfieVerifier {
         key: IdempotencyKey(IdempotencyIntent.selfieKey(uploadId)),
         suppressErrorToast: true,
       );
-      final status = JsonReader(dataOf(response)).strOrNull('status');
+      final status = JsonReader(response.dataMapOrEmpty).strOrNull('status');
       return _acceptedStatuses.contains(status) ? SangaSelfieOutcome.passed : SangaSelfieOutcome.serverTrouble;
     } on Object catch (error) {
       return switch (ProblemKind.of(error)) {

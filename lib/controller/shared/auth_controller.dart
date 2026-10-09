@@ -6,11 +6,14 @@ import 'package:sanga_ride/controller/shared/user_controller.dart';
 import 'package:sanga_ride/core/api/api.dart';
 import 'package:sanga_ride/core/api/api_environment.dart';
 import 'package:sanga_ride/core/api/app_endpoints.dart';
+import 'package:sanga_ride/core/api/idempotency_intents.dart';
+import 'package:sanga_ride/core/constants.dart';
 import 'package:sanga_ride/core/services/session_restore.dart';
 import 'package:sanga_ride/core/services/session_storage.dart';
 import 'package:sanga_ride/model/auth/otp_session.dart';
 import 'package:sanga_ride/model/models.dart';
-import 'package:sanga_ride_core/sanga_ride_core.dart' show ConnectionMonitor, SessionEndReason, SessionHub;
+import 'package:sanga_ride_core/sanga_ride_core.dart'
+    show ConnectionMonitor, ResponseData, SessionEndReason, SessionHub;
 import 'package:sanga_ride_ui/sanga_ride_ui.dart' show SangaToast, SangaToastTone;
 
 enum AuthProvider { google, apple }
@@ -56,7 +59,10 @@ class AuthController extends GetxController {
   }
 
   Future<bool> isRegistered(String phone) async {
-    final response = await _api.post(AppEndpoints.checkExistence, data: {'phone': phone, 'userType': 'rider'});
+    final response = await _api.post(
+      AppEndpoints.checkExistence,
+      data: {'phone': phone, 'userType': SangaConstants.userType},
+    );
     return response.data['data']['exists'] == true;
   }
 
@@ -72,7 +78,7 @@ class AuthController extends GetxController {
       final response = await _api.post(
         AppEndpoints.requestOtp,
         data: {'phone': phone, 'purpose': purpose.name},
-        key: IdempotencyKey.newFor('request-otp'),
+        key: IdempotencyKey.newFor(IdempotencyIntent.requestOtp),
         suppressErrorToast: true,
       );
       return OtpSent(OtpSession.fromData((response.data as Map)['data']));
@@ -109,7 +115,7 @@ class AuthController extends GetxController {
         data: {'phone': phone, 'code': code},
         suppressErrorToast: true,
       );
-      await _startSession(response.data['data'] as Map<String, dynamic>);
+      await _startSession(response.dataMap);
       return true;
     } on ApiException catch (e) {
       _otpError.value = e.kind == ApiFailureKind.rejected ? e.message : AuthProblem.of(e).message;
@@ -138,7 +144,7 @@ class AuthController extends GetxController {
         AuthProvider.apple => AppEndpoints.appleSignIn,
       };
       final response = await _api.post(endpoint, data: {'idToken': ?token}, suppressErrorToast: true);
-      await _startSession(response.data['data'] as Map<String, dynamic>);
+      await _startSession(response.dataMap);
       return true;
     } catch (e) {
       log('continueWith $provider failed: $e');

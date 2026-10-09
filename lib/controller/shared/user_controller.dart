@@ -6,6 +6,7 @@ import 'package:sanga_ride/core/api/api.dart';
 import 'package:sanga_ride/core/api/app_endpoints.dart';
 import 'package:sanga_ride/core/services/session_storage.dart';
 import 'package:sanga_ride/core/storage_keys.dart';
+import 'package:sanga_ride_core/sanga_ride_core.dart' show ResponseData;
 import 'package:sanga_ride/model/models.dart';
 
 class UserController extends GetxController {
@@ -28,7 +29,7 @@ class UserController extends GetxController {
   Future<void> fetchMe() async {
     try {
       final response = await _api.get(AppEndpoints.me, suppressErrorToast: true);
-      await setUser(UserModel.fromJson(response.data['data'] as Map<String, dynamic>));
+      await setUser(UserModel.fromJson(response.dataMap));
     } catch (e) {
       log('fetchMe failed: $e');
     }
