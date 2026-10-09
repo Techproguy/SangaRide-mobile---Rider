@@ -8,7 +8,7 @@ import 'package:sanga_ride/controller/rider/groups/group_controller.dart';
 import 'package:sanga_ride/model/groups/group_models.dart';
 import 'package:sanga_ride/view/groups/widgets/approval_card.dart';
 import 'package:sanga_ride/view/wallet/widgets/wallet_page.dart';
-import 'package:sanga_ride_core/sanga_ride_core.dart' show AppLifecycle;
+import 'package:sanga_ride_core/sanga_ride_core.dart' show RefreshMoments;
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 enum _ApprovalsStage { loading, failed, unavailable, empty, list }
@@ -29,7 +29,7 @@ class _GroupApprovalsScreenState extends State<GroupApprovalsScreen> {
   @override
   void initState() {
     super.initState();
-    _resumeSubscription = AppLifecycle.instance.onResume.listen((_) => unawaited(_group.loadApprovals()));
+    _resumeSubscription = RefreshMoments.stream.listen((_) => unawaited(_group.loadApprovals()));
     WidgetsBinding.instance.addPostFrameCallback((_) => unawaited(_group.loadApprovals()));
   }
 

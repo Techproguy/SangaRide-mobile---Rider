@@ -24,7 +24,7 @@ class NotificationsController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    _resumeSubscription = AppLifecycle.instance.onResume.listen((_) {
+    _resumeSubscription = RefreshMoments.stream.listen((_) {
       if (SessionStorage.tokens.hasSession && _state.value is NotificationsLoaded) unawaited(reload());
     });
   }

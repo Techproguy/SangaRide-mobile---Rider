@@ -33,7 +33,7 @@ class GroupsController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    _resumeSubscription = AppLifecycle.instance.onResume.listen((_) {
+    _resumeSubscription = RefreshMoments.stream.listen((_) {
       if (state is GroupsLoaded) unawaited(reloadQuietly());
     });
   }

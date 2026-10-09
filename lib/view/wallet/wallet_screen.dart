@@ -12,7 +12,7 @@ import 'package:sanga_ride/view/wallet/widgets/pending_transfer_card.dart';
 import 'package:sanga_ride/view/wallet/widgets/recent_transactions.dart';
 import 'package:sanga_ride/view/wallet/widgets/resume_top_up_card.dart';
 import 'package:sanga_ride/view/wallet/widgets/wallet_page.dart';
-import 'package:sanga_ride_core/sanga_ride_core.dart' show AppLifecycle;
+import 'package:sanga_ride_core/sanga_ride_core.dart' show RefreshMoments;
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 enum _WalletStage { loading, failed, loaded }
@@ -50,7 +50,7 @@ class _WalletBodyState extends State<WalletBody> {
   @override
   void initState() {
     super.initState();
-    _resumeSubscription = AppLifecycle.instance.onResume.listen((_) => unawaited(_refresh()));
+    _resumeSubscription = RefreshMoments.stream.listen((_) => unawaited(_refresh()));
     WidgetsBinding.instance.addPostFrameCallback((_) => unawaited(_start()));
   }
 

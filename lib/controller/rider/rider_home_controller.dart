@@ -72,7 +72,7 @@ class RiderHomeController extends GetxController {
     super.onInit();
     Get.find<RideMatchController>();
     _hadActiveTrip = _restore.meState?.activeTrip != null;
-    _resumeSubscription = AppLifecycle.instance.onResume.listen((_) => unawaited(refreshHome()));
+    _resumeSubscription = RefreshMoments.stream.listen((_) => unawaited(refreshHome()));
     _permissionWorker = ever(_permissions.statusRx(PermissionKind.location), _onLocationAccess);
     _tripWorker = ever(_restore.meStateRx, _onMeState);
     unawaited(refreshHome());

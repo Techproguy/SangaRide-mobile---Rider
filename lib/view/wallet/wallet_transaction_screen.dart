@@ -11,7 +11,7 @@ import 'package:sanga_ride/model/wallet/wallet.dart';
 import 'package:sanga_ride/view/wallet/widgets/transaction_facts.dart';
 import 'package:sanga_ride/view/wallet/widgets/transaction_hero.dart';
 import 'package:sanga_ride/view/wallet/widgets/wallet_page.dart';
-import 'package:sanga_ride_core/sanga_ride_core.dart' show AppLifecycle;
+import 'package:sanga_ride_core/sanga_ride_core.dart' show RefreshMoments;
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 enum _DetailStage { loading, failed, loaded }
@@ -33,7 +33,7 @@ class _WalletTransactionScreenState extends State<WalletTransactionScreen> {
   @override
   void initState() {
     super.initState();
-    _resumeSubscription = AppLifecycle.instance.onResume.listen((_) => unawaited(_transactions.refreshDetail()));
+    _resumeSubscription = RefreshMoments.stream.listen((_) => unawaited(_transactions.refreshDetail()));
     WidgetsBinding.instance.addPostFrameCallback((_) => unawaited(_transactions.openDetail(widget.id)));
   }
 

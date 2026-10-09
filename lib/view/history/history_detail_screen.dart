@@ -14,7 +14,7 @@ import 'package:sanga_ride/view/history/widgets/history_rating_card.dart';
 import 'package:sanga_ride/view/history/widgets/history_rebook.dart';
 import 'package:sanga_ride/view/history/widgets/history_trip_card.dart';
 import 'package:sanga_ride/view/ride/widgets/ride_option_image.dart';
-import 'package:sanga_ride_core/sanga_ride_core.dart' show AppLifecycle;
+import 'package:sanga_ride_core/sanga_ride_core.dart' show RefreshMoments;
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 class HistoryDetailScreen extends StatefulWidget {
@@ -33,7 +33,7 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
   @override
   void initState() {
     super.initState();
-    _resumeSubscription = AppLifecycle.instance.onResume.listen((_) => unawaited(_history.refreshDetail()));
+    _resumeSubscription = RefreshMoments.stream.listen((_) => unawaited(_history.refreshDetail()));
     WidgetsBinding.instance.addPostFrameCallback((_) => _history.openDetail(widget.id));
   }
 

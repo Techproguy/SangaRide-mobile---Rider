@@ -61,6 +61,7 @@ class PermissionCenter extends GetxService {
   };
 
   static const String _primedKeyPrefix = 'permission_primed_';
+  static const String _offeredKeyPrefix = 'permission_offered_';
 
   final GetStorage _box = GetStorage();
   final Map<PermissionKind, Rx<PermissionAccess>> _statuses = {
@@ -113,6 +114,14 @@ class PermissionCenter extends GetxService {
       await _box.write('$_primedKeyPrefix${kind.name}', true);
     }
     return request(kind);
+  }
+
+  Future<PermissionAccess> offer(PermissionKind kind, BuildContext context) async {
+    final offeredKey = '$_offeredKeyPrefix${kind.name}';
+    if (_box.read<bool>(offeredKey) ?? false) return check(kind);
+    await _box.write(offeredKey, true);
+    if (!context.mounted) return check(kind);
+    return prime(kind, context);
   }
 
   Future<PermissionAccess> request(PermissionKind kind) async {

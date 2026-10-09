@@ -13,7 +13,7 @@ import 'package:sanga_ride/model/history/history_scope.dart';
 import 'package:sanga_ride/view/history/widgets/history_card.dart';
 import 'package:sanga_ride/view/history/widgets/history_format.dart';
 import 'package:sanga_ride/view/history/widgets/history_rebook.dart';
-import 'package:sanga_ride_core/sanga_ride_core.dart' show AppLifecycle;
+import 'package:sanga_ride_core/sanga_ride_core.dart' show RefreshMoments;
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 class HistoryFeed extends StatefulWidget {
@@ -38,7 +38,7 @@ class _HistoryFeedState extends State<HistoryFeed> {
   @override
   void initState() {
     super.initState();
-    _resumeSubscription = AppLifecycle.instance.onResume.listen((_) => unawaited(_history.reload(widget.status)));
+    _resumeSubscription = RefreshMoments.stream.listen((_) => unawaited(_history.reload(widget.status)));
     WidgetsBinding.instance.addPostFrameCallback((_) => _history.open(widget.status));
   }
 

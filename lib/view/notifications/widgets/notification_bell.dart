@@ -13,7 +13,7 @@ class NotificationBell extends StatelessWidget {
   const NotificationBell({super.key});
 
   Future<void> _open(BuildContext context) async {
-    await Get.find<PermissionCenter>().prime(PermissionKind.notifications, context);
+    await Get.find<PermissionCenter>().offer(PermissionKind.notifications, context);
     if (context.mounted) unawaited(context.push(NotificationRoutes.list));
   }
 

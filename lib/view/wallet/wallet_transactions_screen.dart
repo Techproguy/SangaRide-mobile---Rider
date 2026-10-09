@@ -12,7 +12,7 @@ import 'package:sanga_ride/view/wallet/wallet_format.dart';
 import 'package:sanga_ride/view/wallet/widgets/transaction_filter_chips.dart';
 import 'package:sanga_ride/view/wallet/widgets/transaction_row.dart';
 import 'package:sanga_ride/view/wallet/widgets/wallet_page.dart';
-import 'package:sanga_ride_core/sanga_ride_core.dart' show AppLifecycle;
+import 'package:sanga_ride_core/sanga_ride_core.dart' show RefreshMoments;
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 enum _FeedStage { loading, failed, empty, list }
@@ -35,7 +35,7 @@ class _WalletTransactionsScreenState extends State<WalletTransactionsScreen> {
   @override
   void initState() {
     super.initState();
-    _resumeSubscription = AppLifecycle.instance.onResume.listen((_) => unawaited(_transactions.refreshFeed()));
+    _resumeSubscription = RefreshMoments.stream.listen((_) => unawaited(_transactions.refreshFeed()));
     WidgetsBinding.instance.addPostFrameCallback((_) => unawaited(_transactions.open()));
   }
 

@@ -50,7 +50,7 @@ class SessionRestore extends GetxService {
   @override
   void onInit() {
     super.onInit();
-    _resumeSubscription = AppLifecycle.instance.onResume.listen((_) => unawaited(refreshQuietly()));
+    _resumeSubscription = RefreshMoments.stream.listen((_) => unawaited(refreshQuietly()));
     _watchedMonitor = ConnectionMonitor.current;
     _watchedMonitor?.status.addListener(_onConnectionChanged);
   }
