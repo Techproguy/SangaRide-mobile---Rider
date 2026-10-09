@@ -85,7 +85,7 @@ class _SavedPlacesScreenState extends State<SavedPlacesScreen> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       spacing: SangaSpacing.md,
       children: [
-        Text('Add new', style: SangaTextStyles.titleSmall),
+        const SangaSectionHeader('Add new'),
         SavedPlaceForm(
           kind: SavedPlaceKind.other,
           book: book,
