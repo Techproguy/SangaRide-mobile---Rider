@@ -422,6 +422,28 @@ abstract final class MockWallet {
     return topUp.toJson();
   }
 
+  static List<Map<String, dynamic>> pendingTopUps() {
+    final books = {'personal': _personal, for (final entry in _groupBooks.entries) 'group:${entry.key}': entry.value};
+    return [
+      for (final entry in books.entries)
+        for (final topUp in entry.value.topUps.values)
+          if (_syncedStatus(topUp) case final status when _pendingStatuses.contains(status))
+            {
+              'id': topUp.id,
+              'scope': entry.key == 'personal' ? 'personal' : 'group',
+              if (entry.key != 'personal') 'groupId': entry.key.substring('group:'.length),
+              'status': status,
+            },
+    ];
+  }
+
+  static const Set<String> _pendingStatuses = {'awaiting_transfer', 'requires_action'};
+
+  static String _syncedStatus(_TopUp topUp) {
+    topUp.sync(DateTime.now());
+    return topUp.status;
+  }
+
   static int get balance {
     _syncTopUps(_personal);
     return _personal.balance;

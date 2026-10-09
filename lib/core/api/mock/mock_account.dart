@@ -1,10 +1,21 @@
 import 'package:sanga_ride/core/api/account_endpoints.dart';
 import 'package:sanga_ride/core/api/mock/mock_data.dart';
 import 'package:sanga_ride/core/api/mock/mock_delivery.dart';
-import 'package:sanga_ride/core/api/app_endpoints.dart';
 import 'package:sanga_ride/core/api/mock/mock_server.dart';
 import 'package:sanga_ride/core/api/mock/mock_trip.dart';
 import 'package:sanga_ride/core/api/mock/mock_verification.dart';
+
+enum MockOnboardingStep {
+  aboutYou('about_you'),
+  selfie('selfie'),
+  home('home');
+
+  const MockOnboardingStep(this.code);
+
+  final String code;
+
+  MockOnboardingStep? get next => index + 1 < values.length ? values[index + 1] : null;
+}
 
 abstract final class MockAccount {
   static const String takenEmail = 'taken@example.com';
@@ -35,10 +46,21 @@ abstract final class MockAccount {
     'rating': MockData.user['rating'],
     'ridesCount': MockData.user['ridesCount'],
   };
+  static MockOnboardingStep? _onboardingStep;
   static String? _pendingPhone;
   static DateTime? _codeSentAt;
 
   static String get firstName => '${_fields['firstName']}';
+
+  static String? get onboardingNextStep => _onboardingStep?.code;
+
+  static void beginOnboarding() => _onboardingStep = MockOnboardingStep.aboutYou;
+
+  static void finishOnboarding() => _onboardingStep = null;
+
+  static void completeOnboardingStep(MockOnboardingStep step) {
+    if (_onboardingStep == step) _onboardingStep = step.next;
+  }
 
   static Map<String, dynamic> _json() => {
     ..._fields,
@@ -61,6 +83,7 @@ abstract final class MockAccount {
     if (body.containsKey('email')) _fields['email'] = _validEmail('${body['email']}'.trim());
     final birthday = body['dateOfBirth'] ?? body['birthday'];
     if (birthday != null) _fields['dateOfBirth'] = _validBirthday('$birthday');
+    if (body.containsKey('email')) completeOnboardingStep(MockOnboardingStep.aboutYou);
     return _json();
   }
 
@@ -131,9 +154,5 @@ abstract final class MockAccount {
     return {'deletesAt': DateTime.now().add(_deletionDelay).toUtc().toIso8601String()};
   }
 
-  static bool _hasActiveTrip() {
-    final route = MockTrip.routes.where((route) => route.match('GET', AppEndpoints.activeTrip) != null).firstOrNull;
-    final request = MockRequest(path: AppEndpoints.activeTrip, body: const {}, query: const {}, params: const {});
-    return route?.handler(request) != null;
-  }
+  static bool _hasActiveTrip() => MockTrip.active() != null;
 }

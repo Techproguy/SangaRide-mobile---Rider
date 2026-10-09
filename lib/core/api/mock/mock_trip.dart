@@ -333,6 +333,8 @@ abstract final class MockTrip {
     return refusedAt == null ? null : 'package_refused';
   }
 
+  static Map<String, dynamic>? active() => _active();
+
   static Map<String, dynamic>? _active() {
     for (final id in MockTripState.trips.keys.toList().reversed) {
       final status = _status(id, DateTime.now());

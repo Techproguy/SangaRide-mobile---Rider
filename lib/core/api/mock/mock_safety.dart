@@ -100,6 +100,10 @@ abstract final class MockSafety {
     };
   }
 
+  static String? get activeSosId => _activeSos()?.id;
+
+  static void reset() => _sosRecords.clear();
+
   static _MockSos? _activeSos() {
     for (final record in _sosRecords.values) {
       if (record.endedAt == null) return record;

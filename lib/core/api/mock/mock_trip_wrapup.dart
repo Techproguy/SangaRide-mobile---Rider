@@ -26,6 +26,10 @@ abstract final class MockTripWrapUp {
   static final Map<String, int> _ratings = {};
   static String? _lastMethod;
 
+  static bool isSettled(String id) => MockTripState.paidAt.containsKey(id) || _cashPostedAt.containsKey(id);
+
+  static bool isRated(String id) => _ratings.containsKey(id);
+
   static String _isoNow() => DateTime.now().toUtc().toIso8601String();
 
   static Map<String, dynamic> _asMap(Object? value) =>

@@ -8,6 +8,8 @@ import 'package:sanga_ride/core/api/mock/mock_groups.dart';
 import 'package:sanga_ride/core/api/mock/mock_who_for.dart';
 import 'package:sanga_ride/core/api/mock/mock_data.dart';
 import 'package:sanga_ride/core/api/mock/mock_history.dart';
+import 'package:sanga_ride/core/api/mock/mock_me_state.dart';
+import 'package:sanga_ride/core/api/mock/mock_trip_state.dart';
 import 'package:sanga_ride/core/api/app_endpoints.dart';
 import 'package:sanga_ride/core/api/mock/mock_safety.dart';
 import 'package:sanga_ride/core/api/mock/mock_notifications.dart';
@@ -38,7 +40,8 @@ class MockRoutes {
     ...MockSupport.routes,
     ...MockWallet.routes,
     ...MockGroups.routes,
-    MockRoute.post(AppEndpoints.signUp, (request) => {'phone': request.body['phone'], 'expiresInSeconds': 300}),
+    MockRoute.get(AppEndpoints.meState, MockMeState.handle),
+    MockRoute.post(AppEndpoints.signUp, _signUp),
     MockRoute.post(
       AppEndpoints.checkExistence,
       (request) => {'exists': request.body['phone'] == MockData.user['phone']},
@@ -47,9 +50,8 @@ class MockRoutes {
     MockRoute.post(AppEndpoints.verifyOtp, _verifyOtp),
     MockRoute.post(AppEndpoints.googleSignIn, (_) => _session),
     MockRoute.post(AppEndpoints.appleSignIn, (_) => _session),
-    MockRoute.post(AppEndpoints.refreshToken, (_) => MockData.tokens),
     MockRoute.post(AppEndpoints.logout, (_) => null),
-    MockRoute.post(AppEndpoints.selfie, MockVerification.selfie),
+    MockRoute.post(AppEndpoints.selfie, _selfie),
     MockRoute.get(AppEndpoints.recentPlaces, (_) => _recentPlaces),
     MockRoute.post(AppEndpoints.recentPlaces, _addRecentPlace),
     MockRoute.delete(AppEndpoints.recentPlace, (request) {
@@ -71,6 +73,20 @@ class MockRoutes {
   ];
 
   static final Map<String, _MockRideRequest> _rideRequests = {};
+  static int _rideRequestCount = 0;
+
+  static void resetRideRequests() => _rideRequests.clear();
+
+  static ({String id, String status})? activeRideRequest() {
+    for (final entry in _rideRequests.entries.toList().reversed) {
+      if (entry.value.isCancelled || MockTripState.trips.containsKey('trip_${entry.key}')) continue;
+      final status = _requestStatus(entry.value);
+      if (_liveRequestStatuses.contains(status)) return (id: entry.key, status: status);
+    }
+    return null;
+  }
+
+  static const Set<String> _liveRequestStatuses = {'searching', 'checking', 'sending', 'offers'};
 
   static const Duration _searchWindow = Duration(seconds: 60);
   static const Duration _holdWindow = Duration(seconds: 120);
@@ -112,7 +128,7 @@ class MockRoutes {
       if (!decision.isLive) return MockBooking.scheduleAirport(request.body, decision);
     }
     if (request.body['delivery'] != null) MockDelivery.validateRequest(request.body);
-    final id = 'req_${_rideRequests.length + 1}';
+    final id = 'req_${++_rideRequestCount}';
     MockTrip.requests[id] = request.body;
     _rideRequests[id] = _MockRideRequest(
       createdAt: DateTime.now(),
@@ -137,14 +153,26 @@ class MockRoutes {
   static Object? _rideRequestStatus(MockRequest request) {
     final record = _requireRideRequest(request);
     final id = request.params['id']!;
-    if (record.isCancelled) return _requestPayload(id, 'cancelled', 0);
-    final elapsed = DateTime.now().difference(record.createdAt);
-    if (elapsed < _checkingAfter) return _requestPayload(id, 'searching', 1);
-    if (elapsed < _sendingAfter) return _requestPayload(id, 'checking', 2);
-    if (elapsed < _resolvedAfter) return _requestPayload(id, 'sending', 3);
-    if (record.pricingMode == 'saver') return _requestPayload(id, 'no_driver_found', 3);
-    return _requestPayload(id, 'offers', 4);
+    final status = _requestStatus(record);
+    return _requestPayload(id, status, _stepsDoneFor(status));
   }
+
+  static String _requestStatus(_MockRideRequest record) {
+    if (record.isCancelled) return 'cancelled';
+    final elapsed = DateTime.now().difference(record.createdAt);
+    if (elapsed < _checkingAfter) return 'searching';
+    if (elapsed < _sendingAfter) return 'checking';
+    if (elapsed < _resolvedAfter) return 'sending';
+    return record.pricingMode == 'saver' ? 'no_driver_found' : 'offers';
+  }
+
+  static int _stepsDoneFor(String status) => switch (status) {
+    'searching' => 1,
+    'checking' => 2,
+    'sending' || 'no_driver_found' => 3,
+    'offers' => 4,
+    _ => 0,
+  };
 
   static Map<String, dynamic> _priced(Map<String, dynamic> offer, num fare, {bool isFixed = false}) {
     final markup = isFixed ? null : offer['counterMarkup'] as num?;
@@ -231,10 +259,22 @@ class MockRoutes {
     return place;
   }
 
-  static Map<String, dynamic> get _session => {'tokens': MockData.tokens, 'user': MockData.user};
+  static Map<String, dynamic> get _session => {'tokens': MockServer.engine.issueTokens(), 'user': MockData.user};
+
+  static Object? _signUp(MockRequest request) {
+    MockAccount.beginOnboarding();
+    return {'phone': request.body['phone'], 'expiresInSeconds': 300};
+  }
+
+  static Object? _selfie(MockRequest request) {
+    final result = MockVerification.selfie(request);
+    MockAccount.completeOnboardingStep(MockOnboardingStep.selfie);
+    return result;
+  }
 
   static Object? _requestOtp(MockRequest request) {
     final isLogin = request.body['purpose'] == 'login';
+    if (isLogin) MockAccount.finishOnboarding();
     if (isLogin && request.body['phone'] == MockData.unregisteredPhone) {
       throw const MockFailure(404, 'We can’t find an account with this number.');
     }

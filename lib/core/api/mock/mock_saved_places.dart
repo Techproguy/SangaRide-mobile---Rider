@@ -1,3 +1,4 @@
+import 'package:sanga_ride/core/api/mock/mock_account.dart';
 import 'package:sanga_ride/core/api/mock/mock_server.dart';
 import 'package:sanga_ride/core/api/places_endpoints.dart';
 
@@ -108,6 +109,7 @@ abstract final class MockSavedPlaces {
     }
     final saved = {'id': 'sp_$kind', 'kind': kind, 'label': kind == 'home' ? 'Home' : 'Work', 'place': place};
     _places.add(saved);
+    if (kind == 'home') MockAccount.completeOnboardingStep(MockOnboardingStep.home);
     return Map<String, dynamic>.of(saved);
   }
 
