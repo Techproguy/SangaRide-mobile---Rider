@@ -50,10 +50,7 @@ Future<bool?> showTopUpUnknownSheet({required BuildContext context}) {
         title: WalletCopy.unknownTitle,
         message: WalletCopy.unknownMessage,
         action: SangaButton.primary(label: 'Check my wallet', onPressed: () => Navigator.of(sheetContext).pop(true)),
-        secondary: TextButton(
-          onPressed: () => Navigator.of(sheetContext).pop(false),
-          child: Text('Check again', style: SangaTextStyles.label.copyWith(color: SangaColors.primary)),
-        ),
+        secondary: SangaTextAction(label: 'Check again', onPressed: () => Navigator.of(sheetContext).pop(false)),
       ),
     ),
   );

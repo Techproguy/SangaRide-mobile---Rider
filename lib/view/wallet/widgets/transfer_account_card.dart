@@ -64,7 +64,7 @@ class _AccountRow extends StatelessWidget {
               spacing: SangaSpacing.xxs,
               children: [
                 Text(label, style: SangaTextStyles.cardSubtitle.copyWith(color: SangaColors.textMuted)),
-                Text(value, style: SangaTextStyles.cardTitle.copyWith(fontSize: 16, fontWeight: FontWeight.w600)),
+                Text(value, style: SangaTextStyles.cardTitleStrong),
               ],
             ),
           ),
@@ -99,8 +99,8 @@ class _CopyButton extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               spacing: SangaSpacing.xxs,
               children: [
-                const Icon(Icons.copy_rounded, size: 14, color: SangaColors.primary),
-                Text('Copy', style: SangaTextStyles.cardTitle.copyWith(color: SangaColors.primary)),
+                const Icon(Icons.copy_rounded, size: 18, color: SangaColors.primary),
+                Text('Copy', style: SangaTextStyles.action),
               ],
             ),
           ),

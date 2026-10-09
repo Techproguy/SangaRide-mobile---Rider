@@ -26,7 +26,7 @@ class TransactionRow extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.end,
         spacing: SangaSpacing.xxs,
         children: [
-          Text(WalletFormat.signed(tx.amount), style: SangaTextStyles.cardTitle.copyWith(fontWeight: FontWeight.w600)),
+          Text(WalletFormat.signed(tx.amount), style: SangaTextStyles.cardTitleStrong),
           _FlowLabel(transaction: tx, arrowSize: _arrowSize),
         ],
       ),

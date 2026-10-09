@@ -20,7 +20,7 @@ class TransferWaitingView extends StatelessWidget {
       spacing: SangaSpacing.md,
       children: [
         const SizedBox(height: SangaSpacing.lg),
-        const SangaActivityIndicator(),
+        const SangaActivityIndicator(size: 32),
         Column(
           spacing: SangaSpacing.xs,
           children: [
@@ -103,7 +103,7 @@ class TransferCheckingView extends StatelessWidget {
       spacing: SangaSpacing.md,
       children: [
         const SizedBox(height: SangaSpacing.xxl),
-        const SangaActivityIndicator(),
+        const SangaActivityIndicator(size: 32),
         Text(WalletCopy.checkingTitle, textAlign: TextAlign.center, style: SangaTextStyles.statusTitle),
         Text(WalletCopy.checkingMessage, textAlign: TextAlign.center, style: SangaTextStyles.statusMessage),
       ],
@@ -160,7 +160,7 @@ class _Tip extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         spacing: SangaSpacing.sm,
         children: [
-          const Icon(Icons.check_circle_outline_rounded, size: 16, color: SangaColors.primary),
+          const Icon(Icons.check_circle_outline_rounded, size: 18, color: SangaColors.primary),
           Expanded(child: Text(text, style: SangaTextStyles.cardTitle)),
         ],
       ),

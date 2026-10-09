@@ -120,10 +120,7 @@ class _TopUpOtpContentState extends State<TopUpOtpContent> {
           onPressed: _code.text.length == TopUpOtpContent.codeLength ? _submit : null,
         ),
         const SizedBox(height: SangaSpacing.xs),
-        TextButton(
-          onPressed: isVerifying ? null : widget.onCancel,
-          child: Text('Cancel', style: SangaTextStyles.label.copyWith(color: SangaColors.primary)),
-        ),
+        SangaTextAction(label: 'Cancel', onPressed: isVerifying ? null : widget.onCancel),
       ],
     );
   }

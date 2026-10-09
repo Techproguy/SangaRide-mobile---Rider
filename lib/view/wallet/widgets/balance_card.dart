@@ -5,8 +5,6 @@ import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 class BalanceCard extends StatelessWidget {
   const BalanceCard({super.key, required this.balance, this.onAddMoney, this.label = 'Your balance'});
 
-  static const double _softAlpha = 0.78;
-
   final int balance;
   final String label;
   final VoidCallback? onAddMoney;
@@ -14,8 +12,8 @@ class BalanceCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(SangaSpacing.lg),
-      decoration: const BoxDecoration(color: SangaColors.primary, borderRadius: SangaRadii.sheet),
+      padding: const EdgeInsets.all(SangaSpacing.md),
+      decoration: const BoxDecoration(color: SangaColors.primary, borderRadius: SangaRadii.field),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.end,
         spacing: SangaSpacing.sm,
@@ -25,10 +23,7 @@ class BalanceCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               spacing: SangaSpacing.xs,
               children: [
-                Text(
-                  label,
-                  style: SangaTextStyles.cardTitle.copyWith(color: SangaColors.onPrimary.withValues(alpha: _softAlpha)),
-                ),
+                Text(label, style: SangaTextStyles.cardTitle.copyWith(color: SangaColors.onPrimaryMuted)),
                 FittedBox(
                   fit: BoxFit.scaleDown,
                   alignment: Alignment.centerLeft,

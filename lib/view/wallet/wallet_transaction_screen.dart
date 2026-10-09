@@ -113,13 +113,7 @@ class _WalletTransactionScreenState extends State<WalletTransactionScreen> {
               ],
             ),
           ?action,
-          TextButton(
-            onPressed: () => _copyReference(tx.reference),
-            child: Text(
-              'Copy reference · ${tx.reference}',
-              style: SangaTextStyles.label.copyWith(color: SangaColors.primary),
-            ),
-          ),
+          SangaTextAction(label: 'Copy reference · ${tx.reference}', onPressed: () => _copyReference(tx.reference)),
         ],
       ),
     ];

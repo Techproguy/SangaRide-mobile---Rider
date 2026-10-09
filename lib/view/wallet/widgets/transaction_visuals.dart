@@ -33,7 +33,7 @@ abstract final class TransactionVisuals {
   static Color statusColor(TransactionStatus status) => switch (status) {
     TransactionStatus.pending => SangaColors.warning,
     TransactionStatus.completed => SangaColors.success,
-    TransactionStatus.failed => SangaColors.dangerStrong,
+    TransactionStatus.failed => SangaColors.danger,
     TransactionStatus.reversed || TransactionStatus.unknown => SangaColors.textMuted,
   };
 
