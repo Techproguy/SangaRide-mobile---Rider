@@ -51,18 +51,6 @@ abstract final class MockGroups {
 
   static bool canTopUp(String groupId) => _myRole(_groups[groupId]).isManager;
 
-  static List<Map<String, dynamic>> ownedSummaries() => [
-    for (final id in _mine)
-      if (_myRole(_groups[id]).isOwner)
-        {
-          'id': id,
-          'name': _groups[id]!.name,
-          'kind': _groups[id]!.kind,
-          'membersCount': _groups[id]!.activeCount,
-          'walletBalance': MockWallet.groupBalance(id),
-        },
-  ];
-
   static MockGroup? _groupOfKind(String kind) {
     for (final id in _mine) {
       final group = _groups[id];

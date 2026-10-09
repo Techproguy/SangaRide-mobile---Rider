@@ -1,11 +1,9 @@
 import 'package:sanga_ride/core/api/account_endpoints.dart';
 import 'package:sanga_ride/core/api/mock/mock_data.dart';
 import 'package:sanga_ride/core/api/mock/mock_delivery.dart';
-import 'package:sanga_ride/core/api/mock/mock_groups.dart';
 import 'package:sanga_ride/core/api/mock/mock_server.dart';
 import 'package:sanga_ride/core/api/mock/mock_trip.dart';
 import 'package:sanga_ride/core/api/mock/mock_verification.dart';
-import 'package:sanga_ride/core/api/mock/mock_wallet.dart';
 
 enum MockOnboardingStep {
   aboutYou('about_you'),
@@ -32,7 +30,6 @@ abstract final class MockAccount {
     MockRoute.get(AccountEndpoints.me, (_) => _json()),
     MockRoute.patch(AccountEndpoints.me, _update),
     MockRoute.delete(AccountEndpoints.me, _delete),
-    MockRoute.get(AccountEndpoints.deletionPreview, _deletionPreview),
     MockRoute.post(AccountEndpoints.onboardingSkip, _skipOnboarding),
     MockRoute.post(AccountEndpoints.photo, _photo),
     MockRoute.post(AccountEndpoints.phone, _requestPhone),
@@ -179,15 +176,6 @@ abstract final class MockAccount {
   }
 
   static void cancelDeletion() => _deletesAt = null;
-
-  static Object? _deletionPreview(MockRequest request) => {
-    'graceDays': _deletionDelay.inDays,
-    'walletBalance': MockWallet.balance,
-    'pendingTransfers': MockWallet.pendingTopUps().where((topUp) => topUp['scope'] == 'personal').length,
-    'ownedGroups': MockGroups.ownedSummaries(),
-    'hasActiveTrip': _hasActiveTrip(),
-    'serverTime': DateTime.now().toUtc().toIso8601String(),
-  };
 
   static bool _hasActiveTrip() => MockTrip.active() != null;
 }

@@ -465,11 +465,6 @@ abstract final class MockWallet {
     return topUp.status;
   }
 
-  static int get balance {
-    _syncTopUps(_personal);
-    return _personal.balance;
-  }
-
   static int groupBalance(String groupId) {
     final book = _groupBooks[groupId] ?? _openGroupBook(groupId);
     _groupBooks[groupId] = book;

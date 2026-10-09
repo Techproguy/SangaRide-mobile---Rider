@@ -15,7 +15,6 @@ class Account {
     required this.ridesCount,
     required this.memberSince,
     required this.verification,
-    this.deletesAt,
   });
 
   factory Account.fromJson(Map<String, dynamic> json) {
@@ -32,7 +31,6 @@ class Account {
       ridesCount: reader.intOr('ridesCount', 0),
       memberSince: reader.timeOrNull('memberSince')?.toLocal(),
       verification: VerificationStatus.fromCode(reader.objectOrNull('verification')?.strOrNull('status')),
-      deletesAt: reader.timeOrNull('deletesAt')?.toLocal(),
     );
   }
 
@@ -49,7 +47,6 @@ class Account {
   final int ridesCount;
   final DateTime? memberSince;
   final VerificationStatus verification;
-  final DateTime? deletesAt;
 
   String get fullName => [firstName, lastName].where((part) => part.isNotEmpty).join(' ');
 

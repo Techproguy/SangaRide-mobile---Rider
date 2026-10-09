@@ -21,7 +21,6 @@ class AccountController extends GetxController {
 
   final Rx<AccountState> _state = Rx<AccountState>(const AccountLoading());
   final Rx<DeleteAccountState> _delete = Rx<DeleteAccountState>(const DeleteIdle());
-  final Rx<DeletionPreviewState> _preview = Rx<DeletionPreviewState>(const DeletionPreviewLoading());
 
   String? _uploadedPhotoId;
   IdempotencyKey? _photoLinkKey;
@@ -32,8 +31,6 @@ class AccountController extends GetxController {
   AccountState get state => _state.value;
 
   DeleteAccountState get deleteState => _delete.value;
-
-  DeletionPreviewState get previewState => _preview.value;
 
   Account? get account => _state.value.accountOrNull;
 
@@ -159,16 +156,6 @@ class AccountController extends GetxController {
   }
 
   void clearPhotoProblem() => _patchLoaded((loaded) => loaded.copyWith(photoProblem: () => null));
-
-  Future<void> loadDeletionPreview() async {
-    _preview.value = const DeletionPreviewLoading();
-    try {
-      final response = await _api.get(AccountEndpoints.deletionPreview, options: quietOptions);
-      _preview.value = DeletionPreviewLoaded(DeletionPreview.fromJson(dataOf(response)));
-    } on Object catch (error) {
-      _preview.value = DeletionPreviewFailed(AccountProblem.of(error).message);
-    }
-  }
 
   Future<bool> deleteAccount({String? reason}) async {
     final current = _delete.value;
