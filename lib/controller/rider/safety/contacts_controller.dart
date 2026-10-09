@@ -2,10 +2,10 @@ import 'dart:async';
 import 'dart:developer';
 
 import 'package:get/get.dart';
-import 'package:sanga_ride/controller/rider/safety/safety_api.dart';
 import 'package:sanga_ride/controller/rider/safety/safety_centre_controller.dart';
 import 'package:sanga_ride/controller/rider/trip/live_problem.dart';
 import 'package:sanga_ride/core/api/api.dart';
+import 'package:sanga_ride/core/api/idempotency_intents.dart';
 import 'package:sanga_ride/core/api/safety_endpoints.dart';
 import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride_core/sanga_ride_core.dart';
@@ -40,7 +40,7 @@ class ContactsController extends GetxController {
   Future<void> reloadContacts() async {
     try {
       final response = await _api.get(SafetyEndpoints.contacts, suppressErrorToast: true);
-      _centre.applyContacts(_contactsOf(safetyDataOf(response.data)));
+      _centre.applyContacts(_contactsOf(response.dataMapOrEmpty));
     } catch (e) {
       log('contacts refresh failed: $e');
     }
@@ -65,11 +65,11 @@ class ContactsController extends GetxController {
         return true;
       case MutationRejected<EmergencyContact>(:final error):
         _releaseAdd();
-        _state.value = ContactsFailed(safetyProblemOf(error));
+        _state.value = ContactsFailed(SafetyProblem.of(error));
       case MutationFailed<EmergencyContact>(:final error):
-        _state.value = ContactsFailed(safetyProblemOf(error));
+        _state.value = ContactsFailed(SafetyProblem.of(error));
       case MutationUnknown<EmergencyContact>(:final error):
-        _state.value = ContactsFailed(safetyProblemOf(error));
+        _state.value = ContactsFailed(SafetyProblem.of(error));
       default:
         break;
     }
@@ -83,7 +83,7 @@ class ContactsController extends GetxController {
     existing?.dispose();
     _addSignature = signature;
     return _addMutation = Mutation<EmergencyContact>(
-      intent: 'safety-contact',
+      intent: IdempotencyIntent.safetyContact,
       run: (key) async {
         final response = await _api.post(
           SafetyEndpoints.contacts,
@@ -91,11 +91,11 @@ class ContactsController extends GetxController {
           key: key,
           suppressErrorToast: true,
         );
-        return EmergencyContact.fromJson(safetyDataOf(response.data));
+        return EmergencyContact.fromJson(response.dataMapOrEmpty);
       },
       reconcile: () async {
         final response = await _api.get(SafetyEndpoints.contacts, suppressErrorToast: true);
-        final found = _contactsOf(safetyDataOf(response.data)).where((contact) => contact.phone == phone).firstOrNull;
+        final found = _contactsOf(response.dataMapOrEmpty).where((contact) => contact.phone == phone).firstOrNull;
         return found == null ? const ReconciledNotDone() : ReconciledDone(found);
       },
     );
@@ -126,11 +126,11 @@ class ContactsController extends GetxController {
     } catch (e) {
       log('remove contact failed: $e');
       _state.value = const ContactsIdle();
-      if (e is ApiException && e.statusCode == 404) {
+      if (e is ApiException && e.isNotFound) {
         unawaited(reloadContacts());
         return true;
       }
-      SangaToast.show(safetyProblemOf(e).message, tone: SangaToastTone.error);
+      SangaToast.show(SafetyProblem.of(e).message, tone: SangaToastTone.error);
       return false;
     }
   }

@@ -1,8 +1,8 @@
 import 'dart:async';
 
 import 'package:get/get.dart';
-import 'package:sanga_ride/controller/rider/account/account_api.dart';
 import 'package:sanga_ride/core/api/api.dart';
+import 'package:sanga_ride/core/api/idempotency_intents.dart';
 import 'package:sanga_ride/core/api/support_endpoints.dart';
 import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride_core/sanga_ride_core.dart';
@@ -19,7 +19,7 @@ class SupportTicketsController extends GetxController {
   Mutation<SupportTicket>? _choice;
   String? _openId;
   int _listEpoch = 0;
-  int _epoch = 0;
+  final Epoch _epoch = Epoch();
 
   TicketsState get list => _list.value;
 
@@ -69,12 +69,14 @@ class SupportTicketsController extends GetxController {
   Future<void> open(String id, {SupportTicket? known}) async {
     _stopPolling();
     _openId = id;
-    final epoch = ++_epoch;
+    final epoch = _epoch.next();
     _detail.value = known == null ? const TicketLoading() : TicketLoaded(known);
     try {
       await _load(id, epoch);
     } on Object catch (error) {
-      if (epoch == _epoch && _detail.value is! TicketLoaded) _detail.value = TicketFailed(SupportProblem.of(error));
+      if (_epoch.isCurrent(epoch) && _detail.value is! TicketLoaded) {
+        _detail.value = TicketFailed(SupportProblem.of(error));
+      }
     }
   }
 
@@ -82,18 +84,18 @@ class SupportTicketsController extends GetxController {
     final id = _openId;
     if (id == null) return;
     _detail.value = const TicketLoading();
-    final epoch = ++_epoch;
+    final epoch = _epoch.next();
     try {
       await _load(id, epoch);
     } on Object catch (error) {
-      if (epoch == _epoch) _detail.value = TicketFailed(SupportProblem.of(error));
+      if (_epoch.isCurrent(epoch)) _detail.value = TicketFailed(SupportProblem.of(error));
     }
   }
 
   void close() {
     _stopPolling();
     _openId = null;
-    _epoch++;
+    _epoch.next();
   }
 
   Future<bool> choose(String optionId) async {
@@ -104,19 +106,19 @@ class SupportTicketsController extends GetxController {
     _detail.value = TicketLoaded(current.ticket, isChoosing: true);
     _choice?.dispose();
     final mutation = _choice = Mutation<SupportTicket>(
-      intent: 'ticket-resolution',
+      intent: IdempotencyIntent.ticketResolution,
       run: (key) async {
         final response = await _api.post(
           SupportEndpoints.of(SupportEndpoints.ticketResolution, id),
           data: {'option': optionId},
           key: key,
-          options: quietOptions,
+          suppressErrorToast: true,
         );
-        return SupportTicket.fromJson(dataOf(response));
+        return SupportTicket.fromJson(response.dataMapOrEmpty);
       },
       reconcile: () async {
-        final response = await _api.get(SupportEndpoints.of(SupportEndpoints.ticket, id), options: quietOptions);
-        final ticket = SupportTicket.fromJson(dataOf(response));
+        final response = await _api.get(SupportEndpoints.of(SupportEndpoints.ticket, id), suppressErrorToast: true);
+        final ticket = SupportTicket.fromJson(response.dataMapOrEmpty);
         return ticket.status == TicketStatus.actionNeeded
             ? const ReconciledNotDone<SupportTicket>()
             : ReconciledDone(ticket);
@@ -125,7 +127,7 @@ class SupportTicketsController extends GetxController {
     switch (await mutation.start()) {
       case MutationDone<SupportTicket>(:final value):
         _detail.value = TicketLoaded(value);
-        _syncPoller(value, _epoch);
+        _syncPoller(value, _epoch.current);
         unawaited(loadList());
         return true;
       case MutationRejected<SupportTicket>(:final error) || MutationFailed<SupportTicket>(:final error):
@@ -135,14 +137,14 @@ class SupportTicketsController extends GetxController {
       case MutationIdle<SupportTicket>() || MutationRunning<SupportTicket>() || MutationChecking<SupportTicket>():
         _detail.value = TicketLoaded(current.ticket);
     }
-    _syncPoller(current.ticket, _epoch);
+    _syncPoller(current.ticket, _epoch.current);
     return false;
   }
 
   Future<void> _load(String id, int epoch) async {
-    final response = await _api.get(SupportEndpoints.of(SupportEndpoints.ticket, id), options: quietOptions);
-    if (epoch != _epoch) return;
-    final ticket = SupportTicket.fromJson(dataOf(response));
+    final response = await _api.get(SupportEndpoints.of(SupportEndpoints.ticket, id), suppressErrorToast: true);
+    if (!_epoch.isCurrent(epoch)) return;
+    final ticket = SupportTicket.fromJson(response.dataMapOrEmpty);
     final previous = _detail.value;
     if (previous is TicketLoaded && previous.isChoosing) return;
     _detail.value = TicketLoaded(ticket);
@@ -166,7 +168,11 @@ class SupportTicketsController extends GetxController {
   }
 
   Future<TicketsPage> _fetchList(int page) async {
-    final response = await _api.get(SupportEndpoints.tickets, queryParameters: {'page': page}, options: quietOptions);
-    return TicketsPage.fromJson(dataOf(response));
+    final response = await _api.get(
+      SupportEndpoints.tickets,
+      queryParameters: {'page': page},
+      suppressErrorToast: true,
+    );
+    return TicketsPage.fromJson(response.dataMapOrEmpty);
   }
 }

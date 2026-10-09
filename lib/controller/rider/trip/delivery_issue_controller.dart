@@ -6,6 +6,7 @@ import 'package:sanga_ride/controller/rider/trip/live_problem.dart';
 import 'package:sanga_ride/controller/rider/trip/trip_controller.dart';
 import 'package:sanga_ride/core/api/api.dart';
 import 'package:sanga_ride/core/api/delivery_live_endpoints.dart';
+import 'package:sanga_ride/core/api/idempotency_intents.dart';
 import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride_core/sanga_ride_core.dart';
 
@@ -26,7 +27,7 @@ class DeliveryIssueController extends GetxController {
   String? _resolveSignature;
   String? _tripId;
   int _viewers = 0;
-  int _epoch = 0;
+  final Epoch _epoch = Epoch();
 
   Rx<DeliveryIssueState> get stateRx => _state;
 
@@ -66,7 +67,7 @@ class DeliveryIssueController extends GetxController {
     if (!force && _tripId == tripId && _poller != null && state is! IssueUnavailable) return;
     _stopPolling();
     _tripId = tripId;
-    final epoch = ++_epoch;
+    final epoch = _epoch.next();
     final issueId = _issueIdFor(tripId);
     if (issueId == null) {
       _state.value = const IssueIdle();
@@ -80,7 +81,7 @@ class DeliveryIssueController extends GetxController {
   void close() {
     _stopPolling();
     _releaseMutations();
-    _epoch++;
+    _epoch.next();
     _tripId = null;
     _viewers = 0;
     _state.value = const IssueIdle();
@@ -122,15 +123,15 @@ class DeliveryIssueController extends GetxController {
   Future<void> _pollOnce(int epoch) async {
     final tripId = _tripId;
     final issueId = tripId == null ? null : _issueIds[tripId];
-    if (tripId == null || issueId == null || epoch != _epoch) return;
+    if (tripId == null || issueId == null || !_epoch.isCurrent(epoch)) return;
     final current = state;
     if (current is IssueSubmitting || current is IssueResolving) return;
     try {
       final fetched = await _fetchIssue(tripId, issueId);
-      if (epoch != _epoch) return;
+      if (!_epoch.isCurrent(epoch)) return;
       _apply(fetched);
     } catch (error) {
-      if (epoch != _epoch) return;
+      if (!_epoch.isCurrent(epoch)) return;
       if (state is IssueLoading) _state.value = IssueUnavailable(DeliveryIssueProblem.of(error));
       rethrow;
     }
@@ -138,7 +139,7 @@ class DeliveryIssueController extends GetxController {
 
   Future<DeliveryIssue> _fetchIssue(String tripId, String issueId) async {
     final response = await _api.get(DeliveryLiveEndpoints.issueOf(tripId, issueId), suppressErrorToast: true);
-    return DeliveryIssue.fromJson(_dataOf(response.data));
+    return DeliveryIssue.fromJson(response.dataMapOrEmpty);
   }
 
   void _apply(DeliveryIssue issue) {
@@ -171,12 +172,12 @@ class DeliveryIssueController extends GetxController {
       _state.value = IssueSubmitFailed(DeliveryIssueProblem.connection, reason, trimmed);
       return false;
     }
-    final epoch = ++_epoch;
+    final epoch = _epoch.next();
     _stopPolling();
     _state.value = IssueSubmitting(reason, trimmed);
     final mutation = _submitMutationFor(tripId, reason, trimmed);
     final result = await mutation.start();
-    if (epoch != _epoch) return false;
+    if (!_epoch.isCurrent(epoch)) return false;
     switch (result) {
       case MutationDone<DeliveryIssue>(:final value):
         _submitMutation?.dispose();
@@ -206,7 +207,7 @@ class DeliveryIssueController extends GetxController {
     existing?.dispose();
     _submitSignature = signature;
     return _submitMutation = Mutation<DeliveryIssue>(
-      intent: 'delivery-issue',
+      intent: IdempotencyIntent.deliveryIssue,
       run: (key) async {
         final response = await _api.post(
           DeliveryLiveEndpoints.issuesOf(tripId),
@@ -214,7 +215,7 @@ class DeliveryIssueController extends GetxController {
           key: key,
           suppressErrorToast: true,
         );
-        return DeliveryIssue.fromJson(_dataOf(response.data));
+        return DeliveryIssue.fromJson(response.dataMapOrEmpty);
       },
       reconcile: () async {
         final trip = await _trip.pollNow();
@@ -251,12 +252,12 @@ class DeliveryIssueController extends GetxController {
       _state.value = IssueResolutionFailed(issue, optionId: optionId, problem: DeliveryIssueProblem.connection);
       return false;
     }
-    final epoch = ++_epoch;
+    final epoch = _epoch.next();
     _stopPolling();
     _state.value = IssueResolving(issue, optionId: optionId);
     final mutation = _resolveMutationFor(tripId, issue, optionId);
     final result = await mutation.start();
-    if (epoch != _epoch) return false;
+    if (!_epoch.isCurrent(epoch)) return false;
     switch (result) {
       case MutationDone<DeliveryIssue>(:final value):
         _resolveMutation?.dispose();
@@ -286,7 +287,7 @@ class DeliveryIssueController extends GetxController {
     existing?.dispose();
     _resolveSignature = signature;
     return _resolveMutation = Mutation<DeliveryIssue>(
-      intent: 'delivery-issue-resolve',
+      intent: IdempotencyIntent.deliveryIssueResolve,
       run: (key) async {
         final response = await _api.post(
           DeliveryLiveEndpoints.issueResolutionOf(tripId, issue.id),
@@ -294,7 +295,7 @@ class DeliveryIssueController extends GetxController {
           key: key,
           suppressErrorToast: true,
         );
-        return DeliveryIssue.fromJson(_dataOf(response.data));
+        return DeliveryIssue.fromJson(response.dataMapOrEmpty);
       },
       reconcile: () async {
         final fresh = await _fetchIssue(tripId, issue.id);
@@ -302,6 +303,4 @@ class DeliveryIssueController extends GetxController {
       },
     );
   }
-
-  Map<String, dynamic> _dataOf(dynamic body) => JsonReader.of(JsonReader.of(body).raw['data']).raw;
 }

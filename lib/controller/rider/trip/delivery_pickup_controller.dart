@@ -7,14 +7,15 @@ import 'package:sanga_ride/controller/rider/trip/live_problem.dart';
 import 'package:sanga_ride/controller/rider/trip/trip_controller.dart';
 import 'package:sanga_ride/core/api/api.dart';
 import 'package:sanga_ride/core/api/delivery_live_endpoints.dart';
+import 'package:sanga_ride/core/api/idempotency_intents.dart';
+import 'package:sanga_ride/core/api/server_codes.dart';
+import 'package:sanga_ride/core/api/upload_purposes.dart';
 import 'package:sanga_ride/core/services/image_compression_service.dart';
 import 'package:sanga_ride/core/services/package_photo_service.dart';
 import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride_core/sanga_ride_core.dart';
 
 class DeliveryPickupController extends GetxController {
-  static const String movedOnCode = 'wrong_stage';
-
   final _api = Get.find<ApiService>();
   final _trip = Get.find<TripController>();
 
@@ -22,7 +23,7 @@ class DeliveryPickupController extends GetxController {
   Mutation<Trip>? _mutation;
   String? _mutationSignature;
   String? _tripId;
-  int _epoch = 0;
+  final Epoch _epoch = Epoch();
 
   Rx<DeliveryPickupState> get stateRx => _state;
 
@@ -30,7 +31,7 @@ class DeliveryPickupController extends GetxController {
 
   @override
   void onClose() {
-    _epoch++;
+    _epoch.next();
     _releaseMutation();
     super.onClose();
   }
@@ -43,7 +44,7 @@ class DeliveryPickupController extends GetxController {
 
   void open(String tripId) {
     if (_tripId == tripId) return;
-    _epoch++;
+    _epoch.next();
     _tripId = tripId;
     _releaseMutation();
     _state.value = const PickupEmpty();
@@ -52,16 +53,16 @@ class DeliveryPickupController extends GetxController {
   Future<void> takePhoto() async {
     if (state.isBusy && state is! PickupUploading) return;
     if (state is PickupConfirmed || state is PickupConfirming) return;
-    final epoch = ++_epoch;
+    final epoch = _epoch.next();
     final previous = state;
     try {
       final path = await PackagePhotoService.pick(
         PhotoSource.camera,
         onPicked: () {
-          if (epoch == _epoch) _state.value = const PickupPreparing();
+          if (_epoch.isCurrent(epoch)) _state.value = const PickupPreparing();
         },
       );
-      if (epoch != _epoch) return;
+      if (!_epoch.isCurrent(epoch)) return;
       if (path == null) {
         _state.value = previous is PickupPreparing ? const PickupEmpty() : previous;
         return;
@@ -69,13 +70,13 @@ class DeliveryPickupController extends GetxController {
       await _discardPhotoOf(previous);
       await _upload(path, epoch);
     } on PhotoException catch (e) {
-      if (epoch == _epoch) _state.value = PickupPhotoFailed(DeliveryPickupProblem.fromCode(e.failure.code));
+      if (_epoch.isCurrent(epoch)) _state.value = PickupPhotoFailed(DeliveryPickupProblem.fromCode(e.failure.code));
     }
   }
 
   Future<void> removePhoto() async {
     if (state is PickupConfirmed || state is PickupConfirming || state is PickupPreparing) return;
-    _epoch++;
+    _epoch.next();
     final previous = state;
     _state.value = const PickupEmpty();
     await _discardPhotoOf(previous);
@@ -86,7 +87,7 @@ class DeliveryPickupController extends GetxController {
   Future<void> retryUpload() async {
     final path = state.photoPath;
     if (path == null || state is! PickupPhotoFailed) return;
-    await _upload(path, ++_epoch);
+    await _upload(path, _epoch.next());
   }
 
   Future<void> _upload(String path, int epoch) async {
@@ -95,17 +96,17 @@ class DeliveryPickupController extends GetxController {
       final ref = await _api.upload(
         DeliveryLiveEndpoints.uploads,
         file: File(path),
-        purpose: DeliveryLiveEndpoints.pickupProofPurpose,
+        purpose: UploadPurposes.pickupProof,
         suppressErrorToast: true,
         onProgress: (sent, total) {
-          if (epoch == _epoch && total > 0) _state.value = PickupUploading(path, progress: sent / total);
+          if (_epoch.isCurrent(epoch) && total > 0) _state.value = PickupUploading(path, progress: sent / total);
         },
       );
-      if (epoch != _epoch) return;
+      if (!_epoch.isCurrent(epoch)) return;
       _state.value = PickupReady(path, photoId: ref.id);
     } catch (e) {
       log('pickup photo upload failed: ${e is ApiException ? e.code : e.runtimeType}');
-      if (epoch != _epoch) return;
+      if (!_epoch.isCurrent(epoch)) return;
       final problem = e is ApiException && e.kind == ApiFailureKind.rejected
           ? DeliveryPickupProblem.fromCode(e.code)
           : DeliveryPickupProblem.uploadFailed;
@@ -130,11 +131,11 @@ class DeliveryPickupController extends GetxController {
     }
     final photoId = _photoIdOf(current);
     final path = current.photoPath;
-    final epoch = ++_epoch;
+    final epoch = _epoch.next();
     _state.value = PickupConfirming(path, photoId: photoId);
     final mutation = _mutationFor(id, photoId);
     final result = await mutation.start();
-    if (epoch != _epoch) return false;
+    if (!_epoch.isCurrent(epoch)) return false;
     switch (result) {
       case MutationDone<Trip>(:final value):
         _releaseMutation();
@@ -162,7 +163,7 @@ class DeliveryPickupController extends GetxController {
   };
 
   Future<bool> _onRejected(ApiException error, String? path, String? photoId) async {
-    if (error.code == movedOnCode) {
+    if (error.code == ServerCode.wrongStage) {
       final trip = await _trip.pollNow();
       final hasMovedOn = trip?.delivery?.stage.isPastPickup ?? false;
       if (hasMovedOn) {
@@ -183,7 +184,7 @@ class DeliveryPickupController extends GetxController {
     existing?.dispose();
     _mutationSignature = signature;
     return _mutation = Mutation<Trip>(
-      intent: 'delivery-pickup',
+      intent: IdempotencyIntent.deliveryPickup,
       run: (key) async {
         final response = await _api.post(
           DeliveryLiveEndpoints.pickupConfirmationOf(id),

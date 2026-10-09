@@ -1,7 +1,7 @@
 import 'package:get/get.dart';
-import 'package:sanga_ride/controller/rider/account/account_api.dart';
 import 'package:sanga_ride/core/api/api.dart';
 import 'package:sanga_ride/core/api/history_endpoints.dart';
+import 'package:sanga_ride/core/api/idempotency_intents.dart';
 import 'package:sanga_ride/core/api/support_endpoints.dart';
 import 'package:sanga_ride/model/history/history_item.dart';
 import 'package:sanga_ride/model/models.dart';
@@ -18,7 +18,7 @@ class SupportReportController extends GetxController {
   List<HistoryItem>? _rides;
   Mutation<SupportTicket>? _submission;
   String? _submissionSignature;
-  int _epoch = 0;
+  final Epoch _epoch = Epoch();
 
   SupportReportState get state => _state.value;
 
@@ -33,23 +33,23 @@ class SupportReportController extends GetxController {
   Future<void> open({required IssueContext context, String? tripId, bool refreshRides = true}) async {
     _context = context;
     if (refreshRides) _rides = null;
-    final epoch = ++_epoch;
+    final epoch = _epoch.next();
     _state.value = const SupportReportLoading();
     try {
       final response = await _api.get(
         SupportEndpoints.issueTypes,
         queryParameters: {'context': context.code},
-        options: quietOptions,
+        suppressErrorToast: true,
       );
       final rides = _rides ??= await _recentRides();
-      if (epoch != _epoch) return;
+      if (!_epoch.isCurrent(epoch)) return;
       _state.value = SupportReportDraft(
-        types: JsonReader(dataOf(response)).listOf('types', IssueType.fromReader),
+        types: JsonReader(response.dataMapOrEmpty).listOf('types', IssueType.fromReader),
         recentRides: _ridesFor(context, rides),
         tripId: tripId,
       );
     } on Object catch (error) {
-      if (epoch == _epoch) _state.value = SupportReportFailed(SupportProblem.of(error));
+      if (_epoch.isCurrent(epoch)) _state.value = SupportReportFailed(SupportProblem.of(error));
     }
   }
 
@@ -112,7 +112,7 @@ class SupportReportController extends GetxController {
     final tripId = draft.tripId;
     final context = _context;
     return _submission = Mutation<SupportTicket>(
-      intent: 'support-ticket',
+      intent: IdempotencyIntent.supportTicket,
       run: (key) async {
         final response = await _api.post(
           SupportEndpoints.tickets,
@@ -124,9 +124,9 @@ class SupportReportController extends GetxController {
             'attachmentIds': const <String>[],
           },
           key: key,
-          options: quietOptions,
+          suppressErrorToast: true,
         );
-        return SupportTicket.fromJson(dataOf(response));
+        return SupportTicket.fromJson(response.dataMapOrEmpty);
       },
       reconcile: () => _reconcileTicket(_submission?.key.value),
     );
@@ -137,12 +137,12 @@ class SupportReportController extends GetxController {
     final response = await _api.get(
       SupportEndpoints.tickets,
       queryParameters: {'idempotencyKey': key},
-      options: quietOptions,
+      suppressErrorToast: true,
     );
-    final found = TicketsPage.fromJson(dataOf(response)).items.firstOrNull;
+    final found = TicketsPage.fromJson(response.dataMapOrEmpty).items.firstOrNull;
     if (found == null) return const ReconciledNotDone<SupportTicket>();
-    final detail = await _api.get(SupportEndpoints.of(SupportEndpoints.ticket, found.id), options: quietOptions);
-    return ReconciledDone(SupportTicket.fromJson(dataOf(detail)));
+    final detail = await _api.get(SupportEndpoints.of(SupportEndpoints.ticket, found.id), suppressErrorToast: true);
+    return ReconciledDone(SupportTicket.fromJson(detail.dataMapOrEmpty));
   }
 
   SupportReportDraft? get _draft => switch (_state.value) {
@@ -167,9 +167,9 @@ class SupportReportController extends GetxController {
       final response = await _api.get(
         HistoryEndpoints.rides,
         queryParameters: {'status': HistoryStatus.completed.code, 'page': 1, 'pageSize': recentRidesLimit},
-        options: quietOptions,
+        suppressErrorToast: true,
       );
-      return HistoryPage.fromJson(dataOf(response)).items;
+      return HistoryPage.fromJson(response.dataMapOrEmpty).items;
     } on Object {
       return const [];
     }

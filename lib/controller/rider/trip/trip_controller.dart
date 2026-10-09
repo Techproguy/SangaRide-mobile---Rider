@@ -3,12 +3,13 @@ import 'dart:developer';
 
 import 'package:flutter/foundation.dart' show VoidCallback;
 import 'package:get/get.dart';
-import 'package:sanga_ride/controller/rider/delivery/send_delivery_controller.dart';
 import 'package:sanga_ride/controller/rider/trip/live_problem.dart';
 import 'package:sanga_ride/core/api/api.dart';
 import 'package:sanga_ride/core/api/app_endpoints.dart';
+import 'package:sanga_ride/core/api/idempotency_intents.dart';
 import 'package:sanga_ride/core/services/session_restore.dart';
 import 'package:sanga_ride/core/services/session_storage.dart';
+import 'package:sanga_ride/core/storage/draft_keys.dart';
 import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride_core/sanga_ride_core.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
@@ -42,7 +43,7 @@ class TripController extends GetxController {
   Timer? _noticeTimer;
   String? _tripId;
   int _openers = 0;
-  int _epoch = 0;
+  final Epoch _epoch = Epoch();
   int _seq = 0;
   int _applied = 0;
   int _clientCounter = 0;
@@ -62,8 +63,6 @@ class TripController extends GetxController {
   bool get isOffline => link == LinkState.lost;
 
   bool get isReconnecting => link == LinkState.reconnecting;
-
-  Rx<LinkState> get chatLinkRx => _chatLink;
 
   bool get isChatStale => _chatLink.value != LinkState.live;
 
@@ -94,7 +93,7 @@ class TripController extends GetxController {
     _teardown();
     _tripId = tripId;
     _openers = 1;
-    _epoch++;
+    _epoch.next();
     _state.value = const TripLoading();
     _startTripPoller();
   }
@@ -125,7 +124,7 @@ class TripController extends GetxController {
     _actions.clear();
     _tripId = null;
     _openers = 0;
-    _epoch++;
+    _epoch.next();
     _seq = 0;
     _applied = 0;
     _hasSignalledEnd = false;
@@ -172,7 +171,7 @@ class TripController extends GetxController {
   Future<void> _fetchTrip() async {
     final id = _tripId;
     if (id == null) return;
-    final epoch = _epoch;
+    final epoch = _epoch.current;
     final seq = ++_seq;
     final isFirstLoad = state is TripLoading || state is TripFailed;
     try {
@@ -181,11 +180,11 @@ class TripController extends GetxController {
         suppressErrorToast: true,
         profile: isFirstLoad ? RequestProfile.interactive : RequestProfile.background,
       );
-      if (epoch != _epoch) return;
-      _accept(Trip.fromJson(_dataOf(response.data)), seq);
+      if (!_epoch.isCurrent(epoch)) return;
+      _accept(Trip.fromJson(response.dataMapOrEmpty), seq);
     } catch (error) {
-      if (epoch != _epoch) return;
-      if (_isGone(error)) {
+      if (!_epoch.isCurrent(epoch)) return;
+      if (error is ApiException && error.isGone) {
         _onTripGone();
         return;
       }
@@ -193,8 +192,6 @@ class TripController extends GetxController {
       rethrow;
     }
   }
-
-  bool _isGone(Object error) => error is ApiException && (error.statusCode == 404 || error.statusCode == 410);
 
   void _onTripGone() {
     _tripPoller?.stop();
@@ -216,7 +213,7 @@ class TripController extends GetxController {
       return;
     }
     _applied = seq;
-    if (incoming.isDelivery) unawaited(SessionStorage.drafts.remove(SendDeliveryController.draftKey));
+    if (incoming.isDelivery) unawaited(SessionStorage.drafts.remove(DraftKeys.deliveryDraft));
     _state.value = TripState.of(incoming);
     if (incoming.status.isTerminal) {
       _tripPoller?.stop();
@@ -295,7 +292,7 @@ class TripController extends GetxController {
     final id = _tripId;
     if (id == null) throw const ApiException(kind: ApiFailureKind.rejected, message: 'No trip', isMutation: true);
     final response = await _api.post(endpoint(id), data: data, key: key, suppressErrorToast: true);
-    return Trip.fromJson(_dataOf(response.data));
+    return Trip.fromJson(response.dataMapOrEmpty);
   }
 
   Future<bool> _act({
@@ -312,12 +309,12 @@ class TripController extends GetxController {
       LiveProblem.toastOffline();
       return false;
     }
-    final epoch = _epoch;
+    final epoch = _epoch.current;
     final mutationKey = '$name|$signature';
     final mutation = _actions.putIfAbsent(
       mutationKey,
       () => Mutation<Trip>(
-        intent: 'trip-$name',
+        intent: IdempotencyIntent.tripAction(name),
         run: send,
         reconcile: () async {
           final fresh = await _fetchOnce(id);
@@ -329,10 +326,10 @@ class TripController extends GetxController {
     flag.value = true;
     try {
       final result = await mutation.start();
-      if (epoch != _epoch) return false;
+      if (!_epoch.isCurrent(epoch)) return false;
       return _settleAction(result, mutationKey, onDone);
     } finally {
-      if (epoch == _epoch) flag.value = false;
+      if (_epoch.isCurrent(epoch)) flag.value = false;
     }
   }
 
@@ -370,7 +367,7 @@ class TripController extends GetxController {
         suppressErrorToast: true,
         profile: RequestProfile.interactive,
       );
-      return Trip.fromJson(_dataOf(response.data));
+      return Trip.fromJson(response.dataMapOrEmpty);
     } catch (error) {
       log('trip check failed: $error', name: 'TripController');
       return null;
@@ -384,7 +381,7 @@ class TripController extends GetxController {
     isCalling.value = true;
     try {
       final response = await _api.post(AppEndpoints.liveTripCallOf(id), suppressErrorToast: true);
-      return JsonReader.of(_dataOf(response.data)).strOrNull('maskedNumber');
+      return JsonReader.of(response.dataMapOrEmpty).strOrNull('maskedNumber');
     } catch (error) {
       log('startCall failed: $error', name: 'TripController');
       return null;
@@ -400,10 +397,10 @@ class TripController extends GetxController {
       LiveProblem.toastOffline();
       return null;
     }
-    _shareKey ??= IdempotencyKey.newFor('trip-share');
+    _shareKey ??= IdempotencyKey.newFor(IdempotencyIntent.tripShare);
     try {
       final response = await _api.post(AppEndpoints.tripShareOf(id), key: _shareKey, suppressErrorToast: true);
-      return JsonReader.of(_dataOf(response.data)).str('url');
+      return JsonReader.of(response.dataMapOrEmpty).str('url');
     } catch (error) {
       log('share link failed: $error', name: 'TripController');
       LiveProblem.toast(error);
@@ -450,15 +447,16 @@ class TripController extends GetxController {
   Future<void> _fetchChat() async {
     final id = _tripId;
     if (id == null) return;
-    final epoch = _epoch;
+    final epoch = _epoch.current;
     try {
       final response = await _api.get(AppEndpoints.liveTripMessagesOf(id), suppressErrorToast: true);
-      if (epoch != _epoch || !isChatOpen) return;
-      final server = JsonReader.of(_dataOf(response.data)).listOf('messages', (item) => TripMessage.fromJson(item.raw));
+      if (!_epoch.isCurrent(epoch) || !isChatOpen) return;
+      final server = JsonReader.of(response.dataMapOrEmpty)
+          .listOf('messages', (item) => TripMessage.fromJson(item.raw));
       _mergeServerMessages(server);
       chatStatus.value = TripChatStatus.ready;
     } catch (error) {
-      if (epoch == _epoch && messages.isEmpty) chatStatus.value = TripChatStatus.failed;
+      if (_epoch.isCurrent(epoch) && messages.isEmpty) chatStatus.value = TripChatStatus.failed;
       rethrow;
     }
   }
@@ -496,19 +494,19 @@ class TripController extends GetxController {
       _markDelivery(clientId, TripMessageDelivery.failed);
       return;
     }
-    final epoch = _epoch;
+    final epoch = _epoch.current;
     try {
       final response = await _api.post(
         AppEndpoints.liveTripMessagesOf(id),
         data: {'body': body, 'clientId': clientId},
-        key: IdempotencyKey('chat-$clientId'),
+        key: IdempotencyKey(IdempotencyIntent.tripChatKey(clientId)),
         suppressErrorToast: true,
       );
-      if (epoch != _epoch) return;
-      _replaceByClientId(clientId, TripMessage.fromJson(_dataOf(response.data)));
+      if (!_epoch.isCurrent(epoch)) return;
+      _replaceByClientId(clientId, TripMessage.fromJson(response.dataMapOrEmpty));
     } catch (error) {
       log('sendMessage failed: $error', name: 'TripController');
-      if (epoch == _epoch) _markDelivery(clientId, TripMessageDelivery.failed);
+      if (_epoch.isCurrent(epoch)) _markDelivery(clientId, TripMessageDelivery.failed);
     } finally {
       _inFlight.remove(clientId);
     }
@@ -528,6 +526,4 @@ class TripController extends GetxController {
     final index = messages.indexWhere((message) => message.clientId == clientId);
     if (index >= 0) messages[index] = messages[index].withDelivery(delivery);
   }
-
-  Map<String, dynamic> _dataOf(dynamic body) => JsonReader.of(JsonReader.of(body).raw['data']).raw;
 }

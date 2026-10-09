@@ -3,16 +3,17 @@ import 'dart:developer';
 
 import 'package:get/get.dart';
 import 'package:sanga_ride/controller/rider/ride_request_controller.dart';
+import 'package:sanga_ride/controller/rider/trip/add_stop_copy.dart';
 import 'package:sanga_ride/controller/rider/trip/live_problem.dart';
 import 'package:sanga_ride/controller/rider/trip/trip_controller.dart';
 import 'package:sanga_ride/core/api/api.dart';
 import 'package:sanga_ride/core/api/app_endpoints.dart';
+import 'package:sanga_ride/core/api/idempotency_intents.dart';
+import 'package:sanga_ride/core/api/server_codes.dart';
 import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride_core/sanga_ride_core.dart';
 
 class AddStopController extends GetxController {
-  static const String quoteExpiredCode = 'quote_expired';
-
   final _api = Get.find<ApiService>();
   final _trip = Get.find<TripController>();
 
@@ -20,7 +21,7 @@ class AddStopController extends GetxController {
   Mutation<Trip>? _mutation;
   String? _mutationSignature;
   String? _tripId;
-  int _epoch = 0;
+  final Epoch _epoch = Epoch();
 
   Rx<AddStopState> get stateRx => _state;
 
@@ -51,14 +52,14 @@ class AddStopController extends GetxController {
 
   void open(String tripId) {
     _tripId = tripId;
-    _epoch++;
+    _epoch.next();
     _releaseMutation();
     _state.value = const AddStopDrafting([]);
   }
 
   void reset() {
     _tripId = null;
-    _epoch++;
+    _epoch.next();
     _releaseMutation();
     _state.value = const AddStopDrafting([]);
   }
@@ -70,12 +71,12 @@ class AddStopController extends GetxController {
   }
 
   String? validate(Place place, Trip trip) {
-    if (place.coordinates == null) return 'We couldn’t place that stop. Try another one.';
-    if (slotsLeft(trip) <= 0) return 'You can add up to ${RideRequestController.maxStops} stops.';
-    if (trip.pickup.toPlace().isSameAs(place)) return 'Your stop can’t be the same as your pickup.';
-    if (trip.dropoff.toPlace().isSameAs(place)) return 'Your stop can’t be the same as your drop off.';
+    if (place.coordinates == null) return AddStopCopy.unplaceable;
+    if (slotsLeft(trip) <= 0) return AddStopCopy.stopLimit(RideRequestController.maxStops);
+    if (trip.pickup.toPlace().isSameAs(place)) return AddStopCopy.sameAsPickup;
+    if (trip.dropoff.toPlace().isSameAs(place)) return AddStopCopy.sameAsDropoff;
     final taken = [for (final stop in trip.stops) stop.toPlace(), ...added];
-    if (taken.any((stop) => stop.isSameAs(place))) return 'That place is already on your trip.';
+    if (taken.any((stop) => stop.isSameAs(place))) return AddStopCopy.alreadyOnTrip;
     return null;
   }
 
@@ -112,7 +113,7 @@ class AddStopController extends GetxController {
       LiveProblem.toastOffline();
       return;
     }
-    final epoch = ++_epoch;
+    final epoch = _epoch.next();
     _state.value = AddStopQuoting(stops);
     try {
       final response = await _api.post(
@@ -120,12 +121,14 @@ class AddStopController extends GetxController {
         data: _stopsBody(stops),
         suppressErrorToast: true,
       );
-      if (epoch != _epoch) return;
-      final quote = StopQuote.fromJson(_dataOf(response.data));
+      if (!_epoch.isCurrent(epoch)) return;
+      final quote = StopQuote.fromJson(response.dataMapOrEmpty);
       _state.value = AddStopReviewing(stops, quote, isRefreshed: isRefresh);
     } catch (e) {
       log('stop quote failed: $e');
-      if (epoch == _epoch) _state.value = AddStopFailed(AddStopFailure.of(e), stops, serverMessage: _rejection(e));
+      if (_epoch.isCurrent(epoch)) {
+        _state.value = AddStopFailed(AddStopFailure.of(e), stops, serverMessage: _rejection(e));
+      }
     }
   }
 
@@ -141,12 +144,12 @@ class AddStopController extends GetxController {
       LiveProblem.toastOffline();
       return;
     }
-    final epoch = ++_epoch;
+    final epoch = _epoch.next();
     _state.value = current.applying();
     final stopsBefore = _trip.trip?.stops.length ?? 0;
     final mutation = _mutationFor(id, current, stopsBefore);
     final result = await mutation.start();
-    if (epoch != _epoch) return;
+    if (!_epoch.isCurrent(epoch)) return;
     switch (result) {
       case MutationDone<Trip>(:final value):
         _releaseMutation();
@@ -155,7 +158,7 @@ class AddStopController extends GetxController {
         _state.value = AddStopApplied(value);
       case MutationRejected<Trip>(:final error):
         _releaseMutation();
-        if (error.code == quoteExpiredCode) return requestQuote(isRefresh: true);
+        if (error.code == ServerCode.quoteExpired) return requestQuote(isRefresh: true);
         _state.value = AddStopFailed(
           AddStopFailure.of(error),
           current.added,
@@ -179,7 +182,7 @@ class AddStopController extends GetxController {
     existing?.dispose();
     _mutationSignature = signature;
     return _mutation = Mutation<Trip>(
-      intent: 'trip-add-stops',
+      intent: IdempotencyIntent.tripAddStops,
       run: (key) async {
         final response = await _api.post(
           AppEndpoints.liveTripStopsOf(id),
@@ -187,7 +190,7 @@ class AddStopController extends GetxController {
           key: key,
           suppressErrorToast: true,
         );
-        return Trip.fromJson(_dataOf(response.data));
+        return Trip.fromJson(response.dataMapOrEmpty);
       },
       reconcile: () async {
         final trip = await _trip.pollNow();
@@ -234,6 +237,4 @@ class AddStopController extends GetxController {
   Map<String, dynamic> _stopsBody(List<Place> stops) => {
     'stops': [for (final stop in stops) stop.toJson()],
   };
-
-  Map<String, dynamic> _dataOf(dynamic body) => JsonReader.of(JsonReader.of(body).raw['data']).raw;
 }

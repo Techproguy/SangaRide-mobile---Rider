@@ -7,6 +7,8 @@ import 'package:sanga_ride/controller/rider/trip/live_problem.dart';
 import 'package:sanga_ride/controller/rider/wallet_controller.dart';
 import 'package:sanga_ride/core/api/api.dart';
 import 'package:sanga_ride/core/api/app_endpoints.dart';
+import 'package:sanga_ride/core/api/idempotency_intents.dart';
+import 'package:sanga_ride/core/api/server_codes.dart';
 import 'package:sanga_ride/core/services/card_tokenizer.dart';
 import 'package:sanga_ride/model/trip/wrapup/wrapup.dart';
 import 'package:sanga_ride/model/wallet/wallet.dart';
@@ -24,12 +26,6 @@ class _Attempt {
 
 class TripPaymentController extends GetxController {
   static const Duration pollInterval = Duration(milliseconds: 1500);
-  static const Set<String> _declineCodes = {
-    'card_declined',
-    'card_expired',
-    'insufficient_balance',
-    'group_wallet_short',
-  };
 
   final _api = Get.find<ApiService>();
   final _wallet = Get.find<WalletController>();
@@ -43,7 +39,7 @@ class TripPaymentController extends GetxController {
   _Attempt? _attempt;
   Mutation<TripPayment>? _cancelCashMutation;
   String? _tripId;
-  int _epoch = 0;
+  final Epoch _epoch = Epoch();
 
   Rx<PaymentState> get stateRx => _state;
 
@@ -71,7 +67,7 @@ class TripPaymentController extends GetxController {
 
   int _invalidate() {
     _stopPolling();
-    return ++_epoch;
+    return _epoch.next();
   }
 
   void stopWatching() => _stopPolling();
@@ -102,17 +98,17 @@ class TripPaymentController extends GetxController {
     unawaited(_wallet.open());
     try {
       final payment = await _fetchPayment(id, profile: RequestProfile.interactive);
-      if (epoch != _epoch) return;
+      if (!_epoch.isCurrent(epoch)) return;
       _apply(payment, epoch);
     } catch (error) {
       log('payment load failed: ${error.runtimeType}', name: 'TripPayment');
-      if (epoch == _epoch) _state.value = PaymentUnavailable(PaymentProblem.of(error));
+      if (_epoch.isCurrent(epoch)) _state.value = PaymentUnavailable(PaymentProblem.of(error));
     }
   }
 
   Future<TripPayment> _fetchPayment(String id, {RequestProfile profile = RequestProfile.background}) async {
     final response = await _api.get(AppEndpoints.tripPaymentOf(id), suppressErrorToast: true, profile: profile);
-    return TripPayment.fromJson(_dataOf(response.data));
+    return TripPayment.fromJson(response.dataMapOrEmpty);
   }
 
   void _apply(TripPayment payment, int epoch) {
@@ -264,12 +260,12 @@ class TripPaymentController extends GetxController {
       token = await _tokenizer.tokenize(details);
     } catch (error) {
       log('card tokenisation failed: ${error.runtimeType}', name: 'TripPayment');
-      if (epoch == _epoch) {
+      if (_epoch.isCurrent(epoch)) {
         _state.value = PaymentCardEntry(payment, notice: PaymentNotice.of(error));
       }
       return;
     }
-    if (epoch != _epoch) return;
+    if (!_epoch.isCurrent(epoch)) return;
     await _run(payment, PaymentRequest.card(token), signature: 'card|$token', epoch: epoch);
   }
 
@@ -293,7 +289,7 @@ class TripPaymentController extends GetxController {
     if (id == null) return;
     final attempt = _attemptFor(id, request, signature);
     final result = await attempt.mutation.start();
-    if (epoch != _epoch) return;
+    if (!_epoch.isCurrent(epoch)) return;
     _settle(result, attempt, payment, epoch);
   }
 
@@ -302,7 +298,7 @@ class TripPaymentController extends GetxController {
     if (existing != null && existing.signature == signature) return existing;
     existing?.mutation.dispose();
     final mutation = Mutation<TripPayment>(
-      intent: 'trip-pay',
+      intent: IdempotencyIntent.tripPay,
       run: (key) async {
         final response = await _api.post(
           AppEndpoints.tripPaymentOf(id),
@@ -310,7 +306,7 @@ class TripPaymentController extends GetxController {
           key: key,
           suppressErrorToast: true,
         );
-        return TripPayment.fromJson(_dataOf(response.data));
+        return TripPayment.fromJson(response.dataMapOrEmpty);
       },
       reconcile: () => _reconcile(id),
     );
@@ -367,11 +363,11 @@ class TripPaymentController extends GetxController {
 
   void _onRejected(ApiException error, TripPayment payment, PaymentMethod method) {
     final code = error.code;
-    if (code == 'already_paid') {
+    if (code == ServerCode.alreadyPaid) {
       unawaited(_load());
       return;
     }
-    if (error.statusCode == 402 || _declineCodes.contains(code)) {
+    if (error.statusCode == 402 || ServerCode.paymentDeclines.contains(code)) {
       if (code == PaymentDeclineReason.insufficientBalance.code) unawaited(_wallet.reloadQuietly());
       _state.value = PaymentDeclined(payment, reason: PaymentDeclineReason.fromCode(code));
       return;
@@ -399,7 +395,7 @@ class TripPaymentController extends GetxController {
     final epoch = _invalidate();
     _state.value = PaymentChecking(current.payment, method: current.method);
     final result = await attempt.mutation.recheck();
-    if (epoch != _epoch) return;
+    if (!_epoch.isCurrent(epoch)) return;
     _settle(result, attempt, current.payment, epoch);
   }
 
@@ -413,10 +409,10 @@ class TripPaymentController extends GetxController {
     }
     final epoch = _invalidate();
     final mutation = _cancelCashMutation ??= Mutation<TripPayment>(
-      intent: 'trip-pay-cancel',
+      intent: IdempotencyIntent.tripPayCancel,
       run: (key) async {
         final response = await _api.post(AppEndpoints.tripPaymentCancelOf(id), key: key, suppressErrorToast: true);
-        return TripPayment.fromJson(_dataOf(response.data));
+        return TripPayment.fromJson(response.dataMapOrEmpty);
       },
       reconcile: () async {
         final fresh = await _fetchPayment(id, profile: RequestProfile.interactive);
@@ -424,7 +420,7 @@ class TripPaymentController extends GetxController {
       },
     );
     final result = await mutation.start();
-    if (epoch != _epoch) return;
+    if (!_epoch.isCurrent(epoch)) return;
     switch (result) {
       case MutationDone<TripPayment>(:final value):
         _cancelCashMutation?.dispose();
@@ -433,7 +429,7 @@ class TripPaymentController extends GetxController {
       case MutationRejected<TripPayment>(:final error):
         _cancelCashMutation?.dispose();
         _cancelCashMutation = null;
-        if (error.code == 'already_paid') {
+        if (error.code == ServerCode.alreadyPaid) {
           unawaited(_load());
         } else {
           LiveProblem.toast(error);
@@ -480,13 +476,12 @@ class TripPaymentController extends GetxController {
   Future<void> _pollOnce(int epoch) async {
     final id = _tripId;
     final current = state;
-    if (id == null || epoch != _epoch || (current is! PaymentAwaitingDriver && current is! PaymentChecking)) return;
+    final isWaiting = current is PaymentAwaitingDriver || current is PaymentChecking;
+    if (id == null || !_epoch.isCurrent(epoch) || !isWaiting) return;
     final fresh = await _fetchPayment(id);
-    if (epoch != _epoch) return;
+    if (!_epoch.isCurrent(epoch)) return;
     final latest = state;
     if (latest is! PaymentAwaitingDriver && latest is! PaymentChecking) return;
     _apply(fresh, epoch);
   }
-
-  Map<String, dynamic> _dataOf(dynamic body) => JsonReader.of(JsonReader.of(body).raw['data']).raw;
 }

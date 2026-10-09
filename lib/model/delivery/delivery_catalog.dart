@@ -2,7 +2,6 @@ abstract final class DeliveryRules {
   static const String documentsKindId = 'documents';
   static const String defaultPackageTypeId = 'not_fragile';
   static const String premiumTierId = 'premium_care';
-  static const String packagePhotoPurpose = 'package_photo';
   static const int itemNameMaxLength = 60;
   static const int descriptionMaxLength = 200;
   static const int recipientNameMaxLength = 60;

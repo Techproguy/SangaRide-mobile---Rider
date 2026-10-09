@@ -4,8 +4,8 @@ import 'dart:developer';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:sanga_ride/controller/rider/safety/safety_api.dart';
 import 'package:sanga_ride/core/api/api.dart';
+import 'package:sanga_ride/core/api/idempotency_intents.dart';
 import 'package:sanga_ride/core/api/safety_endpoints.dart';
 import 'package:sanga_ride/core/safety_config.dart';
 import 'package:sanga_ride/core/services/location_service.dart';
@@ -33,7 +33,7 @@ class SosController extends GetxController {
   String? _tripId;
   LatLng? _coordinates;
   Future<LatLng?>? _pendingLocation;
-  int _epoch = 0;
+  final Epoch _epoch = Epoch();
 
   Rx<SosState> get stateRx => _state;
 
@@ -73,11 +73,11 @@ class SosController extends GetxController {
   Future<void> _resumeFromState() async {
     final id = Get.find<SessionRestore>().meState?.activeSosId;
     if (id == null || !isIdle) return;
-    final epoch = ++_epoch;
+    final epoch = _epoch.next();
     try {
       final response = await _api.get(SafetyEndpoints.sosOf(id), suppressErrorToast: true);
-      if (epoch != _epoch || !isIdle) return;
-      final sos = Sos.fromJson(safetyDataOf(response.data));
+      if (!_epoch.isCurrent(epoch) || !isIdle) return;
+      final sos = Sos.fromJson(response.dataMapOrEmpty);
       if (!sos.isEnded) _activate(sos);
     } catch (e) {
       log('sos resume failed: $e');
@@ -88,7 +88,7 @@ class SosController extends GetxController {
     if (!isIdle) return;
     _tripId = tripId;
     _coordinates = null;
-    _epoch++;
+    _epoch.next();
     _sendMutation?.dispose();
     _sendMutation = null;
     _pendingLocation = _locate();
@@ -99,7 +99,7 @@ class SosController extends GetxController {
 
   void cancel() {
     if (state is! SosActivating) return;
-    _epoch++;
+    _epoch.next();
     _graceTimer?.cancel();
     _pendingLocation = null;
     _state.value = const SosIdle();
@@ -107,13 +107,13 @@ class SosController extends GetxController {
 
   void resume(Sos sos) {
     if (!isIdle || sos.isEnded) return;
-    _epoch++;
+    _epoch.next();
     _activate(sos);
   }
 
   void dismissFailure() {
     if (state is! SosFailed) return;
-    _epoch++;
+    _epoch.next();
     _sendMutation?.dispose();
     _sendMutation = null;
     _state.value = const SosIdle();
@@ -123,17 +123,17 @@ class SosController extends GetxController {
   Future<void> send() async {
     if (state is! SosActivating) return;
     _graceTimer?.cancel();
-    final epoch = _epoch;
+    final epoch = _epoch.current;
     unawaited(HapticFeedback.heavyImpact());
     _state.value = const SosSending();
     _coordinates = await _pendingLocation;
-    if (epoch != _epoch) return;
+    if (!_epoch.isCurrent(epoch)) return;
     await _post(epoch);
   }
 
   Future<void> retry() async {
     if (state is! SosFailed) return;
-    final epoch = _epoch;
+    final epoch = _epoch.current;
     _state.value = const SosSending();
     await _post(epoch);
   }
@@ -141,26 +141,26 @@ class SosController extends GetxController {
   Future<bool> end() async {
     final current = state;
     if (current is! SosActive) return false;
-    final epoch = ++_epoch;
+    final epoch = _epoch.next();
     _stopPolling();
     _state.value = SosEnding(current.sos);
     try {
       await _api.post(
         SafetyEndpoints.sosEndOf(current.sos.id),
-        key: _endKey ??= IdempotencyKey.newFor('sos-end'),
+        key: _endKey ??= IdempotencyKey.newFor(IdempotencyIntent.sosEnd),
         suppressErrorToast: true,
       );
-      if (epoch != _epoch) return false;
+      if (!_epoch.isCurrent(epoch)) return false;
       _endKey = null;
       _state.value = const SosIdle();
       unawaited(Get.find<SessionRestore>().refreshQuietly());
       return true;
     } catch (e) {
       log('end sos failed: $e');
-      if (epoch != _epoch) return false;
+      if (!_epoch.isCurrent(epoch)) return false;
       _state.value = SosActive(current.sos);
       _startPolling(current.sos.id);
-      SangaToast.show(safetyProblemOf(e).message, tone: SangaToastTone.error);
+      SangaToast.show(SafetyProblem.of(e).message, tone: SangaToastTone.error);
       return false;
     }
   }
@@ -178,7 +178,7 @@ class SosController extends GetxController {
     final coordinates = _coordinates;
     final tripId = _tripId;
     final mutation = _sendMutation ??= Mutation<Sos>(
-      intent: 'sos',
+      intent: IdempotencyIntent.sos,
       run: (key) async {
         final response = await _api.post(
           SafetyEndpoints.sos,
@@ -190,12 +190,12 @@ class SosController extends GetxController {
           key: key,
           suppressErrorToast: true,
         );
-        return Sos.fromJson(safetyDataOf(response.data));
+        return Sos.fromJson(response.dataMapOrEmpty);
       },
       reconcile: () => _reconcile(tripId),
     );
     final result = await mutation.start();
-    if (epoch != _epoch) return;
+    if (!_epoch.isCurrent(epoch)) return;
     switch (result) {
       case MutationDone<Sos>(:final value):
         _sendMutation?.dispose();
@@ -207,7 +207,7 @@ class SosController extends GetxController {
         _sendMutation = null;
         _onRejected(error);
       case MutationFailed<Sos>(:final error):
-        _state.value = SosFailed(safetyProblemOf(error));
+        _state.value = SosFailed(SafetyProblem.of(error));
       case MutationUnknown<Sos>():
         _state.value = const SosFailed(SafetyProblem.unconfirmed);
       default:
@@ -222,7 +222,7 @@ class SosController extends GetxController {
       suppressErrorToast: true,
       profile: RequestProfile.interactive,
     );
-    final active = SafetyCentre.fromJson(safetyDataOf(response.data)).activeSos;
+    final active = SafetyCentre.fromJson(response.dataMapOrEmpty).activeSos;
     return active == null ? const ReconciledNotDone() : ReconciledDone(active);
   }
 
@@ -232,7 +232,7 @@ class SosController extends GetxController {
       _activate(running);
       return;
     }
-    final problem = safetyProblemOf(error);
+    final problem = SafetyProblem.of(error);
     if (problem == SafetyProblem.locationUnavailable) _coordinates = null;
     _state.value = SosFailed(problem);
   }
@@ -255,7 +255,7 @@ class SosController extends GetxController {
 
   void _startPolling(String sosId) {
     _stopPolling();
-    final epoch = _epoch;
+    final epoch = _epoch.current;
     final poller = LivePoller(fetch: () => _poll(sosId, epoch), interval: pollInterval);
     _poller = poller;
     poller.start();
@@ -267,19 +267,19 @@ class SosController extends GetxController {
   }
 
   Future<void> _poll(String sosId, int epoch) async {
-    if (state is! SosActive || epoch != _epoch) return;
+    if (state is! SosActive || !_epoch.isCurrent(epoch)) return;
     try {
       final response = await _api.get(SafetyEndpoints.sosOf(sosId), suppressErrorToast: true);
-      if (epoch != _epoch || state is! SosActive) return;
-      final sos = Sos.fromJson(safetyDataOf(response.data));
+      if (!_epoch.isCurrent(epoch) || state is! SosActive) return;
+      final sos = Sos.fromJson(response.dataMapOrEmpty);
       if (sos.isEnded) {
         _finishRemotely();
       } else {
         _state.value = SosActive(sos);
       }
     } catch (e) {
-      if (epoch != _epoch) return;
-      if (e is ApiException && (e.statusCode == 404 || e.statusCode == 410)) {
+      if (!_epoch.isCurrent(epoch)) return;
+      if (e is ApiException && e.isGone) {
         _finishRemotely();
         return;
       }
@@ -288,7 +288,7 @@ class SosController extends GetxController {
   }
 
   void _finishRemotely() {
-    _epoch++;
+    _epoch.next();
     _stopPolling();
     _state.value = const SosIdle();
     unawaited(Get.find<SessionRestore>().refreshQuietly());

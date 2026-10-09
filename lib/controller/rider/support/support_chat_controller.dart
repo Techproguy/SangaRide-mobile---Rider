@@ -1,8 +1,9 @@
 import 'dart:async';
 
 import 'package:get/get.dart';
-import 'package:sanga_ride/controller/rider/account/account_api.dart';
 import 'package:sanga_ride/core/api/api.dart';
+import 'package:sanga_ride/core/api/idempotency_intents.dart';
+import 'package:sanga_ride/core/api/server_codes.dart';
 import 'package:sanga_ride/core/api/support_endpoints.dart';
 import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride_core/sanga_ride_core.dart';
@@ -20,7 +21,7 @@ class SupportChatController extends GetxController {
   String? _openingSignature;
   String? _cursor;
   int _clientSerial = 0;
-  int _epoch = 0;
+  final Epoch _epoch = Epoch();
 
   ChatState get state => _state.value;
 
@@ -35,12 +36,12 @@ class SupportChatController extends GetxController {
 
   Future<void> open({String? ticketId, String? tripId}) async {
     _stopPolling();
-    final epoch = ++_epoch;
+    final epoch = _epoch.next();
     _cursor = null;
     _state.value = const ChatConnecting();
     final mutation = _openingFor(ticketId, tripId);
     final result = await mutation.start();
-    if (epoch != _epoch) return;
+    if (!_epoch.isCurrent(epoch)) return;
     switch (result) {
       case MutationDone<SupportChat>(:final value):
         _state.value = ChatLive(value, const []);
@@ -60,7 +61,7 @@ class SupportChatController extends GetxController {
   }
 
   void close() {
-    _epoch++;
+    _epoch.next();
     _stopPolling();
   }
 
@@ -91,12 +92,12 @@ class SupportChatController extends GetxController {
     try {
       final response = await _api.post(
         SupportEndpoints.of(SupportEndpoints.chatEnd, live.chat.id),
-        key: IdempotencyKey('chat-end-${live.chat.id}'),
-        options: quietOptions,
+        key: IdempotencyKey(IdempotencyIntent.chatEndKey(live.chat.id)),
+        suppressErrorToast: true,
       );
       _stopPolling();
       final current = _live ?? live;
-      _state.value = current.copyWith(chat: SupportChat.fromJson(dataOf(response)), isEnding: false);
+      _state.value = current.copyWith(chat: SupportChat.fromJson(response.dataMapOrEmpty), isEnding: false);
       await _fetch();
       return true;
     } on Object catch (error) {
@@ -114,15 +115,15 @@ class SupportChatController extends GetxController {
     existing?.dispose();
     _openingSignature = signature;
     return _opening = Mutation<SupportChat>(
-      intent: 'support-chat',
+      intent: IdempotencyIntent.supportChat,
       run: (key) async {
         final response = await _api.post(
           SupportEndpoints.chats,
           data: {'ticketId': ticketId, 'tripId': tripId},
           key: key,
-          options: quietOptions,
+          suppressErrorToast: true,
         );
-        return SupportChat.fromJson(dataOf(response));
+        return SupportChat.fromJson(response.dataMapOrEmpty);
       },
     );
   }
@@ -144,13 +145,13 @@ class SupportChatController extends GetxController {
       final response = await _api.post(
         SupportEndpoints.of(SupportEndpoints.chatMessages, live.chat.id),
         data: {'text': pending.text, 'clientId': clientId},
-        key: IdempotencyKey('chat-msg-$clientId'),
-        options: quietOptions,
+        key: IdempotencyKey(IdempotencyIntent.chatMessageKey(clientId)),
+        suppressErrorToast: true,
       );
-      _confirm(clientId, ChatMessage.fromJson(dataOf(response)));
+      _confirm(clientId, ChatMessage.fromJson(response.dataMapOrEmpty));
     } on Object catch (error) {
       _replace(clientId, pending.withDelivery(ChatDelivery.failed));
-      if (error is ApiException && error.code == 'chat_ended') {
+      if (error is ApiException && error.code == ServerCode.chatEnded) {
         final current = _live;
         if (current != null) _state.value = current.copyWith(problem: SupportProblem.chatEnded);
         await _fetch();
@@ -207,18 +208,18 @@ class SupportChatController extends GetxController {
     if (poller != null) Future<void>.microtask(poller.dispose);
   }
 
-  Future<void> _fetch() => _fetchFor(_epoch);
+  Future<void> _fetch() => _fetchFor(_epoch.current);
 
   Future<void> _fetchFor(int epoch) async {
     final live = _live;
-    if (live == null || epoch != _epoch) return;
+    if (live == null || !_epoch.isCurrent(epoch)) return;
     final response = await _api.get(
       SupportEndpoints.of(SupportEndpoints.chatMessages, live.chat.id),
       queryParameters: {'after': ?_cursor},
-      options: quietOptions,
+      suppressErrorToast: true,
     );
-    if (epoch != _epoch) return;
-    final update = ChatUpdate.fromJson(dataOf(response));
+    if (!_epoch.isCurrent(epoch)) return;
+    final update = ChatUpdate.fromJson(response.dataMapOrEmpty);
     final cursor = update.cursor;
     if (cursor != null) _cursor = cursor;
     _merge(update);

@@ -3,17 +3,18 @@ import 'dart:developer';
 import 'package:get/get.dart';
 import 'package:sanga_ride/core/api/api.dart';
 import 'package:sanga_ride/core/api/app_endpoints.dart';
+import 'package:sanga_ride/core/api/idempotency_intents.dart';
+import 'package:sanga_ride/core/api/server_codes.dart';
 import 'package:sanga_ride/model/trip/wrapup/wrapup.dart';
+import 'package:sanga_ride_core/sanga_ride_core.dart';
 
 class TripRatingController extends GetxController {
-  static const String alreadyRatedCode = 'already_rated';
-
   final _api = Get.find<ApiService>();
 
   final Rx<RatingState> _state = Rx<RatingState>(const RatingEditing(DriverRating()));
   String? _tripId;
   IdempotencyKey? _key;
-  int _epoch = 0;
+  final Epoch _epoch = Epoch();
 
   Rx<RatingState> get stateRx => _state;
 
@@ -23,14 +24,14 @@ class TripRatingController extends GetxController {
 
   @override
   void onClose() {
-    _epoch++;
+    _epoch.next();
     super.onClose();
   }
 
   void open(String tripId, {bool isDelivery = false}) {
     final isSame = _tripId == tripId && state.rating.isDelivery == isDelivery;
     if (isSame && state is! RatingSubmitted) return;
-    _epoch++;
+    _epoch.next();
     _tripId = tripId;
     _key = null;
     _state.value = RatingEditing(DriverRating(isDelivery: isDelivery));
@@ -55,23 +56,23 @@ class TripRatingController extends GetxController {
     final id = _tripId;
     final rating = state.rating;
     if (id == null || isSubmitting || state is RatingSubmitted || !rating.hasStars) return false;
-    final epoch = ++_epoch;
+    final epoch = _epoch.next();
     _state.value = RatingSubmitting(rating);
     try {
       await _api.post(
         AppEndpoints.tripRatingOf(id),
         data: rating.toJson(),
-        key: _key ??= IdempotencyKey.newFor('trip-rating'),
+        key: _key ??= IdempotencyKey.newFor(IdempotencyIntent.tripRating),
         suppressErrorToast: true,
       );
     } catch (e) {
       log('rating failed: ${e is ApiException ? e.code : e.runtimeType}');
-      final isDone = e is ApiException && e.statusCode == 409 && e.code == alreadyRatedCode;
-      if (epoch != _epoch) return false;
+      final isDone = e is ApiException && e.statusCode == 409 && e.code == ServerCode.alreadyRated;
+      if (!_epoch.isCurrent(epoch)) return false;
       _state.value = isDone ? RatingSubmitted(rating) : RatingFailed(rating);
       return isDone;
     }
-    if (epoch != _epoch) return false;
+    if (!_epoch.isCurrent(epoch)) return false;
     _state.value = RatingSubmitted(rating);
     return true;
   }

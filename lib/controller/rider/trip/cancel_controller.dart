@@ -6,6 +6,7 @@ import 'package:sanga_ride/controller/rider/trip/live_problem.dart';
 import 'package:sanga_ride/controller/rider/trip/trip_controller.dart';
 import 'package:sanga_ride/core/api/api.dart';
 import 'package:sanga_ride/core/api/app_endpoints.dart';
+import 'package:sanga_ride/core/api/idempotency_intents.dart';
 import 'package:sanga_ride/core/services/session_restore.dart';
 import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride_core/sanga_ride_core.dart';
@@ -18,7 +19,7 @@ class CancelController extends GetxController {
   Mutation<CancelOutcome>? _mutation;
   String? _signature;
   String? _tripId;
-  int _epoch = 0;
+  final Epoch _epoch = Epoch();
 
   Rx<CancelState> get stateRx => _state;
 
@@ -38,14 +39,14 @@ class CancelController extends GetxController {
 
   void open(String tripId) {
     _tripId = tripId;
-    _epoch++;
+    _epoch.next();
     _releaseMutation();
     _state.value = const CancelChoosing();
   }
 
   void reset() {
     _tripId = null;
-    _epoch++;
+    _epoch.next();
     _releaseMutation();
     _state.value = const CancelChoosing();
   }
@@ -82,15 +83,15 @@ class CancelController extends GetxController {
       return;
     }
     final reason = current.reason!;
-    final epoch = ++_epoch;
+    final epoch = _epoch.next();
     _state.value = CancelLoadingReview(reason, current.note);
     try {
       final review = await _fetchReview(id, reason);
-      if (epoch != _epoch) return;
+      if (!_epoch.isCurrent(epoch)) return;
       _state.value = CancelReviewing(reason, current.note, review);
     } catch (e) {
       log('cancellation review failed: $e');
-      if (epoch == _epoch) await _fail(e, previous: current, fallback: CancelFailure.reviewUnavailable);
+      if (_epoch.isCurrent(epoch)) await _fail(e, previous: current, fallback: CancelFailure.reviewUnavailable);
     }
   }
 
@@ -101,7 +102,7 @@ class CancelController extends GetxController {
       suppressErrorToast: true,
       profile: RequestProfile.interactive,
     );
-    return CancellationReview.fromJson(_dataOf(response.data));
+    return CancellationReview.fromJson(response.dataMapOrEmpty);
   }
 
   Future<void> submit() async {
@@ -112,12 +113,12 @@ class CancelController extends GetxController {
       LiveProblem.toastOffline();
       return;
     }
-    final epoch = ++_epoch;
+    final epoch = _epoch.next();
     final reviewing = CancelReviewing(current.reason, current.note, current.review);
     _state.value = reviewing.submitting();
     final mutation = _mutationFor(id, reviewing);
     final result = await mutation.start();
-    if (epoch != _epoch) return;
+    if (!_epoch.isCurrent(epoch)) return;
     switch (result) {
       case MutationDone<CancelOutcome>(:final value):
         _releaseMutation();
@@ -143,7 +144,7 @@ class CancelController extends GetxController {
     existing?.dispose();
     _signature = signature;
     return _mutation = Mutation<CancelOutcome>(
-      intent: 'trip-cancel',
+      intent: IdempotencyIntent.tripCancel,
       run: (key) async {
         final response = await _api.post(
           AppEndpoints.liveTripCancelOf(id),
@@ -156,7 +157,7 @@ class CancelController extends GetxController {
           key: key,
           suppressErrorToast: true,
         );
-        return CancelOutcome.fromJson(_dataOf(response.data));
+        return CancelOutcome.fromJson(response.dataMapOrEmpty);
       },
       reconcile: () => _reconcile(id, reviewing.review.fee),
     );
@@ -187,7 +188,7 @@ class CancelController extends GetxController {
   }
 
   Future<void> _reviewAgain(ApiException error, CancelReviewing reviewing) async {
-    final epoch = _epoch;
+    final epoch = _epoch.current;
     final id = _tripId;
     if (id == null) return;
     final embedded = error.data['review'];
@@ -195,11 +196,11 @@ class CancelController extends GetxController {
       final review = embedded is Map
           ? CancellationReview.fromJson(Map<String, dynamic>.from(embedded))
           : await _fetchReview(id, reviewing.reason);
-      if (epoch != _epoch) return;
+      if (!_epoch.isCurrent(epoch)) return;
       _state.value = CancelReviewing(reviewing.reason, reviewing.note, review, feeWas: reviewing.review.fee);
     } catch (e) {
       log('cancellation re-review failed: $e');
-      if (epoch == _epoch) {
+      if (_epoch.isCurrent(epoch)) {
         _state.value = CancelFailed(
           CancelFailure.of(e, fallback: CancelFailure.reviewUnavailable),
           CancelChoosing(reason: reviewing.reason, note: reviewing.note),
@@ -214,9 +215,9 @@ class CancelController extends GetxController {
       _state.value = CancelFailed(failure, previous);
       return;
     }
-    final epoch = _epoch;
+    final epoch = _epoch.current;
     await _trip.pollNow();
-    if (epoch != _epoch) return;
+    if (!_epoch.isCurrent(epoch)) return;
     final trip = _trip.trip;
     final isTripLive = trip != null && !trip.status.isTerminal;
     _state.value = isTripLive
@@ -258,13 +259,13 @@ class CancelController extends GetxController {
 
   Future<void> _recheck(CancelReviewing reviewing) async {
     final mutation = _mutation;
-    final epoch = ++_epoch;
+    final epoch = _epoch.next();
     if (mutation == null) {
       _state.value = reviewing;
       return;
     }
     final result = await mutation.recheck();
-    if (epoch != _epoch) return;
+    if (!_epoch.isCurrent(epoch)) return;
     switch (result) {
       case MutationDone<CancelOutcome>(:final value):
         _releaseMutation();
@@ -276,6 +277,4 @@ class CancelController extends GetxController {
         _state.value = CancelFailed(CancelFailure.outcomeUnknown, reviewing);
     }
   }
-
-  Map<String, dynamic> _dataOf(dynamic body) => JsonReader.of(JsonReader.of(body).raw['data']).raw;
 }

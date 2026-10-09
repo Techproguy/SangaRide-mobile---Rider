@@ -1,8 +1,8 @@
 import 'package:get/get.dart';
-import 'package:sanga_ride/controller/rider/account/account_api.dart';
 import 'package:sanga_ride/core/api/api.dart';
 import 'package:sanga_ride/core/api/support_endpoints.dart';
 import 'package:sanga_ride/model/models.dart';
+import 'package:sanga_ride_core/sanga_ride_core.dart';
 
 class SupportHelpController extends GetxController {
   final _api = Get.find<ApiService>();
@@ -20,8 +20,8 @@ class SupportHelpController extends GetxController {
   Future<void> loadHome() async {
     if (_home.value is! SupportHomeLoaded) _home.value = const SupportHomeLoading();
     try {
-      final response = await _api.get(SupportEndpoints.home, options: quietOptions);
-      _home.value = SupportHomeLoaded(SupportHome.fromJson(dataOf(response)));
+      final response = await _api.get(SupportEndpoints.home, suppressErrorToast: true);
+      _home.value = SupportHomeLoaded(SupportHome.fromJson(response.dataMapOrEmpty));
     } on Object catch (error) {
       if (_home.value is! SupportHomeLoaded) _home.value = SupportHomeFailed(SupportProblem.of(error));
     }
@@ -52,10 +52,10 @@ class SupportHelpController extends GetxController {
   Future<void> loadArticle(String id) async {
     if (_details[id] is! ArticleLoaded) _details[id] = const ArticleLoading();
     try {
-      final response = await _api.get(SupportEndpoints.of(SupportEndpoints.article, id), options: quietOptions);
+      final response = await _api.get(SupportEndpoints.of(SupportEndpoints.article, id), suppressErrorToast: true);
       final current = _details[id];
       _details[id] = ArticleLoaded(
-        SupportArticle.fromJson(dataOf(response)),
+        SupportArticle.fromJson(response.dataMapOrEmpty),
         vote: current is ArticleLoaded ? current.vote : ArticleVote.none,
       );
     } on Object catch (error) {
@@ -72,9 +72,9 @@ class SupportHelpController extends GetxController {
       final response = await _api.post(
         SupportEndpoints.of(SupportEndpoints.articleFeedback, id),
         data: {'helpful': isHelpful},
-        options: quietOptions,
+        suppressErrorToast: true,
       );
-      _details[id] = ArticleLoaded(SupportArticle.fromJson(dataOf(response)), vote: vote);
+      _details[id] = ArticleLoaded(SupportArticle.fromJson(response.dataMapOrEmpty), vote: vote);
     } on Object {
       _details[id] = ArticleLoaded(current.article, vote: vote);
     }
@@ -84,8 +84,8 @@ class SupportHelpController extends GetxController {
     final response = await _api.get(
       SupportEndpoints.articles,
       queryParameters: {'topic': ?query.topic, if (query.text.isNotEmpty) 'q': query.text, 'page': page},
-      options: quietOptions,
+      suppressErrorToast: true,
     );
-    return ArticlePage.fromJson(dataOf(response));
+    return ArticlePage.fromJson(response.dataMapOrEmpty);
   }
 }

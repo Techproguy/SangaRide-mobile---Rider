@@ -6,16 +6,17 @@ import 'package:get/get.dart';
 import 'package:sanga_ride/controller/rider/ride_request_controller.dart';
 import 'package:sanga_ride/core/api/api.dart';
 import 'package:sanga_ride/core/api/delivery_endpoints.dart';
+import 'package:sanga_ride/core/api/upload_purposes.dart';
 import 'package:sanga_ride/core/services/image_compression_service.dart';
 import 'package:sanga_ride/core/services/package_photo_service.dart';
 import 'package:sanga_ride/core/services/session_storage.dart';
+import 'package:sanga_ride/core/storage/draft_keys.dart';
 import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride_core/sanga_ride_core.dart';
 
 enum SubmitCheck { ready, priceRefreshed, priceUnavailable, incomplete }
 
 class SendDeliveryController extends GetxController {
-  static const String draftKey = 'delivery_draft';
   static const Duration draftLifetime = Duration(hours: 12);
   static const Duration persistDelay = Duration(milliseconds: 400);
 
@@ -28,8 +29,8 @@ class SendDeliveryController extends GetxController {
   final Rx<DeliveryQuoteState> _quote = Rx<DeliveryQuoteState>(const QuoteIdle());
   final Rxn<DeliveryFailure> _recipientFailure = Rxn<DeliveryFailure>();
   Timer? _persistTimer;
-  int _photoEpoch = 0;
-  int _quoteEpoch = 0;
+  final Epoch _photoEpoch = Epoch();
+  final Epoch _quoteEpoch = Epoch();
   String? _quoteSignature;
   String? _lastRecommendedTier;
 
@@ -79,8 +80,8 @@ class SendDeliveryController extends GetxController {
   }
 
   void begin() {
-    _photoEpoch++;
-    _quoteEpoch++;
+    _photoEpoch.next();
+    _quoteEpoch.next();
     ImageCompressionService.discard(photo.localPath);
     _draft.value = const DeliveryDraft();
     _photo.value = const PhotoNone();
@@ -92,12 +93,12 @@ class SendDeliveryController extends GetxController {
   }
 
   void _restoreSavedDraft() {
-    final saved = SessionStorage.drafts.read(draftKey);
+    final saved = SessionStorage.drafts.read(DraftKeys.deliveryDraft);
     if (saved == null) return;
     final reader = JsonReader.of(saved);
     final savedAt = reader.timeOrNull('savedAt');
     if (savedAt == null || DateTime.now().difference(savedAt) > draftLifetime) {
-      unawaited(SessionStorage.drafts.remove(draftKey));
+      unawaited(SessionStorage.drafts.remove(DraftKeys.deliveryDraft));
       return;
     }
     final recipient = reader.objectOrNull('recipient');
@@ -134,10 +135,10 @@ class SendDeliveryController extends GetxController {
     final uploaded = photo;
     final isEmpty = current.kindId == null && current.name.isEmpty && current.recipient == null;
     if (isEmpty) {
-      await SessionStorage.drafts.remove(draftKey);
+      await SessionStorage.drafts.remove(DraftKeys.deliveryDraft);
       return;
     }
-    await SessionStorage.drafts.write(draftKey, {
+    await SessionStorage.drafts.write(DraftKeys.deliveryDraft, {
       'savedAt': DateTime.now().toUtc().toIso8601String(),
       'kindId': current.kindId,
       'name': current.name,
@@ -159,7 +160,7 @@ class SendDeliveryController extends GetxController {
         suppressErrorToast: true,
         profile: RequestProfile.interactive,
       );
-      _catalog.value = DeliveryCatalogReady(DeliveryCatalog.fromJson(_dataOf(response.data)));
+      _catalog.value = DeliveryCatalogReady(DeliveryCatalog.fromJson(response.dataMapOrEmpty));
     } catch (e) {
       log('loadCatalog failed: $e');
       _catalog.value = const DeliveryCatalogFailed();
@@ -214,16 +215,16 @@ class SendDeliveryController extends GetxController {
 
   Future<void> pickPhoto(PhotoSource source) async {
     if (photo.isBusy) return;
-    final epoch = ++_photoEpoch;
+    final epoch = _photoEpoch.next();
     final before = photo;
     try {
       final path = await PackagePhotoService.pick(
         source,
         onPicked: () {
-          if (epoch == _photoEpoch) _photo.value = const PhotoPreparing();
+          if (_photoEpoch.isCurrent(epoch)) _photo.value = const PhotoPreparing();
         },
       );
-      if (epoch != _photoEpoch) {
+      if (!_photoEpoch.isCurrent(epoch)) {
         await ImageCompressionService.discard(path);
         return;
       }
@@ -231,21 +232,21 @@ class SendDeliveryController extends GetxController {
       await ImageCompressionService.discard(before.localPath);
       await _upload(path, epoch);
     } on PhotoException catch (e) {
-      if (epoch == _photoEpoch) _photo.value = PhotoFailed(failure: e.failure);
+      if (_photoEpoch.isCurrent(epoch)) _photo.value = PhotoFailed(failure: e.failure);
     } catch (e) {
       log('pickPhoto failed: $e');
-      if (epoch == _photoEpoch) _photo.value = const PhotoFailed(failure: DeliveryFailure.unreadablePhoto);
+      if (_photoEpoch.isCurrent(epoch)) _photo.value = const PhotoFailed(failure: DeliveryFailure.unreadablePhoto);
     }
   }
 
   Future<void> retryUpload() async {
     final path = photo.localPath;
     if (path == null || photo.isBusy) return;
-    await _upload(path, ++_photoEpoch);
+    await _upload(path, _photoEpoch.next());
   }
 
   Future<void> removePhoto() async {
-    _photoEpoch++;
+    _photoEpoch.next();
     final path = photo.localPath;
     _photo.value = const PhotoNone();
     await ImageCompressionService.discard(path);
@@ -258,18 +259,20 @@ class SendDeliveryController extends GetxController {
       final ref = await _api.upload(
         DeliveryEndpoints.uploads,
         file: File(path),
-        purpose: DeliveryRules.packagePhotoPurpose,
+        purpose: UploadPurposes.packagePhoto,
         suppressErrorToast: true,
         onProgress: (sent, total) {
-          if (epoch == _photoEpoch && total > 0) _photo.value = PhotoUploading(path: path, progress: sent / total);
+          if (_photoEpoch.isCurrent(epoch) && total > 0) {
+            _photo.value = PhotoUploading(path: path, progress: sent / total);
+          }
         },
       );
-      if (epoch != _photoEpoch) return;
+      if (!_photoEpoch.isCurrent(epoch)) return;
       _photo.value = PhotoUploaded(path: path, id: ref.id, url: ref.url);
       _persist();
     } catch (e) {
       log('upload failed: $e');
-      if (epoch == _photoEpoch) _photo.value = PhotoFailed(failure: DeliveryFailure.of(e), path: path);
+      if (_photoEpoch.isCurrent(epoch)) _photo.value = PhotoFailed(failure: DeliveryFailure.of(e), path: path);
     }
   }
 
@@ -281,18 +284,18 @@ class SendDeliveryController extends GetxController {
     final isCurrent = _quoteSignature == signature;
     if (!force && isCurrent && current is QuoteLoading) return;
     if (!force && isCurrent && current is QuoteReady && !current.quote.isExpired) return;
-    final epoch = ++_quoteEpoch;
+    final epoch = _quoteEpoch.next();
     _quoteSignature = signature;
     _quote.value = const QuoteLoading();
     try {
       final response = await _api.post(DeliveryEndpoints.quote, data: _quoteBody(catalog), suppressErrorToast: true);
-      if (epoch != _quoteEpoch) return;
-      final quote = DeliveryQuote.fromJson(_dataOf(response.data));
+      if (!_quoteEpoch.isCurrent(epoch)) return;
+      final quote = DeliveryQuote.fromJson(response.dataMapOrEmpty);
       _chooseTier(quote);
       _quote.value = QuoteReady(quote, signature: signature);
     } catch (e) {
       log('quote failed: $e');
-      if (epoch == _quoteEpoch) _quote.value = QuoteFailed(DeliveryFailure.of(e));
+      if (_quoteEpoch.isCurrent(epoch)) _quote.value = QuoteFailed(DeliveryFailure.of(e));
     }
   }
 
@@ -367,6 +370,4 @@ class SendDeliveryController extends GetxController {
     'packageType': draft.effectivePackageTypeId(catalog),
     'declaredValue': draft.declaredValue,
   };
-
-  Map<String, dynamic> _dataOf(dynamic body) => JsonReader.of(JsonReader.of(body).raw['data']).raw;
 }

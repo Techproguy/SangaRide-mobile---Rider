@@ -11,7 +11,7 @@ class TripReceiptController extends GetxController {
 
   final Rx<ReceiptState> _state = Rx<ReceiptState>(const ReceiptLoading());
   String? _tripId;
-  int _epoch = 0;
+  final Epoch _epoch = Epoch();
 
   Rx<ReceiptState> get stateRx => _state;
 
@@ -24,7 +24,7 @@ class TripReceiptController extends GetxController {
 
   @override
   void onClose() {
-    _epoch++;
+    _epoch.next();
     super.onClose();
   }
 
@@ -42,7 +42,7 @@ class TripReceiptController extends GetxController {
   Future<void> _load({bool isQuiet = false}) async {
     final id = _tripId;
     if (id == null) return;
-    final epoch = ++_epoch;
+    final epoch = _epoch.next();
     if (!isQuiet) _state.value = const ReceiptLoading();
     try {
       final response = await _api.get(
@@ -50,11 +50,11 @@ class TripReceiptController extends GetxController {
         suppressErrorToast: true,
         profile: RequestProfile.interactive,
       );
-      if (epoch != _epoch) return;
+      if (!_epoch.isCurrent(epoch)) return;
       _state.value = ReceiptLoaded(TripReceipt.fromJson(JsonReader.of(JsonReader.of(response.data).raw['data']).raw));
     } catch (e) {
       log('receipt load failed: ${e is ApiException ? e.code : e.runtimeType}');
-      if (epoch != _epoch || isQuiet) return;
+      if (!_epoch.isCurrent(epoch) || isQuiet) return;
       _state.value = ReceiptFailed(ReceiptFailure.of(e));
     }
   }
