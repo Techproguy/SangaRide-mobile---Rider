@@ -108,6 +108,7 @@ class MockRoutes {
     if (request.body['code'] != MockData.otpCode) {
       throw const MockFailure(400, "That code didn't match. Give it another go.");
     }
+    MockAccount.cancelDeletion();
     return _session;
   }
 }
