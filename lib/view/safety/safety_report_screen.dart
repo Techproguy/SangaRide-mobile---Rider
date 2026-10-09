@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sanga_ride/controller/rider/safety/safety_report_controller.dart';
+import 'package:sanga_ride/core/copy/common_copy.dart';
 import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride/view/safety/widgets/report_category_chips.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
@@ -64,7 +65,7 @@ class _SafetyReportScreenState extends State<SafetyReportScreen> {
   @override
   Widget build(BuildContext context) {
     return SangaPageLayout(
-      title: 'Report an issue',
+      title: CommonCopy.reportIssue,
       footer: Obx(
         () => ListenableBuilder(
           listenable: _details,

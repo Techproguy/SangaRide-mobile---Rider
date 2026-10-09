@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+import 'package:sanga_ride/core/format/clock_formats.dart';
 import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
@@ -8,7 +8,7 @@ class RideDetailsCard extends StatelessWidget {
 
   final SafetyTrip trip;
 
-  String get _startedAt => DateFormat('h:mm a').format(trip.startedAt);
+  String get _startedAt => ClockFormats.time(trip.startedAt);
 
   @override
   Widget build(BuildContext context) {
