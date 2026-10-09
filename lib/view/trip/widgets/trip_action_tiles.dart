@@ -45,7 +45,7 @@ class TripActionTiles extends StatelessWidget {
         tone: SangaTone.danger,
       ),
     if (onCancel != null)
-      SangaActionTile(icon: Icons.close_rounded, label: 'Cancel', onPressed: onCancel, tone: SangaTone.danger),
+      SangaActionTile(icon: Icons.close_rounded, label: 'Cancel trip', onPressed: onCancel, tone: SangaTone.danger),
   ];
 
   @override
