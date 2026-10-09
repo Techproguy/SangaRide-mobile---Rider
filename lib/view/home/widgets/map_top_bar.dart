@@ -40,7 +40,7 @@ class MapTopBar extends StatelessWidget {
               if (weather case final weather?) SangaWeatherChip(city: weather.city, temperature: weather.temperatureC),
               const SizedBox(width: SangaSpacing.sm),
               if (bell case final bell?) ...[bell, const SizedBox(width: SangaSpacing.sm)],
-              SangaAvatar(name: userName),
+              SangaAvatar(name: userName, size: SangaMapButton.size),
             ],
           ),
           AnimatedSize(
