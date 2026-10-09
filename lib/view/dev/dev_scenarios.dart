@@ -86,6 +86,26 @@ abstract final class DevScenarios {
     ),
     DevScenario(
       area: 'Pay a trip',
+      trigger: 'Any new card',
+      effect: 'Asks for a bank code: 1234 approves, anything else is rejected.',
+    ),
+    DevScenario(
+      area: 'Pay a trip',
+      trigger: 'Card number ending 1111',
+      effect: 'Pays straight away with no bank code.',
+    ),
+    DevScenario(
+      area: 'Pay a trip',
+      trigger: 'Pay with cash',
+      effect: 'The driver confirms after 4 s. Raise MockTripWrapUp.cashConfirmDelay past cashWaitWindow (90 s) to see the timeout.',
+    ),
+    DevScenario(
+      area: 'Cancel a trip',
+      trigger: 'Review the fee, wait 2 minutes, then confirm',
+      effect: 'The fee changed, so the app returns to a fresh review.',
+    ),
+    DevScenario(
+      area: 'Pay a trip',
       trigger: 'Card number ending 0002',
       effect: 'The bank declines the card with card_declined.',
     ),
