@@ -6,7 +6,6 @@ import 'package:sanga_ride/core/api/mock/mock_reset.dart';
 import 'package:sanga_ride/core/router/router.dart';
 import 'package:sanga_ride/core/router/routes.dart';
 import 'package:sanga_ride/core/services/session_restore.dart';
-import 'package:sanga_ride/core/services/toast_service.dart';
 import 'package:sanga_ride/view/dev/dev_mock_switches.dart';
 import 'package:sanga_ride/view/dev/dev_scenarios.dart';
 import 'package:sanga_ride_core/mock.dart';
@@ -28,13 +27,13 @@ class DevScreen extends StatelessWidget {
   void _resetAll() {
     _lab.reset();
     MockReset.clearRideActivity();
-    Toast.success('Network and mock data reset');
+    SangaToast.show('Network and mock data reset', tone: SangaToastTone.success);
   }
 
   void _clearMockData() {
     MockReset.clearRideActivity();
     unawaited(Get.find<SessionRestore>().refreshQuietly());
-    Toast.success('Mock data cleared');
+    SangaToast.show('Mock data cleared', tone: SangaToastTone.success);
   }
 
   @override
