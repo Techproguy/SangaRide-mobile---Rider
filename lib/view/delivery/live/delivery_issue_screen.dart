@@ -140,10 +140,7 @@ class _SafetyNotice extends StatelessWidget {
         ),
         Align(
           alignment: Alignment.centerRight,
-          child: TextButton(
-            onPressed: onOpen,
-            child: Text('Open Safety', style: SangaTextStyles.label.copyWith(color: SangaColors.primary)),
-          ),
+          child: SangaTextAction(label: 'Open Safety', onPressed: onOpen),
         ),
       ],
     );

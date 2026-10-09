@@ -117,7 +117,7 @@ class _Line extends StatelessWidget {
                 ),
               ),
             ),
-            const Icon(Icons.chevron_right_rounded, size: 18, color: SangaColors.textMuted),
+            SangaListRow.chevron,
           ],
         ),
       ),

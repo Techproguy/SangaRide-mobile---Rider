@@ -117,7 +117,7 @@ class _Spinner extends StatelessWidget {
         value: value,
         strokeWidth: 3,
         color: isLight ? SangaColors.onPrimary : SangaColors.primary,
-        backgroundColor: isLight ? SangaColors.onPrimary.withValues(alpha: 0.3) : null,
+        backgroundColor: isLight ? SangaColors.onPrimaryFaint : null,
       ),
     );
   }

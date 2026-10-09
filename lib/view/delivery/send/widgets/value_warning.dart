@@ -22,21 +22,8 @@ class ValueWarning extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               spacing: SangaSpacing.xxs,
               children: [
-                Text(
-                  title,
-                  style: SangaTextStyles.cardTitle.copyWith(
-                    color: SangaColors.dangerStrong,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                Text(
-                  message,
-                  style: SangaTextStyles.cardSubtitle.copyWith(
-                    color: SangaColors.dangerStrong,
-                    fontSize: 13,
-                    height: 1.35,
-                  ),
-                ),
+                Text(title, style: SangaTextStyles.cardTitleStrong.copyWith(color: SangaColors.danger)),
+                Text(message, style: SangaTextStyles.cardBody.copyWith(color: SangaColors.danger)),
               ],
             ),
           ),

@@ -5,13 +5,13 @@ import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 Future<PhotoSource?> showPhotoSourceSheet(BuildContext context, {String title = 'Add a package photo'}) {
   return showSangaSheet<PhotoSource>(
     context: context,
-    padding: const EdgeInsets.fromLTRB(SangaSpacing.gutter, SangaSpacing.xl, SangaSpacing.gutter, SangaSpacing.md),
+    padding: const EdgeInsets.fromLTRB(SangaSpacing.xl, SangaSpacing.xxl, SangaSpacing.xl, SangaSpacing.xl),
     builder: (context) => Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       spacing: SangaSpacing.md,
       children: [
-        Text(title, style: SangaTextStyles.title),
+        Text(title, style: SangaTextStyles.statusTitle),
         SangaListGroup(
           children: [
             SangaListRow(

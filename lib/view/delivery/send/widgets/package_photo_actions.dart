@@ -82,9 +82,9 @@ class _Message extends StatelessWidget {
         Text(
           title,
           textAlign: TextAlign.center,
-          style: SangaTextStyles.cardTitle.copyWith(color: isError ? SangaColors.dangerStrong : null),
+          style: SangaTextStyles.cardTitle.copyWith(color: isError ? SangaColors.danger : null),
         ),
-        Text(body, textAlign: TextAlign.center, style: SangaTextStyles.cardSubtitle.copyWith(fontSize: 13)),
+        Text(body, textAlign: TextAlign.center, style: SangaTextStyles.cardBody),
       ],
     );
   }

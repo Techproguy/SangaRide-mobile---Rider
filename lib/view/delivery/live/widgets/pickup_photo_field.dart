@@ -80,7 +80,7 @@ class _TakePhotoTile extends StatelessWidget {
                   spacing: SangaSpacing.xs,
                   children: [
                     if (isPreparing)
-                      const SangaActivityIndicator(size: 36)
+                      const SangaActivityIndicator(size: 32)
                     else
                       const Icon(Icons.photo_camera_outlined, size: 36, color: SangaColors.primary),
                     Text(

@@ -19,7 +19,7 @@ class IssueInfoCard extends StatelessWidget {
               spacing: SangaSpacing.sm,
               children: [
                 Icon(row.icon, size: 20, color: SangaColors.primary),
-                Expanded(child: Text(row.text, style: SangaTextStyles.cardSubtitle.copyWith(fontSize: 13))),
+                Expanded(child: Text(row.text, style: SangaTextStyles.cardBody)),
               ],
             ),
         ],

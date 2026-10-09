@@ -22,7 +22,7 @@ class DeliveryPhotoStrip extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       spacing: SangaSpacing.sm,
       children: [
-        Text('Photos', style: SangaTextStyles.titleSmall),
+        const SangaSectionHeader('Photos'),
         Row(
           spacing: SangaSpacing.sm,
           children: [
