@@ -82,18 +82,7 @@ class _FlightTrackingScreenState extends State<FlightTrackingScreen> {
         body: SafeArea(
           child: Column(
             children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(SangaSpacing.gutter, SangaSpacing.md, SangaSpacing.gutter, 0),
-                child: Row(
-                  children: [
-                    const SangaCircleButton.back(),
-                    const Expanded(
-                      child: Text('Flight tracking', textAlign: TextAlign.center, style: SangaTextStyles.toolbarTitle),
-                    ),
-                    const SizedBox(width: 41),
-                  ],
-                ),
-              ),
+              const SangaPageHeader(title: 'Flight tracking'),
               Expanded(
                 child: RefreshIndicator(
                   color: SangaColors.primary,

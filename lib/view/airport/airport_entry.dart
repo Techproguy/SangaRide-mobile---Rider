@@ -13,7 +13,7 @@ enum AirportEntry { pickUp, dropOff }
 Future<void> openAirportRides(BuildContext context) async {
   final entry = await showSangaSheet<AirportEntry>(
     context: context,
-    padding: const EdgeInsets.fromLTRB(SangaSpacing.gutter, SangaSpacing.xl, SangaSpacing.gutter, SangaSpacing.md),
+    padding: const EdgeInsets.fromLTRB(SangaSpacing.xl, SangaSpacing.xxl, SangaSpacing.xl, SangaSpacing.xl),
     builder: (context) => const _AirportEntrySheet(),
   );
   if (entry == null || !context.mounted) return;
@@ -39,7 +39,7 @@ class _AirportEntrySheet extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       spacing: SangaSpacing.md,
       children: [
-        const Text('Airport rides', style: SangaTextStyles.title),
+        const Text('Airport rides', style: SangaTextStyles.statusTitle),
         SangaListGroup(
           children: [
             SangaListRow(
