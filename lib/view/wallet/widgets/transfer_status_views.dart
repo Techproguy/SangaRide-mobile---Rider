@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:sanga_ride/model/wallet/wallet.dart';
 import 'package:sanga_ride/view/wallet/wallet_copy.dart';
-import 'package:sanga_ride/view/wallet/wallet_format.dart';
 import 'package:sanga_ride/view/wallet/widgets/transfer_countdown.dart';
 import 'package:sanga_ride_core/sanga_ride_core.dart' show LinkState;
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
@@ -24,9 +23,9 @@ class TransferWaitingView extends StatelessWidget {
         Column(
           spacing: SangaSpacing.xs,
           children: [
-            Text('Waiting for your transfer', textAlign: TextAlign.center, style: SangaTextStyles.statusTitle),
+            Text(WalletCopy.waitingTitle, textAlign: TextAlign.center, style: SangaTextStyles.statusTitle),
             Text(
-              'We’re watching for ${WalletFormat.money(expectation.amount)} from your bank. This usually takes about a minute.',
+              WalletCopy.watching(expectation.amount),
               textAlign: TextAlign.center,
               style: SangaTextStyles.statusMessage,
             ),
@@ -34,11 +33,7 @@ class TransferWaitingView extends StatelessWidget {
           ],
         ),
         if (link != LinkState.live) const SangaNotice(message: WalletCopy.reconnecting, tone: SangaTone.warning),
-        const SangaNotice(
-          message: 'You can leave this page. We’ll add the money as soon as it lands.',
-          tone: SangaTone.neutral,
-          icon: Icons.info_outline_rounded,
-        ),
+        const SangaNotice(message: WalletCopy.canLeavePage, tone: SangaTone.neutral, icon: Icons.info_outline_rounded),
       ],
     );
   }
@@ -71,22 +66,18 @@ class TransferDelayedView extends StatelessWidget {
         Column(
           spacing: SangaSpacing.xs,
           children: [
-            Text('We haven’t seen it yet', textAlign: TextAlign.center, style: SangaTextStyles.statusTitle),
-            Text(
-              'Banks can take a few minutes. If you already sent it, your money is safe and we’ll add it as soon as it lands.',
-              textAlign: TextAlign.center,
-              style: SangaTextStyles.statusMessage,
-            ),
+            Text(WalletCopy.notSeenTitle, textAlign: TextAlign.center, style: SangaTextStyles.statusTitle),
+            Text(WalletCopy.notSeenMessage, textAlign: TextAlign.center, style: SangaTextStyles.statusMessage),
             if (expiresAt != null) TransferCountdown(expiresAt: expiresAt, onElapsed: onElapsed),
           ],
         ),
         if (link != LinkState.live) const SangaNotice(message: WalletCopy.reconnecting, tone: SangaTone.warning),
         SangaSectionCard(
-          title: 'If it’s still missing',
+          title: WalletCopy.stillMissing,
           children: [
-            _Tip('Check you sent exactly ${WalletFormat.money(expectation.amount)}'),
-            if (account != null) _Tip('Check the account number is ${account.accountNumber} (${account.bankName})'),
-            const _Tip('Check your bank app shows the transfer as successful'),
+            _Tip(WalletCopy.checkSentExactly(expectation.amount)),
+            if (account != null) _Tip(WalletCopy.checkAccountNumber(account.accountNumber, account.bankName)),
+            const _Tip(WalletCopy.checkBankApp),
           ],
         ),
       ],

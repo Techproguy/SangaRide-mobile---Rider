@@ -1,3 +1,4 @@
+import 'package:sanga_ride/core/api/server_codes.dart';
 import 'package:sanga_ride_core/sanga_ride_core.dart';
 
 enum TopUpMethod {
@@ -116,7 +117,11 @@ class TransferExpectation {
 }
 
 enum TopUpFailure {
-  cardDeclined('card_declined', 'Card declined', 'Your bank declined this card. Try another card or pay by transfer.'),
+  cardDeclined(
+    ServerCode.cardDeclined,
+    'Card declined',
+    'Your bank declined this card. Try another card or pay by transfer.',
+  ),
   insufficientFunds(
     'insufficient_funds',
     'Not enough in that account',

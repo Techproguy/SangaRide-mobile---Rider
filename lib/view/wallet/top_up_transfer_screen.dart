@@ -76,7 +76,7 @@ class _TopUpTransferScreenState extends State<TopUpTransferScreen> {
   void _copy(CopyableValue copyable) {
     Clipboard.setData(ClipboardData(text: copyable.value));
     HapticFeedback.selectionClick();
-    SangaToast.show('${copyable.label} copied', tone: SangaToastTone.success);
+    SangaToast.show(WalletCopy.copied(copyable.label), tone: SangaToastTone.success);
   }
 
   void _leave() => context.pop(false);
@@ -122,33 +122,33 @@ class _TopUpTransferScreenState extends State<TopUpTransferScreen> {
 
   Widget? _footer(TopUpState state, int? amount) => switch (state) {
     TopUpEditing() || TopUpSubmitting() => SangaButton.primary(
-      label: 'I’ve sent it',
+      label: WalletCopy.sentIt,
       isLoading: state is TopUpSubmitting,
       onPressed: state is TopUpEditing && amount != null ? _topUp.confirmTransfer : null,
     ),
-    TopUpTransferWatching() => SangaButton.outline(label: 'Done for now', onPressed: _leave),
+    TopUpTransferWatching() => SangaButton.outline(label: WalletCopy.doneForNow, onPressed: _leave),
     TopUpTransferDelayed() => Column(
       mainAxisSize: MainAxisSize.min,
       spacing: SangaSpacing.sm,
       children: [
-        SangaButton.primary(label: 'Check again', isLoading: _isRechecking, onPressed: _checkAgain),
-        SangaButton.outline(label: 'Done for now', onPressed: _leave),
+        SangaButton.primary(label: WalletCopy.checkAgain, isLoading: _isRechecking, onPressed: _checkAgain),
+        SangaButton.outline(label: WalletCopy.doneForNow, onPressed: _leave),
       ],
     ),
     TopUpUnknown() => Column(
       mainAxisSize: MainAxisSize.min,
       spacing: SangaSpacing.sm,
       children: [
-        SangaButton.primary(label: 'Check again', onPressed: () => unawaited(_topUp.recheck())),
-        SangaButton.outline(label: 'Check my wallet', onPressed: _leave),
+        SangaButton.primary(label: WalletCopy.checkAgain, onPressed: () => unawaited(_topUp.recheck())),
+        SangaButton.outline(label: WalletCopy.checkMyWallet, onPressed: _leave),
       ],
     ),
     TopUpFailed() => Column(
       mainAxisSize: MainAxisSize.min,
       spacing: SangaSpacing.sm,
       children: [
-        if (amount != null) SangaButton.primary(label: 'Start again', onPressed: _topUp.retry),
-        SangaButton.outline(label: 'Back to wallet', onPressed: _leave),
+        if (amount != null) SangaButton.primary(label: WalletCopy.startAgain, onPressed: _topUp.retry),
+        SangaButton.outline(label: WalletCopy.backToWallet, onPressed: _leave),
       ],
     ),
     TopUpOtp() || TopUpConfirming() || TopUpChecking() || TopUpSucceeded() => null,
@@ -164,7 +164,7 @@ class _TopUpTransferScreenState extends State<TopUpTransferScreen> {
       return PopScope(
         canPop: state is! TopUpSubmitting && state is! TopUpChecking,
         child: SangaPageLayout(
-          title: 'Add money',
+          title: WalletCopy.addMoney,
           footer: _footer(state, amount),
           children: [_body(state, amount, account, link)],
         ),

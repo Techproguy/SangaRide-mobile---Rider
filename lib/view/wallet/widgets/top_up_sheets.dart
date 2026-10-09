@@ -49,8 +49,14 @@ Future<bool?> showTopUpUnknownSheet({required BuildContext context}) {
         icon: Icons.hourglass_top_rounded,
         title: WalletCopy.unknownTitle,
         message: WalletCopy.unknownMessage,
-        action: SangaButton.primary(label: 'Check my wallet', onPressed: () => Navigator.of(sheetContext).pop(true)),
-        secondary: SangaTextAction(label: 'Check again', onPressed: () => Navigator.of(sheetContext).pop(false)),
+        action: SangaButton.primary(
+          label: WalletCopy.checkMyWallet,
+          onPressed: () => Navigator.of(sheetContext).pop(true),
+        ),
+        secondary: SangaTextAction(
+          label: WalletCopy.checkAgain,
+          onPressed: () => Navigator.of(sheetContext).pop(false),
+        ),
       ),
     ),
   );

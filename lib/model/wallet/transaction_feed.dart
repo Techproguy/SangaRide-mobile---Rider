@@ -1,3 +1,5 @@
+import 'package:sanga_ride/core/api/server_codes.dart';
+import 'package:sanga_ride/core/copy/common_copy.dart';
 import 'package:sanga_ride/model/account/load_problem.dart';
 import 'package:sanga_ride/model/wallet/wallet_transaction.dart';
 import 'package:sanga_ride_core/sanga_ride_core.dart';
@@ -59,8 +61,8 @@ final class TransactionsLoaded extends TransactionFeed {
 
 enum TransactionFailure {
   notFound('We can’t find that transaction', 'It may have been removed. Head back to your history.', canRetry: false),
-  connection('We couldn’t reach the server', 'Check your connection and give it another go.'),
-  unknown('Something went wrong on our side', 'Try again in a moment.');
+  connection(CommonCopy.unreachableTitle, CommonCopy.connectionBody),
+  unknown(CommonCopy.serverTroubleTitle, CommonCopy.tryAgainInAMoment);
 
   const TransactionFailure(this.title, this.message, {this.canRetry = true});
 
@@ -69,7 +71,7 @@ enum TransactionFailure {
   final bool canRetry;
 
   static TransactionFailure of(Object error) => switch (ProblemKind.of(error)) {
-    ProblemRejected(code: 'transaction_not_found') => notFound,
+    ProblemRejected(code: ServerCode.transactionNotFound) => notFound,
     ProblemOffline() => connection,
     _ => unknown,
   };

@@ -27,6 +27,7 @@ abstract final class ServerCode {
   static const String requiresApproval = 'requires_approval';
   static const String samePhone = 'same_phone';
   static const String ticketNotFound = 'ticket_not_found';
+  static const String transactionNotFound = 'transaction_not_found';
   static const String tooYoung = 'too_young';
   static const String typeRequired = 'type_required';
   static const String unsupportedType = 'unsupported_type';

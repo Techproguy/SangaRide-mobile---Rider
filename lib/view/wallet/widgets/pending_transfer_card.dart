@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:sanga_ride/model/wallet/wallet.dart';
-import 'package:sanga_ride/view/wallet/wallet_format.dart';
+import 'package:sanga_ride/view/wallet/wallet_copy.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 class PendingTransferCard extends StatelessWidget {
@@ -15,8 +15,8 @@ class PendingTransferCard extends StatelessWidget {
       children: [
         SangaListRow(
           leading: const SangaIconBadge(size: 40, child: Icon(Icons.hourglass_top_rounded)),
-          title: 'Waiting for your ${WalletFormat.money(transaction.amount)} transfer',
-          subtitle: 'Tap to check on it',
+          title: WalletCopy.waitingForTransfer(transaction.amount),
+          subtitle: WalletCopy.tapToCheck,
           titleMaxLines: 2,
           onTap: onTap,
         ),

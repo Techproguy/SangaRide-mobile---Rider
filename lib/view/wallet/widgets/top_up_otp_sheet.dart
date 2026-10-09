@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:sanga_ride/controller/rider/top_up_controller.dart';
 import 'package:sanga_ride/model/wallet/wallet.dart';
+import 'package:sanga_ride/view/wallet/wallet_copy.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 Future<void> showTopUpOtpSheet({required BuildContext context, required TopUpController controller}) {
@@ -40,7 +41,6 @@ class TopUpOtpContent extends StatefulWidget {
   });
 
   static const int codeLength = 4;
-  static const String mismatchMessage = 'That code didn’t match. Check it and try again.';
 
   final String message;
   final OtpStage stage;
@@ -95,7 +95,7 @@ class _TopUpOtpContentState extends State<TopUpOtpContent> {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text('Confirm with your bank', textAlign: TextAlign.center, style: SangaTextStyles.statusTitle),
+        Text(WalletCopy.confirmWithBank, textAlign: TextAlign.center, style: SangaTextStyles.statusTitle),
         const SizedBox(height: SangaSpacing.xs),
         Text(widget.message, textAlign: TextAlign.center, style: SangaTextStyles.statusMessage),
         const SizedBox(height: SangaSpacing.lg),
@@ -104,7 +104,7 @@ class _TopUpOtpContentState extends State<TopUpOtpContent> {
             length: TopUpOtpContent.codeLength,
             controller: _code,
             alignment: CrossAxisAlignment.center,
-            errorText: widget.stage == OtpStage.mismatch ? TopUpOtpContent.mismatchMessage : null,
+            errorText: widget.stage == OtpStage.mismatch ? WalletCopy.otpMismatch : null,
             onChanged: _changed,
             onCompleted: (_) => _submit(),
           ),
@@ -115,12 +115,12 @@ class _TopUpOtpContentState extends State<TopUpOtpContent> {
         ],
         const SizedBox(height: SangaSpacing.xl),
         SangaButton.primary(
-          label: 'Confirm',
+          label: WalletCopy.confirm,
           isLoading: isVerifying,
           onPressed: _code.text.length == TopUpOtpContent.codeLength ? _submit : null,
         ),
         const SizedBox(height: SangaSpacing.xs),
-        SangaTextAction(label: 'Cancel', onPressed: isVerifying ? null : widget.onCancel),
+        SangaTextAction(label: WalletCopy.cancel, onPressed: isVerifying ? null : widget.onCancel),
       ],
     );
   }

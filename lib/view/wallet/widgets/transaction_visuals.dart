@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:sanga_ride/model/wallet/wallet.dart';
+import 'package:sanga_ride/view/wallet/wallet_copy.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 abstract final class TransactionVisuals {
@@ -19,15 +20,15 @@ abstract final class TransactionVisuals {
   };
 
   static String flowLabel(TransactionKind kind) => switch (kind) {
-    TransactionKind.rideEarning => 'Ride',
-    TransactionKind.deliveryEarning => 'Delivery',
-    TransactionKind.tip => 'Tip',
-    TransactionKind.withdrawal => 'Cash out',
-    TransactionKind.topUp => 'Top up',
-    TransactionKind.ridePayment => 'Payment',
-    TransactionKind.refund => 'Refund',
-    TransactionKind.commission => 'Commission',
-    TransactionKind.adjustment => 'Credit',
+    TransactionKind.rideEarning => WalletCopy.flowRide,
+    TransactionKind.deliveryEarning => WalletCopy.flowDelivery,
+    TransactionKind.tip => WalletCopy.flowTip,
+    TransactionKind.withdrawal => WalletCopy.flowCashOut,
+    TransactionKind.topUp => WalletCopy.flowTopUp,
+    TransactionKind.ridePayment => WalletCopy.flowPayment,
+    TransactionKind.refund => WalletCopy.flowRefund,
+    TransactionKind.commission => WalletCopy.flowCommission,
+    TransactionKind.adjustment => WalletCopy.flowCredit,
   };
 
   static Color statusColor(TransactionStatus status) => switch (status) {
@@ -38,10 +39,13 @@ abstract final class TransactionVisuals {
   };
 
   static Widget statusTag(TransactionStatus status) => switch (status) {
-    TransactionStatus.pending => const SangaTag.warning(label: 'Pending'),
-    TransactionStatus.completed => const SangaTag.success(label: 'Completed'),
-    TransactionStatus.failed => const SangaTag.urgent(label: 'Failed', icon: Icons.error_outline_rounded),
-    TransactionStatus.reversed => const SangaTag.scheduled(label: 'Reversed', icon: Icons.undo_rounded),
-    TransactionStatus.unknown => const SangaTag.scheduled(label: 'Updating', icon: Icons.sync_rounded),
+    TransactionStatus.pending => const SangaTag.warning(label: WalletCopy.statusPending),
+    TransactionStatus.completed => const SangaTag.success(label: WalletCopy.statusCompleted),
+    TransactionStatus.failed => const SangaTag.urgent(
+      label: WalletCopy.statusFailed,
+      icon: Icons.error_outline_rounded,
+    ),
+    TransactionStatus.reversed => const SangaTag.scheduled(label: WalletCopy.statusReversed, icon: Icons.undo_rounded),
+    TransactionStatus.unknown => const SangaTag.scheduled(label: WalletCopy.statusUpdating, icon: Icons.sync_rounded),
   };
 }

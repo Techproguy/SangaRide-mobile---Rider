@@ -14,12 +14,12 @@ Future<void> showTopUpSuccessSheet({
   return showSangaStatusSheet(
     context: context,
     status: SangaStatus.success,
-    title: 'Money added',
+    title: WalletCopy.moneyAdded,
     message: WalletCopy.topUpSuccess(
       scope,
       added: added,
       balance: balance == null ? null : WalletFormat.money(balance),
     ),
-    actionLabel: 'Done',
+    actionLabel: WalletCopy.done,
   );
 }

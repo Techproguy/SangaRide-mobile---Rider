@@ -1,3 +1,5 @@
+import 'package:sanga_ride/model/trip/wrapup/payment.dart';
+import 'package:sanga_ride/model/wallet/top_up.dart';
 import 'package:sanga_ride_core/sanga_ride_core.dart';
 
 enum TransactionKind {
@@ -71,8 +73,8 @@ class TransactionMeta {
       tripId: reader.strOrNull('tripId'),
       route: reader.strOrNull('route'),
       fare: reader.intOrNull('fare'),
-      paymentMethod: reader.strOrNull('paymentMethod'),
-      method: reader.strOrNull('method'),
+      paymentMethod: PaymentMethod.tryFromCode(reader.strOrNull('paymentMethod')),
+      method: TopUpMethod.tryFromCode(reader.strOrNull('method')),
       cardLast4: reader.strOrNull('cardLast4'),
       cardBrand: reader.strOrNull('cardBrand'),
       topUpId: reader.strOrNull('topUpId'),
@@ -86,8 +88,8 @@ class TransactionMeta {
   final String? tripId;
   final String? route;
   final int? fare;
-  final String? paymentMethod;
-  final String? method;
+  final PaymentMethod? paymentMethod;
+  final TopUpMethod? method;
   final String? cardLast4;
   final String? cardBrand;
   final String? topUpId;
@@ -96,7 +98,7 @@ class TransactionMeta {
   final String? failureReason;
   final bool isDelivery;
 
-  bool get isTransfer => method == 'transfer';
+  bool get isTransfer => method == TopUpMethod.transfer;
 }
 
 class WalletTransaction {

@@ -30,7 +30,11 @@ class RecentTransactionsSection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       spacing: SangaSpacing.sm,
       children: [
-        SangaSectionHeader('Transaction history', actionLabel: hasEntries ? 'See all' : null, onAction: onSeeAll),
+        SangaSectionHeader(
+          WalletCopy.transactionHistory,
+          actionLabel: hasEntries ? WalletCopy.seeAll : null,
+          onAction: onSeeAll,
+        ),
         switch (current) {
           RecentLoading() => const SangaSkeleton.heights([56, 56]),
           RecentFailed(:final problem) => SangaFailureMessage(
@@ -40,9 +44,9 @@ class RecentTransactionsSection extends StatelessWidget {
           ),
           RecentLoaded(:final entries) when entries.isEmpty => SangaEmptyMessage(
             icon: Icons.history_rounded,
-            title: 'No transactions yet',
+            title: WalletCopy.noTransactionsYet,
             message: WalletCopy.emptyHistoryMessage(scope),
-            actionLabel: onAddMoney == null ? null : 'Add money',
+            actionLabel: onAddMoney == null ? null : WalletCopy.addMoney,
             onAction: onAddMoney,
           ),
           RecentLoaded(:final entries) => SangaListGroup(

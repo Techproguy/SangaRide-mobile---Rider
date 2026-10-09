@@ -10,8 +10,7 @@ abstract final class TransactionFacts {
   static Widget? _notice(WalletTransaction tx) {
     if (tx.isPendingTransfer) {
       return const SangaNotice(
-        message:
-            'We’re still waiting for your transfer. Banks can take a few minutes, and we add it the moment it lands.',
+        message: WalletCopy.stillWaitingForTransfer,
         tone: SangaTone.neutral,
         icon: Icons.schedule_rounded,
       );
@@ -28,18 +27,18 @@ abstract final class TransactionFacts {
     final route = meta.route;
     final note = meta.note;
     return SangaDetailList(
-      title: 'Details',
+      title: WalletCopy.details,
       rows: [
-        SangaDetailRow(icon: Icons.event_rounded, label: 'Date', value: WalletFormat.stamp(tx.createdAt)),
-        SangaDetailRow(icon: Icons.tag_rounded, label: 'Reference', value: tx.reference),
+        SangaDetailRow(icon: Icons.event_rounded, label: WalletCopy.date, value: WalletFormat.stamp(tx.createdAt)),
+        SangaDetailRow(icon: Icons.tag_rounded, label: WalletCopy.reference, value: tx.reference),
         if (tx.kind == TransactionKind.topUp || tx.kind == TransactionKind.ridePayment)
           SangaDetailRow(
             icon: Icons.account_balance_wallet_outlined,
-            label: tx.kind == TransactionKind.topUp ? 'Added with' : 'Paid with',
+            label: tx.kind == TransactionKind.topUp ? WalletCopy.addedWith : WalletCopy.paidWithLabel,
             value: WalletCopy.paidWith(meta),
           ),
-        if (route != null) SangaDetailRow(icon: Icons.route_rounded, label: 'Trip', value: route),
-        if (note != null) SangaDetailRow(icon: Icons.notes_rounded, label: 'Note', value: note),
+        if (route != null) SangaDetailRow(icon: Icons.route_rounded, label: WalletCopy.trip, value: route),
+        if (note != null) SangaDetailRow(icon: Icons.notes_rounded, label: WalletCopy.note, value: note),
       ],
     );
   }

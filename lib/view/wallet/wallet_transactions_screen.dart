@@ -4,8 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sanga_ride/controller/rider/wallet_bindings.dart';
-import 'package:sanga_ride/model/account/load_problem.dart';
+import 'package:sanga_ride/core/copy/common_copy.dart';
 import 'package:sanga_ride/core/router/wallet_routes.dart';
+import 'package:sanga_ride/model/account/load_problem.dart';
 import 'package:sanga_ride/model/wallet/wallet.dart';
 import 'package:sanga_ride/view/wallet/wallet_copy.dart';
 import 'package:sanga_ride/view/wallet/wallet_format.dart';
@@ -63,7 +64,7 @@ class _WalletTransactionsScreenState extends State<WalletTransactionsScreen> {
       child: Center(child: SangaActivityIndicator(size: 24)),
     ),
     TransactionMore.failed => SangaFailureMessage(
-      title: 'We couldn’t load more',
+      title: CommonCopy.loadMoreFailed,
       message: LoadProblem.connection.message,
       onRetry: _transactions.loadMore,
     ),

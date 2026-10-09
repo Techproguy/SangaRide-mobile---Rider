@@ -39,8 +39,11 @@ class TopUpMethodScreen extends StatelessWidget {
       final methods = [if (wallet.overview?.canPayByTransfer ?? false) TopUpMethod.transfer, TopUpMethod.card];
       final selected = methods.contains(draft.method) ? draft.method : TopUpMethod.card;
       return SangaPageLayout(
-        title: 'Add money',
-        footer: SangaButton.primary(label: 'Continue', onPressed: () => _continue(context, topUp, selected)),
+        title: WalletCopy.addMoney,
+        footer: SangaButton.primary(
+          label: WalletCopy.continueLabel,
+          onPressed: () => _continue(context, topUp, selected),
+        ),
         children: [
           Column(
             spacing: SangaSpacing.lg,

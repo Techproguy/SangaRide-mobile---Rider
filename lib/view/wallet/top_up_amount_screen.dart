@@ -3,8 +3,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 import 'package:sanga_ride/controller/rider/wallet_bindings.dart';
+import 'package:sanga_ride/core/format/number_formats.dart';
 import 'package:sanga_ride/core/router/wallet_routes.dart';
 import 'package:sanga_ride/model/wallet/wallet.dart';
 import 'package:sanga_ride/view/wallet/wallet_copy.dart';
@@ -22,8 +22,6 @@ class TopUpAmountScreen extends StatefulWidget {
 }
 
 class _TopUpAmountScreenState extends State<TopUpAmountScreen> {
-  static final NumberFormat _grouped = NumberFormat('#,##0', 'en_NG');
-
   late final _wallet = WalletControllers.wallet(widget.scope);
   late final _topUp = WalletControllers.topUp(widget.scope);
   final _amount = TextEditingController();
@@ -50,7 +48,7 @@ class _TopUpAmountScreenState extends State<TopUpAmountScreen> {
     if (!mounted) return;
     final initial = widget.initialAmount;
     _topUp.begin(amount: initial);
-    if (initial != null) _amount.text = _grouped.format(initial);
+    if (initial != null) _amount.text = NumberFormats.groupedNigeria.format(initial);
     unawaited(_wallet.open());
   }
 
@@ -59,7 +57,7 @@ class _TopUpAmountScreenState extends State<TopUpAmountScreen> {
   }
 
   void _pickQuick(int amount) {
-    _amount.text = _grouped.format(amount);
+    _amount.text = NumberFormats.groupedNigeria.format(amount);
     _topUp.setAmount(amount);
     _focus.unfocus();
   }
@@ -98,7 +96,7 @@ class _TopUpAmountScreenState extends State<TopUpAmountScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           spacing: SangaSpacing.xs,
           children: [
-            const SangaFieldLabel('Enter amount', isRequired: true),
+            const SangaFieldLabel(WalletCopy.enterAmount, isRequired: true),
             SangaMoneyField(
               controller: _amount,
               focusNode: _focus,
@@ -123,7 +121,7 @@ class _TopUpAmountScreenState extends State<TopUpAmountScreen> {
               ),
           ],
         ),
-        Text('Current balance ${WalletFormat.money(overview.balance)}', style: SangaTextStyles.caption),
+        Text(WalletCopy.currentBalance(overview.balance), style: SangaTextStyles.caption),
       ],
     );
   }
@@ -136,8 +134,8 @@ class _TopUpAmountScreenState extends State<TopUpAmountScreen> {
       final limits = _wallet.overview?.limits;
       final canContinue = amount != null && limits != null && limits.problemWith(amount) == null;
       return SangaPageLayout(
-        title: 'Add money',
-        footer: SangaButton.primary(label: 'Continue', onPressed: canContinue ? _continue : null),
+        title: WalletCopy.addMoney,
+        footer: SangaButton.primary(label: WalletCopy.continueLabel, onPressed: canContinue ? _continue : null),
         children: [_body(state, amount)],
       );
     });

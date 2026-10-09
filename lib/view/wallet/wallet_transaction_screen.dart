@@ -8,6 +8,7 @@ import 'package:sanga_ride/controller/rider/wallet_bindings.dart';
 import 'package:sanga_ride/core/router/history_routes.dart';
 import 'package:sanga_ride/core/router/wallet_routes.dart';
 import 'package:sanga_ride/model/wallet/wallet.dart';
+import 'package:sanga_ride/view/wallet/wallet_copy.dart';
 import 'package:sanga_ride/view/wallet/widgets/transaction_facts.dart';
 import 'package:sanga_ride/view/wallet/widgets/transaction_hero.dart';
 import 'package:sanga_ride/view/wallet/widgets/wallet_page.dart';
@@ -52,20 +53,20 @@ class _WalletTransactionScreenState extends State<WalletTransactionScreen> {
   void _copyReference(String reference) {
     Clipboard.setData(ClipboardData(text: reference));
     HapticFeedback.selectionClick();
-    SangaToast.show('Reference copied', tone: SangaToastTone.success);
+    SangaToast.show(WalletCopy.referenceCopied, tone: SangaToastTone.success);
   }
 
   Widget? _action(WalletTransaction tx) {
     final topUpId = tx.meta.topUpId;
     if (tx.isPendingTransfer && topUpId != null) {
       return SangaButton.primary(
-        label: 'Check on my transfer',
+        label: WalletCopy.checkOnMyTransfer,
         onPressed: () => context.push(WalletRoutes.topUpTransferOf(resumeId: topUpId, groupId: widget.scope.groupId)),
       );
     }
     if (tx.kind == TransactionKind.topUp && tx.status == TransactionStatus.failed) {
       return SangaButton.primary(
-        label: 'Try again',
+        label: WalletCopy.tryAgain,
         onPressed: () => context.push(WalletRoutes.topUpOf(amount: tx.amount, groupId: widget.scope.groupId)),
       );
     }
@@ -85,7 +86,7 @@ class _WalletTransactionScreenState extends State<WalletTransactionScreen> {
         message: failure.message,
         icon: Icons.search_off_rounded,
         onRetry: context.pop,
-        retryLabel: 'Back to history',
+        retryLabel: WalletCopy.backToHistory,
       ),
     ],
     TransactionDetailLoaded(:final transaction) => _loaded(transaction),
@@ -106,14 +107,14 @@ class _WalletTransactionScreenState extends State<WalletTransactionScreen> {
               children: [
                 SangaListRow(
                   leading: const SangaIconBadge(size: 40, child: Icon(Icons.route_rounded)),
-                  title: 'View ride details',
+                  title: WalletCopy.viewRideDetails,
                   subtitle: tx.meta.route,
                   onTap: () => context.push(HistoryRoutes.detailOf(tripId)),
                 ),
               ],
             ),
           ?action,
-          SangaTextAction(label: 'Copy reference · ${tx.reference}', onPressed: () => _copyReference(tx.reference)),
+          SangaTextAction(label: WalletCopy.copyReference(tx.reference), onPressed: () => _copyReference(tx.reference)),
         ],
       ),
     ];
@@ -122,7 +123,7 @@ class _WalletTransactionScreenState extends State<WalletTransactionScreen> {
   @override
   Widget build(BuildContext context) {
     return WalletPage(
-      title: 'Transaction',
+      title: WalletCopy.transactionTitle,
       body: Obx(() {
         final state = _transactions.detailFor(widget.id);
         return SangaHandoff(

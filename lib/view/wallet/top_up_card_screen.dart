@@ -10,7 +10,6 @@ import 'package:sanga_ride/view/wallet/widgets/top_up_otp_sheet.dart';
 import 'package:sanga_ride/view/wallet/widgets/top_up_sheets.dart';
 import 'package:sanga_ride/view/wallet/widgets/top_up_success_sheet.dart';
 import 'package:sanga_ride/view/wallet/wallet_copy.dart';
-import 'package:sanga_ride/view/wallet/wallet_format.dart';
 import 'package:sanga_ride/view/widgets/card/card_details_fields.dart';
 import 'package:sanga_ride/view/widgets/card/card_form_model.dart';
 import 'package:sanga_ride/view/widgets/feedback/payment_sheets.dart';
@@ -110,8 +109,8 @@ class _TopUpCardScreenState extends State<TopUpCardScreen> {
         context: context,
         title: failure.title,
         message: failure.message,
-        primaryLabel: 'Try again',
-        secondaryLabel: 'Pick another way',
+        primaryLabel: WalletCopy.tryAgain,
+        secondaryLabel: WalletCopy.pickAnotherWay,
       ),
     );
     if (!mounted || retry == null) return;
@@ -153,7 +152,7 @@ class _TopUpCardScreenState extends State<TopUpCardScreen> {
           SangaCheckRow.text(
             isChecked: draft.saveCard,
             onChanged: _topUp.setSaveCard,
-            text: 'Save this card for next time',
+            text: WalletCopy.saveCardForNextTime,
           ),
         ],
       ],
@@ -173,11 +172,11 @@ class _TopUpCardScreenState extends State<TopUpCardScreen> {
       return PopScope(
         canPop: !isBusy,
         child: SangaPageLayout(
-          title: 'Add money',
+          title: WalletCopy.addMoney,
           footer: ListenableBuilder(
             listenable: _form,
             builder: (context, _) => SangaButton.primary(
-              label: 'Add ${WalletFormat.money(amount)}',
+              label: WalletCopy.addAmount(amount),
               onPressed: !isBusy && (draft.savedCardId != null || _form.isValid) ? _submit : null,
             ),
           ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:sanga_ride/model/wallet/wallet.dart';
+import 'package:sanga_ride/view/wallet/wallet_copy.dart';
 import 'package:sanga_ride/view/wallet/wallet_format.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
@@ -20,21 +21,21 @@ class TransferAccountCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SangaSectionCard(
-      title: 'Transfer to this account',
-      subtitle: 'Open your bank app and send exactly ${WalletFormat.money(amount)}',
+      title: WalletCopy.transferToAccount,
+      subtitle: WalletCopy.sendExactly(amount),
       children: [
         _AccountRow(
-          label: 'Account number',
+          label: WalletCopy.accountNumber,
           value: account.accountNumber,
-          copy: CopyableValue(label: 'Account number', value: account.accountNumber),
+          copy: CopyableValue(label: WalletCopy.accountNumber, value: account.accountNumber),
           onCopy: onCopy,
         ),
-        _AccountRow(label: 'Bank', value: account.bankName),
-        _AccountRow(label: 'Account name', value: account.accountName),
+        _AccountRow(label: WalletCopy.bank, value: account.bankName),
+        _AccountRow(label: WalletCopy.accountName, value: account.accountName),
         _AccountRow(
-          label: 'Amount to send',
+          label: WalletCopy.amountToSend,
           value: WalletFormat.money(amount),
-          copy: CopyableValue(label: 'Amount', value: '$amount'),
+          copy: CopyableValue(label: WalletCopy.amount, value: '$amount'),
           onCopy: onCopy,
         ),
       ],
@@ -85,7 +86,7 @@ class _CopyButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return Semantics(
       button: true,
-      label: 'Copy $label',
+      label: WalletCopy.copyLabel(label),
       excludeSemantics: true,
       child: Material(
         color: SangaColors.primaryTint,
@@ -100,7 +101,7 @@ class _CopyButton extends StatelessWidget {
               spacing: SangaSpacing.xxs,
               children: [
                 const Icon(Icons.copy_rounded, size: 18, color: SangaColors.primary),
-                Text('Copy', style: SangaTextStyles.action),
+                Text(WalletCopy.copy, style: SangaTextStyles.action),
               ],
             ),
           ),

@@ -16,9 +16,11 @@ abstract final class WalletFormat {
 
   static String stamp(DateTime time) => _lower(_stamp.format(time));
 
+  static int _daysAgo(DateTime day, DateTime? now) =>
+      DateUtils.dateOnly(now ?? DateTime.now()).difference(DateUtils.dateOnly(day)).inDays;
+
   static String dayHeading(DateTime day, {DateTime? now}) {
-    final offset = DateUtils.dateOnly(now ?? DateTime.now()).difference(DateUtils.dateOnly(day)).inDays;
-    return switch (offset) {
+    return switch (_daysAgo(day, now)) {
       0 => 'Today',
       1 => 'Yesterday',
       _ => _day.format(day),
@@ -26,9 +28,8 @@ abstract final class WalletFormat {
   }
 
   static String recent(DateTime time, {DateTime? now}) {
-    final heading = dayHeading(time, now: now);
-    final isNear = heading == 'Today' || heading == 'Yesterday';
-    return '${isNear ? heading : _shortDay.format(time)}, ${clock(time)}';
+    final isNear = const [0, 1].contains(_daysAgo(time, now));
+    return '${isNear ? dayHeading(time, now: now) : _shortDay.format(time)}, ${clock(time)}';
   }
 
   static String _lower(String text) => text.replaceAll(' ', ' ').replaceAll('AM', 'am').replaceAll('PM', 'pm');

@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:sanga_ride/view/wallet/wallet_copy.dart';
 import 'package:sanga_ride/view/wallet/wallet_format.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 class BalanceCard extends StatelessWidget {
-  const BalanceCard({super.key, required this.balance, this.onAddMoney, this.label = 'Your balance'});
+  const BalanceCard({super.key, required this.balance, this.onAddMoney, this.label = WalletCopy.yourBalance});
 
   final int balance;
   final String label;
@@ -35,7 +36,7 @@ class BalanceCard extends StatelessWidget {
               ],
             ),
           ),
-          if (onAddMoney != null) SangaPillButton(label: 'Add money', onPressed: onAddMoney!),
+          if (onAddMoney != null) SangaPillButton(label: WalletCopy.addMoney, onPressed: onAddMoney!),
         ],
       ),
     );
