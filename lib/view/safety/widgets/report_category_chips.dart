@@ -16,8 +16,8 @@ class ReportCategoryChips extends StatelessWidget {
       children: [
         const SangaFieldLabel('What kind of issue?', isRequired: true),
         Wrap(
-          spacing: SangaSpacing.xs,
-          runSpacing: SangaSpacing.xs,
+          spacing: SangaSpacing.sm,
+          runSpacing: SangaSpacing.sm,
           children: [
             for (final category in ReportCategory.values)
               SangaChoiceChip(

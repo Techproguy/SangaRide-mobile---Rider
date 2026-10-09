@@ -14,7 +14,7 @@ class SafetyTools extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       spacing: SangaSpacing.sm,
       children: [
-        Text('Safety tools', style: SangaTextStyles.titleSmall),
+        const SangaSectionHeader('Safety tools'),
         Row(
           spacing: SangaSpacing.lg,
           children: [

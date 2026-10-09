@@ -73,7 +73,7 @@ class _EmergencyContactsScreenState extends State<EmergencyContactsScreen> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       spacing: SangaSpacing.lg,
       children: [
-        Text('Add new contact', style: SangaTextStyles.titleSmall),
+        const SangaSectionHeader('Add new contact'),
         SangaPhoneField(
           controller: _phone,
           errorText: _phoneError(state),
