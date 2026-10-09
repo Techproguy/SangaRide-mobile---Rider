@@ -5,6 +5,7 @@ import 'package:sanga_ride/view/trip/trip_chat_screen.dart';
 import 'package:sanga_ride/view/trip/trip_details_screen.dart';
 import 'package:sanga_ride/view/trip/trip_screen.dart';
 import 'package:sanga_ride/view/trip/trip_timeline_screen.dart';
+import 'package:sanga_ride_core/sanga_ride_core.dart';
 
 abstract final class TripRoutes {
   static const String trip = '/trip/:id';
@@ -14,17 +15,17 @@ abstract final class TripRoutes {
   static const String stops = '/trip/:id/stops';
   static const String cancel = '/trip/:id/cancel';
 
-  static String tripOf(String id) => trip.replaceFirst(':id', id);
+  static String tripOf(String id) => fillPath(trip, {'id': id});
 
-  static String detailsOf(String id) => details.replaceFirst(':id', id);
+  static String detailsOf(String id) => fillPath(details, {'id': id});
 
-  static String timelineOf(String id) => timeline.replaceFirst(':id', id);
+  static String timelineOf(String id) => fillPath(timeline, {'id': id});
 
-  static String chatOf(String id) => chat.replaceFirst(':id', id);
+  static String chatOf(String id) => fillPath(chat, {'id': id});
 
-  static String stopsOf(String id) => stops.replaceFirst(':id', id);
+  static String stopsOf(String id) => fillPath(stops, {'id': id});
 
-  static String cancelOf(String id) => cancel.replaceFirst(':id', id);
+  static String cancelOf(String id) => fillPath(cancel, {'id': id});
 
   static final List<RouteBase> all = [
     GoRoute(

@@ -1,3 +1,5 @@
+import 'package:sanga_ride_core/sanga_ride_core.dart';
+
 abstract final class SupportEndpoints {
   static const String _support = '/support';
 
@@ -13,5 +15,5 @@ abstract final class SupportEndpoints {
   static const String chatMessages = '$_support/chats/:id/messages';
   static const String chatEnd = '$_support/chats/:id/end';
 
-  static String of(String template, String id) => template.replaceFirst(':id', id);
+  static String of(String template, String id) => fillPath(template, {'id': id});
 }

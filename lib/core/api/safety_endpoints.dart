@@ -1,3 +1,5 @@
+import 'package:sanga_ride_core/sanga_ride_core.dart';
+
 abstract final class SafetyEndpoints {
   static const String centre = '/safety/centre';
   static const String sos = '/safety/sos';
@@ -7,9 +9,9 @@ abstract final class SafetyEndpoints {
   static const String contactById = '/safety/contacts/:id';
   static const String reports = '/safety/reports';
 
-  static String sosOf(String id) => sosById.replaceFirst(':id', id);
+  static String sosOf(String id) => fillPath(sosById, {'id': id});
 
-  static String sosEndOf(String id) => sosEnd.replaceFirst(':id', id);
+  static String sosEndOf(String id) => fillPath(sosEnd, {'id': id});
 
-  static String contactOf(String id) => contactById.replaceFirst(':id', id);
+  static String contactOf(String id) => fillPath(contactById, {'id': id});
 }

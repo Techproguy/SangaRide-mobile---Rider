@@ -8,6 +8,7 @@ import 'package:sanga_ride/view/support/support_home_screen.dart';
 import 'package:sanga_ride/view/support/support_report_screen.dart';
 import 'package:sanga_ride/view/support/support_ticket_screen.dart';
 import 'package:sanga_ride/view/support/support_tickets_screen.dart';
+import 'package:sanga_ride_core/sanga_ride_core.dart';
 
 abstract final class SupportRoutes {
   static const String home = '/support';
@@ -28,12 +29,12 @@ abstract final class SupportRoutes {
   static String articlesOf({String? topic, bool focusSearch = false}) =>
       _withQuery(articles, {_topicKey: topic, _searchKey: focusSearch ? '1' : null});
 
-  static String articleOf(String id) => article.replaceFirst(':id', id);
+  static String articleOf(String id) => fillPath(article, {'id': id});
 
   static String reportOf({IssueContext? context, String? tripId}) =>
       _withQuery(report, {_contextKey: context?.code, _tripKey: tripId});
 
-  static String ticketOf(String id) => ticket.replaceFirst(':id', id);
+  static String ticketOf(String id) => fillPath(ticket, {'id': id});
 
   static String chatOf({String? ticketId, String? tripId}) =>
       _withQuery(chat, {_ticketKey: ticketId, _tripKey: tripId});

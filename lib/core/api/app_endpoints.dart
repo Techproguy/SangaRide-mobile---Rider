@@ -1,4 +1,5 @@
 import 'package:sanga_ride/core/api/account_endpoints.dart';
+import 'package:sanga_ride_core/sanga_ride_core.dart';
 
 class AppEndpoints {
   AppEndpoints._();
@@ -23,7 +24,7 @@ class AppEndpoints {
   static const String recentPlace = '$_users/me/places/recent/:id';
   static const String weather = '/weather';
 
-  static String recentPlaceOf(String id) => recentPlace.replaceFirst(':id', id);
+  static String recentPlaceOf(String id) => fillPath(recentPlace, {'id': id});
 
   static const String rideOptions = '/rides/options';
   static const String rideEstimate = '/rides/estimate';
@@ -40,13 +41,13 @@ class AppEndpoints {
   static const String rideOfferHold = '$_rideOffer/hold';
   static const String rideOfferConfirm = '$_rideOffer/confirm';
 
-  static String rideRequestOf(String id) => rideRequest.replaceFirst(':id', id);
+  static String rideRequestOf(String id) => fillPath(rideRequest, {'id': id});
 
-  static String rideRequestOffersOf(String id) => rideRequestOffers.replaceFirst(':id', id);
+  static String rideRequestOffersOf(String id) => fillPath(rideRequestOffers, {'id': id});
 
-  static String rideRequestHoldOf(String id) => rideRequestHold.replaceFirst(':id', id);
+  static String rideRequestHoldOf(String id) => fillPath(rideRequestHold, {'id': id});
 
-  static String rideRequestCancelOf(String id) => rideRequestCancel.replaceFirst(':id', id);
+  static String rideRequestCancelOf(String id) => fillPath(rideRequestCancel, {'id': id});
 
   static String rideOfferIgnoreOf(String id, String offerId) => _offerPath(rideOfferIgnore, id, offerId);
 
@@ -55,7 +56,7 @@ class AppEndpoints {
   static String rideOfferConfirmOf(String id, String offerId) => _offerPath(rideOfferConfirm, id, offerId);
 
   static String _offerPath(String template, String id, String offerId) =>
-      template.replaceFirst(':id', id).replaceFirst(':offerId', offerId);
+      fillPath(template, {'id': id, 'offerId': offerId});
 
   static const String activeTrip = '/trips/active';
   static const String _liveTrip = '/trips/:id';
@@ -72,27 +73,27 @@ class AppEndpoints {
   static const String liveTripCancellation = '$_liveTrip/cancellation';
   static const String liveTripCancel = '$_liveTrip/cancel';
 
-  static String liveTripOf(String id) => liveTrip.replaceFirst(':id', id);
+  static String liveTripOf(String id) => fillPath(liveTrip, {'id': id});
 
-  static String liveTripConfirmDetailsOf(String id) => liveTripConfirmDetails.replaceFirst(':id', id);
+  static String liveTripConfirmDetailsOf(String id) => fillPath(liveTripConfirmDetails, {'id': id});
 
-  static String liveTripPinRefreshOf(String id) => liveTripPinRefresh.replaceFirst(':id', id);
+  static String liveTripPinRefreshOf(String id) => fillPath(liveTripPinRefresh, {'id': id});
 
-  static String liveTripReportOf(String id) => liveTripReport.replaceFirst(':id', id);
+  static String liveTripReportOf(String id) => fillPath(liveTripReport, {'id': id});
 
-  static String liveTripCompleteOf(String id) => liveTripComplete.replaceFirst(':id', id);
+  static String liveTripCompleteOf(String id) => fillPath(liveTripComplete, {'id': id});
 
-  static String liveTripCallOf(String id) => liveTripCall.replaceFirst(':id', id);
+  static String liveTripCallOf(String id) => fillPath(liveTripCall, {'id': id});
 
-  static String liveTripMessagesOf(String id) => liveTripMessages.replaceFirst(':id', id);
+  static String liveTripMessagesOf(String id) => fillPath(liveTripMessages, {'id': id});
 
-  static String liveTripStopsQuoteOf(String id) => liveTripStopsQuote.replaceFirst(':id', id);
+  static String liveTripStopsQuoteOf(String id) => fillPath(liveTripStopsQuote, {'id': id});
 
-  static String liveTripStopsOf(String id) => liveTripStops.replaceFirst(':id', id);
+  static String liveTripStopsOf(String id) => fillPath(liveTripStops, {'id': id});
 
-  static String liveTripCancellationOf(String id) => liveTripCancellation.replaceFirst(':id', id);
+  static String liveTripCancellationOf(String id) => fillPath(liveTripCancellation, {'id': id});
 
-  static String liveTripCancelOf(String id) => liveTripCancel.replaceFirst(':id', id);
+  static String liveTripCancelOf(String id) => fillPath(liveTripCancel, {'id': id});
 
   static const String _tripWrapUp = '/trips/:id';
 
@@ -102,13 +103,13 @@ class AppEndpoints {
   static const String tripRating = '$_tripWrapUp/rating';
   static const String tripShare = '$_tripWrapUp/share';
 
-  static String tripPaymentOf(String id) => tripPayment.replaceFirst(':id', id);
+  static String tripPaymentOf(String id) => fillPath(tripPayment, {'id': id});
 
-  static String tripPaymentCancelOf(String id) => tripPaymentCancel.replaceFirst(':id', id);
+  static String tripPaymentCancelOf(String id) => fillPath(tripPaymentCancel, {'id': id});
 
-  static String tripReceiptOf(String id) => tripReceipt.replaceFirst(':id', id);
+  static String tripReceiptOf(String id) => fillPath(tripReceipt, {'id': id});
 
-  static String tripRatingOf(String id) => tripRating.replaceFirst(':id', id);
+  static String tripRatingOf(String id) => fillPath(tripRating, {'id': id});
 
-  static String tripShareOf(String id) => tripShare.replaceFirst(':id', id);
+  static String tripShareOf(String id) => fillPath(tripShare, {'id': id});
 }

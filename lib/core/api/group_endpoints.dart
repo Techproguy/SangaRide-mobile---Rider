@@ -1,3 +1,5 @@
+import 'package:sanga_ride_core/sanga_ride_core.dart';
+
 abstract final class GroupEndpoints {
   static const String groups = '/groups';
   static const String join = '/groups/join';
@@ -14,28 +16,27 @@ abstract final class GroupEndpoints {
   static const String rides = '/groups/:id/rides';
   static const String approval = '/approvals/:id';
 
-  static String groupOf(String id) => group.replaceFirst(':id', id);
+  static String groupOf(String id) => fillPath(group, {'id': id});
 
-  static String invitesOf(String id) => invites.replaceFirst(':id', id);
+  static String invitesOf(String id) => fillPath(invites, {'id': id});
 
-  static String memberOf(String id, String memberId) =>
-      members.replaceFirst(':id', id).replaceFirst(':memberId', memberId);
+  static String memberOf(String id, String memberId) => fillPath(members, {'id': id, 'memberId': memberId});
 
-  static String leaveOf(String id) => leave.replaceFirst(':id', id);
+  static String leaveOf(String id) => fillPath(leave, {'id': id});
 
-  static String approvalsOf(String id) => approvals.replaceFirst(':id', id);
+  static String approvalsOf(String id) => fillPath(approvals, {'id': id});
 
   static String approvalApproveOf(String id, String approvalId) =>
-      approvalApprove.replaceFirst(':id', id).replaceFirst(':approvalId', approvalId);
+      fillPath(approvalApprove, {'id': id, 'approvalId': approvalId});
 
   static String approvalDeclineOf(String id, String approvalId) =>
-      approvalDecline.replaceFirst(':id', id).replaceFirst(':approvalId', approvalId);
+      fillPath(approvalDecline, {'id': id, 'approvalId': approvalId});
 
-  static String ridesOf(String id) => rides.replaceFirst(':id', id);
+  static String ridesOf(String id) => fillPath(rides, {'id': id});
 
-  static String approvalAt(String id) => approval.replaceFirst(':id', id);
+  static String approvalAt(String id) => fillPath(approval, {'id': id});
 
-  static String inviteAcceptOf(String inviteId) => inviteAccept.replaceFirst(':inviteId', inviteId);
+  static String inviteAcceptOf(String inviteId) => fillPath(inviteAccept, {'inviteId': inviteId});
 
-  static String inviteDeclineOf(String inviteId) => inviteDecline.replaceFirst(':inviteId', inviteId);
+  static String inviteDeclineOf(String inviteId) => fillPath(inviteDecline, {'inviteId': inviteId});
 }

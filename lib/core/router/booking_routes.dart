@@ -14,6 +14,7 @@ import 'package:sanga_ride/view/ride/repeat_setup_screen.dart';
 import 'package:sanga_ride/view/ride/round_trip_return_screen.dart';
 import 'package:sanga_ride/view/rides/scheduled_ride_screen.dart';
 import 'package:sanga_ride/view/rides/scheduled_rides_screen.dart';
+import 'package:sanga_ride_core/sanga_ride_core.dart';
 
 abstract final class BookingRoutes {
   static const String intercity = '/ride/intercity';
@@ -31,10 +32,10 @@ abstract final class BookingRoutes {
   static const String flightTracking = '/ride/flight/:id';
   static const String tripSource = 'trip';
 
-  static String scheduledRideOf(String id) => scheduledRide.replaceFirst(':id', id);
+  static String scheduledRideOf(String id) => fillPath(scheduledRide, {'id': id});
 
   static String flightTrackingOf(String id, {bool isTrip = false}) {
-    final path = flightTracking.replaceFirst(':id', id);
+    final path = fillPath(flightTracking, {'id': id});
     return isTrip ? '$path?source=$tripSource' : path;
   }
 

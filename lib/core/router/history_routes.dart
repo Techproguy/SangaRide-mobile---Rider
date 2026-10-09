@@ -3,6 +3,7 @@ import 'package:sanga_ride/model/history/history_tab.dart';
 import 'package:sanga_ride/view/history/history_actions_screen.dart';
 import 'package:sanga_ride/view/history/history_detail_screen.dart';
 import 'package:sanga_ride/view/history/history_screen.dart';
+import 'package:sanga_ride_core/sanga_ride_core.dart';
 
 abstract final class HistoryRoutes {
   static const String history = '/rides/history';
@@ -11,9 +12,9 @@ abstract final class HistoryRoutes {
 
   static const String _tabKey = 'tab';
 
-  static String detailOf(String id) => detail.replaceFirst(':id', id);
+  static String detailOf(String id) => fillPath(detail, {'id': id});
 
-  static String actionsOf(String id) => actions.replaceFirst(':id', id);
+  static String actionsOf(String id) => fillPath(actions, {'id': id});
 
   static final List<RouteBase> all = [
     GoRoute(

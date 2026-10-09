@@ -7,6 +7,7 @@ import 'package:sanga_ride/view/wallet/top_up_transfer_screen.dart';
 import 'package:sanga_ride/view/wallet/wallet_screen.dart';
 import 'package:sanga_ride/view/wallet/wallet_transaction_screen.dart';
 import 'package:sanga_ride/view/wallet/wallet_transactions_screen.dart';
+import 'package:sanga_ride_core/sanga_ride_core.dart';
 
 abstract final class WalletRoutes {
   static const String wallet = '/wallet';
@@ -28,7 +29,7 @@ abstract final class WalletRoutes {
 
   static String transactionsOf({String? groupId}) => _pathOf(transactions, groupId);
 
-  static String transactionAt(String id, {String? groupId}) => _pathOf(transaction, groupId).replaceFirst(':id', id);
+  static String transactionAt(String id, {String? groupId}) => fillPath(_pathOf(transaction, groupId), {'id': id});
 
   static String topUpMethodOf({String? groupId}) => _pathOf(topUpMethod, groupId);
 

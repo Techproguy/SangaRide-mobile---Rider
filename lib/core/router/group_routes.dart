@@ -15,6 +15,7 @@ import 'package:sanga_ride/view/groups/member/member_ride_limit_screen.dart';
 import 'package:sanga_ride/view/groups/member/member_ride_types_screen.dart';
 import 'package:sanga_ride/view/groups/member/member_spending_screen.dart';
 import 'package:sanga_ride/view/groups/member/member_time_screen.dart';
+import 'package:sanga_ride_core/sanga_ride_core.dart';
 
 abstract final class GroupRoutes {
   static const String hub = '/groups/kind/:kind';
@@ -35,23 +36,23 @@ abstract final class GroupRoutes {
 
   static const String _tabKey = 'tab';
 
-  static String hubOf(GroupKind kind) => hub.replaceFirst(':kind', kind.code);
+  static String hubOf(GroupKind kind) => fillPath(hub, {'kind': kind.code});
 
-  static String createOf(GroupKind kind) => create.replaceFirst(':kind', kind.code);
+  static String createOf(GroupKind kind) => fillPath(create, {'kind': kind.code});
 
-  static String joinOf(GroupKind kind) => join.replaceFirst(':kind', kind.code);
+  static String joinOf(GroupKind kind) => fillPath(join, {'kind': kind.code});
 
   static String groupOf(String groupId, {GroupTab tab = GroupTab.members}) {
-    final path = group.replaceFirst(':groupId', groupId);
+    final path = fillPath(group, {'groupId': groupId});
     return tab == GroupTab.members ? path : Uri(path: path, queryParameters: {_tabKey: tab.name}).toString();
   }
 
-  static String inviteOf(String groupId) => invite.replaceFirst(':groupId', groupId);
+  static String inviteOf(String groupId) => fillPath(invite, {'groupId': groupId});
 
-  static String approvalsOf(String groupId) => approvals.replaceFirst(':groupId', groupId);
+  static String approvalsOf(String groupId) => fillPath(approvals, {'groupId': groupId});
 
   static String _memberPath(String template, String groupId, String memberId) =>
-      template.replaceFirst(':groupId', groupId).replaceFirst(':memberId', memberId);
+      fillPath(template, {'groupId': groupId, 'memberId': memberId});
 
   static String memberOf(String groupId, String memberId) => _memberPath(member, groupId, memberId);
 

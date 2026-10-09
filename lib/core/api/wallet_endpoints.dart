@@ -1,3 +1,5 @@
+import 'package:sanga_ride_core/sanga_ride_core.dart';
+
 abstract final class WalletEndpoints {
   static const String wallet = '/wallet';
   static const String transactions = '/wallet/transactions';
@@ -16,7 +18,7 @@ abstract final class WalletEndpoints {
   static const String groupTopUpAuthorize = '$_group$topUpAuthorize';
 
   static String _scoped(String personal, String group, String? groupId) =>
-      groupId == null ? personal : group.replaceFirst(':groupId', groupId);
+      groupId == null ? personal : fillPath(group, {'groupId': groupId});
 
   static String walletOf(String? groupId) => _scoped(wallet, groupWallet, groupId);
 
@@ -25,10 +27,10 @@ abstract final class WalletEndpoints {
   static String topUpsOf(String? groupId) => _scoped(topUps, groupTopUps, groupId);
 
   static String transactionAt(String id, {String? groupId}) =>
-      _scoped(transaction, groupTransaction, groupId).replaceFirst(':id', id);
+      fillPath(_scoped(transaction, groupTransaction, groupId), {'id': id});
 
-  static String topUpAt(String id, {String? groupId}) => _scoped(topUp, groupTopUp, groupId).replaceFirst(':id', id);
+  static String topUpAt(String id, {String? groupId}) => fillPath(_scoped(topUp, groupTopUp, groupId), {'id': id});
 
   static String topUpAuthorizeAt(String id, {String? groupId}) =>
-      _scoped(topUpAuthorize, groupTopUpAuthorize, groupId).replaceFirst(':id', id);
+      fillPath(_scoped(topUpAuthorize, groupTopUpAuthorize, groupId), {'id': id});
 }

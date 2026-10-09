@@ -6,6 +6,7 @@ import 'package:sanga_ride/view/delivery/live/delivery_issue_screen.dart';
 import 'package:sanga_ride/view/delivery/live/delivery_issue_status_screen.dart';
 import 'package:sanga_ride/view/delivery/live/delivery_proof_screen.dart';
 import 'package:sanga_ride/view/delivery/live/delivery_tracking_screen.dart';
+import 'package:sanga_ride_core/sanga_ride_core.dart';
 
 abstract final class DeliveryLiveRoutes {
   static const String confirmPickup = '/trip/:id/delivery/confirm-pickup';
@@ -14,15 +15,15 @@ abstract final class DeliveryLiveRoutes {
   static const String issue = '/trip/:id/delivery/issue';
   static const String issueStatus = '/trip/:id/delivery/issue/status';
 
-  static String confirmPickupOf(String id) => confirmPickup.replaceFirst(':id', id);
+  static String confirmPickupOf(String id) => fillPath(confirmPickup, {'id': id});
 
-  static String trackingOf(String id) => tracking.replaceFirst(':id', id);
+  static String trackingOf(String id) => fillPath(tracking, {'id': id});
 
-  static String proofOf(String id) => proof.replaceFirst(':id', id);
+  static String proofOf(String id) => fillPath(proof, {'id': id});
 
-  static String issueOf(String id) => issue.replaceFirst(':id', id);
+  static String issueOf(String id) => fillPath(issue, {'id': id});
 
-  static String issueStatusOf(String id) => issueStatus.replaceFirst(':id', id);
+  static String issueStatusOf(String id) => fillPath(issueStatus, {'id': id});
 
   static void popToTrip(BuildContext context) {
     Navigator.of(context).popUntil((route) => route.isFirst || route.settings.name == TripRoutes.trip);

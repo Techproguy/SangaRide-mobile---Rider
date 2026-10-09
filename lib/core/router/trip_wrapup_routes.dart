@@ -4,6 +4,7 @@ import 'package:sanga_ride/view/trip/wrapup/pay_screen.dart';
 import 'package:sanga_ride/view/trip/wrapup/rate_screen.dart';
 import 'package:sanga_ride/view/trip/wrapup/receipt_screen.dart';
 import 'package:sanga_ride/view/trip/wrapup/trip_completed_screen.dart';
+import 'package:sanga_ride_core/sanga_ride_core.dart';
 
 abstract final class TripWrapUpRoutes {
   static const String pay = '/trip/:id/pay';
@@ -12,15 +13,15 @@ abstract final class TripWrapUpRoutes {
   static const String receipt = '/trip/:id/receipt';
   static const String rate = '/trip/:id/rate';
 
-  static String payOf(String id) => pay.replaceFirst(':id', id);
+  static String payOf(String id) => fillPath(pay, {'id': id});
 
-  static String payCardOf(String id) => payCard.replaceFirst(':id', id);
+  static String payCardOf(String id) => fillPath(payCard, {'id': id});
 
-  static String completeOf(String id) => complete.replaceFirst(':id', id);
+  static String completeOf(String id) => fillPath(complete, {'id': id});
 
-  static String receiptOf(String id) => receipt.replaceFirst(':id', id);
+  static String receiptOf(String id) => fillPath(receipt, {'id': id});
 
-  static String rateOf(String id) => rate.replaceFirst(':id', id);
+  static String rateOf(String id) => fillPath(rate, {'id': id});
 
   static final List<RouteBase> all = [
     GoRoute(
