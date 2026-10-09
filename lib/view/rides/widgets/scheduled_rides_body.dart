@@ -35,6 +35,10 @@ class _ScheduledRidesBodyState extends State<ScheduledRidesBody> {
         isLoading: _rides.state is ScheduledLoading,
         hasFailed: _rides.state is ScheduledFailed,
         errorTitle: 'We couldn’t load your scheduled rides',
+        failureMessage: switch (_rides.state) {
+          ScheduledFailed(:final problem) => problem.message,
+          _ => null,
+        },
         onRetry: _rides.load,
         skeletonCount: 3,
         skeletonHeight: 190,
@@ -47,7 +51,8 @@ class _ScheduledRidesBodyState extends State<ScheduledRidesBody> {
     final state = _rides.state;
     if (state is! ScheduledLoaded) return const SizedBox.shrink();
     if (state.rides.isEmpty) {
-      return SangaInlineMessage(
+      return SangaEmptyMessage(
+        icon: Icons.event_available_rounded,
         title: 'Nothing scheduled yet',
         message: 'Plan a ride ahead and it will show up here.',
         actionLabel: 'Plan a ride',

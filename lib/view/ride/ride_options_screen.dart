@@ -44,6 +44,7 @@ class _RideOptionsScreenState extends State<RideOptionsScreen> {
             isLoading: _ride.isLoadingOptions,
             hasFailed: _ride.optionsFailed,
             errorTitle: 'We couldn’t load rides',
+            failureMessage: _ride.optionsProblem?.message,
             onRetry: _ride.loadOptions,
             skeletonCount: _skeletonCount,
             skeletonHeight: SangaVehicleCard.height,
@@ -56,7 +57,8 @@ class _RideOptionsScreenState extends State<RideOptionsScreen> {
 
   Widget _buildOptions(BuildContext context) {
     if (_ride.options.isEmpty) {
-      return SangaInlineMessage(
+      return SangaEmptyMessage(
+        icon: Icons.directions_car_outlined,
         title: 'No rides nearby right now',
         message: 'Drivers come and go fast. Give it a minute and try again.',
         actionLabel: 'Try again',

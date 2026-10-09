@@ -48,6 +48,7 @@ class _RidePricingScreenState extends State<RidePricingScreen> {
             isLoading: _ride.isEstimating,
             hasFailed: _ride.estimate == null,
             errorTitle: 'We couldn’t work out your prices',
+            failureMessage: _ride.estimateProblem?.message,
             onRetry: _ride.loadQuote,
             skeletonCount: PricingOption.values.length,
             builder: _buildOptions,

@@ -3,10 +3,7 @@ import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sanga_ride/controller/rider/ride_for_controller.dart';
 import 'package:sanga_ride/controller/shared/auth_controller.dart';
-import 'package:sanga_ride/core/services/toast_service.dart';
 import 'package:sanga_ride/model/models.dart';
-import 'package:sanga_ride/view/auth/widgets/resend_code_button.dart';
-import 'package:sanga_ride/view/ride/who_for/widgets/passenger_code_expiry.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 class PassengerOtpScreen extends StatefulWidget {
@@ -65,7 +62,7 @@ class _PassengerOtpScreenState extends State<PassengerOtpScreen> {
     final sent = await _flow.resendPassengerCode();
     if (!sent || !mounted) return;
     _code.clear();
-    Toast.success('New code sent. Check your messages.');
+    SangaToast.show('New code sent. Check your messages.', tone: SangaToastTone.success);
     setState(() => _isExpired = false);
   }
 
@@ -104,7 +101,11 @@ class _PassengerOtpScreenState extends State<PassengerOtpScreen> {
         title: 'Enter OTP',
         subtitle:
             'Enter the ${AuthController.otpLength}-digit code sent to ${SangaPhoneNumber.masked(view.info.phone)} to check this is ${view.info.firstName}’s number.',
-        footer: ResendCodeButton(sentAt: view.verification.sentAt, onResend: _resend),
+        footer: SangaResendCodeButton(
+          sentAt: view.verification.sentAt,
+          cooldown: view.verification.resendAfter,
+          onResend: _resend,
+        ),
         children: [
           SangaOtpField(
             length: AuthController.otpLength,
@@ -114,8 +115,9 @@ class _PassengerOtpScreenState extends State<PassengerOtpScreen> {
             onCompleted: (_) => _verify(),
           ),
           const SizedBox(height: SangaSpacing.lg),
-          PassengerCodeExpiry(
-            expiresAt: view.verification.expiresAt,
+          SangaOtpExpiryNotice(
+            sentAt: view.verification.sentAt,
+            lifetime: view.verification.expiresAt.difference(view.verification.sentAt),
             onExpired: () => setState(() => _isExpired = true),
           ),
           const SizedBox(height: SangaSpacing.xxl),

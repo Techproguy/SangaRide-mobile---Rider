@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:sanga_ride/controller/rider/rider_home_controller.dart';
 import 'package:sanga_ride/controller/rider/saved_places_controller.dart';
-import 'package:sanga_ride/core/services/toast_service.dart';
 import 'package:sanga_ride/model/location/place.dart';
 import 'package:sanga_ride/model/places/saved_place.dart';
 import 'package:sanga_ride/view/ride/widgets/place_search_sheet.dart';
@@ -31,6 +30,6 @@ Future<bool> confirmRemoveSavedPlace(BuildContext context, SavedPlace saved) asy
   );
   if (!isConfirmed || !context.mounted) return false;
   final problem = await Get.find<SavedPlacesController>().remove(saved);
-  if (problem != null) Toast.error(problem.message);
+  if (problem != null) SangaToast.show(problem.message, tone: SangaToastTone.error);
   return problem == null;
 }

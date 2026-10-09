@@ -7,6 +7,8 @@ import 'package:sanga_ride/core/api/api.dart';
 import 'package:sanga_ride/core/api/who_for_endpoints.dart';
 import 'package:sanga_ride/model/groups/group_models.dart';
 import 'package:sanga_ride/model/models.dart';
+import 'package:sanga_ride/model/ride/ride_load_problem.dart';
+import 'package:sanga_ride_core/sanga_ride_core.dart' show ConnectionMonitor, JsonReader;
 
 class RideForController extends GetxController {
   final _api = Get.find<ApiService>();
@@ -118,7 +120,7 @@ class RideForController extends GetxController {
       if (current is RideForFamily) _pickedMember.value ??= members.firstWhereOrNull((m) => m.id == current.member.id);
     } catch (e) {
       log('loadFamily failed: $e');
-      if (family is! RideForListLoaded) _family.value = const RideForListFailed();
+      if (family is! RideForListLoaded) _family.value = RideForListFailed(problem: RideLoadProblem.of(e));
     }
   }
 
@@ -145,22 +147,39 @@ class RideForController extends GetxController {
       if (profiles.length == 1) _pickedProfile.value ??= profiles.first;
     } catch (e) {
       log('loadBusinesses failed: $e');
-      if (business is! RideForListLoaded) _business.value = const RideForListFailed();
+      if (business is! RideForListLoaded) _business.value = RideForListFailed(problem: RideLoadProblem.of(e));
     }
   }
 
+  IdempotencyKey? _codeKey;
+  String? _codeSignature;
+
+  bool get _isOffline => ConnectionMonitor.current?.isOnline == false;
+
+  IdempotencyKey _keyFor(PassengerInfo info, {required bool isResend}) {
+    final signature = '${info.toJson()}${isResend ? 'resend' : ''}';
+    if (_codeKey == null || _codeSignature != signature) {
+      _codeKey = IdempotencyKey.newFor('passenger-code');
+      _codeSignature = signature;
+    }
+    return _codeKey!;
+  }
+
   Future<bool> sendPassengerCode(PassengerInfo info) async {
+    if (passengerState is PassengerSending) return false;
+    if (_isOffline) {
+      _passenger.value = const PassengerSendFailed(PassengerFailure.connection);
+      return false;
+    }
     _passenger.value = const PassengerSending();
     try {
-      final verification = await _requestCode(info);
+      final verification = await _requestCode(info, isResend: false);
       _passenger.value = PassengerCodePending(info: info, verification: verification);
+      _codeKey = null;
       return true;
-    } on ApiException catch (e) {
-      _passenger.value = PassengerSendFailed(PassengerFailure.fromCode(e.code));
-      return false;
     } catch (e) {
       log('sendPassengerCode failed: $e');
-      _passenger.value = const PassengerSendFailed(PassengerFailure.connection);
+      _passenger.value = PassengerSendFailed(PassengerFailure.of(e));
       return false;
     }
   }
@@ -168,24 +187,26 @@ class RideForController extends GetxController {
   Future<bool> resendPassengerCode() async {
     final state = passengerState;
     if (state is! PassengerCodePending || state.isResending) return false;
-    _passenger.value = PassengerCodePending(info: state.info, verification: state.verification, isResending: true);
-    try {
-      final verification = await _requestCode(state.info);
-      _passenger.value = PassengerCodePending(info: state.info, verification: verification);
-      return true;
-    } on ApiException catch (e) {
+    if (_isOffline) {
       _passenger.value = PassengerCodePending(
         info: state.info,
         verification: state.verification,
-        failure: PassengerFailure.fromCode(e.code),
+        failure: PassengerFailure.connection,
       );
       return false;
+    }
+    _passenger.value = PassengerCodePending(info: state.info, verification: state.verification, isResending: true);
+    try {
+      final verification = await _requestCode(state.info, isResend: true);
+      _passenger.value = PassengerCodePending(info: state.info, verification: verification);
+      _codeKey = null;
+      return true;
     } catch (e) {
       log('resendPassengerCode failed: $e');
       _passenger.value = PassengerCodePending(
         info: state.info,
         verification: state.verification,
-        failure: PassengerFailure.connection,
+        failure: PassengerFailure.of(e),
       );
       return false;
     }
@@ -194,30 +215,7 @@ class RideForController extends GetxController {
   Future<bool> verifyPassengerCode(String code) async {
     final state = passengerState;
     if (state is! PassengerCodePending || state.isResending) return false;
-    _passenger.value = PassengerChecking(info: state.info, verification: state.verification);
-    try {
-      final response = await _api.post(
-        WhoForEndpoints.passengerVerify,
-        data: {'verificationId': state.verification.id, 'code': code},
-        suppressErrorToast: true,
-      );
-      final data = response.data['data'] as Map<String, dynamic>;
-      final verifiedAt = DateTime.parse(data['verifiedAt'] as String);
-      _passenger.value = PassengerVerified(
-        rideFor: RideForSomeone(passenger: state.info, verifiedAt: verifiedAt),
-        verification: state.verification,
-      );
-      return true;
-    } on ApiException catch (e) {
-      _passenger.value = PassengerCodePending(
-        info: state.info,
-        verification: state.verification,
-        failure: PassengerFailure.fromCode(e.code),
-        attemptsLeft: (e.data['attemptsLeft'] as num?)?.toInt(),
-      );
-      return false;
-    } catch (e) {
-      log('verifyPassengerCode failed: $e');
+    if (_isOffline) {
       _passenger.value = PassengerCodePending(
         info: state.info,
         verification: state.verification,
@@ -225,10 +223,38 @@ class RideForController extends GetxController {
       );
       return false;
     }
+    _passenger.value = PassengerChecking(info: state.info, verification: state.verification);
+    try {
+      final response = await _api.post(
+        WhoForEndpoints.passengerVerify,
+        data: {'verificationId': state.verification.id, 'code': code},
+        suppressErrorToast: true,
+      );
+      final verifiedAt = JsonReader.of((response.data as Map)['data']).timeOrNull('verifiedAt') ?? DateTime.now();
+      _passenger.value = PassengerVerified(
+        rideFor: RideForSomeone(passenger: state.info, verifiedAt: verifiedAt),
+        verification: state.verification,
+      );
+      return true;
+    } catch (e) {
+      log('verifyPassengerCode failed: $e');
+      _passenger.value = PassengerCodePending(
+        info: state.info,
+        verification: state.verification,
+        failure: PassengerFailure.of(e),
+        attemptsLeft: e is ApiException ? (e.data['attemptsLeft'] as num?)?.toInt() : null,
+      );
+      return false;
+    }
   }
 
-  Future<PassengerVerification> _requestCode(PassengerInfo info) async {
-    final response = await _api.post(WhoForEndpoints.passengerOtp, data: info.toJson(), suppressErrorToast: true);
-    return PassengerVerification.fromJson(response.data['data'] as Map<String, dynamic>);
+  Future<PassengerVerification> _requestCode(PassengerInfo info, {required bool isResend}) async {
+    final response = await _api.post(
+      WhoForEndpoints.passengerOtp,
+      data: info.toJson(),
+      key: _keyFor(info, isResend: isResend),
+      suppressErrorToast: true,
+    );
+    return PassengerVerification.fromJson((response.data as Map)['data']);
   }
 }

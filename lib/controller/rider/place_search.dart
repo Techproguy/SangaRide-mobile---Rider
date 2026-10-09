@@ -1,10 +1,13 @@
 import 'dart:async';
 import 'dart:developer';
 
+import 'package:dio/dio.dart' show DioException, DioExceptionType;
 import 'package:flutter/foundation.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:sanga_ride/core/services/places_service.dart';
 import 'package:sanga_ride/model/models.dart';
+import 'package:sanga_ride/model/ride/ride_load_problem.dart';
+import 'package:sanga_ride_core/sanga_ride_core.dart' show ConnectionMonitor;
 
 enum PlaceSearchStatus { idle, searching, results, empty, failed }
 
@@ -19,6 +22,7 @@ class PlaceSearch extends ChangeNotifier {
   String _query = '';
   List<PlaceAutocomplete> _results = const [];
   PlaceSearchStatus _status = PlaceSearchStatus.idle;
+  RideLoadProblem _problem = RideLoadProblem.connection;
   String? _openingId;
   Timer? _timer;
   int _request = 0;
@@ -29,6 +33,8 @@ class PlaceSearch extends ChangeNotifier {
   List<PlaceAutocomplete> get results => _results;
 
   PlaceSearchStatus get status => _status;
+
+  RideLoadProblem get problem => _problem;
 
   bool get isIdle => _status == PlaceSearchStatus.idle;
 
@@ -56,6 +62,13 @@ class PlaceSearch extends ChangeNotifier {
 
   Future<void> _run() async {
     final request = _request;
+    if (ConnectionMonitor.current?.isOnline == false) {
+      _results = const [];
+      _problem = RideLoadProblem.connection;
+      _status = PlaceSearchStatus.failed;
+      notifyListeners();
+      return;
+    }
     try {
       final results = await _places.getAutocompletePredictions(_query, sessionToken: _sessionToken, origin: origin);
       if (request != _request) return;
@@ -65,10 +78,18 @@ class PlaceSearch extends ChangeNotifier {
       log('place search failed: $e');
       if (request != _request) return;
       _results = const [];
+      _problem = _isConnectivity(e) ? RideLoadProblem.connection : RideLoadProblem.unknown;
       _status = PlaceSearchStatus.failed;
     }
     notifyListeners();
   }
+
+  bool _isConnectivity(Object error) =>
+      error is DioException &&
+      (error.type == DioExceptionType.connectionError ||
+          error.type == DioExceptionType.connectionTimeout ||
+          error.type == DioExceptionType.receiveTimeout ||
+          error.type == DioExceptionType.sendTimeout);
 
   Future<Place?> open(PlaceAutocomplete prediction) async {
     if (_openingId != null) return null;

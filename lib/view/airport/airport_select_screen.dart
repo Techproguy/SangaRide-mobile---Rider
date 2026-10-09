@@ -73,6 +73,10 @@ class _AirportSelectScreenState extends State<AirportSelectScreen> {
             isLoading: _airport.catalog is AirportCatalogLoading,
             hasFailed: _airport.catalog is AirportCatalogFailed,
             errorTitle: 'We couldn’t load airports',
+            failureMessage: switch (_airport.catalog) {
+              AirportCatalogFailed(:final problem) => problem.message,
+              _ => null,
+            },
             onRetry: _airport.loadCatalog,
             skeletonCount: 4,
             skeletonHeight: 64,
@@ -90,7 +94,11 @@ class _AirportSelectScreenState extends State<AirportSelectScreen> {
     if (_search.trim().isNotEmpty) {
       final results = catalog.search(_search);
       if (results.isEmpty) {
-        return const SangaInlineMessage(title: 'No airports found', message: 'Try another name or city.');
+        return const SangaEmptyMessage(
+          icon: Icons.search_off_rounded,
+          title: 'No airports found',
+          message: 'Try another name or city.',
+        );
       }
       return _section('Results', results, selectedId);
     }

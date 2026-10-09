@@ -7,6 +7,7 @@ class RideForListBody<T> extends StatelessWidget {
   const RideForListBody({
     super.key,
     required this.state,
+    required this.emptyIcon,
     required this.emptyTitle,
     required this.emptyMessage,
     required this.failedTitle,
@@ -15,6 +16,7 @@ class RideForListBody<T> extends StatelessWidget {
   });
 
   final RideForListState<T> state;
+  final IconData emptyIcon;
   final String emptyTitle;
   final String emptyMessage;
   final String failedTitle;
@@ -24,14 +26,14 @@ class RideForListBody<T> extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return switch (state) {
-      RideForListLoading<T>() => const _Skeleton(),
-      RideForListFailed<T>() => SangaInlineMessage(
+      RideForListLoading<T>() => const SangaSkeleton.list(),
+      RideForListFailed<T>(:final problem) => SangaFailureMessage(
         title: failedTitle,
-        message: 'Check your connection and try again.',
-        actionLabel: 'Try again',
-        onAction: onRetry,
+        message: problem.message,
+        onRetry: onRetry,
       ),
-      RideForListLoaded<T>(:final items) when items.isEmpty => SangaInlineMessage(
+      RideForListLoaded<T>(:final items) when items.isEmpty => SangaEmptyMessage(
+        icon: emptyIcon,
         title: emptyTitle,
         message: emptyMessage,
       ),
@@ -41,26 +43,5 @@ class RideForListBody<T> extends StatelessWidget {
             .fadeIn(duration: SangaMotion.quick, curve: SangaMotion.fadeCurve)
             .moveY(begin: SangaSpacing.sm, end: 0, duration: SangaMotion.morph, curve: SangaMotion.springBlock),
     };
-  }
-}
-
-class _Skeleton extends StatelessWidget {
-  const _Skeleton();
-
-  static const int count = 3;
-  static const double height = 64;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      spacing: SangaSpacing.md,
-      children: [
-        for (var i = 0; i < count; i++)
-          Container(
-            height: height,
-            decoration: const BoxDecoration(color: SangaColors.cardMuted, borderRadius: SangaRadii.field),
-          ),
-      ],
-    );
   }
 }

@@ -31,6 +31,7 @@ class FareBreakdownScreen extends StatelessWidget {
             isLoading: ride.isEstimating,
             hasFailed: ride.estimate == null || ride.pricing == null,
             errorTitle: 'We couldn’t load your fare',
+            failureMessage: ride.estimateProblem?.message,
             onRetry: ride.loadQuote,
             skeletonCount: 1,
             skeletonHeight: 200,

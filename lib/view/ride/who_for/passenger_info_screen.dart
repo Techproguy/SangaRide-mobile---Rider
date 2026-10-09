@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:sanga_ride/controller/rider/ride_for_controller.dart';
 import 'package:sanga_ride/core/router/who_for_routes.dart';
-import 'package:sanga_ride/core/services/toast_service.dart';
 import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride/view/ride/who_for/widgets/passenger_gender_picker.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
@@ -57,10 +56,11 @@ class _PassengerInfoScreenState extends State<PassengerInfoScreen> {
   String? _phoneError(PassengerFlowState state) {
     if (_errors[_Field.phone] case final error?) return error;
     if (state is! PassengerSendFailed) return null;
-    return state.failure == PassengerFailure.connection ? null : state.failure.message;
+    return _isTransient(state.failure) ? null : state.failure.message;
   }
 
   Future<void> _submit() async {
+    if (_flow.passengerState is PassengerSending) return;
     FocusScope.of(context).unfocus();
     final errors = _validate();
     if (errors.isNotEmpty) return setState(() => _errors = errors);
@@ -75,10 +75,13 @@ class _PassengerInfoScreenState extends State<PassengerInfoScreen> {
     if (!mounted) return;
     if (sent) return WhoForRoutes.continueTo(context, WhoForRoutes.passengerOtp);
     final state = _flow.passengerState;
-    if (state is PassengerSendFailed && state.failure == PassengerFailure.connection) {
-      Toast.error(state.failure.message);
+    if (state is PassengerSendFailed && _isTransient(state.failure)) {
+      SangaToast.show(state.failure.message, tone: SangaToastTone.error);
     }
   }
+
+  bool _isTransient(PassengerFailure failure) =>
+      failure == PassengerFailure.connection || failure == PassengerFailure.unknown;
 
   @override
   Widget build(BuildContext context) {
@@ -92,11 +95,14 @@ class _PassengerInfoScreenState extends State<PassengerInfoScreen> {
         ),
       ),
       children: [
+        const Padding(
+          padding: EdgeInsets.only(top: SangaSpacing.xs, bottom: SangaSpacing.xl),
+          child: Text('We’ll text them a code to make sure the number is right.', style: SangaTextStyles.body),
+        ),
         Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           spacing: SangaSpacing.lg,
           children: [
-            const Text('We’ll text them a code to make sure the number is right.', style: SangaTextStyles.body),
             SangaTextField(
               label: 'Name',
               isRequired: true,

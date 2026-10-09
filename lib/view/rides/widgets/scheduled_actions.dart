@@ -1,10 +1,10 @@
 import 'package:flutter/widgets.dart';
 import 'package:sanga_ride/controller/rider/scheduled_rides_controller.dart';
-import 'package:sanga_ride/core/services/toast_service.dart';
 import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride/model/ride/scheduled_ride.dart';
 import 'package:sanga_ride/view/ride/widgets/ride_option_schedule_format.dart';
 import 'package:sanga_ride/view/rides/widgets/cancel_scheduled_sheet.dart';
+import 'package:sanga_ride_ui/sanga_ride_ui.dart' show SangaToast, SangaToastTone;
 
 Future<bool> cancelScheduledRide(BuildContext context, ScheduledRidesController rides, ScheduledRide ride) async {
   final confirmed = await showCancelScheduledSheet(
@@ -15,19 +15,19 @@ Future<bool> cancelScheduledRide(BuildContext context, ScheduledRidesController 
   if (!confirmed || !context.mounted) return false;
   final problem = await rides.cancel(ride.id);
   if (problem == null) {
-    Toast.success(ride.isRepeat ? 'Repeat ride cancelled.' : 'Ride cancelled.');
+    SangaToast.show(ride.isRepeat ? 'Repeat ride cancelled.' : 'Ride cancelled.', tone: SangaToastTone.success);
     return true;
   }
-  Toast.error(problem.message);
+  SangaToast.show(problem.message, tone: SangaToastTone.error);
   return false;
 }
 
 Future<void> remindScheduledRide(ScheduledRidesController rides, ScheduledRide ride) async {
   final problem = await rides.remind(ride.id);
   if (problem == null) {
-    Toast.success('Done. We’ll remind you before your ride.');
+    SangaToast.show('Done. We’ll remind you before your ride.', tone: SangaToastTone.success);
   } else {
-    Toast.error(problem.message);
+    SangaToast.show(problem.message, tone: SangaToastTone.error);
   }
 }
 

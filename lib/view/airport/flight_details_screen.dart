@@ -95,6 +95,10 @@ class _FlightDetailsScreenState extends State<FlightDetailsScreen> {
             isLoading: _airport.catalog is AirportCatalogLoading,
             hasFailed: _airport.catalog is AirportCatalogFailed,
             errorTitle: 'We couldn’t load airlines',
+            failureMessage: switch (_airport.catalog) {
+              AirportCatalogFailed(:final problem) => problem.message,
+              _ => null,
+            },
             onRetry: _airport.loadCatalog,
             skeletonCount: 3,
             skeletonHeight: 68,

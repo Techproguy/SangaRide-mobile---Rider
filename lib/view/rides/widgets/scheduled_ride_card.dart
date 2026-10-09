@@ -29,6 +29,8 @@ class ScheduledRideCard extends StatelessWidget {
   final String? flightLabel;
   final VoidCallback? onRemind;
 
+  static const double _stackScale = 1.3;
+
   bool get _isBusy => busyAction != null;
 
   @override
@@ -58,7 +60,7 @@ class ScheduledRideCard extends StatelessWidget {
                     children: [
                       _vehicle(),
                       const VerticalDivider(width: 1, thickness: 1, color: SangaColors.divider),
-                      Expanded(child: _details()),
+                      Expanded(child: _details(context)),
                     ],
                   ),
                 ),
@@ -86,29 +88,33 @@ class ScheduledRideCard extends StatelessWidget {
     );
   }
 
-  Widget _details() {
+  Widget _details(BuildContext context) {
+    final isStacked = MediaQuery.textScalerOf(context).scale(1) > _stackScale;
+    final tag = SangaTag.scheduled(label: tagLabel, icon: ride.airport == null ? null : Icons.flight_land_rounded);
+    final when = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      spacing: SangaSpacing.xxs,
+      children: [
+        Text(whenLabel, maxLines: 1, overflow: TextOverflow.ellipsis, style: SangaTextStyles.cardTitle),
+        if (repeatLabel != null) Text(repeatLabel!, style: SangaTextStyles.cardSubtitle),
+        if (flightLabel != null) Text(flightLabel!, style: SangaTextStyles.cardSubtitle),
+      ],
+    );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       spacing: SangaSpacing.sm,
       children: [
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          spacing: SangaSpacing.xs,
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                spacing: SangaSpacing.xxs,
-                children: [
-                  Text(whenLabel, style: SangaTextStyles.cardTitle),
-                  if (repeatLabel != null) Text(repeatLabel!, style: SangaTextStyles.cardSubtitle),
-                  if (flightLabel != null) Text(flightLabel!, style: SangaTextStyles.cardSubtitle),
-                ],
-              ),
-            ),
-            SangaTag.scheduled(label: tagLabel, icon: ride.airport == null ? null : Icons.flight_land_rounded),
-          ],
-        ),
+        if (isStacked)
+          Column(crossAxisAlignment: CrossAxisAlignment.start, spacing: SangaSpacing.xs, children: [when, tag])
+        else
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            spacing: SangaSpacing.xs,
+            children: [
+              Expanded(child: when),
+              tag,
+            ],
+          ),
         _stop(SangaStopKind.pickup, ride.pickup),
         _stop(SangaStopKind.dropoff, ride.dropoff),
       ],

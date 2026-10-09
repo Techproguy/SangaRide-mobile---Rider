@@ -360,6 +360,9 @@ abstract final class MockAirport {
     return {
       'flightNumber': ride.flight.label,
       'airline': ride.flight.airline['name'],
+      'airlineCode': ride.flight.airline['code'],
+      'origin': ride.flight.origin,
+      'destination': ride.flight.destination,
       'estimatedArrival': _iso(ride.flight.estimated),
       'terminal': ride.flight.terminal['name'],
       'passengers': ride.passengers,

@@ -26,8 +26,8 @@ class PassengerGenderPicker extends StatelessWidget {
                 child: GestureDetector(
                   behavior: HitTestBehavior.opaque,
                   onTap: () => onChanged(selected == gender ? null : gender),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: SangaSpacing.sm),
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(minHeight: kMinInteractiveDimension),
                     child: Row(
                       spacing: SangaSpacing.xs,
                       children: [

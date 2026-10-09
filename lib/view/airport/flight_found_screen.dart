@@ -26,7 +26,8 @@ class FlightFoundScreen extends StatelessWidget {
         ),
         children: [
           if (flight == null)
-            SangaInlineMessage(
+            SangaEmptyMessage(
+              icon: Icons.flight_outlined,
               title: 'We lost track of your flight',
               message: 'Go back and check your flight details again.',
               actionLabel: 'Go back',

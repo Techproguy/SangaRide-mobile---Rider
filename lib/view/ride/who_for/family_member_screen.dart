@@ -40,6 +40,7 @@ class _FamilyMemberScreenState extends State<FamilyMemberScreen> {
         Obx(
           () => RideForListBody<FamilyMember>(
             state: _flow.family,
+            emptyIcon: Icons.groups_rounded,
             emptyTitle: 'No family members yet',
             emptyMessage: 'Create or join a family group from the menu, then book rides for everyone in it here.',
             failedTitle: 'We couldn’t load your family',

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sanga_ride/controller/rider/saved_places_controller.dart';
-import 'package:sanga_ride/core/services/toast_service.dart';
 import 'package:sanga_ride/model/location/place.dart';
 import 'package:sanga_ride/model/places/saved_place.dart';
 import 'package:sanga_ride/view/places/widgets/saved_place_actions.dart';
@@ -44,7 +43,7 @@ class _SavedPlaceEditScreenState extends State<SavedPlaceEditScreen> {
     final problem = await _places.save(kind: widget.kind, label: label, place: place, id: existing?.id);
     if (!mounted) return false;
     if (problem != null) {
-      Toast.error(problem.message);
+      SangaToast.show(problem.message, tone: SangaToastTone.error);
       return false;
     }
     context.pop(place);
@@ -64,6 +63,7 @@ class _SavedPlaceEditScreenState extends State<SavedPlaceEditScreen> {
             isLoading: state is SavedPlacesLoading,
             hasFailed: state is SavedPlacesFailed,
             errorTitle: 'We couldn’t load your places',
+            failureMessage: state is SavedPlacesFailed ? state.problem.message : null,
             onRetry: _places.load,
             skeletonCount: 2,
             skeletonHeight: 58,
@@ -80,7 +80,8 @@ class _SavedPlaceEditScreenState extends State<SavedPlaceEditScreen> {
   Widget _form(BuildContext context, SavedPlaceBook book, Set<String> busy) {
     final existing = _existing(book);
     if (!widget.kind.isSlot && existing == null) {
-      return SangaInlineMessage(
+      return SangaEmptyMessage(
+        icon: Icons.location_off_outlined,
         title: 'We can’t find that place',
         message: 'It may already be gone.',
         actionLabel: 'Go back',

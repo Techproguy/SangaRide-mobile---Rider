@@ -6,7 +6,6 @@ import 'package:sanga_ride/controller/rider/place_search.dart';
 import 'package:sanga_ride/controller/rider/ride_request_controller.dart';
 import 'package:sanga_ride/controller/rider/rider_home_controller.dart';
 import 'package:sanga_ride/core/router/routes.dart';
-import 'package:sanga_ride/core/services/toast_service.dart';
 import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride/view/ride/widgets/place_search_results.dart';
 import 'package:sanga_ride/view/ride/widgets/place_suggestions.dart';
@@ -71,14 +70,16 @@ class _RideSearchScreenState extends State<RideSearchScreen> {
   Future<void> _open(PlaceAutocomplete prediction) async {
     final place = await _search.open(prediction);
     if (!mounted) return;
-    if (place == null) return Toast.error('We couldn’t load that place. Try another one.');
+    if (place == null) {
+      return SangaToast.show('We couldn’t load that place. Try another one.', tone: SangaToastTone.error);
+    }
     _pick(place);
   }
 
   void _pick(Place place) {
     final isPickup = _target == RoutePoint.pickup;
     final error = _ride.applyRouteEdit(isPickup ? const RouteEdit.pickup() : const RouteEdit.dropoff(), place);
-    if (error != null) return Toast.error(error);
+    if (error != null) return SangaToast.show(error, tone: SangaToastTone.error);
     if (!isPickup) {
       _home.rememberPlace(place);
       return _showRoute();

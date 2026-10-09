@@ -1,3 +1,4 @@
+import 'package:sanga_ride/model/ride/ride_load_problem.dart';
 import 'package:sanga_ride/model/ride/server_deadline.dart';
 import 'package:sanga_ride_core/sanga_ride_core.dart';
 
@@ -74,7 +75,12 @@ class PassengerInfo {
 }
 
 class PassengerVerification {
-  const PassengerVerification({required this.id, required this.expiresAt, required this.sentAt});
+  const PassengerVerification({
+    required this.id,
+    required this.expiresAt,
+    required this.sentAt,
+    this.resendAfter = const Duration(seconds: 60),
+  });
 
   factory PassengerVerification.fromJson(Object? body) {
     final json = JsonReader.of(body);
@@ -82,12 +88,14 @@ class PassengerVerification {
       id: json.str('verificationId'),
       expiresAt: deviceDeadlineAt(serverInstantOf(json, 'expiresAt')),
       sentAt: DateTime.now(),
+      resendAfter: Duration(seconds: json.intOr('resendInSeconds', 60)),
     );
   }
 
   final String id;
   final DateTime expiresAt;
   final DateTime sentAt;
+  final Duration resendAfter;
 }
 
 class FamilyMember {
@@ -219,7 +227,9 @@ final class RideForListLoading<T> extends RideForListState<T> {
 }
 
 final class RideForListFailed<T> extends RideForListState<T> {
-  const RideForListFailed();
+  const RideForListFailed({this.problem = RideLoadProblem.connection});
+
+  final RideLoadProblem problem;
 }
 
 final class RideForListLoaded<T> extends RideForListState<T> {

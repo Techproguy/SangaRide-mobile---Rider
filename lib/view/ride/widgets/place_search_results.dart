@@ -27,13 +27,13 @@ class PlaceSearchResults extends StatelessWidget {
           ),
         ),
       ),
-      PlaceSearchStatus.failed => SangaInlineMessage(
+      PlaceSearchStatus.failed => SangaFailureMessage(
         title: 'Search hit a bump',
-        message: 'Check your connection and give it another go.',
-        actionLabel: 'Try again',
-        onAction: search.retry,
+        message: search.problem.message,
+        onRetry: search.retry,
       ),
-      PlaceSearchStatus.empty => SangaInlineMessage(
+      PlaceSearchStatus.empty => SangaEmptyMessage(
+        icon: Icons.search_off_rounded,
         title: 'No matches for “${search.query}”',
         message: 'Try a street, area or landmark nearby.',
       ),

@@ -39,6 +39,7 @@ class _BusinessProfileScreenState extends State<BusinessProfileScreen> {
         Obx(
           () => RideForListBody<BusinessProfile>(
             state: _flow.business,
+            emptyIcon: Icons.apartment_rounded,
             emptyTitle: 'No business profile yet',
             emptyMessage: 'You’re not on a company profile, so this ride has nowhere to be charged.',
             failedTitle: 'We couldn’t load your profiles',

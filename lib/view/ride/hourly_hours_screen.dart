@@ -48,6 +48,10 @@ class _HourlyHoursScreenState extends State<HourlyHoursScreen> {
             isLoading: _ride.catalog is CatalogLoading,
             hasFailed: _ride.catalog is CatalogFailed || _ride.hourlyRate == null,
             errorTitle: 'We couldn’t load hourly prices',
+            failureMessage: switch (_ride.catalog) {
+              CatalogFailed(:final problem) => problem.message,
+              _ => null,
+            },
             onRetry: _ride.loadCatalog,
             skeletonCount: 5,
             skeletonHeight: 68,

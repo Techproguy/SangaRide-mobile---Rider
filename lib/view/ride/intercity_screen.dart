@@ -74,6 +74,10 @@ class _IntercityScreenState extends State<IntercityScreen> {
             isLoading: _ride.catalog is CatalogLoading,
             hasFailed: _ride.catalog is CatalogFailed,
             errorTitle: 'We couldn’t load intercity cities',
+            failureMessage: switch (_ride.catalog) {
+              CatalogFailed(:final problem) => problem.message,
+              _ => null,
+            },
             onRetry: _ride.loadCatalog,
             skeletonCount: 4,
             skeletonHeight: 56,

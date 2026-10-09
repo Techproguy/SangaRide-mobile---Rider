@@ -406,24 +406,43 @@ class ScheduledAirport {
     required this.pickupType,
     required this.meetPoint,
     required this.status,
+    required this.airlineCode,
     this.terminal,
+    this.origin,
+    this.destination,
   });
 
-  factory ScheduledAirport.fromJson(Map<String, dynamic> json) => ScheduledAirport(
-    flightNumber: json['flightNumber'] as String,
-    airline: json['airline'] as String,
-    estimatedArrival: DateTime.parse(json['estimatedArrival'] as String).toLocal(),
-    terminal: json['terminal'] as String?,
-    passengers: (json['passengers'] as num).toInt(),
-    luggage: json['luggage'] as String,
-    assistance: Assistance.fromCode(json['assistance'] as String?),
-    pickupType: PickupType.fromCode(json['pickupType'] as String?),
-    meetPoint: json['meetPoint'] as String,
-    status: FlightStatus.fromCode(json['flightStatus'] as String?),
-  );
+  factory ScheduledAirport.fromJson(Map<String, dynamic> raw) {
+    final json = JsonReader(raw);
+    final flightNumber = json.str('flightNumber');
+    return ScheduledAirport(
+      flightNumber: flightNumber,
+      airline: json.strOr('airline', ''),
+      airlineCode: json.strOr('airlineCode', flightNumber.split(' ').first),
+      estimatedArrival: json.time('estimatedArrival').toLocal(),
+      terminal: json.strOrNull('terminal'),
+      passengers: json.intOr('passengers', 1),
+      luggage: json.strOr('luggage', ''),
+      assistance: Assistance.fromCode(json.strOrNull('assistance')),
+      pickupType: PickupType.fromCode(json.strOrNull('pickupType')),
+      meetPoint: json.strOr('meetPoint', ''),
+      status: FlightStatus.fromCode(json.strOrNull('flightStatus')),
+      origin: _city(json.objectOrNull('origin')),
+      destination: _city(json.objectOrNull('destination')),
+    );
+  }
+
+  static FlightCity? _city(JsonReader? json) {
+    if (json == null) return null;
+    final city = json.strOrNull('city');
+    return city == null ? null : FlightCity(city: city, iata: json.strOr('iata', ''));
+  }
 
   final String flightNumber;
   final String airline;
+  final String airlineCode;
+  final FlightCity? origin;
+  final FlightCity? destination;
   final DateTime estimatedArrival;
   final String? terminal;
   final int passengers;

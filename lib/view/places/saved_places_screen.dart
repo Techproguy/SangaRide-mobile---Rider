@@ -3,7 +3,6 @@ import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sanga_ride/controller/rider/saved_places_controller.dart';
 import 'package:sanga_ride/core/router/places_routes.dart';
-import 'package:sanga_ride/core/services/toast_service.dart';
 import 'package:sanga_ride/model/location/place.dart';
 import 'package:sanga_ride/model/places/saved_place.dart';
 import 'package:sanga_ride/view/places/widgets/saved_place_actions.dart';
@@ -32,10 +31,10 @@ class _SavedPlacesScreenState extends State<SavedPlacesScreen> {
     final problem = await _places.save(kind: SavedPlaceKind.other, label: label, place: place);
     if (!mounted) return false;
     if (problem != null) {
-      Toast.error(problem.message);
+      SangaToast.show(problem.message, tone: SangaToastTone.error);
       return false;
     }
-    Toast.success('$label is saved');
+    SangaToast.show('$label is saved', tone: SangaToastTone.success);
     return true;
   }
 
@@ -50,6 +49,7 @@ class _SavedPlacesScreenState extends State<SavedPlacesScreen> {
             isLoading: state is SavedPlacesLoading,
             hasFailed: state is SavedPlacesFailed,
             errorTitle: 'We couldn’t load your places',
+            failureMessage: state is SavedPlacesFailed ? state.problem.message : null,
             onRetry: _places.load,
             skeletonCount: 3,
             skeletonHeight: 64,
