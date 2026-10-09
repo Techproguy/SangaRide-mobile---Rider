@@ -34,6 +34,7 @@ class _DeliveryTrackingScreenState extends State<DeliveryTrackingScreen> {
 
   @override
   void dispose() {
+    _issue.release();
     super.dispose();
   }
 

@@ -37,6 +37,7 @@ class _DeliveryIssueStatusScreenState extends State<DeliveryIssueStatusScreen> {
 
   @override
   void dispose() {
+    _issue.release();
     super.dispose();
   }
 
@@ -100,7 +101,7 @@ class _DeliveryIssueStatusScreenState extends State<DeliveryIssueStatusScreen> {
       IssueUnavailable(:final problem) => SangaFailureMessage(
         title: problem.title,
         message: problem.message,
-        onRetry: problem.canRetry ? () => unawaited(_issue.open(widget.tripId)) : null,
+        onRetry: problem.canRetry ? () => unawaited(_issue.retry()) : null,
       ),
       IssueIdle() => SangaEmptyMessage(
         icon: Icons.flag_outlined,

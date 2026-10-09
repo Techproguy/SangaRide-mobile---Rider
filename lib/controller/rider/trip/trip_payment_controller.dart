@@ -76,9 +76,7 @@ class TripPaymentController extends GetxController {
     return ++_epoch;
   }
 
-  void stopWatching() {
-    _invalidate();
-  }
+  void stopWatching() => _stopPolling();
 
   Future<void> open(String tripId) async {
     if (_tripId != tripId) _forgetAttempts();

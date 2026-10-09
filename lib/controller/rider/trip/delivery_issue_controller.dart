@@ -25,6 +25,7 @@ class DeliveryIssueController extends GetxController {
   Mutation<DeliveryIssue>? _resolveMutation;
   String? _resolveSignature;
   String? _tripId;
+  int _viewers = 0;
   int _epoch = 0;
 
   Rx<DeliveryIssueState> get stateRx => _state;
@@ -46,8 +47,23 @@ class DeliveryIssueController extends GetxController {
 
   String? _issueIdFor(String tripId) => _issueIds[tripId] ?? _trip.trip?.delivery?.openIssueId;
 
+  void release() {
+    if (_viewers > 0) _viewers--;
+    if (_viewers == 0) _stopPolling();
+  }
+
   Future<void> open(String tripId) async {
-    if (_tripId == tripId && state is! IssueUnavailable) return;
+    _viewers++;
+    await _begin(tripId);
+  }
+
+  Future<void> retry() async {
+    final tripId = _tripId;
+    if (tripId != null) await _begin(tripId, force: true);
+  }
+
+  Future<void> _begin(String tripId, {bool force = false}) async {
+    if (!force && _tripId == tripId && _poller != null && state is! IssueUnavailable) return;
     _stopPolling();
     _tripId = tripId;
     final epoch = ++_epoch;
@@ -66,6 +82,7 @@ class DeliveryIssueController extends GetxController {
     _releaseMutations();
     _epoch++;
     _tripId = null;
+    _viewers = 0;
     _state.value = const IssueIdle();
   }
 
