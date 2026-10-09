@@ -16,6 +16,7 @@ class LocationResult {
 
 class LocationService {
   static const _settings = LocationSettings(accuracy: LocationAccuracy.high, distanceFilter: 10);
+  static const _fixSettings = LocationSettings(accuracy: LocationAccuracy.high, timeLimit: Duration(seconds: 10));
 
   Future<bool> isLocationServiceEnabled() => Geolocator.isLocationServiceEnabled();
 
@@ -40,7 +41,7 @@ class LocationService {
       if (permission == LocationPermission.denied) return const LocationResult(LocationStatus.denied);
       if (permission == LocationPermission.deniedForever) return const LocationResult(LocationStatus.deniedForever);
 
-      final position = await Geolocator.getCurrentPosition(locationSettings: _settings);
+      final position = await Geolocator.getCurrentPosition(locationSettings: _fixSettings);
       return LocationResult(LocationStatus.granted, LatLng(position.latitude, position.longitude));
     } catch (e) {
       log('resolveCurrentLocation error: $e');

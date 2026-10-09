@@ -138,6 +138,7 @@ class _ProfileEditSheetState extends State<_ProfileEditSheet> {
         onSubmitted: (_) => _save(),
       ),
       ProfileField.birthday => SangaBirthdayField(
+        minimumAge: 16,
         initialDate: _birthday,
         errorText: message,
         onPicked: (date) => setState(() {

@@ -1,5 +1,7 @@
+import 'dart:async';
 import 'dart:developer';
 
+import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 import 'package:sanga_ride/controller/shared/user_controller.dart';
 import 'package:sanga_ride/core/api/api.dart';
@@ -116,6 +118,7 @@ class AuthController extends GetxController {
     await SecureTokenStore.instance.clear();
     await Get.find<UserController>().clear();
     SangaRouter.router.go(SangaRoutes.onboarding);
+    WidgetsBinding.instance.addPostFrameCallback((_) => unawaited(Get.deleteAll()));
   }
 
   Future<void> _startSession(Map<String, dynamic> data) async {

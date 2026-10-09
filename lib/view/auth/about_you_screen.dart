@@ -75,7 +75,7 @@ class _AboutYouScreenState extends State<AboutYouScreen> {
           onChanged: (_) => setState(() => _emailError = null),
         ),
         const SizedBox(height: SangaSpacing.xl),
-        SangaBirthdayField(isRequired: false, onPicked: (date) => _birthday = date),
+        SangaBirthdayField(minimumAge: 16, isRequired: false, onPicked: (date) => _birthday = date),
         const SizedBox(height: SangaSpacing.xl),
         SangaTextField(
           label: 'Referral code (optional)',
