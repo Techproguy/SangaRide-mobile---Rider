@@ -83,24 +83,6 @@ class CurrentLocationRow extends StatefulWidget {
 
 class _CurrentLocationRowState extends State<CurrentLocationRow> {
   final _home = Get.find<RiderHomeController>();
-  late final AppLifecycleListener _lifecycle;
-
-  @override
-  void initState() {
-    super.initState();
-    _lifecycle = AppLifecycleListener(onResume: _recheck);
-  }
-
-  @override
-  void dispose() {
-    _lifecycle.dispose();
-    super.dispose();
-  }
-
-  void _recheck() {
-    if (_home.locationStatus != LocationStatus.granted && !_home.isLocating) _home.locate();
-  }
-
   String get _subtitle {
     if (_home.isLocating) return 'Finding you…';
     return switch (_home.locationStatus) {
@@ -120,7 +102,7 @@ class _CurrentLocationRowState extends State<CurrentLocationRow> {
     if (status != LocationStatus.granted) {
       final retry = await LocationPermissionPrompt.show(context, status);
       if (!retry || !mounted) return;
-      status = await _home.locate();
+      status = await _home.locate(requestPermission: true);
     }
     final place = _home.currentPlace;
     if (status == LocationStatus.granted && place != null && mounted) widget.onPick(place);

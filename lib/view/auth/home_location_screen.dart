@@ -7,7 +7,8 @@ import 'package:sanga_ride/controller/rider/rider_sign_up_controller.dart';
 import 'package:sanga_ride/core/router/routes.dart';
 import 'package:sanga_ride/core/services/location_service.dart';
 import 'package:sanga_ride/core/services/places_service.dart';
-import 'package:sanga_ride/core/services/toast_service.dart';
+import 'package:sanga_ride/core/services/permission_center.dart';
+import 'package:sanga_ride/view/auth/widgets/sign_up_error_notice.dart';
 import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride/view/auth/sign_up_steps.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
@@ -23,6 +24,7 @@ class _HomeLocationScreenState extends State<HomeLocationScreen> {
   static const _debounce = Duration(milliseconds: 300);
 
   final _signUp = Get.find<RiderSignUpController>();
+  final _permissions = Get.find<PermissionCenter>();
   final _places = PlacesService();
   final _location = LocationService();
   final _query = TextEditingController();
@@ -68,6 +70,21 @@ class _HomeLocationScreenState extends State<HomeLocationScreen> {
   }
 
   Future<void> _useCurrentLocation() async {
+    if (_isLocating) return;
+    final access = await _permissions.prime(PermissionKind.location, context);
+    if (!mounted) return;
+    if (access.needsSettings) {
+      final openSettings = await showSangaPromptSheet(
+        context: context,
+        icon: Icons.location_disabled_rounded,
+        title: 'Location access is off',
+        message: 'Let Sanga Ride use your location in Settings, or search for your address instead.',
+        actionLabel: 'Open Settings',
+      );
+      if (openSettings) await _permissions.openSettings();
+      return;
+    }
+    if (!access.isUsable) return;
     setState(() => _isLocating = true);
     final result = await _location.resolveCurrentLocation();
     final position = result.position;
@@ -75,16 +92,16 @@ class _HomeLocationScreenState extends State<HomeLocationScreen> {
     if (!mounted) return;
     setState(() => _isLocating = false);
     if (place != null) return _choose(place);
-    Toast.error(switch (result.status) {
+    SangaToast.show(switch (result.status) {
       LocationStatus.serviceDisabled => 'Turn on location services to use where you are.',
       LocationStatus.denied || LocationStatus.deniedForever => 'Allow location access to use where you are.',
       _ => 'We couldn’t find where you are. Search for your address instead.',
-    });
+    }, tone: SangaToastTone.error);
   }
 
   Future<void> _save() async {
     final home = _home;
-    if (home == null) return;
+    if (home == null || _signUp.isSaving) return;
     if (await _signUp.saveHome(home)) await _finish();
   }
 
@@ -143,6 +160,7 @@ class _HomeLocationScreenState extends State<HomeLocationScreen> {
             ),
           ),
         const SizedBox(height: SangaSpacing.lg),
+        const SignUpErrorNotice(),
         Obx(
           () => SangaButton.primary(
             label: 'Continue',

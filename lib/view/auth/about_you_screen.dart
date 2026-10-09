@@ -6,6 +6,7 @@ import 'package:sanga_ride/controller/rider/rider_sign_up_controller.dart';
 import 'package:sanga_ride/core/router/routes.dart';
 import 'package:sanga_ride/core/services/legal.dart';
 import 'package:sanga_ride/view/auth/sign_up_steps.dart';
+import 'package:sanga_ride/view/auth/widgets/sign_up_error_notice.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 class AboutYouScreen extends StatefulWidget {
@@ -45,6 +46,7 @@ class _AboutYouScreenState extends State<AboutYouScreen> {
   }
 
   Future<void> _submit() async {
+    if (_signUp.isSaving) return;
     if (!_emailPattern.hasMatch(_email.text.trim())) {
       return setState(() => _emailError = 'Enter a valid email address');
     }
@@ -102,6 +104,7 @@ class _AboutYouScreenState extends State<AboutYouScreen> {
           ),
         ),
         const SizedBox(height: SangaSpacing.xxl),
+        const SignUpErrorNotice(),
         Obx(
           () => SangaButton.primary(
             label: 'Continue',

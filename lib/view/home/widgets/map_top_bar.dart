@@ -12,6 +12,7 @@ class MapTopBar extends StatelessWidget {
     this.changedCity,
     this.onConfirmCity,
     this.onDeclineCity,
+    this.notices = const [],
   });
 
   final Widget leading;
@@ -21,6 +22,7 @@ class MapTopBar extends StatelessWidget {
   final String? changedCity;
   final VoidCallback? onConfirmCity;
   final VoidCallback? onDeclineCity;
+  final List<Widget> notices;
 
   @override
   Widget build(BuildContext context) {
@@ -40,6 +42,13 @@ class MapTopBar extends StatelessWidget {
               if (bell case final bell?) ...[bell, const SizedBox(width: SangaSpacing.sm)],
               SangaAvatar(name: userName),
             ],
+          ),
+          AnimatedSize(
+            duration: SangaMotion.quick,
+            curve: SangaMotion.springBlock,
+            alignment: Alignment.topCenter,
+            clipBehavior: Clip.none,
+            child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, spacing: SangaSpacing.sm, children: notices),
           ),
           AnimatedSize(
             duration: SangaMotion.quick,

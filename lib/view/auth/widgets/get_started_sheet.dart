@@ -17,12 +17,18 @@ class GetStartedSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SangaAuthChoiceSheet(
-      onClose: onClose,
-      onCreateAccount: () => context.push(SangaRoutes.signUp),
-      onLogin: () => context.push(SangaRoutes.signIn),
-      onGoogle: () => _continueWith(context, AuthProvider.google),
-      onApple: () => _continueWith(context, AuthProvider.apple),
-    );
+    final auth = Get.find<AuthController>();
+    return Obx(() {
+      final isFree = auth.signingInWith == null;
+      return SangaAuthChoiceSheet(
+        onClose: onClose,
+        onCreateAccount: () => context.push(SangaRoutes.signUp),
+        onLogin: () => context.push(SangaRoutes.signIn),
+        onGoogle: AuthController.providersAvailable && isFree
+            ? () => _continueWith(context, AuthProvider.google)
+            : null,
+        onApple: AuthController.providersAvailable && isFree ? () => _continueWith(context, AuthProvider.apple) : null,
+      );
+    });
   }
 }

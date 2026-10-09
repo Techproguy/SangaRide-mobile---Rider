@@ -15,7 +15,9 @@ import 'package:sanga_ride/core/router/menu_routes.dart';
 import 'package:sanga_ride/core/router/places_routes.dart';
 import 'package:sanga_ride/core/router/routes.dart';
 import 'package:sanga_ride/core/router/who_for_routes.dart';
-import 'package:sanga_ride/core/services/toast_service.dart';
+import 'package:sanga_ride/core/services/location_service.dart';
+import 'package:sanga_ride/core/services/permission_center.dart';
+import 'package:sanga_ride/core/services/session_restore.dart';
 import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride/model/places/saved_place.dart';
 import 'package:sanga_ride/view/airport/airport_entry.dart';
@@ -41,6 +43,7 @@ class _RiderHomeScreenState extends State<RiderHomeScreen> {
   final _saved = Get.find<SavedPlacesController>();
   final _map = Get.find<MapController>();
   final _notifications = Get.find<NotificationsController>();
+  final _restore = Get.find<SessionRestore>();
   final _panelKey = GlobalKey();
   Set<Marker> _markers = const {};
   Worker? _placeWorker;
@@ -52,6 +55,7 @@ class _RiderHomeScreenState extends State<RiderHomeScreen> {
     _showCurrentPlace();
     WidgetsBinding.instance.addPostFrameCallback((_) => _syncPanelInset());
     WidgetsBinding.instance.addPostFrameCallback((_) => unawaited(_notifications.reload()));
+    WidgetsBinding.instance.addPostFrameCallback((_) => unawaited(_askForLocation()));
   }
 
   @override
@@ -81,6 +85,46 @@ class _RiderHomeScreenState extends State<RiderHomeScreen> {
     _map.camera.moveTo(position, zoom: 15);
   }
 
+  Future<void> _askForLocation() async {
+    if (!mounted) return;
+    await _home.askForLocation(context);
+  }
+
+  Future<void> _retryRestore() async {
+    final stack = await _restore.retry();
+    if (stack != null) await _restore.open(stack);
+  }
+
+  Future<void> _fixLocation() async {
+    switch (_home.locationAccess) {
+      case PermissionAccess.denied:
+        await _home.askForLocation(context);
+      case PermissionAccess.serviceOff:
+        await LocationService().openLocationSettings();
+      case PermissionAccess.permanentlyDenied || PermissionAccess.restricted:
+        await _home.openLocationSettings();
+      case PermissionAccess.granted || PermissionAccess.grantedWhileInUse:
+        await _home.locate();
+    }
+  }
+
+  List<Widget> _notices() {
+    final access = _home.locationAccess;
+    return [
+      if (_restore.restoreFailed)
+        SangaStaleNotice(message: 'We couldn’t check for an active trip.', retryLabel: 'Retry', onRetry: _retryRestore),
+      if (!access.isUsable)
+        SangaStaleNotice(
+          message: access == PermissionAccess.serviceOff
+              ? 'Location is off. Turn it on so drivers can find you.'
+              : 'Share your location so we can start pickups where you are.',
+          retryLabel: access == PermissionAccess.denied ? 'Allow' : 'Settings',
+          onRetry: _fixLocation,
+        ),
+      if (_home.hasRefreshProblem) SangaStaleNotice(onRetry: _home.refreshHome),
+    ];
+  }
+
   Future<void> _openMenu() async {
     await context.push(MenuRoutes.menu);
     if (mounted) unawaited(_notifications.reload());
@@ -102,7 +146,9 @@ class _RiderHomeScreenState extends State<RiderHomeScreen> {
   }
 
   Future<void> _setUpPlace(SavedPlaceKind kind) async {
-    if (!await _saved.ensureLoaded()) return Toast.error('We couldn’t load your saved places. Give it another go.');
+    if (!await _saved.ensureLoaded()) {
+      return SangaToast.show('We couldn’t load your saved places. Give it another go.', tone: SangaToastTone.error);
+    }
     if (!mounted) return;
     final existing = _saved.book?.of(kind)?.place;
     if (existing != null) return _rideTo(existing);
@@ -132,6 +178,7 @@ class _RiderHomeScreenState extends State<RiderHomeScreen> {
                   weather: _home.weather,
                   userName: user?.displayName ?? '',
                   bell: const NotificationBell(),
+                  notices: _notices(),
                   changedCity: _home.changedCity,
                   onConfirmCity: _home.confirmCity,
                   onDeclineCity: _home.dismissCity,
@@ -149,6 +196,7 @@ class _RiderHomeScreenState extends State<RiderHomeScreen> {
                   child: Obx(
                     () => HomePanel(
                       key: _panelKey,
+                      isLocked: _restore.isRestoring,
                       home: _home.home,
                       work: _home.work,
                       onSearch: _search,

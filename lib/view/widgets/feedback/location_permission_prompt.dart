@@ -1,16 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:sanga_ride/core/services/location_service.dart';
-import 'package:sanga_ride/core/services/toast_service.dart';
+import 'package:sanga_ride/core/services/permission_center.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 abstract final class LocationPermissionPrompt {
   static Future<bool> show(BuildContext context, LocationStatus status) async {
-    final location = LocationService();
+    final permissions = Get.find<PermissionCenter>();
     switch (status) {
       case LocationStatus.granted:
         return false;
       case LocationStatus.error:
-        Toast.error('We couldn’t find you just now. Try again, or search for your pickup.');
+        SangaToast.show(
+          'We couldn’t find you just now. Try again, or search for your pickup.',
+          tone: SangaToastTone.error,
+        );
         return false;
       case LocationStatus.serviceDisabled:
         final accepted = await showSangaPromptSheet(
@@ -20,7 +24,7 @@ abstract final class LocationPermissionPrompt {
           message: 'Turn on location services so your driver can find you right where you are.',
           actionLabel: 'Turn on location',
         );
-        if (accepted) await location.openLocationSettings();
+        if (accepted) await LocationService().openLocationSettings();
         return false;
       case LocationStatus.deniedForever:
         final accepted = await showSangaPromptSheet(
@@ -30,16 +34,11 @@ abstract final class LocationPermissionPrompt {
           message: 'Let Sanga Ride use your location in Settings, so pickups start right where you stand.',
           actionLabel: 'Open Settings',
         );
-        if (accepted) await location.openAppSettings();
+        if (accepted) await permissions.openSettings();
         return false;
       case LocationStatus.denied:
-        return showSangaPromptSheet(
-          context: context,
-          icon: Icons.near_me_rounded,
-          title: 'Share your location',
-          message: 'We use it to set your pickup and show drivers nearby.',
-          actionLabel: 'Allow location',
-        );
+        final access = await permissions.prime(PermissionKind.location, context);
+        return access.isUsable;
     }
   }
 }

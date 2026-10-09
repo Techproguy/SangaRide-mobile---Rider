@@ -1,4 +1,5 @@
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:sanga_ride/core/api/mock/mock_booking.dart';
 import 'package:sanga_ride/core/extensions/lat_lng.dart';
 import 'package:sanga_ride/model/models.dart';
 
@@ -52,6 +53,19 @@ class MockPlaces {
       coordinates: LatLng(4.7900, 7.0130),
     ),
   ];
+
+  static String? cityAt(LatLng point) {
+    String? nearest;
+    var nearestMeters = double.infinity;
+    for (final city in (MockBooking.cities['cities'] as List).cast<Map<String, dynamic>>()) {
+      final meters = LatLng(city['lat'] as double, city['lng'] as double).metersTo(point);
+      if (meters <= (city['radiusKm'] as num) * 1000 && meters < nearestMeters) {
+        nearest = city['name'] as String;
+        nearestMeters = meters;
+      }
+    }
+    return nearest;
+  }
 
   static const List<Place> _landmarks = [
     Place(

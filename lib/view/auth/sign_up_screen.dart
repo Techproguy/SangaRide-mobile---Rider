@@ -6,6 +6,7 @@ import 'package:sanga_ride/controller/shared/auth_controller.dart';
 import 'package:sanga_ride/core/router/routes.dart';
 import 'package:sanga_ride/view/auth/sign_up_steps.dart';
 import 'package:sanga_ride/view/auth/verify_otp_screen.dart';
+import 'package:sanga_ride/view/auth/widgets/sign_up_error_notice.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 enum _Field { firstName, lastName, phone }
@@ -47,18 +48,19 @@ class _SignUpScreenState extends State<SignUpScreen> {
   }
 
   Future<void> _submit() async {
+    if (_signUp.isSaving) return;
     final errors = _validate();
     if (errors.isNotEmpty) return setState(() => _errors = errors);
     final phone = SangaPhoneNumber.toE164(_phone.text);
-    final started = await _signUp.start(
+    final session = await _signUp.start(
       firstName: _firstName.text.trim(),
       lastName: _lastName.text.trim(),
       phone: phone,
     );
-    if (started && mounted) {
+    if (session != null && mounted) {
       context.push(
         SangaRoutes.verifyOtp,
-        extra: OtpArgs(phone: phone, next: SangaRoutes.aboutYou, purpose: OtpPurpose.registration),
+        extra: OtpArgs(phone: phone, next: SangaRoutes.aboutYou, purpose: OtpPurpose.registration, session: session),
       );
     }
   }
@@ -115,6 +117,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
               : SangaTextLink(label: 'Log in instead', onPressed: () => context.pushReplacement(SangaRoutes.signIn)),
         ),
         const SizedBox(height: SangaSpacing.xxl),
+        const SignUpErrorNotice(),
         Obx(() => SangaButton.primary(label: 'Continue', isLoading: _signUp.isSaving, onPressed: _submit)),
       ],
     );

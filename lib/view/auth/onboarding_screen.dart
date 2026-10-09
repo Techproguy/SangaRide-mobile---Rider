@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:sanga_ride/core/assets.dart';
 import 'package:sanga_ride/view/auth/widgets/get_started_sheet.dart';
-import 'package:sanga_ride/view/auth/widgets/onboarding_slide.dart';
+
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 class OnboardingScreen extends StatefulWidget {
@@ -14,17 +14,17 @@ class OnboardingScreen extends StatefulWidget {
 class _OnboardingScreenState extends State<OnboardingScreen> with SingleTickerProviderStateMixin {
   static const _sheetHidden = Offset(0, 1.2);
   static const _slides = [
-    OnboardingSlide(
+    SangaOnboardingSlide(
       image: AppAssets.onboardingRide,
       title: 'Book Rides Promptly',
       message: 'Request a ride in seconds and get moving without the wait',
     ),
-    OnboardingSlide(
+    SangaOnboardingSlide(
       image: AppAssets.onboardingDelivery,
       title: 'Secure & Safe Delivery',
       message: 'Fast pickups, secure handling, and reliable delivery from start to finish',
     ),
-    OnboardingSlide(
+    SangaOnboardingSlide(
       image: AppAssets.onboardingFares,
       title: 'Flexible, Negotiable Fares',
       message: 'Agree on a fare that works for both you and the driver',
@@ -106,7 +106,7 @@ class _SlideOverlay extends StatelessWidget {
   const _SlideOverlay({required this.story, required this.slide, required this.onSkip});
 
   final SangaStory story;
-  final OnboardingSlide slide;
+  final SangaOnboardingSlide slide;
   final VoidCallback onSkip;
 
   @override

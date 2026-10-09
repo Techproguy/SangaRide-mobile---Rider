@@ -17,6 +17,7 @@ class HomePanel extends StatelessWidget {
     required this.onBookForSomeone,
     required this.onAirport,
     required this.onPromo,
+    this.isLocked = false,
   });
 
   final Place? home;
@@ -29,9 +30,17 @@ class HomePanel extends StatelessWidget {
   final VoidCallback onBookForSomeone;
   final VoidCallback onAirport;
   final VoidCallback onPromo;
+  final bool isLocked;
 
   @override
   Widget build(BuildContext context) {
+    return AbsorbPointer(
+      absorbing: isLocked,
+      child: AnimatedOpacity(opacity: isLocked ? 0.6 : 1, duration: SangaMotion.quick, child: _panel()),
+    );
+  }
+
+  Widget _panel() {
     return SangaMapPanel(
       children: [
         SangaSearchTrigger(hint: 'Where are you going?', onTap: onSearch),

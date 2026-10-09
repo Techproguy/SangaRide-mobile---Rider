@@ -63,6 +63,8 @@ class MockRoutes {
     MockRoute.get(AppEndpoints.weather, (_) => MockData.weather),
   ];
 
+  static int _selfieCount = 0;
+
   static void resetRideRequests() => MockRideRequests.reset();
 
   static ({String id, String status})? activeRideRequest() => MockRideRequests.activeRideRequest();
@@ -84,13 +86,13 @@ class MockRoutes {
 
   static Object? _signUp(MockRequest request) {
     MockAccount.beginOnboarding();
-    return {'phone': request.body['phone'], 'expiresInSeconds': 300};
+    return {'phone': request.body['phone'], 'expiresInSeconds': 300, 'resendInSeconds': 60};
   }
 
   static Object? _selfie(MockRequest request) {
-    final result = MockVerification.selfie(request);
+    final result = Map<String, dynamic>.from(MockVerification.selfie(request) as Map);
     MockAccount.completeOnboardingStep(MockOnboardingStep.selfie);
-    return result;
+    return {...result, 'id': 'upl_selfie_${++_selfieCount}', 'url': MockDelivery.profilePhotoAsset};
   }
 
   static Object? _requestOtp(MockRequest request) {
@@ -99,7 +101,7 @@ class MockRoutes {
     if (isLogin && request.body['phone'] == MockData.unregisteredPhone) {
       throw const MockFailure(404, 'We can’t find an account with this number.');
     }
-    return {'phone': request.body['phone'], 'expiresInSeconds': 300};
+    return {'phone': request.body['phone'], 'expiresInSeconds': 300, 'resendInSeconds': 60};
   }
 
   static Object? _verifyOtp(MockRequest request) {
