@@ -8,6 +8,7 @@ import 'package:sanga_ride/controller/rider/account/account_bindings.dart';
 import 'package:sanga_ride/controller/rider/airport_controller.dart';
 import 'package:sanga_ride/controller/rider/delivery/send_delivery_controller.dart';
 import 'package:sanga_ride/controller/rider/flight_tracking_controller.dart';
+import 'package:sanga_ride/controller/rider/groups/group_bindings.dart';
 import 'package:sanga_ride/controller/rider/ride_match_controller.dart';
 import 'package:sanga_ride/controller/rider/ride_for_controller.dart';
 import 'package:sanga_ride/controller/rider/ride_history_controller.dart';
@@ -63,6 +64,7 @@ Future<void> initializeSanga() async {
   registerTripControllers();
   registerTripWrapUpControllers();
   registerWalletControllers();
+  registerGroupControllers();
   registerSafetyControllers();
   registerAccountControllers();
 }

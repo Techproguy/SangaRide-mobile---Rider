@@ -1,8 +1,11 @@
 import 'dart:developer';
 
 import 'package:get/get.dart';
+import 'package:sanga_ride/controller/rider/groups/group_bindings.dart';
+import 'package:sanga_ride/controller/rider/groups/groups_controller.dart';
 import 'package:sanga_ride/core/api/api.dart';
 import 'package:sanga_ride/core/api/who_for_endpoints.dart';
+import 'package:sanga_ride/model/groups/group_models.dart';
 import 'package:sanga_ride/model/models.dart';
 
 class RideForController extends GetxController {
@@ -47,10 +50,10 @@ class RideForController extends GetxController {
     if (member != null) select(RideForFamily(member: member));
   }
 
-  void confirmBusiness({required String purpose, String? costCentre, String? note}) {
+  void confirmBusiness({required String purpose, String? note}) {
     final profile = pickedProfile;
     if (profile == null) return;
-    select(RideForBusiness(profile: profile, purpose: purpose, costCentre: costCentre, note: note));
+    select(RideForBusiness(profile: profile, purpose: purpose, note: note));
   }
 
   void confirmPassenger() {
@@ -70,13 +73,45 @@ class RideForController extends GetxController {
     _passenger.value = PassengerCodePending(info: state.info, verification: state.verification);
   }
 
+  Future<({GroupDetail detail, GroupMember? me})?> _groupOf(GroupKind kind) async {
+    final groups = Get.find<GroupsController>();
+    await groups.open();
+    if (groups.state is GroupsFailed) throw const FormatException('groups unavailable');
+    final summary = groups.groupOf(kind);
+    if (summary == null) return null;
+    final group = GroupControllers.group(summary.id);
+    await group.open();
+    final detail = group.detail;
+    if (detail == null) throw const FormatException('group unavailable');
+    return (detail: detail, me: group.me);
+  }
+
+  bool _canBookFor(GroupMember member, GroupDetail detail, GroupMember? me) {
+    if (member.isInvited) return false;
+    if (detail.canManage) return true;
+    if (member.id == me?.id) return me?.permissions.bookRides == true && me?.permissions.useGroupWallet == true;
+    return me?.permissions.bookForOthers == true;
+  }
+
   Future<void> loadFamily() async {
     if (family is! RideForListLoaded) _family.value = const RideForListLoading();
     try {
-      final response = await _api.get(WhoForEndpoints.familyMembers, suppressErrorToast: true);
-      final members = [
-        for (final json in response.data['data'] as List) FamilyMember.fromJson(Map<String, dynamic>.from(json as Map)),
-      ];
+      final found = await _groupOf(GroupKind.family);
+      final members = found == null
+          ? <FamilyMember>[]
+          : [
+              for (final member in found.detail.members)
+                if (_canBookFor(member, found.detail, found.me))
+                  FamilyMember(
+                    id: member.id,
+                    groupId: found.detail.id,
+                    groupName: found.detail.name,
+                    name: member.name,
+                    relationship: member.relation,
+                    phone: member.phone,
+                    isYou: member.id == found.me?.id,
+                  ),
+            ];
       _family.value = RideForListLoaded(members);
       _pickedMember.value = members.firstWhereOrNull((member) => member.id == pickedMember?.id);
       final current = rideFor;
@@ -90,11 +125,17 @@ class RideForController extends GetxController {
   Future<void> loadBusinesses() async {
     if (business is! RideForListLoaded) _business.value = const RideForListLoading();
     try {
-      final response = await _api.get(WhoForEndpoints.businessProfiles, suppressErrorToast: true);
-      final profiles = [
-        for (final json in response.data['data'] as List)
-          BusinessProfile.fromJson(Map<String, dynamic>.from(json as Map)),
-      ];
+      final found = await _groupOf(GroupKind.business);
+      final profiles = found == null
+          ? <BusinessProfile>[]
+          : [
+              BusinessProfile(
+                id: found.detail.id,
+                companyName: found.detail.name,
+                role: found.me?.relation ?? 'Team member',
+                purposes: found.detail.recentPurposes,
+              ),
+            ];
       _business.value = RideForListLoaded(profiles);
       _pickedProfile.value = profiles.firstWhereOrNull((profile) => profile.id == pickedProfile?.id);
       final current = rideFor;

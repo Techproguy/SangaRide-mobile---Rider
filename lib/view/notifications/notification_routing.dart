@@ -1,6 +1,7 @@
 import 'package:get/get.dart';
 import 'package:sanga_ride/controller/rider/trip/trip_controller.dart';
 import 'package:sanga_ride/core/router/booking_routes.dart';
+import 'package:sanga_ride/core/router/group_routes.dart';
 import 'package:sanga_ride/core/router/history_routes.dart';
 import 'package:sanga_ride/core/router/support_routes.dart';
 import 'package:sanga_ride/core/router/trip_routes.dart';
@@ -17,6 +18,7 @@ abstract final class NotificationRouting {
       NotificationRoute.supportTicket when id != null => SupportRoutes.ticketOf(id),
       NotificationRoute.wallet => WalletRoutes.wallet,
       NotificationRoute.verification => VerificationRoutes.centre,
+      NotificationRoute.groupApprovals when id != null => GroupRoutes.approvalsOf(id),
       _ => null,
     };
   }

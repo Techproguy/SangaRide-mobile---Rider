@@ -3,27 +3,35 @@ import 'dart:developer';
 import 'package:dio/dio.dart' show Options;
 import 'package:get/get.dart';
 import 'package:sanga_ride/core/api/api.dart';
+import 'package:sanga_ride/core/api/group_endpoints.dart';
 import 'package:sanga_ride/core/api/history_endpoints.dart';
 import 'package:sanga_ride/model/history/history_detail.dart';
 import 'package:sanga_ride/model/history/history_item.dart';
+import 'package:sanga_ride/model/history/history_scope.dart';
 
 class RideHistoryController extends GetxController {
+  RideHistoryController([this.scope = const HistoryScope.personal()]);
+
   static const int pageSize = 10;
   static final Options _quiet = Options(extra: {'suppressErrorToast': true});
 
+  final HistoryScope scope;
   final _api = Get.find<ApiService>();
 
   final RxMap<HistoryStatus, HistoryFeedState> _feeds = <HistoryStatus, HistoryFeedState>{}.obs;
+  final RxnString _memberId = RxnString();
   final Map<HistoryStatus, int> _feedEpochs = {};
   final Rx<HistoryDetailState> _detail = Rx<HistoryDetailState>(const HistoryDetailLoading());
-  String? _detailId;
+  final RxnString _detailId = RxnString();
   int _detailEpoch = 0;
+
+  String? get memberId => _memberId.value;
 
   HistoryFeedState feed(HistoryStatus status) => _feeds[status] ?? const HistoryFeedLoading();
 
   HistoryDetailState get detailState => _detail.value;
 
-  HistoryDetailState detailStateFor(String id) => _detailId == id ? detailState : const HistoryDetailLoading();
+  HistoryDetailState detailStateFor(String id) => _detailId.value == id ? detailState : const HistoryDetailLoading();
 
   Future<void> open(HistoryStatus status) async {
     if (_feeds[status] is HistoryFeedLoaded) return;
@@ -31,6 +39,14 @@ class RideHistoryController extends GetxController {
   }
 
   Future<void> reload(HistoryStatus status) => _loadFirstPage(status);
+
+  Future<void> selectMember(String? id) async {
+    if (id == _memberId.value) return;
+    _memberId.value = id;
+    final opened = _feeds.keys.toList();
+    _feeds.clear();
+    await Future.wait([for (final status in opened) _loadFirstPage(status)]);
+  }
 
   Future<void> _loadFirstPage(HistoryStatus status) async {
     final epoch = _nextEpoch(status);
@@ -70,27 +86,28 @@ class RideHistoryController extends GetxController {
   int _nextEpoch(HistoryStatus status) => _feedEpochs[status] = (_feedEpochs[status] ?? 0) + 1;
 
   Future<HistoryPage> _fetch(HistoryStatus status, int page) async {
+    final groupId = scope.groupId;
     final response = await _api.get(
-      HistoryEndpoints.rides,
-      queryParameters: {'status': status.code, 'page': page, 'pageSize': pageSize},
+      groupId == null ? HistoryEndpoints.rides : GroupEndpoints.ridesOf(groupId),
+      queryParameters: {'status': status.code, 'page': page, 'pageSize': pageSize, 'memberId': ?memberId},
       suppressErrorToast: true,
     );
     return HistoryPage.fromJson(Map<String, dynamic>.from((response.data as Map)['data'] as Map));
   }
 
   Future<void> openDetail(String id) async {
-    if (_detailId == id && detailState is HistoryDetailLoaded) return;
-    _detailId = id;
+    if (_detailId.value == id && detailState is HistoryDetailLoaded) return;
+    _detailId.value = id;
     await _loadDetail();
   }
 
   Future<void> reloadDetail() async {
-    if (_detailId == null || detailState is HistoryDetailLoading) return;
+    if (_detailId.value == null || detailState is HistoryDetailLoading) return;
     await _loadDetail();
   }
 
   Future<void> _loadDetail() async {
-    final id = _detailId;
+    final id = _detailId.value;
     if (id == null) return;
     final epoch = ++_detailEpoch;
     _detail.value = const HistoryDetailLoading();

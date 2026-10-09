@@ -4,13 +4,16 @@ import 'dart:developer';
 import 'package:get/get.dart';
 import 'package:sanga_ride/controller/rider/ride_request_controller.dart';
 import 'package:sanga_ride/core/api/api.dart';
+import 'package:sanga_ride/core/api/group_endpoints.dart';
 import 'package:sanga_ride/core/api/mock/mock_endpoints.dart';
 import 'package:sanga_ride/core/services/toast_service.dart';
+import 'package:sanga_ride/model/groups/group_models.dart';
 import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 class RideMatchController extends GetxController {
   static const Duration pollInterval = Duration(milliseconds: 1500);
+  static const Duration approvalPollInterval = Duration(seconds: 2);
   static const Duration autoContinueAfter = Duration(seconds: 5);
   static const Duration rowExitDuration = SangaMotion.morph;
   static const int maxMissedPolls = 3;
@@ -38,8 +41,10 @@ class RideMatchController extends GetxController {
     MatchOffersReady() ||
     MatchOffersLoading() ||
     MatchOffersFailed() ||
+    MatchAwaitingApproval() ||
     MatchBrowsing() => true,
     MatchIdle() ||
+    MatchBlocked() ||
     MatchNoDriver() ||
     MatchCancelled() ||
     MatchFailed() ||
@@ -74,6 +79,10 @@ class RideMatchController extends GetxController {
       _state.value = const MatchFailed(MatchFailure.couldNotStart);
       return;
     }
+    await _send(payload);
+  }
+
+  Future<void> _send(Map<String, dynamic> payload) async {
     final epoch = _invalidate();
     _requestId = null;
     _missedPolls = 0;
@@ -94,10 +103,56 @@ class RideMatchController extends GetxController {
       _applyRequest(request);
     } on ApiException catch (e) {
       log('requestRide failed: $e');
-      if (epoch == _epoch) _state.value = MatchFailed(MatchFailure.couldNotStart, code: e.code, data: e.data);
+      if (epoch == _epoch) _reject(e, payload);
     } catch (e) {
       log('requestRide failed: $e');
       if (epoch == _epoch) _state.value = const MatchFailed(MatchFailure.couldNotStart);
+    }
+  }
+
+  void _reject(ApiException error, Map<String, dynamic> payload) {
+    if (error.code == 'requires_approval') {
+      _waitForApproval(payload, PendingApproval.fromData(error.data));
+      return;
+    }
+    final block = GroupRideBlock.tryFromCode(error.code);
+    _state.value = block == null
+        ? MatchFailed(MatchFailure.couldNotStart, code: error.code, data: error.data)
+        : MatchBlocked(block);
+  }
+
+  void _waitForApproval(Map<String, dynamic> payload, PendingApproval approval) {
+    final epoch = _invalidate();
+    _missedPolls = 0;
+    _state.value = MatchAwaitingApproval(approval);
+    _poller = Timer.periodic(approvalPollInterval, (_) => _pollApproval(epoch, payload, approval));
+  }
+
+  Future<void> _pollApproval(int epoch, Map<String, dynamic> payload, PendingApproval approval) async {
+    if (_isPolling || epoch != _epoch || state is! MatchAwaitingApproval) return;
+    _isPolling = true;
+    try {
+      final response = await _api.get(GroupEndpoints.approvalAt(approval.id), suppressErrorToast: true);
+      if (epoch != _epoch) return;
+      _missedPolls = 0;
+      switch (RideApproval.fromJson(_dataOf(response.data)).status) {
+        case ApprovalStatus.pending:
+          break;
+        case ApprovalStatus.approved:
+          _isPolling = false;
+          await _send({...payload, 'approvalId': approval.id});
+        case ApprovalStatus.declined:
+          _finishSearch(const MatchBlocked(GroupRideBlock.approvalDeclined));
+        case ApprovalStatus.expired:
+          _finishSearch(const MatchBlocked(GroupRideBlock.approvalExpired));
+      }
+    } catch (e) {
+      log('approval poll failed: $e');
+      if (epoch == _epoch && ++_missedPolls >= maxMissedPolls) {
+        _finishSearch(const MatchFailed(MatchFailure.connectionLost));
+      }
+    } finally {
+      _isPolling = false;
     }
   }
 
@@ -128,6 +183,10 @@ class RideMatchController extends GetxController {
   }
 
   Future<bool> cancelRequest() async {
+    if (state is MatchAwaitingApproval) {
+      abandon();
+      return true;
+    }
     final id = _requestId;
     if (id == null) return false;
     final epoch = _invalidate();

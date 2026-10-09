@@ -25,15 +25,26 @@ class ReceiptLine {
 }
 
 class ReceiptPayment {
-  const ReceiptPayment({required this.method, this.last4});
+  const ReceiptPayment({required this.method, this.last4, this.group});
 
-  factory ReceiptPayment.fromJson(Map<String, dynamic> json) =>
-      ReceiptPayment(method: PaymentMethod.fromCode(json['method'] as String), last4: json['last4'] as String?);
+  factory ReceiptPayment.fromJson(Map<String, dynamic> json) {
+    final group = json['group'];
+    return ReceiptPayment(
+      method: PaymentMethod.fromCode(json['method'] as String),
+      last4: json['last4'] as String?,
+      group: group is Map ? PaymentGroup.fromJson(Map<String, dynamic>.from(group)) : null,
+    );
+  }
 
   final PaymentMethod method;
   final String? last4;
+  final PaymentGroup? group;
 
-  String get label => method == PaymentMethod.card && last4 != null ? '•••• $last4' : method.label;
+  String get label => switch ((method, group)) {
+    (PaymentMethod.card, _) when last4 != null => '•••• $last4',
+    (PaymentMethod.groupWallet, final group?) => '${group.name} wallet',
+    _ => method.label,
+  };
 }
 
 class ReceiptDelivery {

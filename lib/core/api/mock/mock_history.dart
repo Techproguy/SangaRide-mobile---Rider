@@ -21,6 +21,14 @@ abstract final class MockHistory {
 
   static final DateTime _anchor = DateTime.now();
   static final Set<String> _blockedDrivers = {};
+  static final Map<String, Map<String, dynamic> Function()> _recorded = {};
+
+  static void recordTrip(String id, Map<String, dynamic> Function() detailOf) => _recorded[id] = detailOf;
+
+  static List<Map<String, dynamic>> _recordedWith(String status) => [
+    for (final detailOf in _recorded.values.toList().reversed)
+      if (detailOf() case final detail when detail['status'] == status) detail,
+  ];
 
   static const List<Map<String, dynamic>> _stops = [
     {
@@ -216,6 +224,12 @@ abstract final class MockHistory {
     if (_isDelivery(i)) 'itemName': _items[i % _items.length]['name'],
   };
 
+  static List<Map<String, dynamic>> summaries(String status) => [
+    ..._recordedWith(status),
+    for (var i = 0; i < _count; i++)
+      if (_isCancelled(i) == (status == 'cancelled')) _summary(i),
+  ];
+
   static Object? _list(MockRequest request) {
     final status = request.query['status'] as String?;
     if (status != 'completed' && status != 'cancelled') {
@@ -226,14 +240,11 @@ abstract final class MockHistory {
       1,
       _maxPageSize,
     );
-    final matching = [
-      for (var i = 0; i < _count; i++)
-        if (_isCancelled(i) == (status == 'cancelled')) i,
-    ];
+    final matching = summaries(status!);
     final start = (page - 1) * pageSize;
     final end = math.min(start + pageSize, matching.length);
     return {
-      'items': start >= matching.length ? const [] : [for (final i in matching.sublist(start, end)) _summary(i)],
+      'items': start >= matching.length ? const [] : matching.sublist(start, end),
       'page': page,
       'hasMore': end < matching.length,
       'serverTime': _iso(DateTime.now()),
@@ -301,6 +312,8 @@ abstract final class MockHistory {
   }
 
   static Object? _detail(MockRequest request) {
+    final recorded = _recorded[request.params['id']];
+    if (recorded != null) return {...recorded(), 'serverTime': _iso(DateTime.now())};
     final i = _indexOf(request.params['id']!);
     if (i == null) throw const MockFailure(404, 'We can’t find that trip.', code: 'not_found');
     final isCancelled = _isCancelled(i);

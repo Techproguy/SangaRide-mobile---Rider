@@ -41,10 +41,19 @@ class _VerificationDocumentScreenState extends State<VerificationDocumentScreen>
     if (source != null) await _controller.pickPhoto(side, source);
   }
 
+  Future<void> _takeSelfie() async {
+    final hasPassed = await context.push<bool>(VerificationRoutes.selfie);
+    if (hasPassed == true && mounted) await _submit();
+  }
+
   Future<void> _submit() async {
     FocusScope.of(context).unfocus();
     final isSent = await _controller.submitDocument();
-    if (!isSent || !mounted) return;
+    if (!mounted) return;
+    if (!isSent) {
+      if (_controller.draft.missing.contains('selfie')) await _takeSelfie();
+      return;
+    }
     await showSangaStatusSheet(
       context: context,
       status: SangaStatus.pending,
@@ -74,14 +83,19 @@ class _VerificationDocumentScreenState extends State<VerificationDocumentScreen>
       crossAxisAlignment: CrossAxisAlignment.stretch,
       spacing: SangaSpacing.sm,
       children: [
-        SangaNotice(
-          message: isSelfieMissing ? 'Your ID is saved. Take your selfie and we’ll send it all off.' : problem.message,
-        ),
+        if (isSelfieMissing)
+          const SangaNotice(
+            tone: SangaTone.neutral,
+            icon: Icons.photo_camera_front_outlined,
+            message: 'Your ID is saved. Take your selfie and we’ll send it all off.',
+          )
+        else
+          SangaNotice(message: problem.message),
         if (isSelfieMissing)
           SangaButton.outline(
             label: 'Take your selfie',
             size: SangaButtonSize.compact,
-            onPressed: () => context.push(VerificationRoutes.selfie),
+            onPressed: () => unawaited(_takeSelfie()),
           ),
       ],
     );

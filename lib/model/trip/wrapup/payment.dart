@@ -1,3 +1,5 @@
+import 'package:sanga_ride/model/groups/group_kind.dart';
+
 enum PaymentMethod {
   cash('cash', 'Cash', 'Hand it to your driver', 'Payment confirmed', 'Your driver confirmed your cash payment.'),
   card(
@@ -13,6 +15,13 @@ enum PaymentMethod {
     'Pay from your Sanga balance',
     'Paid from your wallet',
     'Your wallet payment went through.',
+  ),
+  groupWallet(
+    'group_wallet',
+    'Group wallet',
+    'Charged to the group',
+    'Paid by the group wallet',
+    'The group wallet covered this ride.',
   );
 
   const PaymentMethod(this.code, this.label, this.subtitle, this.paidTitle, this.paidMessage);
@@ -59,6 +68,11 @@ enum PaymentDeclineReason {
     'Not enough in your wallet',
     'Your wallet balance is lower than this fare. Top up to use it, or pay another way.',
   ),
+  groupWalletShort(
+    'group_wallet_short',
+    'The group wallet is short',
+    'There isn’t enough in the group wallet for this ride. Ask an admin to top it up, or pay another way.',
+  ),
   unknown('unknown', 'Payment didn’t go through', 'We couldn’t take that payment. Give it another go.');
 
   const PaymentDeclineReason(this.code, this.title, this.message);
@@ -69,6 +83,20 @@ enum PaymentDeclineReason {
 
   static PaymentDeclineReason fromCode(String? code) =>
       values.firstWhere((reason) => reason.code == code, orElse: () => unknown);
+}
+
+class PaymentGroup {
+  const PaymentGroup({required this.id, required this.kind, required this.name});
+
+  factory PaymentGroup.fromJson(Map<String, dynamic> json) => PaymentGroup(
+    id: json['id'] as String,
+    kind: GroupKind.fromCode(json['kind'] as String?),
+    name: json['name'] as String,
+  );
+
+  final String id;
+  final GroupKind kind;
+  final String name;
 }
 
 class TripPayment {
@@ -82,6 +110,7 @@ class TripPayment {
     this.paidAt,
     this.lastMethod,
     this.declineReason,
+    this.group,
   });
 
   factory TripPayment.fromJson(Map<String, dynamic> json) {
@@ -97,6 +126,7 @@ class TripPayment {
       paidAt: paidAt == null ? null : DateTime.parse(paidAt).toLocal(),
       lastMethod: PaymentMethod.tryFromCode(json['lastMethod'] as String?),
       declineReason: declineCode == null ? null : PaymentDeclineReason.fromCode(declineCode),
+      group: json['group'] == null ? null : PaymentGroup.fromJson(Map<String, dynamic>.from(json['group'] as Map)),
     );
   }
 
@@ -109,6 +139,7 @@ class TripPayment {
   final DateTime? paidAt;
   final PaymentMethod? lastMethod;
   final PaymentDeclineReason? declineReason;
+  final PaymentGroup? group;
 
   PaymentMethod? get preferredMethod {
     if (lastMethod != null && allowedMethods.contains(lastMethod)) return lastMethod;
@@ -121,6 +152,7 @@ class TripPayment {
 
   String get paidSummary => switch ((method, last4)) {
     (PaymentMethod.card, final String last4) => 'Card •••• $last4',
+    (PaymentMethod.groupWallet, _) when group != null => '${group!.name} wallet',
     (final PaymentMethod method?, _) => method.label,
     _ => 'Paid',
   };

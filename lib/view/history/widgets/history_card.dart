@@ -88,6 +88,7 @@ class HistoryCard extends StatelessWidget {
                 children: [
                   Text(whenLabel, style: SangaTextStyles.cardTitle),
                   if (isCancelled) const SangaTag.urgent(label: 'Cancelled', icon: Icons.close_rounded),
+                  if (item.memberName case final name?) _who(name),
                 ],
               ),
             ),
@@ -96,6 +97,24 @@ class HistoryCard extends StatelessWidget {
         ),
         _stop(SangaStopKind.pickup, item.route.pickup.name, item.route.pickup.address),
         _stop(SangaStopKind.dropoff, item.route.dropoff.name, item.route.dropoff.address),
+      ],
+    );
+  }
+
+  Widget _who(String name) {
+    final purpose = item.purpose;
+    return Row(
+      spacing: SangaSpacing.xxs,
+      children: [
+        const Icon(Icons.person_outline_rounded, size: 14, color: SangaColors.primary),
+        Flexible(
+          child: Text(
+            purpose == null ? name : '$name · $purpose',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: SangaTextStyles.tileSubtitle.copyWith(color: SangaColors.primary),
+          ),
+        ),
       ],
     );
   }

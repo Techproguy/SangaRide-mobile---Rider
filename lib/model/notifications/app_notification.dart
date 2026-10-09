@@ -4,6 +4,7 @@ enum NotificationRoute {
   wallet('wallet'),
   supportTicket('support_ticket'),
   verification('verification'),
+  groupApprovals('group_approvals'),
   none('none');
 
   const NotificationRoute(this.code);

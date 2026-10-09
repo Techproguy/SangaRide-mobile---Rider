@@ -100,6 +100,7 @@ class _DeliveryItemScreenState extends State<DeliveryItemScreen> {
           children: [
             SangaTextArea(
               label: 'Description',
+              isRequired: true,
               controller: _description,
               hintText: 'What is it, and how should we handle it?',
               minLines: 3,

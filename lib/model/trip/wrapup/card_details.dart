@@ -27,6 +27,8 @@ class PaymentRequest {
 
   const PaymentRequest.wallet() : method = PaymentMethod.wallet, card = null;
 
+  const PaymentRequest.groupWallet() : method = PaymentMethod.groupWallet, card = null;
+
   final PaymentMethod method;
   final CardDetails? card;
 

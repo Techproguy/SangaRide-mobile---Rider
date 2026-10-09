@@ -18,7 +18,7 @@ class ReceiptPaidWith extends StatelessWidget {
       child: Row(
         spacing: SangaSpacing.md,
         children: [
-          SangaIconBadge(size: 40, child: Icon(PaymentMethodIcon.of(paidWith.method))),
+          SangaIconBadge(size: 40, child: Icon(PaymentMethodIcon.of(paidWith.method, groupKind: paidWith.group?.kind))),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,

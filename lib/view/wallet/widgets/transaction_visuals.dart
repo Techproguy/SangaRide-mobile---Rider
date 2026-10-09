@@ -3,6 +3,9 @@ import 'package:sanga_ride/model/wallet/wallet.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 abstract final class TransactionVisuals {
+  static IconData of(WalletTransaction tx) =>
+      tx.kind == TransactionKind.ridePayment && tx.meta.isDelivery ? Icons.inventory_2_rounded : icon(tx.kind);
+
   static IconData icon(TransactionKind kind) => switch (kind) {
     TransactionKind.rideEarning => Icons.local_taxi_rounded,
     TransactionKind.deliveryEarning => Icons.inventory_2_rounded,

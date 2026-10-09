@@ -15,7 +15,7 @@ class TransactionHero extends StatelessWidget {
     return Column(
       spacing: SangaSpacing.xs,
       children: [
-        SangaIconBadge(size: 56, child: Icon(TransactionVisuals.icon(tx.kind))),
+        SangaIconBadge(size: 56, child: Icon(TransactionVisuals.of(tx))),
         const SizedBox(height: SangaSpacing.xxs),
         Text(WalletFormat.signed(tx.amount), style: SangaTextStyles.display),
         Text(tx.title, textAlign: TextAlign.center, style: SangaTextStyles.lead),

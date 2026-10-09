@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
-import 'package:sanga_ride/controller/rider/wallet_transactions_controller.dart';
+import 'package:sanga_ride/controller/rider/wallet_bindings.dart';
 import 'package:sanga_ride/core/router/wallet_routes.dart';
 import 'package:sanga_ride/model/wallet/wallet.dart';
 import 'package:sanga_ride/view/wallet/wallet_copy.dart';
@@ -16,7 +16,9 @@ import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 enum _FeedStage { loading, failed, empty, list }
 
 class WalletTransactionsScreen extends StatefulWidget {
-  const WalletTransactionsScreen({super.key});
+  const WalletTransactionsScreen({super.key, this.scope = const WalletScope.personal()});
+
+  final WalletScope scope;
 
   @override
   State<WalletTransactionsScreen> createState() => _WalletTransactionsScreenState();
@@ -25,7 +27,7 @@ class WalletTransactionsScreen extends StatefulWidget {
 class _WalletTransactionsScreenState extends State<WalletTransactionsScreen> {
   static const double _loadMoreExtent = 240;
 
-  final _transactions = Get.find<WalletTransactionsController>();
+  late final _transactions = WalletControllers.transactions(widget.scope);
 
   @override
   void initState() {
@@ -65,7 +67,7 @@ class _WalletTransactionsScreenState extends State<WalletTransactionsScreen> {
     ],
     TransactionsFailed() => [
       SangaInlineMessage(
-        title: 'We couldn’t load your history',
+        title: WalletCopy.historyFailedTitle(widget.scope),
         message: 'Check your connection and give it another go.',
         actionLabel: 'Try again',
         onAction: _transactions.retry,
@@ -93,7 +95,7 @@ class _WalletTransactionsScreenState extends State<WalletTransactionsScreen> {
                     for (final entry in day.entries)
                       TransactionRow(
                         transaction: entry,
-                        onTap: () => context.push(WalletRoutes.transactionOf(entry.id)),
+                        onTap: () => context.push(WalletRoutes.transactionAt(entry.id, groupId: widget.scope.groupId)),
                       ),
                   ],
                 ),
@@ -108,7 +110,7 @@ class _WalletTransactionsScreenState extends State<WalletTransactionsScreen> {
   @override
   Widget build(BuildContext context) {
     return WalletPage(
-      title: 'Transaction history',
+      title: WalletCopy.transactionsTitle(widget.scope),
       tabs: Obx(() => TransactionFilterChips(selected: _transactions.filter, onSelected: _transactions.select)),
       body: Obx(() {
         final feed = _transactions.feed;

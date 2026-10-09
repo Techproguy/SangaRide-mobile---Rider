@@ -4,6 +4,7 @@ import 'package:sanga_ride/core/api/mock/mock_account.dart';
 import 'package:sanga_ride/core/api/mock/mock_airport.dart';
 import 'package:sanga_ride/core/api/mock/mock_booking.dart';
 import 'package:sanga_ride/core/api/mock/mock_delivery.dart';
+import 'package:sanga_ride/core/api/mock/mock_groups.dart';
 import 'package:sanga_ride/core/api/mock/mock_who_for.dart';
 import 'package:sanga_ride/core/api/mock/mock_data.dart';
 import 'package:sanga_ride/core/api/mock/mock_history.dart';
@@ -36,6 +37,7 @@ class MockRoutes {
     ...MockVerification.routes,
     ...MockSupport.routes,
     ...MockWallet.routes,
+    ...MockGroups.routes,
     MockRoute.post(MockEndpoints.signUp, (request) => {'phone': request.body['phone'], 'expiresInSeconds': 300}),
     MockRoute.post(
       MockEndpoints.checkExistence,
@@ -104,6 +106,7 @@ class MockRoutes {
   }
 
   static Object? _createRideRequest(MockRequest request) {
+    MockGroups.guardRide(request.body);
     if (request.body['airport'] != null) {
       final decision = MockAirport.decide(request.body);
       if (!decision.isLive) return MockBooking.scheduleAirport(request.body, decision);
@@ -154,7 +157,10 @@ class MockRoutes {
   static Object? _rideOffers(MockRequest request) {
     final record = _requireRideRequest(request);
     return {
-      'offers': [for (final offer in MockData.driverOffers) _priced(Map.of(offer), record.proposedFare, isFixed: record.isFixedFare)],
+      'offers': [
+        for (final offer in MockData.driverOffers)
+          _priced(Map.of(offer), record.proposedFare, isFixed: record.isFixedFare),
+      ],
     };
   }
 
@@ -195,7 +201,8 @@ class MockRoutes {
       request: MockTrip.requests[requestId] ?? const {},
       driverCard: _driverCard(offer),
       proposedFare: record.proposedFare,
-      counterOffer: (_priced(Map.of(offer), record.proposedFare, isFixed: record.isFixedFare)['counterOffer'] as num?)?.toInt(),
+      counterOffer: (_priced(Map.of(offer), record.proposedFare, isFixed: record.isFixedFare)['counterOffer'] as num?)
+          ?.toInt(),
       etaMinutes: offer['etaMinutes'] as num,
     );
     return {

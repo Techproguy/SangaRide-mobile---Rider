@@ -1,3 +1,5 @@
+import 'package:sanga_ride/model/groups/group_models.dart';
+
 enum RideRequestStatus {
   searching('searching'),
   checking('checking'),
@@ -316,6 +318,18 @@ final class MatchNoDriver extends RideMatchState {
 
 final class MatchCancelled extends RideMatchState {
   const MatchCancelled();
+}
+
+final class MatchAwaitingApproval extends RideMatchState {
+  const MatchAwaitingApproval(this.approval);
+
+  final PendingApproval approval;
+}
+
+final class MatchBlocked extends RideMatchState {
+  const MatchBlocked(this.block);
+
+  final GroupRideBlock block;
 }
 
 final class MatchFailed extends RideMatchState {

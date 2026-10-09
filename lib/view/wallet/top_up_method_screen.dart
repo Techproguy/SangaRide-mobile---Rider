@@ -2,13 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sanga_ride/controller/rider/top_up_controller.dart';
+import 'package:sanga_ride/controller/rider/wallet_bindings.dart';
 import 'package:sanga_ride/core/router/wallet_routes.dart';
 import 'package:sanga_ride/model/wallet/wallet.dart';
+import 'package:sanga_ride/view/wallet/wallet_copy.dart';
 import 'package:sanga_ride/view/widgets/layout/amount_tile.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 class TopUpMethodScreen extends StatelessWidget {
-  const TopUpMethodScreen({super.key});
+  const TopUpMethodScreen({super.key, this.scope = const WalletScope.personal()});
+
+  final WalletScope scope;
 
   static const List<TopUpMethod> _methods = [TopUpMethod.transfer, TopUpMethod.card];
 
@@ -20,8 +24,8 @@ class TopUpMethodScreen extends StatelessWidget {
   Future<void> _continue(BuildContext context, TopUpController topUp, TopUpMethod method) async {
     if (method == TopUpMethod.card) topUp.prepareCard();
     final route = switch (method) {
-      TopUpMethod.transfer => WalletRoutes.topUpTransfer,
-      TopUpMethod.card => WalletRoutes.topUpCard,
+      TopUpMethod.transfer => WalletRoutes.topUpTransferStartOf(groupId: scope.groupId),
+      TopUpMethod.card => WalletRoutes.topUpCardOf(groupId: scope.groupId),
     };
     final done = await context.push<bool>(route);
     if (done == true && context.mounted) context.pop(true);
@@ -29,7 +33,7 @@ class TopUpMethodScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final topUp = Get.find<TopUpController>();
+    final topUp = WalletControllers.topUp(scope);
     return Obx(() {
       final draft = topUp.draft;
       final amount = draft.amount;
@@ -40,7 +44,7 @@ class TopUpMethodScreen extends StatelessWidget {
           Column(
             spacing: SangaSpacing.lg,
             children: [
-              if (amount != null) AmountTile(label: 'Adding to your wallet', amount: amount),
+              if (amount != null) AmountTile(label: WalletCopy.addingTo(scope), amount: amount),
               Column(
                 spacing: SangaSpacing.sm,
                 children: [

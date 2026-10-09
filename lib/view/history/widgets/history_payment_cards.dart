@@ -30,7 +30,7 @@ class HistoryPaymentCards extends StatelessWidget {
           rows: [
             if (paidWith != null)
               SangaDetailRow(
-                icon: PaymentMethodIcon.of(paidWith.method),
+                icon: PaymentMethodIcon.of(paidWith.method, groupKind: paidWith.group?.kind),
                 label: 'Paid with',
                 value: paidWith.label,
               ),

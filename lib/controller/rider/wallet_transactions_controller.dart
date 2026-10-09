@@ -6,8 +6,11 @@ import 'package:sanga_ride/core/api/wallet_endpoints.dart';
 import 'package:sanga_ride/model/wallet/wallet.dart';
 
 class WalletTransactionsController extends GetxController {
+  WalletTransactionsController(this.scope);
+
   static const int pageSize = 20;
 
+  final WalletScope scope;
   final _api = Get.find<ApiService>();
 
   final Rx<TransactionFilter> _filter = TransactionFilter.all.obs;
@@ -21,7 +24,10 @@ class WalletTransactionsController extends GetxController {
 
   TransactionFeed get feed => _feeds[filter] ?? const TransactionsLoading();
 
-  TransactionDetailState detailFor(String id) => _detailId == id ? _detail.value : const TransactionDetailLoading();
+  TransactionDetailState detailFor(String id) {
+    final detail = _detail.value;
+    return _detailId == id ? detail : const TransactionDetailLoading();
+  }
 
   Future<void> open() => select(TransactionFilter.all);
 
@@ -93,7 +99,10 @@ class WalletTransactionsController extends GetxController {
     if (id == null) return;
     final epoch = ++_detailEpoch;
     try {
-      final response = await _api.get(WalletEndpoints.transactionOf(id), suppressErrorToast: true);
+      final response = await _api.get(
+        WalletEndpoints.transactionAt(id, groupId: scope.groupId),
+        suppressErrorToast: true,
+      );
       if (epoch != _detailEpoch) return;
       _detail.value = TransactionDetailLoaded(WalletTransaction.fromJson(_dataOf(response.data)));
     } catch (e) {
@@ -107,7 +116,7 @@ class WalletTransactionsController extends GetxController {
 
   Future<TransactionPage> _fetch(TransactionFilter target, int page) async {
     final response = await _api.get(
-      WalletEndpoints.transactions,
+      WalletEndpoints.transactionsOf(scope.groupId),
       queryParameters: {'page': page, 'limit': pageSize, 'kind': ?target.query},
       suppressErrorToast: true,
     );

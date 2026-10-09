@@ -1,3 +1,4 @@
+import 'package:sanga_ride/core/api/mock/mock_groups.dart';
 import 'package:sanga_ride/core/api/mock/mock_server.dart';
 import 'package:sanga_ride/core/api/mock/mock_verification.dart';
 import 'package:sanga_ride/core/api/notification_endpoints.dart';
@@ -105,6 +106,7 @@ abstract final class MockNotifications {
   static final Set<String> _readIds = {for (var index = _unreadSeeded; index < _specs.length; index++) _id(index)};
 
   static List<Map<String, dynamic>> _all() => [
+    ?_approvalJson(),
     ?_verificationJson(),
     for (var index = 0; index < _specs.length; index++) _json(index),
   ];
@@ -138,6 +140,22 @@ abstract final class MockNotifications {
   }
 
   static String _id(int index) => 'ntf_${(index + 1).toString().padLeft(2, '0')}';
+
+  static Map<String, dynamic>? _approvalJson() {
+    final notice = MockGroups.pendingApprovalNotice();
+    if (notice == null) return null;
+    final at = notice['at'] as DateTime;
+    final id = 'ntf_approval_${notice['groupId']}';
+    return {
+      'id': id,
+      'kind': 'ride',
+      'title': '${(notice['memberName'] as String).split(' ').first} needs your OK',
+      'body': 'A ride that goes past their limit is waiting for you to approve or decline.',
+      'createdAt': _iso(at),
+      'readAt': _readIds.contains(id) ? _iso(at.add(const Duration(seconds: 30))) : null,
+      'action': {'route': 'group_approvals', 'id': notice['groupId']},
+    };
+  }
 
   static Map<String, dynamic>? _verificationJson() {
     final outcome = MockVerification.outcome;

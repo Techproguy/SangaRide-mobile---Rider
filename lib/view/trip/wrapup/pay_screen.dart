@@ -111,6 +111,10 @@ class _PayScreenState extends State<PayScreen> {
       await _payment.payWallet();
       return;
     }
+    if (state.selected == PaymentMethod.groupWallet) {
+      await _payment.payGroupWallet();
+      return;
+    }
     _payment.beginCard();
     final paid = await context.push<bool>(TripWrapUpRoutes.payCardOf(widget.tripId));
     if (!mounted) return;
@@ -198,6 +202,7 @@ class _PayBody extends StatelessWidget {
           methods: payment.allowedMethods,
           selected: _selectedOf(current),
           lastMethod: payment.lastMethod,
+          group: payment.group,
           walletOption: walletOption,
           onSelect: onSelect,
           onTopUp: () => onTopUp(walletOption is WalletShort ? walletOption.shortBy : 0),

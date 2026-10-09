@@ -1,19 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
+import 'package:sanga_ride/controller/rider/groups/group_bindings.dart';
 import 'package:sanga_ride/controller/rider/ride_history_controller.dart';
 import 'package:sanga_ride/core/router/history_routes.dart';
 import 'package:sanga_ride/core/router/routes.dart';
 import 'package:sanga_ride/model/history/history_item.dart';
+import 'package:sanga_ride/model/history/history_scope.dart';
 import 'package:sanga_ride/view/history/widgets/history_card.dart';
 import 'package:sanga_ride/view/history/widgets/history_format.dart';
 import 'package:sanga_ride/view/history/widgets/history_rebook.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 class HistoryFeed extends StatefulWidget {
-  const HistoryFeed({super.key, required this.status});
+  const HistoryFeed({super.key, required this.status, this.scope = const HistoryScope.personal()});
 
   final HistoryStatus status;
+  final HistoryScope scope;
 
   @override
   State<HistoryFeed> createState() => _HistoryFeedState();
@@ -21,7 +24,10 @@ class HistoryFeed extends StatefulWidget {
 
 class _HistoryFeedState extends State<HistoryFeed> {
   static const double _loadMoreExtent = 320;
-  final _history = Get.find<RideHistoryController>();
+  late final RideHistoryController _history = switch (widget.scope.groupId) {
+    final String groupId => GroupControllers.rides(groupId),
+    null => Get.find<RideHistoryController>(),
+  };
 
   @override
   void initState() {
@@ -102,6 +108,7 @@ class _HistoryFeedState extends State<HistoryFeed> {
   }
 
   Widget _empty(BuildContext context) {
+    if (widget.scope.isGroup) return _groupEmpty();
     return switch (widget.status) {
       HistoryStatus.completed => SangaInlineMessage(
         title: 'No trips yet',
@@ -112,6 +119,19 @@ class _HistoryFeedState extends State<HistoryFeed> {
       HistoryStatus.cancelled => const SangaInlineMessage(
         title: 'Nothing cancelled',
         message: 'Trips you or your driver cancel will show up here.',
+      ),
+    };
+  }
+
+  Widget _groupEmpty() {
+    return switch (widget.status) {
+      HistoryStatus.completed => const SangaInlineMessage(
+        title: 'No group rides yet',
+        message: 'Rides taken on the group’s tab show up here.',
+      ),
+      HistoryStatus.cancelled => const SangaInlineMessage(
+        title: 'Nothing cancelled',
+        message: 'Group rides that get cancelled show up here.',
       ),
     };
   }
@@ -129,7 +149,9 @@ class _HistoryFeedState extends State<HistoryFeed> {
           item: item,
           whenLabel: formatHistoryWhen(context, item.occurredAt),
           onTap: () => context.push(HistoryRoutes.detailOf(item.id)),
-          onRebook: item.canRebook ? () => rebookRide(context, item.route, item.category) : null,
+          onRebook: item.canRebook && !widget.scope.isGroup
+              ? () => rebookRide(context, item.route, item.category)
+              : null,
         );
       },
     );

@@ -7,8 +7,11 @@ import 'package:sanga_ride/core/api/wallet_endpoints.dart';
 import 'package:sanga_ride/model/wallet/wallet.dart';
 
 class WalletController extends GetxController {
+  WalletController(this.scope);
+
   static const int recentCount = 5;
 
+  final WalletScope scope;
   final _api = Get.find<ApiService>();
 
   final Rx<WalletState> _state = Rx<WalletState>(const WalletLoading());
@@ -59,7 +62,7 @@ class WalletController extends GetxController {
 
   Future<WalletOverview?> _fetchOverview() async {
     try {
-      final response = await _api.get(WalletEndpoints.wallet, suppressErrorToast: true);
+      final response = await _api.get(WalletEndpoints.walletOf(scope.groupId), suppressErrorToast: true);
       return WalletOverview.fromJson(_dataOf(response.data));
     } catch (e) {
       log('wallet load failed: ${e is ApiException ? e.code : e.runtimeType}');
@@ -70,7 +73,7 @@ class WalletController extends GetxController {
   Future<RecentTransactions> _fetchRecent() async {
     try {
       final response = await _api.get(
-        WalletEndpoints.transactions,
+        WalletEndpoints.transactionsOf(scope.groupId),
         queryParameters: {'page': 1, 'limit': recentCount},
         suppressErrorToast: true,
       );

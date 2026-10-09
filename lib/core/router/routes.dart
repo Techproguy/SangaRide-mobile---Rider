@@ -1,6 +1,7 @@
 import 'package:go_router/go_router.dart';
 import 'package:sanga_ride/core/router/account_routes.dart';
 import 'package:sanga_ride/core/router/booking_routes.dart';
+import 'package:sanga_ride/core/router/group_routes.dart';
 import 'package:sanga_ride/core/router/history_routes.dart';
 import 'package:sanga_ride/core/router/menu_routes.dart';
 import 'package:sanga_ride/core/router/notification_routes.dart';
@@ -80,6 +81,7 @@ class SangaRoutes {
     ...VerificationRoutes.all,
     ...SupportRoutes.all,
     ...WalletRoutes.all,
+    ...GroupRoutes.all,
   ];
 
   static final List<RouteBase> rideRoutes = [

@@ -12,6 +12,8 @@ import 'package:sanga_ride/model/trip/wrapup/card_details.dart';
 import 'package:sanga_ride/model/wallet/wallet.dart';
 
 class TopUpController extends GetxController {
+  TopUpController(this.scope);
+
   static const Duration transferPollInterval = Duration(seconds: 3);
   static const Duration transferPatience = Duration(seconds: 90);
   static const Duration confirmPollInterval = Duration(seconds: 2);
@@ -20,8 +22,9 @@ class TopUpController extends GetxController {
 
   static final Options _noAutoRetry = Options(extra: {'retries': 3});
 
+  final WalletScope scope;
   final _api = Get.find<ApiService>();
-  final _wallet = Get.find<WalletController>();
+  late final _wallet = Get.find<WalletController>(tag: scope.tag);
   final _tokenizer = Get.find<CardTokenizer>();
 
   final Rx<TopUpState> _state = Rx<TopUpState>(const TopUpEditing());
@@ -92,7 +95,7 @@ class TopUpController extends GetxController {
     }
     try {
       final response = await _api.post(
-        WalletEndpoints.topUps,
+        WalletEndpoints.topUpsOf(scope.groupId),
         data: SensitiveBody({
           'amount': amount,
           'method': TopUpMethod.card.code,
@@ -119,7 +122,7 @@ class TopUpController extends GetxController {
     _state.value = current.withStage(OtpStage.verifying);
     try {
       final response = await _api.post(
-        WalletEndpoints.topUpAuthorizeOf(current.topUp.id),
+        WalletEndpoints.topUpAuthorizeAt(current.topUp.id, groupId: scope.groupId),
         data: SensitiveBody({'otp': code}),
         options: _noAutoRetry,
         suppressErrorToast: true,
@@ -153,7 +156,7 @@ class TopUpController extends GetxController {
     _state.value = const TopUpSubmitting(TopUpMethod.transfer);
     try {
       final response = await _api.post(
-        WalletEndpoints.topUps,
+        WalletEndpoints.topUpsOf(scope.groupId),
         data: {'method': TopUpMethod.transfer.code, 'amount': amount},
         options: _noAutoRetry,
         suppressErrorToast: true,
@@ -172,7 +175,7 @@ class TopUpController extends GetxController {
     final epoch = _invalidate();
     _state.value = const TopUpSubmitting(TopUpMethod.transfer);
     try {
-      final response = await _api.get(WalletEndpoints.topUpOf(id), suppressErrorToast: true);
+      final response = await _api.get(WalletEndpoints.topUpAt(id, groupId: scope.groupId), suppressErrorToast: true);
       if (epoch != _epoch) return;
       final topUp = TopUp.fromJson(_dataOf(response.data));
       _draft.value = draft.copyWith(amount: () => topUp.amount, method: TopUpMethod.transfer);
@@ -243,7 +246,7 @@ class TopUpController extends GetxController {
     if (_isPolling || id == null || epoch != _epoch) return;
     _isPolling = true;
     try {
-      final response = await _api.get(WalletEndpoints.topUpOf(id), suppressErrorToast: true);
+      final response = await _api.get(WalletEndpoints.topUpAt(id, groupId: scope.groupId), suppressErrorToast: true);
       if (epoch != _epoch) return;
       final topUp = TopUp.fromJson(_dataOf(response.data));
       final method = current is TopUpConfirming ? TopUpMethod.card : TopUpMethod.transfer;

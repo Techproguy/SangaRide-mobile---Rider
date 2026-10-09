@@ -19,7 +19,8 @@ class VerificationSelfieScreen extends StatelessWidget {
       verify: controller.verifySelfie,
       fallbackCapture: kDebugMode ? () => MockCapture.photo('Selfie') : null,
       onOpenSettings: Geolocator.openAppSettings,
-      onPassed: () => context.pop(),
+      passedMessage: 'Looking good! Your selfie is saved.',
+      onPassed: () => context.pop(true),
     );
   }
 }

@@ -4,8 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-import 'package:sanga_ride/controller/rider/top_up_controller.dart';
-import 'package:sanga_ride/controller/rider/wallet_controller.dart';
+import 'package:sanga_ride/controller/rider/wallet_bindings.dart';
 import 'package:sanga_ride/core/router/wallet_routes.dart';
 import 'package:sanga_ride/model/wallet/wallet.dart';
 import 'package:sanga_ride/view/wallet/wallet_copy.dart';
@@ -14,9 +13,10 @@ import 'package:sanga_ride/view/wallet/widgets/wallet_page.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 class TopUpAmountScreen extends StatefulWidget {
-  const TopUpAmountScreen({super.key, this.initialAmount});
+  const TopUpAmountScreen({super.key, this.initialAmount, this.scope = const WalletScope.personal()});
 
   final int? initialAmount;
+  final WalletScope scope;
 
   @override
   State<TopUpAmountScreen> createState() => _TopUpAmountScreenState();
@@ -25,8 +25,8 @@ class TopUpAmountScreen extends StatefulWidget {
 class _TopUpAmountScreenState extends State<TopUpAmountScreen> {
   static final NumberFormat _grouped = NumberFormat('#,##0', 'en_NG');
 
-  final _wallet = Get.find<WalletController>();
-  final _topUp = Get.find<TopUpController>();
+  late final _wallet = WalletControllers.wallet(widget.scope);
+  late final _topUp = WalletControllers.topUp(widget.scope);
   final _amount = TextEditingController();
   final _focus = FocusNode();
   final RxBool _hasLeftField = false.obs;
@@ -67,7 +67,7 @@ class _TopUpAmountScreenState extends State<TopUpAmountScreen> {
 
   Future<void> _continue() async {
     _focus.unfocus();
-    final done = await context.push<bool>(WalletRoutes.topUpMethod);
+    final done = await context.push<bool>(WalletRoutes.topUpMethodOf(groupId: widget.scope.groupId));
     if (done == true && mounted) context.pop(true);
   }
 
@@ -82,7 +82,7 @@ class _TopUpAmountScreenState extends State<TopUpAmountScreen> {
   Widget _body(WalletState state, int? amount) => switch (state) {
     WalletLoading() => const WalletSkeleton(heights: [72, 40, 40]),
     WalletFailed() => SangaInlineMessage(
-      title: 'We couldn’t load your wallet',
+      title: WalletCopy.loadFailedTitle(widget.scope),
       message: 'Check your connection and give it another go.',
       actionLabel: 'Try again',
       onAction: _wallet.reload,

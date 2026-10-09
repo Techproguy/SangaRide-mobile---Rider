@@ -104,6 +104,7 @@ class TripPaymentController extends GetxController {
       payment.allowedMethods.contains(method) && (method != PaymentMethod.wallet || _walletCovers(payment.amount));
 
   PaymentMethod? _preferredOf(TripPayment payment) {
+    if (_isChoosable(payment, PaymentMethod.groupWallet)) return PaymentMethod.groupWallet;
     final last = payment.lastMethod;
     if (last != null && _isChoosable(payment, last)) return last;
     return payment.allowedMethods.where((method) => _isChoosable(payment, method)).firstOrNull;
@@ -158,6 +159,12 @@ class TripPaymentController extends GetxController {
     await _submit(current.payment, const PaymentRequest.wallet());
   }
 
+  Future<void> payGroupWallet() async {
+    final current = state;
+    if (current is! PaymentChoosing || current.selected != PaymentMethod.groupWallet) return;
+    await _submit(current.payment, const PaymentRequest.groupWallet());
+  }
+
   Future<void> payCard(CardDetails details) async {
     final current = state;
     if (current is! PaymentCardEntry) return;
@@ -194,7 +201,7 @@ class TripPaymentController extends GetxController {
       _state.value = PaymentDeclined(payment, reason: PaymentDeclineReason.fromCode(error.code));
       return;
     }
-    if (method == PaymentMethod.wallet) {
+    if (method == PaymentMethod.wallet || method == PaymentMethod.groupWallet) {
       Toast.error(genericFailure);
       unawaited(_load());
       return;

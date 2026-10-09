@@ -3,12 +3,12 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
-import 'package:sanga_ride/controller/rider/top_up_controller.dart';
-import 'package:sanga_ride/controller/rider/wallet_controller.dart';
+import 'package:sanga_ride/controller/rider/wallet_bindings.dart';
 import 'package:sanga_ride/model/wallet/wallet.dart';
 import 'package:sanga_ride/view/wallet/widgets/saved_card_picker.dart';
 import 'package:sanga_ride/view/wallet/widgets/top_up_otp_sheet.dart';
 import 'package:sanga_ride/view/wallet/widgets/top_up_success_sheet.dart';
+import 'package:sanga_ride/view/wallet/wallet_copy.dart';
 import 'package:sanga_ride/view/wallet/wallet_format.dart';
 import 'package:sanga_ride/view/widgets/card/card_details_fields.dart';
 import 'package:sanga_ride/view/widgets/card/card_form_model.dart';
@@ -17,15 +17,17 @@ import 'package:sanga_ride/view/widgets/layout/amount_tile.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 class TopUpCardScreen extends StatefulWidget {
-  const TopUpCardScreen({super.key});
+  const TopUpCardScreen({super.key, this.scope = const WalletScope.personal()});
+
+  final WalletScope scope;
 
   @override
   State<TopUpCardScreen> createState() => _TopUpCardScreenState();
 }
 
 class _TopUpCardScreenState extends State<TopUpCardScreen> {
-  final _wallet = Get.find<WalletController>();
-  final _topUp = Get.find<TopUpController>();
+  late final _wallet = WalletControllers.wallet(widget.scope);
+  late final _topUp = WalletControllers.topUp(widget.scope);
   final _form = CardFormModel(isPinRequired: false);
   final _processing = PaymentSheetSlot();
   final _otp = PaymentSheetSlot();
@@ -110,7 +112,7 @@ class _TopUpCardScreenState extends State<TopUpCardScreen> {
   Future<void> _celebrate(TopUpSucceeded result) async {
     if (_isFinishing) return;
     _isFinishing = true;
-    await showTopUpSuccessSheet(context: context, result: result);
+    await showTopUpSuccessSheet(context: context, result: result, scope: widget.scope);
     if (mounted) context.pop(true);
   }
 
@@ -168,7 +170,7 @@ class _TopUpCardScreenState extends State<TopUpCardScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               spacing: SangaSpacing.lg,
               children: [
-                AmountTile(label: 'Adding to your wallet', amount: amount),
+                AmountTile(label: WalletCopy.addingTo(widget.scope), amount: amount),
                 _cardSection(overview, draft),
               ],
             ),

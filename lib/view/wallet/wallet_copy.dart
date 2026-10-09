@@ -2,6 +2,33 @@ import 'package:sanga_ride/model/wallet/wallet.dart';
 import 'package:sanga_ride/view/wallet/wallet_format.dart';
 
 abstract final class WalletCopy {
+  static String walletTitle(WalletScope scope) => scope.isGroup ? 'Group wallet' : 'Wallet';
+
+  static String transactionsTitle(WalletScope scope) => scope.isGroup ? 'Group wallet activity' : 'Transaction history';
+
+  static String balanceLabel(WalletScope scope) => scope.isGroup ? 'Group balance' : 'Your balance';
+
+  static String loadFailedTitle(WalletScope scope) =>
+      scope.isGroup ? 'We couldn’t load the group wallet' : 'We couldn’t load your wallet';
+
+  static String historyFailedTitle(WalletScope scope) =>
+      scope.isGroup ? 'We couldn’t load the wallet history' : 'We couldn’t load your history';
+
+  static String addingTo(WalletScope scope) => scope.isGroup ? 'Adding to the group wallet' : 'Adding to your wallet';
+
+  static String addedTo(WalletScope scope) => scope.isGroup ? 'the group wallet' : 'your wallet';
+
+  static String topUpSuccess(WalletScope scope, {required String added, String? balance}) {
+    if (balance == null) return '$added is on its way to ${addedTo(scope)}.';
+    return scope.isGroup
+        ? '$added is in the group wallet. The balance is $balance.'
+        : '$added is in your wallet. Your balance is $balance.';
+  }
+
+  static String emptyHistoryMessage(WalletScope scope) => scope.isGroup
+      ? 'Add money and the group wallet activity shows up here.'
+      : 'Add money and your wallet activity shows up here.';
+
   static String emptyTransactionsTitle(TransactionFilter filter) => switch (filter) {
     TransactionFilter.all => 'No transactions yet',
     TransactionFilter.topUps => 'No top ups yet',
@@ -33,6 +60,7 @@ abstract final class WalletCopy {
     }
     return switch (meta.paymentMethod) {
       'wallet' => 'Your wallet',
+      'group_wallet' => 'Group wallet',
       'card' => 'Card',
       'cash' => 'Cash',
       _ => 'Your wallet',

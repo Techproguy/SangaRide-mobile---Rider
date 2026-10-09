@@ -5,7 +5,9 @@ import 'package:sanga_ride/controller/rider/ride_match_controller.dart';
 import 'package:sanga_ride/controller/rider/ride_request_controller.dart';
 import 'package:sanga_ride/core/router/routes.dart';
 import 'package:sanga_ride/core/services/toast_service.dart';
+import 'package:sanga_ride/model/groups/group_models.dart';
 import 'package:sanga_ride/model/models.dart';
+import 'package:sanga_ride/view/ride/matching/approval_sheet.dart';
 import 'package:sanga_ride/view/ride/matching/searching_sheet.dart';
 import 'package:sanga_ride/view/ride/widgets/ride_option_schedule_format.dart';
 import 'package:sanga_ride/view/ride/widgets/scheduled_success.dart';
@@ -23,7 +25,17 @@ Future<void> startMatching(BuildContext context, {bool replacingOffers = false})
     match.abandon();
     return;
   }
+  if (match.state is MatchAwaitingApproval) {
+    final approval = await showApprovalSheet(context);
+    if (!context.mounted) {
+      match.abandon();
+      return;
+    }
+    if (approval == ApprovalOutcome.cancelled) return Toast.info('Request cancelled');
+  }
   switch (match.state) {
+    case MatchBlocked(:final block):
+      return _showBlocked(context, block);
     case MatchFailed(:final code) when code != null && trip.tripType.handlesOwnRejections && !replacingOffers:
       return;
     case MatchFailed(:final reason):
@@ -60,6 +72,18 @@ Future<void> startMatching(BuildContext context, {bool replacingOffers = false})
     case null:
       break;
   }
+}
+
+Future<void> _showBlocked(BuildContext context, GroupRideBlock block) async {
+  final stay = await showSangaStatusSheet(
+    context: context,
+    status: SangaStatus.failure,
+    title: block.title,
+    message: block.message,
+    actionLabel: 'Got it',
+    secondaryLabel: 'Back to home',
+  );
+  if (context.mounted && !stay) context.go(SangaRoutes.home);
 }
 
 Future<void> _showFailure(BuildContext context, MatchFailure reason, {required bool replacingOffers}) async {

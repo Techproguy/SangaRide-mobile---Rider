@@ -335,7 +335,7 @@ class _Ticket {
       if (age >= MockSupport._decisionAfter && _needsAction)
         _event('action_requested', decidedAt, 'Pick what works best for you'),
       if (age >= MockSupport._decisionAfter && _needsAction && chosen != null)
-        _event('action_taken', chosenAt!, 'You chose: ${_chosenLabel()}'),
+        _event('action_taken', chosenAt!, _chosenLabel()),
       if (age >= MockSupport._decisionAfter && !_needsAction) _event('action_taken', decidedAt, '${_type['resolved']}'),
       if (age >= MockSupport._decisionAfter && (!_needsAction || chosen != null))
         _event('resolved', chosenAt ?? decidedAt, 'All sorted. Thanks for your patience.'),

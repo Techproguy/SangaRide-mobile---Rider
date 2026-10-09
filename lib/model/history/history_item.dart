@@ -56,6 +56,8 @@ class HistoryItem {
     required this.route,
     required this.fare,
     this.itemName,
+    this.memberName,
+    this.purpose,
   });
 
   factory HistoryItem.fromJson(Map<String, dynamic> json) => HistoryItem(
@@ -67,6 +69,8 @@ class HistoryItem {
     route: HistoryRoute.fromJson(json),
     fare: (json['fare'] as num).toInt(),
     itemName: json['itemName'] as String?,
+    memberName: json['memberName'] as String?,
+    purpose: json['purpose'] as String?,
   );
 
   final String id;
@@ -77,6 +81,8 @@ class HistoryItem {
   final HistoryRoute route;
   final int fare;
   final String? itemName;
+  final String? memberName;
+  final String? purpose;
 
   bool get canRebook => kind == HistoryKind.ride;
 }

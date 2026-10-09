@@ -1,8 +1,8 @@
 enum RideForKind {
   me('Just for me', null),
-  family('Family member', 'Book it for someone in your family'),
+  family('Family member', 'Book it for someone in your family group'),
   someone('Someone else', 'Send a ride to another person'),
-  business('Business ride', 'Trips for your company');
+  business('Business ride', 'Charged to your company, with a purpose');
 
   const RideForKind(this.label, this.description);
 
@@ -87,51 +87,32 @@ class PassengerVerification {
 class FamilyMember {
   const FamilyMember({
     required this.id,
+    required this.groupId,
+    required this.groupName,
     required this.name,
     required this.relationship,
     required this.phone,
-    required this.needsApproval,
+    required this.isYou,
   });
 
-  factory FamilyMember.fromJson(Map<String, dynamic> json) => FamilyMember(
-    id: json['id'] as String,
-    name: json['name'] as String,
-    relationship: json['relationship'] as String,
-    phone: json['phone'] as String,
-    needsApproval: json['needsApproval'] as bool,
-  );
-
   final String id;
+  final String groupId;
+  final String groupName;
   final String name;
   final String relationship;
   final String phone;
-  final bool needsApproval;
+  final bool isYou;
 
   String get firstName => name.trim().split(RegExp(r'\s+')).first;
 }
 
 class BusinessProfile {
-  const BusinessProfile({
-    required this.id,
-    required this.companyName,
-    required this.role,
-    required this.purposes,
-    required this.requiresCostCentre,
-  });
-
-  factory BusinessProfile.fromJson(Map<String, dynamic> json) => BusinessProfile(
-    id: json['id'] as String,
-    companyName: json['companyName'] as String,
-    role: json['role'] as String,
-    purposes: [for (final purpose in json['purposes'] as List) purpose as String],
-    requiresCostCentre: json['costCentreRequired'] as bool,
-  );
+  const BusinessProfile({required this.id, required this.companyName, required this.role, required this.purposes});
 
   final String id;
   final String companyName;
   final String role;
   final List<String> purposes;
-  final bool requiresCostCentre;
 }
 
 sealed class RideFor {
@@ -200,15 +181,14 @@ final class RideForFamily extends RideFor {
   String? get detail => member.relationship;
 
   @override
-  Map<String, dynamic> toJson() => {'type': 'family', 'memberId': member.id, 'needsApproval': member.needsApproval};
+  Map<String, dynamic> toJson() => {'type': 'family', 'groupId': member.groupId, 'memberId': member.id};
 }
 
 final class RideForBusiness extends RideFor {
-  const RideForBusiness({required this.profile, required this.purpose, this.costCentre, this.note});
+  const RideForBusiness({required this.profile, required this.purpose, this.note});
 
   final BusinessProfile profile;
   final String purpose;
-  final String? costCentre;
   final String? note;
 
   @override
@@ -221,13 +201,7 @@ final class RideForBusiness extends RideFor {
   String? get detail => purpose;
 
   @override
-  Map<String, dynamic> toJson() => {
-    'type': 'business',
-    'profileId': profile.id,
-    'purpose': purpose,
-    'costCentre': ?costCentre,
-    'note': ?note,
-  };
+  Map<String, dynamic> toJson() => {'type': 'business', 'groupId': profile.id, 'purpose': purpose, 'note': ?note};
 }
 
 sealed class RideForListState<T> {

@@ -8,52 +8,9 @@ abstract final class MockWhoFor {
 
   static final Map<String, _MockVerification> _verifications = {};
 
-  static const List<Map<String, dynamic>> _familyMembers = [
-    {
-      'id': 'fam_ada',
-      'name': 'Amaka Okafor',
-      'relationship': 'Daughter',
-      'phone': '+2348031112233',
-      'needsApproval': true,
-    },
-    {
-      'id': 'fam_chidi',
-      'name': 'Chidi Okafor',
-      'relationship': 'Son',
-      'phone': '+2348052223344',
-      'needsApproval': false,
-    },
-    {
-      'id': 'fam_mama',
-      'name': 'Mama Okafor',
-      'relationship': 'Mother',
-      'phone': '+2347063334455',
-      'needsApproval': false,
-    },
-  ];
-
-  static const List<Map<String, dynamic>> _businessProfiles = [
-    {
-      'id': 'biz_sanga_tech',
-      'companyName': 'Sanga Technologies',
-      'role': 'Marketing team lead',
-      'purposes': ['Client meeting', 'Airport run', 'Office commute', 'Other'],
-      'costCentreRequired': true,
-    },
-    {
-      'id': 'biz_kudi',
-      'companyName': 'Kudi Ventures',
-      'role': 'Team member',
-      'purposes': ['Client meeting', 'Airport run', 'Other'],
-      'costCentreRequired': false,
-    },
-  ];
-
   static final List<MockRoute> routes = [
     MockRoute.post(WhoForEndpoints.passengerOtp, _sendCode),
     MockRoute.post(WhoForEndpoints.passengerVerify, _verifyCode),
-    MockRoute.get(WhoForEndpoints.familyMembers, (_) => _familyMembers),
-    MockRoute.get(WhoForEndpoints.businessProfiles, (_) => _businessProfiles),
   ];
 
   static String _digits(Object? phone) => (phone as String? ?? '').replaceAll(RegExp(r'\D'), '');

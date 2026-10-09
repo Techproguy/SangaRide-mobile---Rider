@@ -59,6 +59,7 @@ class TransactionMeta {
     this.expiresAt,
     this.note,
     this.failureReason,
+    this.isDelivery = false,
   });
 
   factory TransactionMeta.fromJson(Map<String, dynamic> json) {
@@ -75,6 +76,7 @@ class TransactionMeta {
       expiresAt: expiresAt == null ? null : DateTime.parse(expiresAt).toLocal(),
       note: json['note'] as String?,
       failureReason: json['failureReason'] as String?,
+      isDelivery: json['tripKind'] == 'delivery',
     );
   }
 
@@ -89,6 +91,7 @@ class TransactionMeta {
   final DateTime? expiresAt;
   final String? note;
   final String? failureReason;
+  final bool isDelivery;
 
   bool get isTransfer => method == 'transfer';
 }

@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
-import 'package:sanga_ride/controller/rider/wallet_transactions_controller.dart';
+import 'package:sanga_ride/controller/rider/wallet_bindings.dart';
 import 'package:sanga_ride/core/router/history_routes.dart';
 import 'package:sanga_ride/core/router/wallet_routes.dart';
 import 'package:sanga_ride/core/services/toast_service.dart';
@@ -17,16 +17,17 @@ import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 enum _DetailStage { loading, failed, loaded }
 
 class WalletTransactionScreen extends StatefulWidget {
-  const WalletTransactionScreen({super.key, required this.id});
+  const WalletTransactionScreen({super.key, required this.id, this.scope = const WalletScope.personal()});
 
   final String id;
+  final WalletScope scope;
 
   @override
   State<WalletTransactionScreen> createState() => _WalletTransactionScreenState();
 }
 
 class _WalletTransactionScreenState extends State<WalletTransactionScreen> {
-  final _transactions = Get.find<WalletTransactionsController>();
+  late final _transactions = WalletControllers.transactions(widget.scope);
 
   @override
   void initState() {
@@ -51,13 +52,13 @@ class _WalletTransactionScreenState extends State<WalletTransactionScreen> {
     if (tx.isPendingTransfer && topUpId != null) {
       return SangaButton.primary(
         label: 'Check on my transfer',
-        onPressed: () => context.push(WalletRoutes.topUpTransferOf(resumeId: topUpId)),
+        onPressed: () => context.push(WalletRoutes.topUpTransferOf(resumeId: topUpId, groupId: widget.scope.groupId)),
       );
     }
     if (tx.kind == TransactionKind.topUp && tx.status == TransactionStatus.failed) {
       return SangaButton.primary(
         label: 'Try again',
-        onPressed: () => context.push(WalletRoutes.topUpOf(amount: tx.amount)),
+        onPressed: () => context.push(WalletRoutes.topUpOf(amount: tx.amount, groupId: widget.scope.groupId)),
       );
     }
     return null;

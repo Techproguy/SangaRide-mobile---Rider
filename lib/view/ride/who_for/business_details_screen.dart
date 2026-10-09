@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sanga_ride/controller/rider/ride_for_controller.dart';
 import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride/view/ride/who_for/widgets/business_paid_by_row.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
-
-enum _Field { purpose, costCentre }
 
 class BusinessDetailsScreen extends StatefulWidget {
   const BusinessDetailsScreen({super.key});
@@ -16,14 +15,14 @@ class BusinessDetailsScreen extends StatefulWidget {
 }
 
 class _BusinessDetailsScreenState extends State<BusinessDetailsScreen> {
+  static const int purposeLimit = 80;
   static const int noteLimit = 120;
 
   final _flow = Get.find<RideForController>();
-  final _costCentre = TextEditingController();
+  final _purpose = TextEditingController();
   final _note = TextEditingController();
   late final BusinessProfile? _profile = _flow.pickedProfile;
-  String? _purpose;
-  var _errors = <_Field, String>{};
+  String? _purposeError;
 
   @override
   void initState() {
@@ -31,40 +30,30 @@ class _BusinessDetailsScreenState extends State<BusinessDetailsScreen> {
     if (_profile == null) WidgetsBinding.instance.addPostFrameCallback((_) => context.pop());
     final current = _flow.rideFor;
     if (current is RideForBusiness && current.profile.id == _profile?.id) {
-      _purpose = current.purpose;
-      _costCentre.text = current.costCentre ?? '';
+      _purpose.text = current.purpose;
       _note.text = current.note ?? '';
     }
   }
 
   @override
   void dispose() {
-    _costCentre.dispose();
+    _purpose.dispose();
     _note.dispose();
     super.dispose();
   }
 
-  void _clearError(_Field field) {
-    if (_errors.containsKey(field)) setState(() => _errors = {..._errors}..remove(field));
+  void _suggest(String purpose) {
+    _purpose.text = purpose;
+    _purpose.selection = TextSelection.collapsed(offset: purpose.length);
+    setState(() => _purposeError = null);
   }
 
-  Map<_Field, String> _validate(BusinessProfile profile) => {
-    if (_purpose == null) _Field.purpose: 'Pick what the trip is for',
-    if (profile.requiresCostCentre && _costCentre.text.trim().isEmpty)
-      _Field.costCentre: '${profile.companyName} needs a cost centre',
-  };
-
-  void _confirm(BusinessProfile profile) {
+  void _confirm() {
     FocusScope.of(context).unfocus();
-    final errors = _validate(profile);
-    if (errors.isNotEmpty) return setState(() => _errors = errors);
-    final costCentre = _costCentre.text.trim();
+    final purpose = _purpose.text.trim();
+    if (purpose.isEmpty) return setState(() => _purposeError = 'Say what the trip is for');
     final note = _note.text.trim();
-    _flow.confirmBusiness(
-      purpose: _purpose!,
-      costCentre: costCentre.isEmpty ? null : costCentre,
-      note: note.isEmpty ? null : note,
-    );
+    _flow.confirmBusiness(purpose: purpose, note: note.isEmpty ? null : note);
     context.pop(true);
   }
 
@@ -74,34 +63,42 @@ class _BusinessDetailsScreenState extends State<BusinessDetailsScreen> {
     if (profile == null) return const Scaffold();
     return SangaPageLayout(
       title: 'Business details',
-      footer: SangaButton.primary(label: 'Confirm', onPressed: () => _confirm(profile)),
+      footer: SangaButton.primary(label: 'Confirm', onPressed: _confirm),
       children: [
         Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           spacing: SangaSpacing.lg,
           children: [
             BusinessPaidByRow(companyName: profile.companyName),
-            SangaSelectField<String>(
+            SangaTextField(
               label: 'Trip purpose',
               isRequired: true,
-              hintText: 'Choose a purpose',
-              value: _purpose,
-              errorText: _errors[_Field.purpose],
-              options: [for (final purpose in profile.purposes) SangaSelectOption(purpose, purpose)],
-              onChanged: (purpose) {
-                _clearError(_Field.purpose);
-                setState(() => _purpose = purpose);
-              },
+              hintText: 'What is this trip for?',
+              controller: _purpose,
+              errorText: _purposeError,
+              textCapitalization: TextCapitalization.sentences,
+              inputFormatters: [LengthLimitingTextInputFormatter(purposeLimit)],
+              onChanged: (_) => setState(() => _purposeError = null),
             ),
-            if (profile.requiresCostCentre)
-              SangaTextField(
-                label: 'Cost centre',
-                isRequired: true,
-                hintText: 'Enter your cost centre',
-                controller: _costCentre,
-                errorText: _errors[_Field.costCentre],
-                textCapitalization: TextCapitalization.characters,
-                onChanged: (_) => _clearError(_Field.costCentre),
+            if (profile.purposes.isNotEmpty)
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                spacing: SangaSpacing.xs,
+                children: [
+                  const Text('Used recently', style: SangaTextStyles.caption),
+                  Wrap(
+                    spacing: SangaSpacing.sm,
+                    runSpacing: SangaSpacing.sm,
+                    children: [
+                      for (final purpose in profile.purposes)
+                        SangaChoiceChip(
+                          label: purpose,
+                          isSelected: _purpose.text.trim() == purpose,
+                          onSelected: (_) => _suggest(purpose),
+                        ),
+                    ],
+                  ),
+                ],
               ),
             SangaTextArea(
               label: 'Additional details (optional)',

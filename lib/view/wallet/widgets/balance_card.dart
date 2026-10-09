@@ -3,12 +3,13 @@ import 'package:sanga_ride/view/wallet/wallet_format.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 class BalanceCard extends StatelessWidget {
-  const BalanceCard({super.key, required this.balance, required this.onAddMoney});
+  const BalanceCard({super.key, required this.balance, this.onAddMoney, this.label = 'Your balance'});
 
   static const double _softAlpha = 0.78;
 
   final int balance;
-  final VoidCallback onAddMoney;
+  final String label;
+  final VoidCallback? onAddMoney;
 
   @override
   Widget build(BuildContext context) {
@@ -25,7 +26,7 @@ class BalanceCard extends StatelessWidget {
               spacing: SangaSpacing.xs,
               children: [
                 Text(
-                  'Your balance',
+                  label,
                   style: SangaTextStyles.cardTitle.copyWith(color: SangaColors.onPrimary.withValues(alpha: _softAlpha)),
                 ),
                 FittedBox(
@@ -39,7 +40,7 @@ class BalanceCard extends StatelessWidget {
               ],
             ),
           ),
-          SangaPillButton(label: 'Add money', onPressed: onAddMoney),
+          if (onAddMoney != null) SangaPillButton(label: 'Add money', onPressed: onAddMoney!),
         ],
       ),
     );

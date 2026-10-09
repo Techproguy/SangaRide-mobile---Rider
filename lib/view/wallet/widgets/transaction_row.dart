@@ -17,7 +17,7 @@ class TransactionRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final tx = transaction;
     return SangaListRow(
-      leading: SangaIconBadge(size: 40, child: Icon(TransactionVisuals.icon(tx.kind))),
+      leading: SangaIconBadge(size: 40, child: Icon(TransactionVisuals.of(tx))),
       title: tx.title,
       subtitle: showDate ? WalletFormat.recent(tx.createdAt) : WalletFormat.clock(tx.createdAt),
       onTap: onTap,

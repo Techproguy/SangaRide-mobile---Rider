@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:sanga_ride/core/api/mock/mock_card_tokenizer.dart';
 import 'package:sanga_ride/core/api/history_endpoints.dart';
 import 'package:sanga_ride/core/api/mock/mock_data.dart';
+import 'package:sanga_ride/core/api/mock/mock_groups.dart';
 import 'package:sanga_ride/core/api/mock/mock_history.dart';
 import 'package:sanga_ride/core/api/mock/mock_server.dart';
 import 'package:sanga_ride/core/api/wallet_endpoints.dart';
@@ -15,6 +16,12 @@ abstract final class MockWallet {
     MockRoute.post(WalletEndpoints.topUps, _createTopUp),
     MockRoute.get(WalletEndpoints.topUp, _topUp),
     MockRoute.post(WalletEndpoints.topUpAuthorize, _authorize),
+    MockRoute.get(WalletEndpoints.groupWallet, _overview),
+    MockRoute.get(WalletEndpoints.groupTransactions, _transactions),
+    MockRoute.get(WalletEndpoints.groupTransaction, _transaction),
+    MockRoute.post(WalletEndpoints.groupTopUps, _createTopUp),
+    MockRoute.get(WalletEndpoints.groupTopUp, _topUp),
+    MockRoute.post(WalletEndpoints.groupTopUpAuthorize, _authorize),
   ];
 
   static const int _openingBalance = 140580;
@@ -61,13 +68,74 @@ abstract final class MockWallet {
   ];
 
   static final DateTime _anchor = DateTime.now();
-  static final List<_Entry> _ledger = _seed();
-  static final Map<String, _TopUp> _topUps = {};
+  static final _Book _personal = _Book(balance: _openingBalance, virtualAccount: _virtualAccount, ledger: _seed());
+  static final Map<String, _Book> _groupBooks = {};
   static final List<Map<String, dynamic>> _cards = [
     {'id': 'card_1', 'brand': 'visa', 'last4': '4242', 'expiry': '08/28'},
   ];
-  static int _balance = _openingBalance;
   static int _sequence = 0;
+
+  static const Map<String, int> _groupOpening = {'grp_johnsons': 96400, 'grp_ray': 250000};
+
+  static const Map<String, List<(String, String, int, int, int, String?)>> _groupSeeds = {
+    'grp_johnsons': [
+      ('top_up', 'Top up by transfer', 50000, 2, 9, null),
+      ('ride_payment', 'Ride for Tomi', -6500, 1, 15, 'hist_00'),
+      ('ride_payment', 'Ride for Tife', -4400, 2, 17, 'hist_02'),
+      ('top_up', 'Top up with card', 20000, 4, 11, null),
+      ('ride_payment', 'Ride for Tomi', -5800, 5, 8, 'hist_06'),
+      ('ride_payment', 'Ride for Chidi', -7200, 6, 19, 'hist_08'),
+      ('top_up', 'Top up by transfer', 30000, 9, 10, null),
+      ('ride_payment', 'Ride for Tife', -3900, 11, 14, 'hist_10'),
+    ],
+    'grp_ray': [
+      ('top_up', 'Top up by transfer', 200000, 3, 9, null),
+      ('ride_payment', 'Ride for Georgina', -6500, 1, 9, 'hist_01'),
+      ('ride_payment', 'Ride for Ada', -8200, 2, 18, 'hist_03'),
+      ('ride_payment', 'Ride for Funke', -5200, 3, 8, 'hist_05'),
+      ('top_up', 'Top up with card', 100000, 7, 12, null),
+      ('ride_payment', 'Ride for Georgina', -9100, 8, 17, 'hist_07'),
+    ],
+  };
+
+  static _Book _openGroupBook(String groupId) {
+    final seeds = _groupSeeds[groupId] ?? const [];
+    final book = _Book(
+      balance: _groupOpening[groupId] ?? 0,
+      virtualAccount: {
+        'bankName': 'Sanga Wallet (Wema)',
+        'accountNumber': '${9100000000 + groupId.hashCode.abs() % 90000000}',
+        'accountName': 'Sanga / ${MockGroups.nameOf(groupId)}',
+      },
+      ledger: [],
+    );
+    for (final (index, seed) in seeds.indexed) {
+      final isTopUp = seed.$1 == 'top_up';
+      book.ledger.add(
+        _Entry(
+          id: 'wtx_${groupId}_${index.toString().padLeft(2, '0')}',
+          kind: seed.$1,
+          title: seed.$2,
+          amount: seed.$3,
+          status: 'completed',
+          createdAt: _daysAgo(seed.$4, seed.$5),
+          reference: _reference(isTopUp ? 'SR-TU' : 'SR-PAY', index + 21 + groupId.length),
+          meta: isTopUp
+              ? {
+                  'method': seed.$2.contains('card') ? 'card' : 'transfer',
+                  if (seed.$2.contains('card')) ...{'cardBrand': 'visa', 'cardLast4': '4242'},
+                }
+              : {
+                  'tripId': seed.$6,
+                  'route': 'Chicken Republic to The Palms Mall',
+                  'fare': -seed.$3,
+                  'paymentMethod': 'group_wallet',
+                },
+        ),
+      );
+    }
+    return book;
+  }
 
   static String _iso(DateTime time) => time.toUtc().toIso8601String();
 
@@ -136,7 +204,13 @@ abstract final class MockWallet {
       status: 'completed',
       createdAt: DateTime.parse(trip['occurredAt'] as String).add(const Duration(minutes: 1)),
       reference: _reference('SR-PAY', int.parse(id.substring(5))),
-      meta: {'tripId': id, 'route': '$pickup to $dropoff', 'fare': fare, 'paymentMethod': 'wallet'},
+      meta: {
+        'tripId': id,
+        'route': '$pickup to $dropoff',
+        'fare': fare,
+        'paymentMethod': 'wallet',
+        'tripKind': isDelivery ? 'delivery' : 'ride',
+      },
     );
   }
 
@@ -154,26 +228,43 @@ abstract final class MockWallet {
       ),
   ];
 
-  static void _syncTopUps() {
-    for (final topUp in _topUps.values) {
+  static _Book _bookOf(MockRequest request) {
+    final groupId = request.params['groupId'];
+    if (groupId == null) return _personal;
+    final book = _groupBooks[groupId] ?? _openGroupBook(groupId);
+    _groupBooks[groupId] = book;
+    return book;
+  }
+
+  static void _requireTopUpAccess(MockRequest request) {
+    final groupId = request.params['groupId'];
+    if (groupId != null && !MockGroups.canTopUp(groupId)) {
+      throw const MockFailure(403, 'Only admins can add money to the group wallet.', code: 'not_allowed');
+    }
+  }
+
+  static void _syncTopUps(_Book book) {
+    for (final topUp in book.topUps.values) {
       topUp.sync(DateTime.now());
     }
   }
 
   static Object? _overview(MockRequest request) {
-    _syncTopUps();
+    final book = _bookOf(request);
+    _syncTopUps(book);
     return {
-      'balance': _balance,
+      'balance': book.balance,
       'currency': 'NGN',
       'limits': {'minTopUp': _minTopUp, 'maxTopUp': _maxTopUp},
-      'virtualAccount': _virtualAccount,
+      'virtualAccount': book.virtualAccount,
       'savedCards': [for (final card in _cards) Map<String, dynamic>.of(card)],
       'serverTime': _iso(DateTime.now()),
     };
   }
 
   static Object? _transactions(MockRequest request) {
-    _syncTopUps();
+    final book = _bookOf(request);
+    _syncTopUps(book);
     final kinds = ('${request.query['kind'] ?? ''}').split(',').where((kind) => kind.isNotEmpty).toSet();
     final page = math.max(1, int.tryParse('${request.query['page'] ?? 1}') ?? 1);
     final limit = (int.tryParse('${request.query['limit'] ?? _defaultPageSize}') ?? _defaultPageSize).clamp(
@@ -181,7 +272,7 @@ abstract final class MockWallet {
       _maxPageSize,
     );
     final matching = [
-      for (final entry in _sortedLedger())
+      for (final entry in _sortedLedger(book))
         if (kinds.isEmpty || kinds.contains(entry.kind)) entry,
     ];
     final start = (page - 1) * limit;
@@ -196,11 +287,12 @@ abstract final class MockWallet {
     };
   }
 
-  static List<_Entry> _sortedLedger() => [..._ledger]..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+  static List<_Entry> _sortedLedger(_Book book) => [...book.ledger]..sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
   static Object? _transaction(MockRequest request) {
-    _syncTopUps();
-    final entry = _ledger.where((entry) => entry.id == request.params['id']).firstOrNull;
+    final book = _bookOf(request);
+    _syncTopUps(book);
+    final entry = book.ledger.where((entry) => entry.id == request.params['id']).firstOrNull;
     if (entry == null) throw const MockFailure(404, 'We can’t find that transaction.', code: 'transaction_not_found');
     return {...entry.toJson(), 'serverTime': _iso(DateTime.now())};
   }
@@ -217,11 +309,13 @@ abstract final class MockWallet {
   }
 
   static Object? _createTopUp(MockRequest request) {
+    _requireTopUpAccess(request);
+    final book = _bookOf(request);
     final amount = (request.body['amount'] as num?)?.toInt();
     _checkAmount(amount);
     return switch (request.body['method']) {
-      'card' => _createCardTopUp(amount!, request.body),
-      'transfer' => _createTransferTopUp(amount!),
+      'card' => _createCardTopUp(book, amount!, request.body),
+      'transfer' => _createTransferTopUp(book, amount!),
       _ => throw const MockFailure(422, 'Pick a way to add money.', code: 'invalid_method'),
     };
   }
@@ -242,14 +336,15 @@ abstract final class MockWallet {
         (throw const MockFailure(422, 'Check your card details.', code: 'invalid_card'));
   }
 
-  static Object? _createCardTopUp(int amount, Map<String, dynamic> body) {
+  static Object? _createCardTopUp(_Book book, int amount, Map<String, dynamic> body) {
     final card = _cardOf(body);
-    if (card.last4 == _declinedLast4) _decline(amount, card, 'card_declined', 'Your bank declined this card.');
+    if (card.last4 == _declinedLast4) _decline(book, amount, card, 'card_declined', 'Your bank declined this card.');
     if (card.last4 == _brokeLast4) {
-      _decline(amount, card, 'insufficient_funds', 'That card doesn’t have enough money for this top up.');
+      _decline(book, amount, card, 'insufficient_funds', 'That card doesn’t have enough money for this top up.');
     }
     final isSaved = body['cardId'] != null;
     final topUp = _TopUp(
+      book: book,
       id: _nextId('tu'),
       method: 'card',
       amount: amount,
@@ -257,7 +352,7 @@ abstract final class MockWallet {
       card: card,
       shouldSaveCard: !isSaved && body['saveCard'] == true,
     );
-    _topUps[topUp.id] = topUp;
+    book.topUps[topUp.id] = topUp;
     if (isSaved) {
       topUp.complete();
       return topUp.toJson();
@@ -266,8 +361,8 @@ abstract final class MockWallet {
     return topUp.toJson(withAmount: false);
   }
 
-  static Never _decline(int amount, MockCardRef card, String code, String message) {
-    _ledger.add(
+  static Never _decline(_Book book, int amount, MockCardRef card, String code, String message) {
+    book.ledger.add(
       _Entry(
         id: _nextId('wtx_topup_failed'),
         kind: 'top_up',
@@ -282,16 +377,17 @@ abstract final class MockWallet {
     throw MockFailure(402, message, code: code);
   }
 
-  static Object? _createTransferTopUp(int amount) {
+  static Object? _createTransferTopUp(_Book book, int amount) {
     final now = DateTime.now();
     final topUp = _TopUp(
+      book: book,
       id: _nextId('tu'),
       method: 'transfer',
       amount: amount,
       createdAt: now,
       expiresAt: now.add(_transferWindow),
     );
-    _topUps[topUp.id] = topUp;
+    book.topUps[topUp.id] = topUp;
     topUp.entry = _Entry(
       id: _nextId('wtx_topup'),
       kind: 'top_up',
@@ -302,12 +398,12 @@ abstract final class MockWallet {
       reference: _reference('SR-TU', _sequence + 60),
       meta: {'method': 'transfer', 'topUpId': topUp.id, 'expiresAt': _iso(topUp.expiresAt!)},
     );
-    _ledger.add(topUp.entry!);
+    book.ledger.add(topUp.entry!);
     return {'id': topUp.id, 'status': 'awaiting_transfer', 'expiresAt': _iso(topUp.expiresAt!)};
   }
 
   static _TopUp _topUpOf(MockRequest request) {
-    final topUp = _topUps[request.params['id']];
+    final topUp = _bookOf(request).topUps[request.params['id']];
     if (topUp == null) throw const MockFailure(404, 'We can’t find that top up.', code: 'top_up_not_found');
     topUp.sync(DateTime.now());
     return topUp;
@@ -316,6 +412,7 @@ abstract final class MockWallet {
   static Object? _topUp(MockRequest request) => _topUpOf(request).toJson();
 
   static Object? _authorize(MockRequest request) {
+    _requireTopUpAccess(request);
     final topUp = _topUpOf(request);
     if (topUp.status != 'requires_action') return topUp.toJson();
     if (request.body['otp'] != MockData.otpCode) {
@@ -326,8 +423,27 @@ abstract final class MockWallet {
   }
 
   static int get balance {
-    _syncTopUps();
-    return _balance;
+    _syncTopUps(_personal);
+    return _personal.balance;
+  }
+
+  static int groupBalance(String groupId) {
+    final book = _groupBooks[groupId] ?? _openGroupBook(groupId);
+    _groupBooks[groupId] = book;
+    _syncTopUps(book);
+    return book.balance;
+  }
+
+  static int groupMonthSpent(String groupId) {
+    final book = _groupBooks[groupId] ?? _openGroupBook(groupId);
+    _groupBooks[groupId] = book;
+    final now = DateTime.now();
+    return book.ledger
+        .where(
+          (entry) =>
+              entry.kind == 'ride_payment' && entry.createdAt.year == now.year && entry.createdAt.month == now.month,
+        )
+        .fold(0, (total, entry) => total - entry.amount);
   }
 
   static void payTrip({
@@ -336,32 +452,47 @@ abstract final class MockWallet {
     required String pickup,
     required String dropoff,
     required DateTime at,
+    String? itemName,
+    String? groupId,
+    String? memberName,
   }) {
-    _syncTopUps();
-    if (_balance < fare) {
+    final book = groupId == null ? _personal : (_groupBooks[groupId] ?? _openGroupBook(groupId));
+    if (groupId != null) _groupBooks[groupId] = book;
+    _syncTopUps(book);
+    if (book.balance < fare) {
       throw MockFailure(
         402,
-        'There isn’t enough in your wallet for this ride.',
-        code: 'insufficient_balance',
-        data: {'balance': _balance, 'shortBy': fare - _balance},
+        groupId == null
+            ? 'There isn’t enough in your wallet for this ride.'
+            : 'The group wallet is short for this ride.',
+        code: groupId == null ? 'insufficient_balance' : 'group_wallet_short',
+        data: {'balance': book.balance, 'shortBy': fare - book.balance},
       );
     }
-    _balance -= fare;
-    _ledger.add(
+    book.balance -= fare;
+    book.ledger.add(
       _Entry(
         id: 'wtx_ride_$tripId',
         kind: 'ride_payment',
-        title: 'Ride to $dropoff',
+        title: switch ((itemName, memberName)) {
+          (final item?, _) => 'Delivery: $item',
+          (null, final member?) => 'Ride for $member',
+          (null, null) => 'Ride to $dropoff',
+        },
         amount: -fare,
         status: 'completed',
         createdAt: at,
         reference: _reference('SR-PAY', _sequence++ + 70),
-        meta: {'tripId': tripId, 'route': '$pickup to $dropoff', 'fare': fare, 'paymentMethod': 'wallet'},
+        meta: {
+          'tripId': tripId,
+          'route': '$pickup to $dropoff',
+          'fare': fare,
+          'paymentMethod': groupId == null ? 'wallet' : 'group_wallet',
+          'tripKind': itemName == null ? 'ride' : 'delivery',
+        },
       ),
     );
   }
-
-  static void _credit(int amount) => _balance += amount;
 
   static void _saveCard(MockCardRef card) {
     final exists = _cards.any((saved) => saved['last4'] == card.last4 && saved['brand'] == card.brand);
@@ -403,8 +534,18 @@ class _Entry {
   };
 }
 
+class _Book {
+  _Book({required this.balance, required this.virtualAccount, required this.ledger});
+
+  final Map<String, dynamic> virtualAccount;
+  final List<_Entry> ledger;
+  final Map<String, _TopUp> topUps = {};
+  int balance;
+}
+
 class _TopUp {
   _TopUp({
+    required this.book,
     required this.id,
     required this.method,
     required this.amount,
@@ -414,6 +555,7 @@ class _TopUp {
     this.shouldSaveCard = false,
   });
 
+  final _Book book;
   final String id;
   final String method;
   final int amount;
@@ -440,7 +582,7 @@ class _TopUp {
 
   void complete() {
     status = 'completed';
-    MockWallet._credit(amount);
+    book.balance += amount;
     final existing = entry;
     if (existing != null) {
       existing.status = 'completed';
@@ -457,7 +599,7 @@ class _TopUp {
       reference: MockWallet._reference('SR-TU', MockWallet._sequence + 90),
       meta: {'method': 'card', 'cardBrand': paidWith.brand, 'cardLast4': paidWith.last4, 'topUpId': id},
     );
-    MockWallet._ledger.add(entry!);
+    book.ledger.add(entry!);
     if (shouldSaveCard) MockWallet._saveCard(paidWith);
   }
 

@@ -29,8 +29,7 @@ class _FamilyMemberScreenState extends State<FamilyMemberScreen> {
     context.pop(true);
   }
 
-  String _subtitleOf(FamilyMember member) =>
-      member.needsApproval ? '${member.relationship} · Rides need their OK' : member.relationship;
+  String _subtitleOf(FamilyMember member) => member.isYou ? 'You · ${member.relationship}' : member.relationship;
 
   @override
   Widget build(BuildContext context) {
@@ -42,7 +41,7 @@ class _FamilyMemberScreenState extends State<FamilyMemberScreen> {
           () => RideForListBody<FamilyMember>(
             state: _flow.family,
             emptyTitle: 'No family members yet',
-            emptyMessage: 'Once someone joins your family group, you can book rides for them here.',
+            emptyMessage: 'Create or join a family group from the menu, then book rides for everyone in it here.',
             failedTitle: 'We couldn’t load your family',
             onRetry: _flow.loadFamily,
             builder: (context, members) => Column(
@@ -51,18 +50,18 @@ class _FamilyMemberScreenState extends State<FamilyMemberScreen> {
                 for (final member in members)
                   SangaOptionCard(
                     leading: WhoForAvatar(name: member.name),
-                    title: member.name,
+                    title: member.isYou ? '${member.name} (You)' : member.name,
                     subtitle: _subtitleOf(member),
                     isSelected: _flow.pickedMember?.id == member.id,
                     onTap: () => _flow.pickMember(member),
                   ),
-                if (_flow.pickedMember case final member? when member.needsApproval)
+                if (_flow.pickedMember case final member?)
                   SangaCallout.info(
                     lines: [
                       SangaCalloutLine(
-                        icon: SangaAssets.bell,
+                        icon: SangaAssets.shield,
                         text:
-                            '${member.firstName}’s rides need their OK. We can’t ask for it yet, so give ${member.firstName} a heads up first.',
+                            'This ride can be paid from ${member.groupName}’s wallet, as long as ${member.isYou ? 'your' : '${member.firstName}’s'} limits allow it.',
                       ),
                     ],
                   ).animate().fadeIn(duration: SangaMotion.quick, curve: SangaMotion.fadeCurve),
