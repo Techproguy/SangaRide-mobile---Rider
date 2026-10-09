@@ -33,8 +33,6 @@ class PaymentNotice {
   static PaymentNotice of(Object error) => PaymentNotice(PaymentProblem.of(error));
 }
 
-enum PaymentChallengeStage { ready, verifying, mismatch }
-
 sealed class PaymentState {
   const PaymentState();
 }
@@ -80,15 +78,6 @@ final class PaymentChecking extends PaymentLoaded {
   const PaymentChecking(super.payment, {required this.method});
 
   final PaymentMethod method;
-}
-
-final class PaymentChallenge extends PaymentLoaded {
-  const PaymentChallenge(super.payment, this.action, {this.stage = PaymentChallengeStage.ready});
-
-  final PaymentAction action;
-  final PaymentChallengeStage stage;
-
-  PaymentChallenge withStage(PaymentChallengeStage next) => PaymentChallenge(payment, action, stage: next);
 }
 
 enum CashWaitLink { live, offline, timedOut }

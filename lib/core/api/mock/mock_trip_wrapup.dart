@@ -12,7 +12,6 @@ abstract final class MockTripWrapUp {
     MockRoute.get(AppEndpoints.tripPayment, _payment),
     MockRoute.post(AppEndpoints.tripPayment, _pay),
     MockRoute.post(AppEndpoints.tripPaymentCancel, _cancelPayment),
-    MockRoute.post(AppEndpoints.tripPaymentAuthorize, _authorize),
     MockRoute.get(AppEndpoints.tripReceipt, _receipt),
     MockRoute.post(AppEndpoints.tripRating, _rate),
   ];
@@ -26,9 +25,7 @@ abstract final class MockTripWrapUp {
   static Duration cashConfirmDelay = _cashConfirmDelay;
   static Duration cashWaitWindow = const Duration(seconds: 90);
 
-  static const String _directLast4 = '1111';
   static const String _declinedLast4 = '0002';
-  static const String _otpMessage = 'Enter the 4 digit code your bank just sent you.';
 
   static bool isSettled(String id) =>
       MockTripState.paidAt.containsKey(id) || MockTripState.cashPostedAt.containsKey(id);
@@ -107,10 +104,6 @@ abstract final class MockTripWrapUp {
     if (paidAt != null && method != null) {
       return _paymentPayload(id, trip, 'succeeded', method: method, last4: MockTripState.cardLast4[id], paidAt: paidAt);
     }
-    final challenge = MockTripState.cardChallenges[id];
-    if (challenge != null) {
-      return _paymentPayload(id, trip, 'requires_action', method: 'card', last4: challenge, action: _otpAction());
-    }
     final postedAt = MockTripState.cashPostedAt[id];
     if (postedAt != null) {
       final confirmedAt = _cashConfirmedAt(id);
@@ -128,23 +121,6 @@ abstract final class MockTripWrapUp {
     return _paymentPayload(id, trip, 'pending');
   }
 
-  static Map<String, dynamic> _otpAction() => {'type': 'otp', 'message': _otpMessage, 'codeLength': 4};
-
-  static Object? _authorize(MockRequest request) {
-    final id = request.params['id']!;
-    final trip = _tripOf(request);
-    if (MockTripState.paidAt.containsKey(id)) {
-      throw const MockFailure(409, 'This trip is already paid.', code: 'already_paid');
-    }
-    final last4 = MockTripState.cardChallenges[id];
-    if (last4 == null) throw const MockFailure(409, 'There’s nothing to confirm right now.', code: 'no_challenge');
-    if (request.body['otp'] != MockData.otpCode) {
-      throw const MockFailure(422, 'That code didn’t match. Check it and try again.', code: 'otp_mismatch');
-    }
-    MockTripState.cardChallenges.remove(id);
-    return _settleCard(id, trip, last4);
-  }
-
   static Object? _settleCard(String id, Map<String, dynamic> trip, String last4) {
     final paidAt = DateTime.now();
     MockTripState.cashPostedAt.remove(id);
@@ -159,7 +135,6 @@ abstract final class MockTripWrapUp {
     if (MockTripState.paidAt.containsKey(id)) {
       throw const MockFailure(409, 'This trip is already paid.', code: 'already_paid');
     }
-    MockTripState.cardChallenges.remove(id);
     final method = request.body['method'];
     return switch (method) {
       'cash' => _payCash(id, trip),
@@ -188,9 +163,7 @@ abstract final class MockTripWrapUp {
     if (ref.last4 == _declinedLast4) {
       throw const MockFailure(402, 'Your bank declined this card.', code: 'card_declined');
     }
-    if (ref.last4 == _directLast4) return _settleCard(id, trip, ref.last4);
-    MockTripState.cardChallenges[id] = ref.last4;
-    return _paymentPayload(id, trip, 'requires_action', method: 'card', last4: ref.last4, action: _otpAction());
+    return _settleCard(id, trip, ref.last4);
   }
 
   static Object? _payWallet(String id, Map<String, dynamic> trip) {

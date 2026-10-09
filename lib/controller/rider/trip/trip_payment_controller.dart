@@ -41,7 +41,6 @@ class TripPaymentController extends GetxController {
   Worker? _walletWorker;
   Timer? _cashTimer;
   _Attempt? _attempt;
-  Mutation<TripPayment>? _otp;
   Mutation<TripPayment>? _cancelCashMutation;
   String? _tripId;
   int _epoch = 0;
@@ -91,8 +90,6 @@ class TripPaymentController extends GetxController {
   void _forgetAttempts() {
     _attempt?.mutation.dispose();
     _attempt = null;
-    _otp?.dispose();
-    _otp = null;
     _cancelCashMutation?.dispose();
     _cancelCashMutation = null;
   }
@@ -137,15 +134,6 @@ class TripPaymentController extends GetxController {
       case PaymentStatus.processing || PaymentStatus.unknown:
         _state.value = PaymentChecking(payment, method: payment.method ?? PaymentMethod.card);
         _startPolling(epoch);
-      case PaymentStatus.requiresAction:
-        _stopPolling();
-        _releaseOtp();
-        final action = payment.action;
-        if (action != null && action.type == PaymentActionType.otp) {
-          _state.value = PaymentChallenge(payment, action);
-        } else {
-          _state.value = PaymentDeclined(payment, reason: PaymentDeclineReason.unknown);
-        }
     }
   }
 
@@ -222,7 +210,7 @@ class TripPaymentController extends GetxController {
     final current = state;
     final payment = current is PaymentLoaded ? current.payment : null;
     if (payment == null || isProcessing || current is PaymentAwaitingDriver || current is PaymentPaid) return;
-    if (current is PaymentChallenge || current is PaymentUnconfirmed) return;
+    if (current is PaymentUnconfirmed) return;
     final method = current is PaymentChoosing && current.selected != null && _isChoosable(payment, current.selected!)
         ? current.selected
         : _preferredOf(payment);
@@ -232,7 +220,7 @@ class TripPaymentController extends GetxController {
   void chooseCashInstead() {
     final current = state;
     if (current is! PaymentLoaded || isProcessing || current is PaymentPaid || current is PaymentUnconfirmed) return;
-    if (current is PaymentChallenge || !current.payment.allowedMethods.contains(PaymentMethod.cash)) return;
+    if (!current.payment.allowedMethods.contains(PaymentMethod.cash)) return;
     _state.value = PaymentChoosing(current.payment, selected: PaymentMethod.cash);
   }
 
@@ -413,94 +401,6 @@ class TripPaymentController extends GetxController {
     final result = await attempt.mutation.recheck();
     if (epoch != _epoch) return;
     _settle(result, attempt, current.payment, epoch);
-  }
-
-  Future<void> submitOtp(String code) async {
-    final current = state;
-    final id = _tripId;
-    if (current is! PaymentChallenge || current.stage == PaymentChallengeStage.verifying || id == null) return;
-    if (LiveProblem.isOffline) {
-      LiveProblem.toastOffline();
-      return;
-    }
-    final epoch = _invalidate();
-    _state.value = current.withStage(PaymentChallengeStage.verifying);
-    final mutation = _otp ??= Mutation<TripPayment>(
-      intent: 'trip-pay-otp',
-      run: (key) async {
-        final response = await _api.post(
-          AppEndpoints.tripPaymentAuthorizeOf(id),
-          data: SensitiveBody({'otp': code}),
-          key: key,
-          suppressErrorToast: true,
-        );
-        return TripPayment.fromJson(_dataOf(response.data));
-      },
-      reconcile: () => _reconcileChallenge(id),
-    );
-    final result = await mutation.start();
-    if (epoch != _epoch) return;
-    switch (result) {
-      case MutationDone<TripPayment>(:final value):
-        _releaseOtp();
-        _apply(value, epoch);
-      case MutationRejected<TripPayment>(:final error):
-        _releaseOtp();
-        _onOtpRejected(error, current);
-      case MutationFailed<TripPayment>(:final error):
-        _releaseOtp();
-        SangaToast.show(LiveProblem.messageOf(error), tone: SangaToastTone.error);
-        _state.value = current.withStage(PaymentChallengeStage.ready);
-      case MutationUnknown<TripPayment>():
-        _state.value = PaymentUnconfirmed(current.payment, method: PaymentMethod.card);
-      default:
-        break;
-    }
-  }
-
-  Future<Reconciled<TripPayment>> _reconcileChallenge(String id) async {
-    final fresh = await _fetchPayment(id, profile: RequestProfile.interactive);
-    return switch (fresh.status) {
-      PaymentStatus.requiresAction => const ReconciledNotDone(),
-      PaymentStatus.unknown => const ReconciledPending(),
-      _ => ReconciledDone(fresh),
-    };
-  }
-
-  void _releaseOtp() {
-    _otp?.dispose();
-    _otp = null;
-  }
-
-  void _onOtpRejected(ApiException error, PaymentChallenge current) {
-    if (error.code == 'otp_mismatch') {
-      _state.value = current.withStage(PaymentChallengeStage.mismatch);
-      return;
-    }
-    if (error.code == 'already_paid') {
-      unawaited(_load());
-      return;
-    }
-    if (error.statusCode == 402 || _declineCodes.contains(error.code)) {
-      _state.value = PaymentDeclined(current.payment, reason: PaymentDeclineReason.fromCode(error.code));
-      return;
-    }
-    LiveProblem.toast(error);
-    _state.value = current.withStage(PaymentChallengeStage.ready);
-  }
-
-  void editOtp() {
-    final current = state;
-    if (current is PaymentChallenge && current.stage == PaymentChallengeStage.mismatch) {
-      _state.value = current.withStage(PaymentChallengeStage.ready);
-    }
-  }
-
-  void cancelChallenge() {
-    final current = state;
-    if (current is! PaymentChallenge || current.stage == PaymentChallengeStage.verifying) return;
-    _releaseOtp();
-    _state.value = PaymentCardEntry(current.payment);
   }
 
   Future<void> cancelCash() async {

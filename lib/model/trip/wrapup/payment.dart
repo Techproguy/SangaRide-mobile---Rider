@@ -46,7 +46,6 @@ enum PaymentStatus {
   pending('pending'),
   awaitingDriver('awaiting_driver'),
   processing('processing'),
-  requiresAction('requires_action'),
   succeeded('succeeded'),
   declined('declined'),
   failed('failed'),
@@ -59,40 +58,6 @@ enum PaymentStatus {
   bool get isTerminal => this == succeeded || this == declined || this == failed;
 
   static PaymentStatus fromCode(String? code) => enumByCode(values, code, (status) => status.code, unknown);
-}
-
-enum PaymentActionType {
-  otp('otp');
-
-  const PaymentActionType(this.code);
-
-  final String code;
-
-  static PaymentActionType? tryFromCode(String? code) {
-    for (final type in values) {
-      if (type.code == code) return type;
-    }
-    return null;
-  }
-}
-
-class PaymentAction {
-  const PaymentAction({required this.type, required this.message, required this.codeLength});
-
-  static const int defaultCodeLength = 4;
-
-  final PaymentActionType? type;
-  final String message;
-  final int codeLength;
-
-  static PaymentAction? tryFromJson(JsonReader? reader) {
-    if (reader == null) return null;
-    return PaymentAction(
-      type: PaymentActionType.tryFromCode(reader.strOrNull('type')),
-      message: reader.strOr('message', ''),
-      codeLength: reader.intOr('codeLength', defaultCodeLength),
-    );
-  }
 }
 
 enum PaymentDeclineReason {
@@ -150,7 +115,6 @@ class TripPayment {
     this.declineReason,
     this.declineMessage,
     this.group,
-    this.action,
     this.cashWaitExpiresAt,
   });
 
@@ -169,7 +133,6 @@ class TripPayment {
       declineReason: reader.has('declineCode') ? PaymentDeclineReason.fromCode(reader.strOrNull('declineCode')) : null,
       declineMessage: reader.strOrNull('declineMessage'),
       group: group == null ? null : _groupOf(group),
-      action: PaymentAction.tryFromJson(reader.objectOrNull('action')),
       cashWaitExpiresAt: deviceDeadlineOrNull(reader.strOrNull('cashWaitExpiresAt')),
     );
   }
@@ -193,7 +156,6 @@ class TripPayment {
   final PaymentDeclineReason? declineReason;
   final String? declineMessage;
   final PaymentGroup? group;
-  final PaymentAction? action;
   final DateTime? cashWaitExpiresAt;
 
   PaymentMethod? get preferredMethod {

@@ -30,7 +30,6 @@ class _PayScreenState extends State<PayScreen> {
   final _wallet = Get.find<WalletController>();
   final _waitingSheet = PaymentSheetSlot();
   final _checkingSheet = PaymentSheetSlot();
-  final _challengeSheet = PaymentSheetSlot();
   final _unconfirmedSheet = PaymentSheetSlot();
   late final Worker _stateWorker;
   bool _isFinishing = false;
@@ -52,14 +51,12 @@ class _PayScreenState extends State<PayScreen> {
   bool get _ownsState =>
       _waitingSheet.isOpen ||
       _checkingSheet.isOpen ||
-      _challengeSheet.isOpen ||
       _unconfirmedSheet.isOpen ||
       (ModalRoute.of(context)?.isCurrent ?? false);
 
   void _closeSheets() {
     _waitingSheet.close(context);
     _checkingSheet.close(context);
-    _challengeSheet.close(context);
     _unconfirmedSheet.close(context);
   }
 
@@ -72,9 +69,6 @@ class _PayScreenState extends State<PayScreen> {
       case PaymentProcessing() || PaymentChecking():
         _closeSheetsExcept(_checkingSheet);
         _showChecking(state is PaymentChecking);
-      case PaymentChallenge():
-        _closeSheetsExcept(_challengeSheet);
-        _showChallenge();
       case PaymentUnconfirmed():
         _closeSheetsExcept(_unconfirmedSheet);
         _showUnconfirmed();
@@ -90,7 +84,7 @@ class _PayScreenState extends State<PayScreen> {
   }
 
   void _closeSheetsExcept(PaymentSheetSlot keep) {
-    for (final slot in [_waitingSheet, _checkingSheet, _challengeSheet, _unconfirmedSheet]) {
+    for (final slot in [_waitingSheet, _checkingSheet, _unconfirmedSheet]) {
       if (!identical(slot, keep)) slot.close(context);
     }
   }
@@ -113,10 +107,6 @@ class _PayScreenState extends State<PayScreen> {
       ),
     );
     if (left == false && mounted) context.go(TripWrapUpRoutes.completeOf(widget.tripId));
-  }
-
-  Future<void> _showChallenge() async {
-    await _challengeSheet.show(() => showPaymentOtpSheet(context: context, controller: _payment));
   }
 
   Future<void> _showUnconfirmed() async {
@@ -278,7 +268,7 @@ class _PayBody extends StatelessWidget {
     PaymentProcessing(:final method) => method,
     PaymentChecking(:final method) => method,
     PaymentUnconfirmed(:final method) => method,
-    PaymentCardEntry() || PaymentDeclined() || PaymentChallenge() => PaymentMethod.card,
+    PaymentCardEntry() || PaymentDeclined() => PaymentMethod.card,
     PaymentAwaitingDriver() => PaymentMethod.cash,
     PaymentPaid(:final payment) => payment.method ?? PaymentMethod.cash,
   };

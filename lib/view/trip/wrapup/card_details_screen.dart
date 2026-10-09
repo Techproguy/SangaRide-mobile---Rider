@@ -23,7 +23,6 @@ class _CardDetailsScreenState extends State<CardDetailsScreen> {
   final _payment = Get.find<TripPaymentController>();
   final _form = CardFormModel();
   final _sheet = PaymentSheetSlot();
-  final _challengeSheet = PaymentSheetSlot();
   final _unconfirmedSheet = PaymentSheetSlot();
   late final Worker _stateWorker;
   late final int? _amount = _payment.payment?.amount;
@@ -48,7 +47,7 @@ class _CardDetailsScreenState extends State<CardDetailsScreen> {
   }
 
   void _closeSheets({PaymentSheetSlot? except}) {
-    for (final slot in [_sheet, _challengeSheet, _unconfirmedSheet]) {
+    for (final slot in [_sheet, _unconfirmedSheet]) {
       if (!identical(slot, except)) slot.close(context);
     }
   }
@@ -59,9 +58,6 @@ class _CardDetailsScreenState extends State<CardDetailsScreen> {
       case PaymentProcessing() || PaymentChecking():
         _closeSheets(except: _sheet);
         _showProcessing(state is PaymentChecking);
-      case PaymentChallenge():
-        _closeSheets(except: _challengeSheet);
-        _showChallenge();
       case PaymentUnconfirmed():
         _closeSheets(except: _unconfirmedSheet);
         _showUnconfirmed();
@@ -92,10 +88,6 @@ class _CardDetailsScreenState extends State<CardDetailsScreen> {
       ),
     );
     if (left == false && mounted) context.go(TripWrapUpRoutes.completeOf(widget.tripId));
-  }
-
-  Future<void> _showChallenge() async {
-    await _challengeSheet.show(() => showPaymentOtpSheet(context: context, controller: _payment));
   }
 
   Future<void> _showUnconfirmed() async {
