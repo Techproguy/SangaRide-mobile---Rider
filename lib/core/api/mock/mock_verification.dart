@@ -44,7 +44,13 @@ abstract final class MockVerification {
     return (at: submittedAt.add(_reviewTime), isVerified: isVerified);
   }
 
+  static bool rejectNextSelfie = false;
+
   static Object? selfie(MockRequest request) {
+    if (rejectNextSelfie) {
+      rejectNextSelfie = false;
+      throw MockFailure(422, 'We couldn’t match your face.', code: 'face_not_matched');
+    }
     final item = _item('selfie');
     if (_status(DateTime.now()) != 'pending') {
       item

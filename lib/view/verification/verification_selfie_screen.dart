@@ -37,6 +37,7 @@ class _VerificationSelfieScreenState extends State<VerificationSelfieScreen> {
     return SangaSelfieCheck(
       title: 'Selfie verification',
       subtitle: 'Verify your identity',
+      header: SangaSelfieHeader.page,
       verify: _controller.verifySelfie,
       fallbackCapture: kDebugMode ? () => MockCapture.photo('Selfie') : null,
       onOpenSettings: _permissions.openSettings,

@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:developer';
-import 'dart:io';
 
 import 'package:get/get.dart';
 import 'package:sanga_ride/controller/shared/auth_controller.dart';
@@ -8,20 +7,19 @@ import 'package:sanga_ride/core/api/account_endpoints.dart';
 import 'package:sanga_ride/core/api/api.dart';
 import 'package:sanga_ride/core/api/app_endpoints.dart';
 import 'package:sanga_ride/core/api/places_endpoints.dart';
+import 'package:sanga_ride/core/services/selfie_verifier.dart';
 import 'package:sanga_ride/model/auth/otp_session.dart';
 import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride_core/sanga_ride_core.dart' show ConnectionMonitor;
-import 'package:sanga_ride_ui/sanga_ride_ui.dart' show SangaToast, SangaToastTone;
-
-enum SelfieResult { verified, noMatch, unavailable }
+import 'package:sanga_ride_ui/sanga_ride_ui.dart' show SangaSelfieOutcome;
 
 class RiderSignUpController extends GetxController {
-  static const String selfiePurpose = 'selfie';
-  static const String noMatchCode = 'face_not_matched';
   static const String homeStepCode = 'home';
+  static const String selfieStepCode = 'selfie';
   static const Duration skipCap = Duration(seconds: 3);
 
   final _api = Get.find<ApiService>();
+  final _selfie = SelfieVerifier();
 
   final RxBool _isSaving = false.obs;
   final RxnString _phoneError = RxnString();
@@ -89,17 +87,7 @@ class RiderSignUpController extends GetxController {
     );
   }
 
-  Future<SelfieResult> verifySelfie(String photoPath) async {
-    try {
-      await _api.upload(AppEndpoints.selfie, file: File(photoPath), purpose: selfiePurpose, suppressErrorToast: true);
-      return SelfieResult.verified;
-    } catch (e) {
-      log('verifySelfie failed: $e');
-      if (e is ApiException && e.kind == ApiFailureKind.rejected && e.code == noMatchCode) return SelfieResult.noMatch;
-      SangaToast.show(_selfieMessageOf(e), tone: SangaToastTone.error);
-      return SelfieResult.unavailable;
-    }
-  }
+  Future<SangaSelfieOutcome> verifySelfie(String photoPath) => _selfie.verify(photoPath);
 
   Future<bool> saveHome(Place place) {
     final body = {'kind': 'home', 'label': 'Home', 'place': place.toJson()};
@@ -109,9 +97,13 @@ class RiderSignUpController extends GetxController {
     );
   }
 
-  void skipHome() {
+  void skipHome() => _skip(homeStepCode);
+
+  void skipSelfie() => _skip(selfieStepCode);
+
+  void _skip(String step) {
     if (_isOffline) return;
-    unawaited(_sendSkip(homeStepCode));
+    unawaited(_sendSkip(step));
   }
 
   Future<void> _sendSkip(String step) async {
@@ -171,15 +163,5 @@ class RiderSignUpController extends GetxController {
       return error.message;
     }
     return AuthProblem.of(error).message;
-  }
-
-  String _selfieMessageOf(Object error) {
-    if (error is ApiException && error.kind == ApiFailureKind.rejected && error.message.isNotEmpty) {
-      return error.message;
-    }
-    return switch (AuthProblem.of(error)) {
-      AuthProblem.offline => 'No connection. Your selfie is fine. Try again once you’re back online.',
-      AuthProblem.server || AuthProblem.unknown => 'We can’t check selfies right now. Try again in a moment.',
-    };
   }
 }

@@ -5,22 +5,22 @@ import 'package:get/get.dart';
 import 'package:sanga_ride/controller/rider/account/account_api.dart';
 import 'package:sanga_ride/controller/rider/account/account_controller.dart';
 import 'package:sanga_ride/core/api/api.dart';
-import 'package:sanga_ride/core/api/app_endpoints.dart';
 import 'package:sanga_ride/core/api/verification_endpoints.dart';
 import 'package:sanga_ride/core/services/image_compression_service.dart';
 import 'package:sanga_ride/core/services/package_photo_service.dart';
+import 'package:sanga_ride/core/services/selfie_verifier.dart';
 import 'package:sanga_ride/core/services/session_storage.dart';
 import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride_core/sanga_ride_core.dart';
-import 'package:sanga_ride_ui/sanga_ride_ui.dart' show SangaToast, SangaToastTone;
+import 'package:sanga_ride_ui/sanga_ride_ui.dart' show SangaSelfieOutcome;
 
 class VerificationController extends GetxController {
   static const Duration _pollEvery = Duration(seconds: 10);
   static const String _documentPurpose = 'id_document';
-  static const String _selfiePurpose = 'selfie';
   static const String _draftKey = 'verification:document';
 
   final _api = Get.find<ApiService>();
+  final _selfie = SelfieVerifier();
 
   final Rx<VerificationState> _state = Rx<VerificationState>(const VerificationLoading());
   final Rx<DocumentDraft> _draft = Rx<DocumentDraft>(const DocumentDraft());
@@ -145,37 +145,10 @@ class VerificationController extends GetxController {
     }
   }
 
-  Future<bool> verifySelfie(String photoPath) async {
-    if (ConnectionMonitor.current?.isOnline == false) {
-      _announceSelfieProblem(VerificationProblem.connection);
-      return false;
-    }
-    try {
-      final ref = await _api.upload(
-        VerificationEndpoints.uploads,
-        file: File(photoPath),
-        purpose: _selfiePurpose,
-        suppressErrorToast: true,
-      );
-      final response = await _api.post(
-        AppEndpoints.selfie,
-        data: {'uploadId': ref.id},
-        key: IdempotencyKey.newFor('selfie'),
-        options: quietOptions,
-      );
-      final passed = JsonReader(dataOf(response)).strOrNull('status') == 'verified';
-      if (passed) await load();
-      return passed;
-    } on Object catch (error) {
-      final problem = VerificationProblem.of(error);
-      final isNoMatch = error is ApiException && error.kind == ApiFailureKind.rejected && error.code == 'face_mismatch';
-      if (!isNoMatch) _announceSelfieProblem(problem);
-      return false;
-    }
-  }
-
-  void _announceSelfieProblem(VerificationProblem problem) {
-    SangaToast.show(problem.message, tone: SangaToastTone.warning);
+  Future<SangaSelfieOutcome> verifySelfie(String photoPath) async {
+    final outcome = await _selfie.verify(photoPath);
+    if (outcome == SangaSelfieOutcome.passed) await load();
+    return outcome;
   }
 
   Future<bool> submitDocument() async {

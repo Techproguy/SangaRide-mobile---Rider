@@ -32,8 +32,6 @@ class _SelfieScreenState extends State<SelfieScreen> {
     if (mounted) setState(() => _isReady = true);
   }
 
-  Future<bool> _verify(String path) async => await _signUp.verifySelfie(path) == SelfieResult.verified;
-
   @override
   Widget build(BuildContext context) {
     if (!_isReady) return const Scaffold();
@@ -41,10 +39,14 @@ class _SelfieScreenState extends State<SelfieScreen> {
       title: 'Quick selfie',
       subtitle: 'Verify your identity so drivers know it’s you',
       step: RiderSignUpStep.selfie.formStep,
-      verify: _verify,
+      verify: _signUp.verifySelfie,
       fallbackCapture: kDebugMode ? () => MockCapture.photo('Selfie') : null,
       onOpenSettings: _permissions.openSettings,
       onPassed: () => context.push(SangaRoutes.homeLocation),
+      onLater: () {
+        _signUp.skipSelfie();
+        context.push(SangaRoutes.homeLocation);
+      },
     );
   }
 }

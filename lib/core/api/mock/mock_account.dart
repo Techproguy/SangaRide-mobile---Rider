@@ -63,11 +63,12 @@ abstract final class MockAccount {
 
   static void finishOnboarding() => _onboardingStep = null;
 
+  static const Set<MockOnboardingStep> _skippableSteps = {MockOnboardingStep.selfie, MockOnboardingStep.home};
+
   static Object? _skipOnboarding(MockRequest request) {
-    if (request.body['step'] != MockOnboardingStep.home.code) {
-      throw const MockFailure(422, 'That step can’t be skipped.', code: 'step_not_skippable');
-    }
-    completeOnboardingStep(MockOnboardingStep.home);
+    final step = _skippableSteps.where((step) => step.code == request.body['step']).firstOrNull;
+    if (step == null) throw const MockFailure(422, 'That step can’t be skipped.', code: 'step_not_skippable');
+    completeOnboardingStep(step);
     return {
       'onboarding': {'nextStep': onboardingNextStep},
       'serverTime': DateTime.now().toUtc().toIso8601String(),

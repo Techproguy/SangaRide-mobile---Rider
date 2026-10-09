@@ -2,6 +2,7 @@ import 'package:sanga_ride/core/api/mock/mock_account.dart';
 import 'package:sanga_ride/core/api/mock/mock_airport.dart';
 import 'package:sanga_ride/core/api/mock/mock_booking.dart';
 import 'package:sanga_ride/core/api/mock/mock_delivery.dart';
+import 'package:sanga_ride/core/api/verification_endpoints.dart';
 import 'package:sanga_ride/core/api/mock/mock_groups.dart';
 import 'package:sanga_ride/core/api/mock/mock_who_for.dart';
 import 'package:sanga_ride/core/api/mock/mock_data.dart';
@@ -53,7 +54,7 @@ class MockRoutes {
       MockServer.engine.revoke(request);
       return null;
     }),
-    MockRoute.post(AppEndpoints.selfie, _selfie),
+    MockRoute.post(VerificationEndpoints.selfie, _selfie),
     MockRoute.get(AppEndpoints.recentPlaces, (_) => _recentPlaces),
     MockRoute.post(AppEndpoints.recentPlaces, _addRecentPlace),
     MockRoute.delete(AppEndpoints.recentPlace, (request) {
@@ -63,7 +64,6 @@ class MockRoutes {
     MockRoute.get(AppEndpoints.weather, (_) => MockData.weather),
   ];
 
-  static int _selfieCount = 0;
 
   static void resetRideRequests() => MockRideRequests.reset();
 
@@ -90,9 +90,9 @@ class MockRoutes {
   }
 
   static Object? _selfie(MockRequest request) {
-    final result = Map<String, dynamic>.from(MockVerification.selfie(request) as Map);
+    final result = MockVerification.selfie(request);
     MockAccount.completeOnboardingStep(MockOnboardingStep.selfie);
-    return {...result, 'id': 'upl_selfie_${++_selfieCount}', 'url': MockDelivery.profilePhotoAsset};
+    return result;
   }
 
   static Object? _requestOtp(MockRequest request) {
