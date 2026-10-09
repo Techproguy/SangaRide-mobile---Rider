@@ -1,8 +1,8 @@
 import 'package:get/get.dart';
-import 'package:sanga_ride/controller/rider/account/account_api.dart';
 import 'package:sanga_ride/controller/rider/account/account_controller.dart';
 import 'package:sanga_ride/core/api/account_endpoints.dart';
 import 'package:sanga_ride/core/api/api.dart';
+import 'package:sanga_ride/core/api/idempotency_intents.dart';
 import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride_core/sanga_ride_core.dart';
 
@@ -38,10 +38,10 @@ class PhoneChangeController extends GetxController {
       final response = await _api.post(
         AccountEndpoints.phone,
         data: {'phone': phone},
-        key: IdempotencyKey.newFor('phone-change'),
-        options: quietOptions,
+        key: IdempotencyKey.newFor(IdempotencyIntent.phoneChange),
+        suppressErrorToast: true,
       );
-      _state.value = PhoneCode(phone, DateTime.now(), _lifetimeOf(dataOf(response)));
+      _state.value = PhoneCode(phone, DateTime.now(), _lifetimeOf(response.dataMapOrEmpty));
     } on Object catch (error) {
       _state.value = PhoneEntry(problem: AccountProblem.of(error));
     }
@@ -58,10 +58,10 @@ class PhoneChangeController extends GetxController {
       final response = await _api.post(
         AccountEndpoints.phone,
         data: {'phone': current.phone},
-        key: IdempotencyKey.newFor('phone-change'),
-        options: quietOptions,
+        key: IdempotencyKey.newFor(IdempotencyIntent.phoneChange),
+        suppressErrorToast: true,
       );
-      _state.value = PhoneCode(current.phone, DateTime.now(), _lifetimeOf(dataOf(response)));
+      _state.value = PhoneCode(current.phone, DateTime.now(), _lifetimeOf(response.dataMapOrEmpty));
     } on Object catch (error) {
       _state.value = PhoneCode(current.phone, current.sentAt, current.lifetime, problem: AccountProblem.of(error));
     }
@@ -79,10 +79,10 @@ class PhoneChangeController extends GetxController {
       final response = await _api.post(
         AccountEndpoints.phoneVerify,
         data: {'phone': current.phone, 'code': code},
-        key: IdempotencyKey.newFor('phone-verify'),
-        options: quietOptions,
+        key: IdempotencyKey.newFor(IdempotencyIntent.phoneVerify),
+        suppressErrorToast: true,
       );
-      await Get.find<AccountController>().apply(dataOf(response));
+      await Get.find<AccountController>().apply(response.dataMapOrEmpty);
       _state.value = const PhoneChanged();
       return true;
     } on Object catch (error) {

@@ -2,22 +2,23 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:get/get.dart';
-import 'package:sanga_ride/controller/rider/account/account_api.dart';
 import 'package:sanga_ride/controller/rider/account/account_controller.dart';
 import 'package:sanga_ride/core/api/api.dart';
+import 'package:sanga_ride/core/api/idempotency_intents.dart';
+import 'package:sanga_ride/core/api/upload_purposes.dart';
 import 'package:sanga_ride/core/api/verification_endpoints.dart';
 import 'package:sanga_ride/core/services/image_compression_service.dart';
 import 'package:sanga_ride/core/services/package_photo_service.dart';
 import 'package:sanga_ride/core/services/selfie_verifier.dart';
 import 'package:sanga_ride/core/services/session_storage.dart';
+import 'package:sanga_ride/core/storage/draft_keys.dart';
 import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride_core/sanga_ride_core.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart' show SangaSelfieOutcome;
 
 class VerificationController extends GetxController {
   static const Duration _pollEvery = Duration(seconds: 10);
-  static const String _documentPurpose = 'id_document';
-  static const String _draftKey = 'verification:document';
+  static const String _draftKey = DraftKeys.verificationDocument;
 
   final _api = Get.find<ApiService>();
   final _selfie = SelfieVerifier();
@@ -25,7 +26,7 @@ class VerificationController extends GetxController {
   final Rx<VerificationState> _state = Rx<VerificationState>(const VerificationLoading());
   final Rx<DocumentDraft> _draft = Rx<DocumentDraft>(const DocumentDraft());
   final RxBool _isSubmitting = false.obs;
-  final Map<DocumentSide, int> _epochs = {DocumentSide.front: 0, DocumentSide.back: 0};
+  final Map<DocumentSide, Epoch> _epochs = {for (final side in DocumentSide.values) side: Epoch()};
 
   LivePoller? _poller;
   Mutation<Verification>? _submission;
@@ -72,11 +73,9 @@ class VerificationController extends GetxController {
     await load();
   }
 
-  void stopPolling() => _stopPolling();
-
   void startDocument() {
     for (final side in DocumentSide.values) {
-      _epochs[side] = (_epochs[side] ?? 0) + 1;
+      _nextEpoch(side);
     }
     _draft.value = _hydratedDraft();
   }
@@ -104,10 +103,10 @@ class VerificationController extends GetxController {
       final path = await PackagePhotoService.pick(
         source,
         onPicked: () {
-          if (epoch == _epochs[side]) _setSide(side, const PhotoPreparing());
+          if (_isCurrent(side, epoch)) _setSide(side, const PhotoPreparing());
         },
       );
-      if (epoch != _epochs[side]) {
+      if (!_isCurrent(side, epoch)) {
         await ImageCompressionService.discard(path);
         return;
       }
@@ -118,9 +117,9 @@ class VerificationController extends GetxController {
       await ImageCompressionService.discard(before.localPath);
       await _upload(side, path, epoch);
     } on PhotoException catch (error) {
-      if (epoch == _epochs[side]) _setSide(side, PhotoFailed(failure: error.failure));
+      if (_isCurrent(side, epoch)) _setSide(side, PhotoFailed(failure: error.failure));
     } on Object {
-      if (epoch == _epochs[side]) _setSide(side, const PhotoFailed(failure: DeliveryFailure.unreadablePhoto));
+      if (_isCurrent(side, epoch)) _setSide(side, const PhotoFailed(failure: DeliveryFailure.unreadablePhoto));
     }
   }
 
@@ -200,14 +199,14 @@ class VerificationController extends GetxController {
   Mutation<Verification> _newSubmission(Map<String, dynamic> body) {
     _submission?.dispose();
     return _submission = Mutation<Verification>(
-      intent: 'verification-submit',
+      intent: IdempotencyIntent.verificationSubmit,
       run: (key) async {
-        final response = await _api.post(VerificationEndpoints.submit, data: body, key: key, options: quietOptions);
-        return Verification.fromJson(dataOf(response));
+        final response = await _api.post(VerificationEndpoints.submit, data: body, key: key, suppressErrorToast: true);
+        return Verification.fromJson(response.dataMapOrEmpty);
       },
       reconcile: () async {
-        final response = await _api.get(VerificationEndpoints.status, options: quietOptions);
-        final verification = Verification.fromJson(dataOf(response));
+        final response = await _api.get(VerificationEndpoints.status, suppressErrorToast: true);
+        final verification = Verification.fromJson(response.dataMapOrEmpty);
         final accepted =
             verification.status == VerificationStatus.pending || verification.status == VerificationStatus.verified;
         return accepted ? ReconciledDone(verification) : const ReconciledNotDone<Verification>();
@@ -242,22 +241,22 @@ class VerificationController extends GetxController {
       final ref = await _api.upload(
         VerificationEndpoints.uploads,
         file: File(path),
-        purpose: _documentPurpose,
+        purpose: UploadPurposes.idDocument,
         suppressErrorToast: true,
         onProgress: (sent, total) {
-          if (epoch == _epochs[side] && total > 0) _setSide(side, PhotoUploading(path: path, progress: sent / total));
+          if (_isCurrent(side, epoch) && total > 0) _setSide(side, PhotoUploading(path: path, progress: sent / total));
         },
       );
-      if (epoch != _epochs[side]) return;
+      if (!_isCurrent(side, epoch)) return;
       _setSide(side, PhotoUploaded(path: path, id: ref.id, url: ref.url));
     } on Object catch (error) {
-      if (epoch == _epochs[side]) _setSide(side, PhotoFailed(failure: DeliveryFailure.of(error), path: path));
+      if (_isCurrent(side, epoch)) _setSide(side, PhotoFailed(failure: DeliveryFailure.of(error), path: path));
     }
   }
 
   Future<void> _fetchStatus() async {
-    final response = await _api.get(VerificationEndpoints.status, options: quietOptions);
-    _applyVerification(Verification.fromJson(dataOf(response)));
+    final response = await _api.get(VerificationEndpoints.status, suppressErrorToast: true);
+    _applyVerification(Verification.fromJson(response.dataMapOrEmpty));
   }
 
   void _applyVerification(Verification verification) {
@@ -280,7 +279,9 @@ class VerificationController extends GetxController {
     if (poller != null) Future<void>.microtask(poller.dispose);
   }
 
-  int _nextEpoch(DocumentSide side) => _epochs[side] = (_epochs[side] ?? 0) + 1;
+  int _nextEpoch(DocumentSide side) => _epochs[side]!.next();
+
+  bool _isCurrent(DocumentSide side, int epoch) => _epochs[side]!.isCurrent(epoch);
 
   void _clearSide(DocumentSide side) {
     _nextEpoch(side);

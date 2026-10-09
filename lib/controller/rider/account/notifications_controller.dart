@@ -1,8 +1,8 @@
 import 'dart:async';
 
 import 'package:get/get.dart';
-import 'package:sanga_ride/controller/rider/account/account_api.dart';
 import 'package:sanga_ride/core/api/api.dart';
+import 'package:sanga_ride/core/api/idempotency_intents.dart';
 import 'package:sanga_ride/core/api/notification_endpoints.dart';
 import 'package:sanga_ride/core/services/session_storage.dart';
 import 'package:sanga_ride/model/models.dart';
@@ -15,7 +15,7 @@ class NotificationsController extends GetxController {
   final RxInt _unreadCount = 0.obs;
 
   StreamSubscription<void>? _resumeSubscription;
-  int _epoch = 0;
+  final Epoch _epoch = Epoch();
 
   NotificationsState get state => _state.value;
 
@@ -32,19 +32,19 @@ class NotificationsController extends GetxController {
   @override
   void onClose() {
     _resumeSubscription?.cancel();
-    _epoch++;
+    _epoch.next();
     super.onClose();
   }
 
   Future<void> reload() async {
-    final epoch = ++_epoch;
+    final epoch = _epoch.next();
     try {
       final page = await _fetch(1);
-      if (epoch != _epoch) return;
+      if (!_epoch.isCurrent(epoch)) return;
       _unreadCount.value = page.unreadCount;
       _state.value = NotificationsLoaded(page.items, page: 1, hasMore: page.hasMore);
     } on Object catch (error) {
-      if (epoch != _epoch) return;
+      if (!_epoch.isCurrent(epoch)) return;
       final current = _state.value;
       _state.value = current is NotificationsLoaded
           ? current.copyWith(isStale: true)
@@ -60,11 +60,11 @@ class NotificationsController extends GetxController {
   Future<void> loadMore() async {
     final current = _state.value;
     if (current is! NotificationsLoaded || !current.hasMore || current.isLoadingMore) return;
-    final epoch = ++_epoch;
+    final epoch = _epoch.next();
     _state.value = current.copyWith(isLoadingMore: true, loadMoreFailed: false);
     try {
       final page = await _fetch(current.page + 1);
-      if (epoch != _epoch) return;
+      if (!_epoch.isCurrent(epoch)) return;
       final known = {for (final item in current.items) item.id};
       _unreadCount.value = page.unreadCount;
       _state.value = NotificationsLoaded(
@@ -77,7 +77,7 @@ class NotificationsController extends GetxController {
         hasMore: page.hasMore,
       );
     } on Object {
-      if (epoch == _epoch) _state.value = current.copyWith(isLoadingMore: false, loadMoreFailed: true);
+      if (_epoch.isCurrent(epoch)) _state.value = current.copyWith(isLoadingMore: false, loadMoreFailed: true);
     }
   }
 
@@ -92,8 +92,8 @@ class NotificationsController extends GetxController {
     try {
       await _api.post(
         NotificationEndpoints.readOf(notification.id),
-        key: IdempotencyKey('notification-read-${notification.id}'),
-        options: quietOptions,
+        key: IdempotencyKey(IdempotencyIntent.notificationReadKey(notification.id)),
+        suppressErrorToast: true,
       );
     } on Object {
       await reload();
@@ -111,8 +111,8 @@ class NotificationsController extends GetxController {
     try {
       await _api.post(
         NotificationEndpoints.readAll,
-        key: IdempotencyKey.newFor('notifications-read-all'),
-        options: quietOptions,
+        key: IdempotencyKey.newFor(IdempotencyIntent.notificationsReadAll),
+        suppressErrorToast: true,
       );
     } on Object {
       await reload();
@@ -120,7 +120,11 @@ class NotificationsController extends GetxController {
   }
 
   Future<NotificationsPage> _fetch(int page) async {
-    final response = await _api.get(NotificationEndpoints.list, queryParameters: {'page': page}, options: quietOptions);
-    return NotificationsPage.fromJson(dataOf(response));
+    final response = await _api.get(
+      NotificationEndpoints.list,
+      queryParameters: {'page': page},
+      suppressErrorToast: true,
+    );
+    return NotificationsPage.fromJson(response.dataMapOrEmpty);
   }
 }

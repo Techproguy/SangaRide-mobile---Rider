@@ -2,20 +2,19 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:get/get.dart';
-import 'package:sanga_ride/controller/rider/account/account_api.dart';
 import 'package:sanga_ride/controller/rider/account/account_bindings.dart';
 import 'package:sanga_ride/controller/shared/auth_controller.dart';
 import 'package:sanga_ride/controller/shared/user_controller.dart';
 import 'package:sanga_ride/core/api/account_endpoints.dart';
 import 'package:sanga_ride/core/api/api.dart';
+import 'package:sanga_ride/core/api/idempotency_intents.dart';
+import 'package:sanga_ride/core/api/upload_purposes.dart';
 import 'package:sanga_ride/core/services/image_compression_service.dart';
 import 'package:sanga_ride/core/services/package_photo_service.dart';
 import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride_core/sanga_ride_core.dart';
 
 class AccountController extends GetxController {
-  static const String _photoPurpose = 'profile_photo';
-
   final _api = Get.find<ApiService>();
   final _users = Get.find<UserController>();
 
@@ -26,7 +25,7 @@ class AccountController extends GetxController {
   IdempotencyKey? _photoLinkKey;
   Mutation<DateTime?>? _deletion;
   DateTime? _loadedAt;
-  int _loadEpoch = 0;
+  final Epoch _loadEpoch = Epoch();
 
   AccountState get state => _state.value;
 
@@ -50,15 +49,16 @@ class AccountController extends GetxController {
   }
 
   Future<void> load() async {
-    final epoch = ++_loadEpoch;
+    final epoch = _loadEpoch.next();
     if (_state.value is! AccountLoaded) _state.value = const AccountLoading();
     try {
-      final response = await _api.get(AccountEndpoints.me, options: quietOptions);
-      if (epoch != _loadEpoch) return;
+      final response = await _api.get(AccountEndpoints.me, suppressErrorToast: true);
+      if (!_loadEpoch.isCurrent(epoch)) return;
       _loadedAt = DateTime.now();
-      await apply(dataOf(response));
+      await apply(response.dataMapOrEmpty);
     } on Object catch (error) {
-      if (epoch == _loadEpoch && _state.value is! AccountLoaded) _state.value = AccountFailed(AccountProblem.of(error));
+      final shouldFail = _loadEpoch.isCurrent(epoch) && _state.value is! AccountLoaded;
+      if (shouldFail) _state.value = AccountFailed(AccountProblem.of(error));
     }
   }
 
@@ -76,8 +76,8 @@ class AccountController extends GetxController {
 
   Future<AccountProblem?> saveProfile(Map<String, dynamic> fields) async {
     try {
-      final response = await _api.patch(AccountEndpoints.me, data: fields, options: quietOptions);
-      await apply(dataOf(response));
+      final response = await _api.patch(AccountEndpoints.me, data: fields, suppressErrorToast: true);
+      await apply(response.dataMapOrEmpty);
       return null;
     } on Object catch (error) {
       return AccountProblem.of(error);
@@ -102,11 +102,11 @@ class AccountController extends GetxController {
       final ref = await _api.upload(
         AccountEndpoints.uploads,
         file: File(prepared),
-        purpose: _photoPurpose,
+        purpose: UploadPurposes.profilePhoto,
         suppressErrorToast: true,
       );
       _uploadedPhotoId = ref.id;
-      _photoLinkKey = IdempotencyKey.newFor('profile-photo');
+      _photoLinkKey = IdempotencyKey.newFor(IdempotencyIntent.profilePhoto);
       await _linkPhoto();
     } on PhotoException catch (error) {
       _patchLoaded((loaded) => loaded.copyWith(photoProblem: () => _photoProblemOf(error.failure)));
@@ -142,11 +142,11 @@ class AccountController extends GetxController {
       AccountEndpoints.photo,
       data: {'uploadId': _uploadedPhotoId},
       key: _photoLinkKey,
-      options: quietOptions,
+      suppressErrorToast: true,
     );
     _uploadedPhotoId = null;
     _photoLinkKey = null;
-    await apply(dataOf(response));
+    await apply(response.dataMapOrEmpty);
     _patchLoaded((loaded) => loaded.copyWith(hasPendingPhoto: false));
   }
 
@@ -154,8 +154,6 @@ class AccountController extends GetxController {
     final latest = _state.value;
     if (latest is AccountLoaded) _state.value = change(latest);
   }
-
-  void clearPhotoProblem() => _patchLoaded((loaded) => loaded.copyWith(photoProblem: () => null));
 
   Future<bool> deleteAccount({String? reason}) async {
     final current = _delete.value;
@@ -168,15 +166,15 @@ class AccountController extends GetxController {
     _delete.value = const DeleteDeleting();
     _deletion?.dispose();
     final mutation = _deletion = Mutation<DateTime?>(
-      intent: 'delete-account',
+      intent: IdempotencyIntent.deleteAccount,
       run: (key) async {
         final response = await _api.delete(
           AccountEndpoints.me,
           data: {'reason': reason},
           key: key,
-          options: quietOptions,
+          suppressErrorToast: true,
         );
-        return JsonReader(dataOf(response)).timeOrNull('deletesAt')?.toLocal();
+        return JsonReader(response.dataMapOrEmpty).timeOrNull('deletesAt')?.toLocal();
       },
       reconcile: _reconcileDeletion,
     );
@@ -212,8 +210,8 @@ class AccountController extends GetxController {
   }
 
   Future<Reconciled<DateTime?>> _reconcileDeletion() async {
-    final response = await _api.get(AccountEndpoints.me, options: quietOptions);
-    final deletesAt = JsonReader(dataOf(response)).timeOrNull('deletesAt');
+    final response = await _api.get(AccountEndpoints.me, suppressErrorToast: true);
+    final deletesAt = JsonReader(response.dataMapOrEmpty).timeOrNull('deletesAt');
     if (deletesAt == null) return const ReconciledNotDone<DateTime?>();
     return ReconciledDone<DateTime?>(deletesAt.toLocal());
   }
