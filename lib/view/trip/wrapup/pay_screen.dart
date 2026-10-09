@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sanga_ride/controller/rider/trip/trip_payment_controller.dart';
 import 'package:sanga_ride/controller/rider/wallet_controller.dart';
+import 'package:sanga_ride/core/copy/common_copy.dart';
 import 'package:sanga_ride/core/router/trip_wrapup_routes.dart';
 import 'package:sanga_ride/core/router/wallet_routes.dart';
 import 'package:sanga_ride/model/trip/wrapup/wrapup.dart';
@@ -100,9 +101,7 @@ class _PayScreenState extends State<PayScreen> {
       () => showPaymentPendingSheet(
         context: context,
         title: isChecking ? 'Checking your payment' : 'Payment in progress',
-        message: isChecking
-            ? 'Hang tight while we confirm it with your bank.'
-            : 'Hang tight, this only takes a moment.',
+        message: isChecking ? 'Hang tight while we confirm it with your bank.' : CommonCopy.processing,
         offersEscape: true,
       ),
     );

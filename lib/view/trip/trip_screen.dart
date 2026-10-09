@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:sanga_ride/controller/rider/ride_request_controller.dart';
 import 'package:sanga_ride/controller/rider/trip/trip_controller.dart';
 import 'package:sanga_ride/controller/shared/map_camera.dart';
+import 'package:sanga_ride/core/copy/common_copy.dart';
 import 'package:sanga_ride/core/router/booking_routes.dart';
 import 'package:sanga_ride/core/router/delivery_live_routes.dart';
 import 'package:sanga_ride/core/router/routes.dart';
@@ -285,7 +286,7 @@ class _TripScreenState extends State<TripScreen> {
                 status: reason.didNotHappen ? SangaStatus.failure : SangaStatus.caution,
                 title: reason.title,
                 message: trip.cancellationMessage ?? reason.message,
-                action: SangaButton.primary(label: 'Back to home', onPressed: _goHome),
+                action: SangaButton.primary(label: CommonCopy.backToHome, onPressed: _goHome),
               ),
       ),
     );
@@ -301,7 +302,7 @@ class _TripScreenState extends State<TripScreen> {
         isLoading: _ride.isRestoring,
         onPressed: () => unawaited(_findAnotherDriver(trip)),
       ),
-      secondary: SangaButton.muted(label: 'Back to home', onPressed: _goHome),
+      secondary: SangaButton.muted(label: CommonCopy.backToHome, onPressed: _goHome),
     );
   }
 

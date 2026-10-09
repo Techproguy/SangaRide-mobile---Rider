@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+import 'package:sanga_ride/core/format/clock_formats.dart';
 import 'package:sanga_ride/model/trip/wrapup/wrapup.dart';
 import 'package:sanga_ride/view/delivery/live/widgets/delivery_photo.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
@@ -26,13 +26,9 @@ class ReceiptDeliveryCard extends StatelessWidget {
               SangaDetailRow(
                 icon: Icons.schedule_rounded,
                 label: 'Delivery time',
-                value: DateFormat('h:mm a').format(deliveredAt),
+                value: ClockFormats.time(deliveredAt),
               ),
-              SangaDetailRow(
-                icon: Icons.event_rounded,
-                label: 'Date',
-                value: DateFormat('EEE d MMM yyyy').format(deliveredAt),
-              ),
+              SangaDetailRow(icon: Icons.event_rounded, label: 'Date', value: ClockFormats.weekdayDate(deliveredAt)),
             ],
             SangaDetailRow(icon: Icons.bolt_rounded, label: 'Delivery tier', value: delivery.tierLabel),
           ],

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sanga_ride/core/copy/common_copy.dart';
 import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride/view/trip/widgets/delivery_package_line.dart';
 import 'package:sanga_ride/view/trip/widgets/delivery_progress_bar.dart';
@@ -106,7 +107,7 @@ class DeliveryTripPanel extends StatelessWidget {
       DeliveryPhase.atPickup => [SangaButton.primary(label: 'Confirm details', onPressed: actions.onConfirmDetails)],
       DeliveryPhase.sharingPin => [
         SangaButton.primary(label: 'Show trip PIN', onPressed: actions.onShowPin),
-        SangaButton.muted(label: 'Report an issue', onPressed: actions.onReportMismatch),
+        SangaButton.muted(label: CommonCopy.reportIssue, onPressed: actions.onReportMismatch),
       ],
       DeliveryPhase.confirmPickup => [SangaButton.primary(label: 'Confirm pickup', onPressed: actions.onConfirmPickup)],
       DeliveryPhase.payment => [SangaButton.primary(label: 'Make payment', onPressed: actions.onMakePayment)],

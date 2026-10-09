@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sanga_ride/core/copy/common_copy.dart';
 import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride/view/trip/cancel/widgets/cancel_copy.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
@@ -31,7 +32,7 @@ Future<void> showCancelledSheet(BuildContext context, CancelOutcome outcome, Can
     status: SangaStatus.success,
     title: copy.doneTitle,
     message: outcome.message,
-    actionLabel: 'Back to home',
+    actionLabel: CommonCopy.backToHome,
   );
 }
 
@@ -52,6 +53,6 @@ Future<void> showCancelSettledSheet(BuildContext context, CancelSettled settled)
     status: settled.isCancelled ? SangaStatus.success : SangaStatus.caution,
     title: settled.failure.title,
     message: settled.message ?? settled.failure.message,
-    actionLabel: settled.isCancelled ? 'Back to home' : 'Got it',
+    actionLabel: settled.isCancelled ? CommonCopy.backToHome : 'Got it',
   );
 }

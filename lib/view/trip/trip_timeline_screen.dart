@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:intl/intl.dart';
 import 'package:sanga_ride/controller/rider/trip/trip_controller.dart';
+import 'package:sanga_ride/core/format/clock_formats.dart';
 import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride/view/trip/widgets/safety_check_row.dart';
 import 'package:sanga_ride/view/trip/widgets/trip_page_gate.dart';
@@ -22,7 +22,7 @@ class TripTimelineScreen extends StatelessWidget {
 
   static String? _timeOf(Trip trip, TripEventType type) {
     final at = trip.eventTime(type);
-    return at == null ? null : DateFormat('h:mm a').format(at);
+    return at == null ? null : ClockFormats.time(at);
   }
 
   List<SangaTimelineEntry> _entries(Trip trip) {

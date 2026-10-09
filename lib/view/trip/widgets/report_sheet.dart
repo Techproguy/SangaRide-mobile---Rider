@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sanga_ride/core/copy/common_copy.dart';
 import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
@@ -29,7 +30,7 @@ class _ReportSheetState extends State<ReportSheet> {
         children: [
           Row(
             children: [
-              Expanded(child: Text('Report an issue', style: SangaTextStyles.statusTitle)),
+              Expanded(child: Text(CommonCopy.reportIssue, style: SangaTextStyles.statusTitle)),
               SangaCircleButton.close(onPressed: widget.onDismiss),
             ],
           ),

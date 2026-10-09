@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sanga_ride/core/copy/common_copy.dart';
 import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride/view/trip/widgets/trip_action_tiles.dart';
 import 'package:sanga_ride/view/trip/widgets/trip_driver_header.dart';
@@ -45,7 +46,7 @@ class VerifyingPanel extends StatelessWidget {
           onCancel: trip.canChange ? onCancel : null,
         ),
         SangaButton.primary(label: 'Show trip PIN', onPressed: onShowPin),
-        SangaButton.muted(label: 'Report an issue', onPressed: onReport),
+        SangaButton.muted(label: CommonCopy.reportIssue, onPressed: onReport),
       ],
     );
   }

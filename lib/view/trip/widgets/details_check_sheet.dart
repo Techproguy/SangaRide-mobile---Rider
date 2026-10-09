@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sanga_ride/core/copy/common_copy.dart';
 import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride/view/trip/widgets/match_check_rows.dart';
 import 'package:sanga_ride/view/trip/widgets/trip_action_tiles.dart';
@@ -48,7 +49,7 @@ class DetailsCheckSheet extends StatelessWidget {
             isLoading: isConfirming,
             onPressed: onConfirm,
           ),
-          SangaButton.muted(label: 'Report an issue', onPressed: isConfirming ? null : onReport),
+          SangaButton.muted(label: CommonCopy.reportIssue, onPressed: isConfirming ? null : onReport),
         ],
       ),
     );

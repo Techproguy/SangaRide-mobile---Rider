@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+import 'package:sanga_ride/core/format/clock_formats.dart';
 import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
@@ -15,7 +15,7 @@ class ChatMessageList extends StatelessWidget {
     final gap = today.difference(date).inDays;
     if (gap == 0) return 'Today';
     if (gap == 1) return 'Yesterday';
-    return DateFormat('d MMM').format(date);
+    return ClockFormats.dayMonth(date);
   }
 
   static SangaMessageState stateOf(TripMessageDelivery delivery) => switch (delivery) {
@@ -51,7 +51,7 @@ class ChatMessageList extends StatelessWidget {
               padding: const EdgeInsets.only(bottom: SangaSpacing.xs),
               child: SangaChatBubble(
                 text: message.body,
-                time: DateFormat('h:mm a').format(message.sentAt),
+                time: ClockFormats.time(message.sentAt),
                 isMine: message.isMine,
                 state: stateOf(message.delivery),
                 onRetry: message.clientId == null ? null : () => onRetry(message.clientId!),

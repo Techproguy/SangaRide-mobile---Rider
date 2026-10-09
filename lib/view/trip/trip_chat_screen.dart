@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:sanga_ride/controller/rider/trip/trip_controller.dart';
+import 'package:sanga_ride/core/copy/common_copy.dart';
 import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride/view/trip/widgets/call_driver.dart';
 import 'package:sanga_ride/view/trip/widgets/chat_message_list.dart';
@@ -48,7 +49,7 @@ class _TripChatScreenState extends State<TripChatScreen> {
       TripChatStatus.failed => Center(
         child: SangaFailureMessage(
           title: 'We couldn’t load your chat',
-          message: 'Check your connection and give it another go.',
+          message: CommonCopy.connectionBody,
           onRetry: _trip.reloadChat,
         ),
       ),

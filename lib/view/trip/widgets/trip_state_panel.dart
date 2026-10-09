@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sanga_ride/core/copy/common_copy.dart';
 import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride/view/trip/widgets/trip_action_tiles.dart';
 import 'package:sanga_ride/view/trip/widgets/trip_panel_body.dart';
@@ -34,9 +35,9 @@ class TripFailedPanel extends StatelessWidget {
         Text(reason.message, textAlign: TextAlign.center, style: SangaTextStyles.statusMessage),
         if (reason.canRetry) SangaButton.primary(label: 'Try again', onPressed: onRetry),
         if (reason.canRetry)
-          SangaButton.muted(label: 'Back to home', onPressed: onHome)
+          SangaButton.muted(label: CommonCopy.backToHome, onPressed: onHome)
         else
-          SangaButton.primary(label: 'Back to home', onPressed: onHome),
+          SangaButton.primary(label: CommonCopy.backToHome, onPressed: onHome),
       ],
     );
   }
@@ -107,7 +108,7 @@ class TripEndedPanel extends StatelessWidget {
               SangaDetailRow(icon: Icons.undo_rounded, label: 'Charged for the way back', value: SangaMoney.naira(fee)),
             ],
           ),
-        SangaButton.primary(label: 'Back to home', onPressed: onHome),
+        SangaButton.primary(label: CommonCopy.backToHome, onPressed: onHome),
       ],
     );
   }
