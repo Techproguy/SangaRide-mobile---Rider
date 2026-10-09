@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+import 'package:sanga_ride/core/format/clock_formats.dart';
 import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
@@ -26,7 +26,7 @@ abstract final class IssueTimelineEntries {
           ? SangaTimelineState.current
           : SangaTimelineState.pending,
       icon: _icons[type]!,
-      time: at == null ? null : DateFormat('h:mm a').format(at),
+      time: at == null ? null : ClockFormats.time(at),
       detail: isDone || isCurrent ? event?.detail : null,
     );
   }

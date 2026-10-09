@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sanga_ride/controller/rider/trip/delivery_issue_controller.dart';
+import 'package:sanga_ride/core/copy/common_copy.dart';
 import 'package:sanga_ride/core/router/delivery_live_routes.dart';
 import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride/view/delivery/live/widgets/issue_info_card.dart';
@@ -83,7 +84,7 @@ class _DeliveryIssueStatusScreenState extends State<DeliveryIssueStatusScreen> {
       return PopScope(
         canPop: state is! IssueResolving,
         child: SangaPageLayout(
-          title: 'Report an issue',
+          title: CommonCopy.reportIssue,
           subtitle: switch (state) {
             IssueLoaded(:final issue) => 'Reference ${issue.reference}',
             _ => null,
@@ -107,7 +108,7 @@ class _DeliveryIssueStatusScreenState extends State<DeliveryIssueStatusScreen> {
         icon: Icons.flag_outlined,
         title: 'No report yet',
         message: 'You haven’t reported anything on this delivery.',
-        actionLabel: 'Report an issue',
+        actionLabel: CommonCopy.reportIssue,
         onAction: () => context.pushReplacement(DeliveryLiveRoutes.issueOf(widget.tripId)),
       ),
       IssueLoading() || IssueSubmitting() || IssueSubmitFailed() => const SangaSkeleton.heights([120, 72, 72]),

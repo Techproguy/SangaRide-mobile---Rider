@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+import 'package:sanga_ride/core/format/clock_formats.dart';
 import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
@@ -20,7 +20,7 @@ class DeliveryProofRows extends StatelessWidget {
           icon: Icons.photo_camera_outlined,
           tone: _ProofTone.green,
           title: proof.photoUrl == null ? 'No photo taken' : 'Photo captured',
-          subtitle: '${DateFormat('h:mm a').format(proof.at)} · ${DateFormat('EEE d MMM yyyy').format(proof.at)}',
+          subtitle: '${ClockFormats.time(proof.at)} · ${ClockFormats.weekdayDate(proof.at)}',
         ),
         _ProofRow(
           icon: Icons.location_on_outlined,

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sanga_ride/core/copy/common_copy.dart';
 import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride/view/delivery/live/widgets/delivery_photo.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
@@ -151,7 +152,7 @@ class _Problem extends StatelessWidget {
       problem.opensSettings,
       hasPhoto && problem == DeliveryPickupProblem.uploadFailed,
     )) {
-      (true, _) => ('Open Settings', onOpenSettings),
+      (true, _) => (CommonCopy.openSettings, onOpenSettings),
       (_, true) => ('Try again', onRetry),
       _ => ('Take photo', onTake),
     };

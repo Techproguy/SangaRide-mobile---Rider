@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sanga_ride/controller/rider/trip/delivery_issue_controller.dart';
+import 'package:sanga_ride/core/copy/common_copy.dart';
 import 'package:sanga_ride/core/router/delivery_live_routes.dart';
 import 'package:sanga_ride/core/router/safety_routes.dart';
 import 'package:sanga_ride/model/models.dart';
@@ -70,11 +71,11 @@ class _DeliveryIssueScreenState extends State<DeliveryIssueScreen> {
       return PopScope(
         canPop: !isSubmitting,
         child: SangaPageLayout(
-          title: 'Report an issue',
+          title: CommonCopy.reportIssue,
           footer: ListenableBuilder(
             listenable: _note,
             builder: (context, _) => SangaButton.primary(
-              label: 'Report an issue',
+              label: CommonCopy.reportIssue,
               isLoading: isSubmitting,
               onPressed: _isReady ? _submit : null,
             ),

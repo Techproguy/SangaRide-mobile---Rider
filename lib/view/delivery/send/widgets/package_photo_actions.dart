@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sanga_ride/core/copy/common_copy.dart';
 import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
@@ -34,7 +35,7 @@ class PackagePhotoActions extends StatelessWidget {
             ),
           ],
           PhotoPreparing() => [const _Message(title: 'One moment', body: 'We’re shrinking it so it uploads fast.')],
-          PhotoUploading() => [const _Message(title: 'Uploading', body: 'Hang tight, this only takes a moment.')],
+          PhotoUploading() => [const _Message(title: 'Uploading', body: CommonCopy.processing)],
           PhotoUploaded() => [
             const _Message(title: 'Looking good', body: 'Your driver will see this photo.'),
             Row(
@@ -52,7 +53,11 @@ class PackagePhotoActions extends StatelessWidget {
           PhotoFailed(:final failure) => [
             _Message(title: failure.title, body: failure.message, isError: true),
             if (failure.opensSettings)
-              SangaButton.primary(label: 'Open Settings', size: SangaButtonSize.compact, onPressed: onOpenSettings)
+              SangaButton.primary(
+                label: CommonCopy.openSettings,
+                size: SangaButtonSize.compact,
+                onPressed: onOpenSettings,
+              )
             else if (failure.isRetriable && state.localPath != null)
               SangaButton.primary(label: 'Try again', size: SangaButtonSize.compact, onPressed: onRetry),
             SangaButton.outline(

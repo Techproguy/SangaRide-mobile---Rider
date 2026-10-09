@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:intl/intl.dart';
 import 'package:sanga_ride/controller/rider/delivery/send_delivery_controller.dart';
+import 'package:sanga_ride/core/format/number_formats.dart';
 import 'package:sanga_ride/core/router/delivery_routes.dart';
 import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride/view/delivery/send/widgets/delivery_catalog_gate.dart';
@@ -23,7 +23,7 @@ class _DeliveryValueScreenState extends State<DeliveryValueScreen> {
 
   String _initialText() {
     final value = _delivery.draft.declaredValue;
-    return value == null ? '' : NumberFormat('#,##0', 'en_NG').format(value);
+    return value == null ? '' : NumberFormats.groupedNigeria.format(value);
   }
 
   @override

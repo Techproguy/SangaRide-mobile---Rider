@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+import 'package:sanga_ride/core/format/clock_formats.dart';
 import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
@@ -59,5 +59,5 @@ abstract final class DeliveryTimelineEntries {
     };
   }
 
-  static String? _clock(DateTime? at) => at == null ? null : DateFormat('h:mm a').format(at);
+  static String? _clock(DateTime? at) => at == null ? null : ClockFormats.time(at);
 }

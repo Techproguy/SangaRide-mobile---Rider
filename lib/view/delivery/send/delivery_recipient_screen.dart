@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:sanga_ride/controller/rider/delivery/send_delivery_controller.dart';
+import 'package:sanga_ride/core/copy/common_copy.dart';
 import 'package:sanga_ride/core/router/delivery_routes.dart';
 import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride/view/ride/who_for/widgets/passenger_gender_picker.dart';
@@ -51,7 +52,7 @@ class _DeliveryRecipientScreenState extends State<DeliveryRecipientScreen> {
     return {
       if (_name.text.trim().isEmpty) _Field.name: 'Add the recipient’s name',
       if (email.isNotEmpty && !_emailPattern.hasMatch(email)) _Field.email: 'Enter a valid email or leave it blank',
-      if (!SangaPhoneNumber.isValid(_phone.text)) _Field.phone: 'Enter a valid Nigerian phone number',
+      if (!SangaPhoneNumber.isValid(_phone.text)) _Field.phone: CommonCopy.invalidPhone,
     };
   }
 

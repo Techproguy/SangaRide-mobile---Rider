@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sanga_ride/core/copy/common_copy.dart';
 import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
@@ -34,7 +35,7 @@ class DeliveryRefusedContent extends StatelessWidget {
             icon: Icons.info_outline_rounded,
           ),
           const SizedBox(height: SangaSpacing.xs),
-          SangaButton.primary(label: 'Back to home', onPressed: onHome),
+          SangaButton.primary(label: CommonCopy.backToHome, onPressed: onHome),
         ],
       ),
     );
