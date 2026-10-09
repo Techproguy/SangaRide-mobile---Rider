@@ -111,7 +111,7 @@ class _TripScreenState extends State<TripScreen> {
         _popPagesAbove();
       case TripCancelled(:final reason, :final trip)
           when previous is! TripCancelled && reason != TripCancelReason.riderCancelled:
-        _popPagesAbove();
+        if (trip.isDelivery) _popPagesAbove();
         unawaited(_showCancelled(trip, reason));
       case TripCompleted(:final trip):
         _leaveForCompletion(trip.id);
