@@ -534,17 +534,7 @@ class RideRequestController extends GetxController {
     }
   }
 
-  Future<QuoteCheck> ensureFreshQuote() async {
-    final current = estimate;
-    if (current != null && !current.isExpired) return QuoteCheck.fresh;
-    return refreshQuote();
-  }
-
-  Future<QuoteCheck> refreshQuote() async {
-    final before = price;
-    final isLoaded = await loadEstimate();
-    final after = price;
-    if (!isLoaded || after == null) return QuoteCheck.unavailable;
-    return before != null && before != after ? QuoteCheck.priceChanged : QuoteCheck.fresh;
+  Future<void> refreshQuote() async {
+    await loadEstimate();
   }
 }

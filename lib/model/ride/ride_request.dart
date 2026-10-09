@@ -1,4 +1,3 @@
-import 'package:sanga_ride/model/ride/server_deadline.dart';
 import 'package:sanga_ride_core/sanga_ride_core.dart';
 
 enum TripType {
@@ -167,7 +166,6 @@ class FareEstimate {
     this.hourlyRate,
     this.meetGreetFee,
     this.quoteId,
-    this.expiresAt,
   });
 
   factory FareEstimate.fromJson(Object? body) {
@@ -190,7 +188,6 @@ class FareEstimate {
       hourlyRate: json.numOrNull('hourlyRate'),
       meetGreetFee: json.numOrNull('meetGreetFee'),
       quoteId: json.strOrNull('quoteId'),
-      expiresAt: serverInstantOrNull(json, 'expiresAt'),
       pricing: pricing,
     );
   }
@@ -207,10 +204,6 @@ class FareEstimate {
   final num? hourlyRate;
   final num? meetGreetFee;
   final String? quoteId;
-  final DateTime? expiresAt;
-
-  bool get isExpired => expiresAt != null && hasServerPassed(expiresAt!);
-
   bool get isHourly => hours != null && hourlyRate != null;
 
   num adjustmentFor(PricingOption option) => (pricing[option] ?? total) - total;

@@ -9,7 +9,6 @@ import 'package:sanga_ride/core/router/booking_routes.dart';
 import 'package:sanga_ride/core/router/routes.dart';
 import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride/model/ride/booking.dart';
-import 'package:sanga_ride/model/ride/ride_load_problem.dart';
 import 'package:sanga_ride/view/airport/widgets/airport_review_lines.dart';
 import 'package:sanga_ride/view/airport/widgets/flight_summary_card.dart';
 import 'package:sanga_ride/view/ride/matching/matching_flow.dart';
@@ -30,7 +29,6 @@ class RideReviewScreen extends StatefulWidget {
 
 class _RideReviewScreenState extends State<RideReviewScreen> {
   final _match = Get.find<RideMatchController>();
-  bool _isCheckingQuote = false;
 
   @override
   void dispose() {
@@ -39,33 +37,8 @@ class _RideReviewScreenState extends State<RideReviewScreen> {
   }
 
   Future<void> _submit(RideRequestController ride) async {
-    if (_isCheckingQuote) return;
-    setState(() => _isCheckingQuote = true);
-    final check = await ride.ensureFreshQuote();
-    if (!mounted) return;
-    setState(() => _isCheckingQuote = false);
-    if (check == QuoteCheck.unavailable) {
-      SangaToast.show(ride.estimateProblem?.message ?? RideLoadProblem.unknown.message, tone: SangaToastTone.error);
-      return;
-    }
-    if (check == QuoteCheck.priceChanged && !await _confirmNewPrice(ride)) return;
-    if (!mounted) return;
     if (ride.isScheduledBooking) return _schedule(ride);
     await startMatching(context);
-  }
-
-  Future<bool> _confirmNewPrice(RideRequestController ride) {
-    final price = ride.price;
-    return showSangaPromptSheet(
-      context: context,
-      icon: Icons.sell_outlined,
-      title: 'Your price was updated',
-      message: price == null
-          ? 'Have a look at the latest price.'
-          : 'It’s now ${SangaMoney.naira(price)}. Happy with that?',
-      actionLabel: 'Sounds good',
-      dismissLabel: 'Not now',
-    );
   }
 
   Future<void> _schedule(RideRequestController ride) async {
@@ -156,7 +129,7 @@ class _RideReviewScreenState extends State<RideReviewScreen> {
 
   Widget _footer(RideRequestController ride) {
     final starting = _match.state;
-    final isBusy = _match.isStarting || ride.isScheduling || _isCheckingQuote;
+    final isBusy = _match.isStarting || ride.isScheduling;
     final isChecking = starting is MatchStarting && starting.isChecking;
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -177,7 +150,7 @@ class _RideReviewScreenState extends State<RideReviewScreen> {
               style: SangaTextStyles.statusMessage,
             ),
           ),
-        if (isBusy && !_isCheckingQuote) SangaBusyEscape(onClose: () => context.go(SangaRoutes.home)),
+        if (isBusy) SangaBusyEscape(onClose: () => context.go(SangaRoutes.home)),
       ],
     );
   }

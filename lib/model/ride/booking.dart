@@ -309,5 +309,3 @@ final class ScheduleRejected extends ScheduleOutcome {
 final class ScheduleUnconfirmed extends ScheduleOutcome {
   const ScheduleUnconfirmed();
 }
-
-enum QuoteCheck { fresh, priceChanged, unavailable }
