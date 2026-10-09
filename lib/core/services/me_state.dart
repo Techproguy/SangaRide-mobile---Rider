@@ -18,17 +18,15 @@ enum OnboardingStep {
 }
 
 class StatedTrip {
-  const StatedTrip({required this.id, required this.status});
+  const StatedTrip({required this.id});
 
   final String id;
-  final String status;
 }
 
 class StatedRideRequest {
-  const StatedRideRequest({required this.id, required this.status});
+  const StatedRideRequest({required this.id});
 
   final String id;
-  final String status;
 }
 
 class PendingTopUp {
@@ -55,18 +53,10 @@ class MeState {
   factory MeState.fromEnvelope(Object? body) {
     final data = JsonReader.of(body).objectOrNull('data') ?? JsonReader.of(null);
     return MeState(
-      activeTrip: _tryRead(
-        data,
-        'activeTrip',
-        (item) => StatedTrip(id: item.str('id'), status: item.strOr('status', '')),
-      ),
+      activeTrip: _tryRead(data, 'activeTrip', (item) => StatedTrip(id: item.str('id'))),
       tripNeedingPayment: data.strOrNull('tripNeedingPayment'),
       tripNeedingRating: data.strOrNull('tripNeedingRating'),
-      activeRideRequest: _tryRead(
-        data,
-        'activeRideRequest',
-        (item) => StatedRideRequest(id: item.str('id'), status: item.strOr('status', '')),
-      ),
+      activeRideRequest: _tryRead(data, 'activeRideRequest', (item) => StatedRideRequest(id: item.str('id'))),
       activeSosId: _tryRead(data, 'activeSos', (item) => item.str('id')),
       pendingTopUps: data.listOf(
         'pendingTopUps',
