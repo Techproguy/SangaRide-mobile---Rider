@@ -3,18 +3,20 @@ import 'package:sanga_ride/model/history/history_detail.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 class HistoryDeliveryCards extends StatelessWidget {
-  const HistoryDeliveryCards({super.key, required this.delivery});
+  const HistoryDeliveryCards({super.key, required this.delivery, this.returnFee});
 
   static const double _proofAspect = 4 / 3;
   static const String _assetPrefix = 'assets/';
 
   final HistoryDelivery delivery;
+  final int? returnFee;
 
   static ImageProvider proofImage(String url) => url.startsWith(_assetPrefix) ? AssetImage(url) : NetworkImage(url);
 
   @override
   Widget build(BuildContext context) {
     final proof = delivery.proofPhotoUrl;
+    final fee = returnFee;
     return Column(
       spacing: SangaSpacing.md,
       children: [
@@ -35,6 +37,13 @@ class HistoryDeliveryCards extends StatelessWidget {
             SangaDetailRow(icon: Icons.phone_outlined, label: 'Phone', value: delivery.recipientPhone),
           ],
         ),
+        if (fee != null && fee > 0)
+          SangaDetailList(
+            title: 'Return fee',
+            rows: [
+              SangaDetailRow(icon: Icons.undo_rounded, label: 'Charged for the way back', value: SangaMoney.naira(fee)),
+            ],
+          ),
         if (proof != null)
           SangaSectionCard(
             title: 'Delivery proof',

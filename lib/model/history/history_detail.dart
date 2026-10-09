@@ -152,6 +152,7 @@ class HistoryDetail {
     this.ratedStars,
     this.cancellation,
     this.delivery,
+    this.returnFee,
   });
 
   factory HistoryDetail.fromJson(Map<String, dynamic> json) {
@@ -193,6 +194,7 @@ class HistoryDetail {
       ratedStars: (rating?['stars'] as num?)?.toInt(),
       cancellation: attempt(cancellation, HistoryCancellation.fromJson),
       delivery: attempt(delivery, HistoryDelivery.fromJson),
+      returnFee: reader.intOrNull('returnFee'),
     );
   }
 
@@ -216,6 +218,7 @@ class HistoryDetail {
   final int? ratedStars;
   final HistoryCancellation? cancellation;
   final HistoryDelivery? delivery;
+  final int? returnFee;
 
   bool get isCompleted => status == HistoryStatus.completed;
 
@@ -259,6 +262,7 @@ class HistoryDetail {
     ratedStars: ratedStars,
     cancellation: cancellation,
     delivery: delivery,
+    returnFee: returnFee,
   );
 }
 

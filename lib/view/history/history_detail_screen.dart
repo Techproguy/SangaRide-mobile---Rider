@@ -93,7 +93,7 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
           onRebook: detail.canRebook ? () => rebookRide(context, detail.route, detail.category) : null,
         ),
         if (cancellation != null) HistoryCancellationCard(detail: detail, cancellation: cancellation),
-        if (delivery != null) HistoryDeliveryCards(delivery: delivery),
+        if (delivery != null) HistoryDeliveryCards(delivery: delivery, returnFee: detail.returnFee),
         if (detail.isCompleted) HistoryPaymentCards(detail: detail),
         if (vehicle != null)
           SangaVehicleInfo(
