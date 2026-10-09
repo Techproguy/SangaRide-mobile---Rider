@@ -71,37 +71,30 @@ class _AppOverlaysState extends State<AppOverlays> {
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        Positioned.fill(child: widget.child),
-        Positioned(
-          top: 0,
-          left: 0,
-          right: 0,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              SangaConnectionBanner(state: _connectivity.bannerState),
-              ValueListenableBuilder<bool>(
-                valueListenable: _bannerOccupiesTop,
-                builder: (context, occupied, _) => _withoutTopInset(
-                  context,
-                  isRemoved: occupied,
-                  child: ValueListenableBuilder<String>(
-                    valueListenable: _path,
-                    builder: (context, path, _) => Obx(
-                      () => SangaLiveActivityBar(
-                        activities: LiveActivities.from(_restore.meStateRx.value, path),
-                        onTap: _openActivity,
-                      ),
-                    ),
+    return SangaTopOverlayHost(
+      content: widget.child,
+      overlay: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SangaConnectionBanner(state: _connectivity.bannerState),
+          ValueListenableBuilder<bool>(
+            valueListenable: _bannerOccupiesTop,
+            builder: (context, occupied, _) => _withoutTopInset(
+              context,
+              isRemoved: occupied,
+              child: ValueListenableBuilder<String>(
+                valueListenable: _path,
+                builder: (context, path, _) => Obx(
+                  () => SangaLiveActivityBar(
+                    activities: LiveActivities.from(_restore.meStateRx.value, path),
+                    onTap: _openActivity,
                   ),
                 ),
               ),
-            ],
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 

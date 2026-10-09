@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:sanga_ride/core/api/mock/mock_reset.dart';
+import 'package:sanga_ride/core/router/router.dart';
+import 'package:sanga_ride/core/router/routes.dart';
 import 'package:sanga_ride/core/services/session_restore.dart';
 import 'package:sanga_ride/core/services/toast_service.dart';
 import 'package:sanga_ride/view/dev/dev_scenarios.dart';
@@ -57,6 +59,8 @@ class DevScreen extends StatelessWidget {
         SangaButton.outline(label: 'Reset all', onPressed: _resetAll),
         const SizedBox(height: SangaSpacing.sm),
         SangaButton.outline(label: 'Clear mock data', onPressed: _clearMockData),
+        const SizedBox(height: SangaSpacing.sm),
+        SangaButton.outline(label: 'Run startup again', onPressed: () => SangaRouter.router.go(SangaRoutes.boot)),
         const SizedBox(height: SangaSpacing.xl),
         const SangaSectionHeader('Scenario hooks'),
         const SizedBox(height: SangaSpacing.sm),
