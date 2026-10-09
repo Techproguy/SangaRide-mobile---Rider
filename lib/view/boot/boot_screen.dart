@@ -74,7 +74,7 @@ class _BootScreenState extends State<BootScreen> {
                 alignment: const Alignment(0, _spinnerAlignmentY),
                 child: const SangaActivityIndicator(
                   size: _spinnerSize,
-                  color: Colors.white,
+                  color: SangaColors.onPrimary,
                 ).animate().fadeIn(duration: SangaMotion.quick, curve: SangaMotion.fadeCurve),
               ),
           ],
