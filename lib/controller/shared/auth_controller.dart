@@ -155,7 +155,8 @@ class AuthController extends GetxController {
   }
 
   Future<void> logout() async {
-    await _revokeSession();
+    unawaited(_revokeSession());
+    await Future<void>.delayed(Duration.zero);
     await SessionHub.instance.end(SessionEndReason.loggedOut);
   }
 
