@@ -23,6 +23,7 @@ abstract final class MockDelivery {
   static const Map<String, String> _uploadAssets = {
     'package_photo': packagePhotoAsset,
     'profile_photo': profilePhotoAsset,
+    'selfie': profilePhotoAsset,
     'id_document': idDocumentAsset,
     'pickup_proof': MockDeliveryLive.pickupProofAsset,
     'delivery_proof': MockDeliveryLive.deliveryProofAsset,
