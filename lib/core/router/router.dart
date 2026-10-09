@@ -26,7 +26,7 @@ class SangaRouter {
     return SangaRoutes.onboarding;
   }
 
-  static String get currentPath => router.routerDelegate.currentConfiguration.uri.path;
+  static String get currentPath => router.routerDelegate.currentConfiguration.lastOrNull?.matchedLocation ?? '';
 
   static void resetHome() => router.go(SangaRoutes.home);
 }
