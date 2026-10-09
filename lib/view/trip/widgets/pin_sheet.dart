@@ -3,11 +3,12 @@ import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 class PinSheet extends StatefulWidget {
-  const PinSheet({super.key, required this.trip, required this.isRefreshing, required this.onRefresh});
+  const PinSheet({super.key, required this.trip, required this.isRefreshing, required this.onRefresh, this.onExpired});
 
   final Trip trip;
   final bool isRefreshing;
   final VoidCallback onRefresh;
+  final VoidCallback? onExpired;
 
   @override
   State<PinSheet> createState() => _PinSheetState();
@@ -40,7 +41,11 @@ class _PinSheetState extends State<PinSheet> {
           if (expiresAt == null)
             const SizedBox.shrink()
           else
-            SangaCountdown(endsAt: expiresAt, builder: (context, remaining) => _body(code, remaining)),
+            SangaCountdown(
+              endsAt: expiresAt,
+              onFinished: widget.onExpired,
+              builder: (context, remaining) => _body(code, remaining),
+            ),
         ],
       ),
     );

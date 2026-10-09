@@ -12,12 +12,22 @@ abstract final class CarMarker {
 
   static BitmapDescriptor? _icon;
 
+  static bool get isReady => _icon != null;
+
   static Future<Marker> marker({required LatLng position, double? heading}) async {
-    final icon = _icon ??= await _paint();
+    await ensureIcon();
+    return build(position: position, heading: heading);
+  }
+
+  static Future<void> ensureIcon() async {
+    _icon ??= await _paint();
+  }
+
+  static Marker build({required LatLng position, double? heading}) {
     return Marker(
       markerId: const MarkerId('driver'),
       position: position,
-      icon: icon,
+      icon: _icon ?? BitmapDescriptor.defaultMarker,
       anchor: const Offset(0.5, 0.5),
       flat: true,
       rotation: heading ?? 0,

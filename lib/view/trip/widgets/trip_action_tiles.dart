@@ -64,7 +64,11 @@ class TripActionTiles extends StatelessWidget {
       child: Row(
         spacing: SangaSpacing.sm,
         children: [
-          for (final tile in tiles) SizedBox(width: _scrollTileWidth, child: Center(child: tile)),
+          for (final tile in tiles)
+            SizedBox(
+              width: _scrollTileWidth,
+              child: Center(child: tile),
+            ),
         ],
       ),
     );

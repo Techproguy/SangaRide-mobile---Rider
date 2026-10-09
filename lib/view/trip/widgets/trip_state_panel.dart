@@ -106,7 +106,9 @@ class TripEndedPanel extends StatelessWidget {
         if (fee != null && fee > 0)
           SangaDetailList(
             title: 'Return fee',
-            rows: [SangaDetailRow(icon: Icons.undo_rounded, label: 'Charged for the way back', value: SangaMoney.naira(fee))],
+            rows: [
+              SangaDetailRow(icon: Icons.undo_rounded, label: 'Charged for the way back', value: SangaMoney.naira(fee)),
+            ],
           ),
         SangaButton.primary(label: 'Back to home', onPressed: onHome),
       ],

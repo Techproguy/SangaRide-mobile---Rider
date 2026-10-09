@@ -58,6 +58,7 @@ class _TripScreenState extends State<TripScreen> {
   final _sos = Get.find<SosController>();
   final _camera = MapCamera();
   final _panelKey = GlobalKey();
+  final _hasPanned = ValueNotifier<bool>(false);
   late final Worker _worker;
   late final Worker _sosWorker;
   TripState _previous = const TripLoading();
@@ -80,6 +81,7 @@ class _TripScreenState extends State<TripScreen> {
   @override
   void dispose() {
     _reframeTimer?.cancel();
+    _hasPanned.dispose();
     _worker.dispose();
     _sosWorker.dispose();
     _trip.close(onlyTripId: widget.tripId);
@@ -151,11 +153,13 @@ class _TripScreenState extends State<TripScreen> {
   }
 
   void _scheduleReframe() {
+    _hasPanned.value = false;
     _reframeTimer?.cancel();
     _reframeTimer = Timer(_reframeDelay, _reframe);
   }
 
   void _reframe() {
+    _hasPanned.value = false;
     final trip = _trip.trip;
     if (!mounted || trip == null) return;
     unawaited(_camera.fitBounds(tripFramePoints(trip)));
@@ -213,7 +217,12 @@ class _TripScreenState extends State<TripScreen> {
     return _present(
       builder: (_) => Obx(() {
         if (_trip.state case TripVerifying(:final trip)) latest = trip;
-        return PinSheet(trip: latest, isRefreshing: _trip.isRefreshingPin.value, onRefresh: _trip.refreshPin);
+        return PinSheet(
+          trip: latest,
+          isRefreshing: _trip.isRefreshingPin.value,
+          onRefresh: _trip.refreshPin,
+          onExpired: () => unawaited(_trip.pollNow()),
+        );
       }),
     );
   }
@@ -508,6 +517,26 @@ class _TripScreenState extends State<TripScreen> {
     };
   }
 
+  Widget _recenterButton(TripState state) {
+    if (state is! TripLoaded) return const SizedBox.shrink();
+    return ValueListenableBuilder<bool>(
+      valueListenable: _hasPanned,
+      builder: (context, hasPanned, _) => SangaHandoff(
+        value: hasPanned,
+        child: hasPanned
+            ? Padding(
+                padding: const EdgeInsets.only(right: SangaSpacing.gutter, bottom: SangaSpacing.sm),
+                child: SangaMapButton(
+                  icon: const Icon(Icons.my_location_rounded, color: SangaColors.primary, size: 24),
+                  tooltip: 'Recenter',
+                  onPressed: _reframe,
+                ),
+              )
+            : const SizedBox.shrink(),
+      ),
+    );
+  }
+
   Widget _overlays(TripState state) {
     return SafeArea(
       child: Padding(
@@ -549,24 +578,36 @@ class _TripScreenState extends State<TripScreen> {
             body: Stack(
               children: [
                 Positioned.fill(
-                  child: TripMap(trip: _trip.trip, camera: _camera, onMapCreated: _scheduleReframe),
+                  child: TripMap(
+                    trip: _trip.trip,
+                    camera: _camera,
+                    onMapCreated: _scheduleReframe,
+                    onUserPan: () => _hasPanned.value = true,
+                  ),
                 ),
                 _overlays(state),
                 Align(
                   alignment: Alignment.bottomCenter,
-                  child: NotificationListener<SizeChangedLayoutNotification>(
-                    onNotification: (_) {
-                      WidgetsBinding.instance.addPostFrameCallback((_) => _syncPanelInset());
-                      return false;
-                    },
-                    child: SizeChangedLayoutNotifier(
-                      child: AnimatedSize(
-                        duration: SangaMotion.morph,
-                        curve: SangaMotion.springBlock,
-                        alignment: Alignment.bottomCenter,
-                        child: SangaMapPanel(key: _panelKey, children: [_flightLine(state), _panel(state)]),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      _recenterButton(state),
+                      NotificationListener<SizeChangedLayoutNotification>(
+                        onNotification: (_) {
+                          WidgetsBinding.instance.addPostFrameCallback((_) => _syncPanelInset());
+                          return false;
+                        },
+                        child: SizeChangedLayoutNotifier(
+                          child: AnimatedSize(
+                            duration: SangaMotion.morph,
+                            curve: SangaMotion.springBlock,
+                            alignment: Alignment.bottomCenter,
+                            child: SangaMapPanel(key: _panelKey, children: [_flightLine(state), _panel(state)]),
+                          ),
+                        ),
                       ),
-                    ),
+                    ],
                   ),
                 ),
               ],

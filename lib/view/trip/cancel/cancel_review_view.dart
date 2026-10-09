@@ -80,7 +80,8 @@ class CancelReviewView extends StatelessWidget {
             ),
             if (feeWas != null && feeWas != review.fee)
               SangaNotice(
-                message: 'The fee changed from ${SangaMoney.naira(feeWas!)} to ${SangaMoney.naira(review.fee)}. Take a look before you cancel.',
+                message:
+                    'The fee changed from ${SangaMoney.naira(feeWas!)} to ${SangaMoney.naira(review.fee)}. Take a look before you cancel.',
                 tone: SangaTone.warning,
               ),
             if (reason.isSafety)

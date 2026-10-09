@@ -140,7 +140,12 @@ class _CancelScreenState extends State<CancelScreen> {
         final trip = _trip.trip;
         final state = _cancel.state;
         if (trip == null) {
-          return SangaPageLayout(title: _copy.title, children: const [SangaSkeleton.heights([120, 64, 64, 64])]);
+          return SangaPageLayout(
+            title: _copy.title,
+            children: const [
+              SangaSkeleton.heights([120, 64, 64, 64]),
+            ],
+          );
         }
         return PopScope(
           canPop: state is CancelChoosing,

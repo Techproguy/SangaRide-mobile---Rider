@@ -150,7 +150,12 @@ class _AddStopScreenState extends State<AddStopScreen> {
         final trip = _trip.trip;
         final state = _add.state;
         if (trip == null) {
-          return const SangaPageLayout(title: 'Add stops', children: [SangaSkeleton.heights([160, 56])]);
+          return const SangaPageLayout(
+            title: 'Add stops',
+            children: [
+              SangaSkeleton.heights([160, 56]),
+            ],
+          );
         }
         return PopScope(
           canPop: state is AddStopDrafting,

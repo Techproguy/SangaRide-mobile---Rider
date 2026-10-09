@@ -41,7 +41,10 @@ class _TripChatScreenState extends State<TripChatScreen> {
     final messages = _trip.messages;
     if (messages.isNotEmpty) return ChatMessageList(messages: [...messages], onRetry: _trip.retryMessage);
     return switch (status) {
-      TripChatStatus.loading => const Padding(padding: EdgeInsets.all(SangaSpacing.gutter), child: SangaSkeleton.heights([48, 48, 48])),
+      TripChatStatus.loading => const Padding(
+        padding: EdgeInsets.all(SangaSpacing.gutter),
+        child: SangaSkeleton.heights([48, 48, 48]),
+      ),
       TripChatStatus.failed => Center(
         child: SangaFailureMessage(
           title: 'We couldn’t load your chat',

@@ -39,28 +39,28 @@ class TripTimelineScreen extends StatelessWidget {
       tripId: tripId,
       title: 'Trip timeline',
       child: Obx(() {
-      final trip = controller.trip;
-      return SangaPageLayout(
-        title: 'Trip timeline',
-        children: [
-          if (trip == null)
-            const SangaSkeleton.heights([48, 48, 48, 48])
-          else ...[
-            SangaTimeline(entries: _entries(trip)),
-            const SizedBox(height: SangaSpacing.xl),
-            Text('Safety and verification', style: SangaTextStyles.titleSmall),
-            const SizedBox(height: SangaSpacing.md),
-            Column(
-              spacing: SangaSpacing.md,
-              children: [
-                SafetyCheckRow(label: 'Driver match', isConfirmed: trip.hasEvent(TripEventType.detailsConfirmed)),
-                SafetyCheckRow(label: 'PIN', isConfirmed: trip.hasEvent(TripEventType.pinVerified)),
-              ],
-            ),
+        final trip = controller.trip;
+        return SangaPageLayout(
+          title: 'Trip timeline',
+          children: [
+            if (trip == null)
+              const SangaSkeleton.heights([48, 48, 48, 48])
+            else ...[
+              SangaTimeline(entries: _entries(trip)),
+              const SizedBox(height: SangaSpacing.xl),
+              Text('Safety and verification', style: SangaTextStyles.titleSmall),
+              const SizedBox(height: SangaSpacing.md),
+              Column(
+                spacing: SangaSpacing.md,
+                children: [
+                  SafetyCheckRow(label: 'Driver match', isConfirmed: trip.hasEvent(TripEventType.detailsConfirmed)),
+                  SafetyCheckRow(label: 'PIN', isConfirmed: trip.hasEvent(TripEventType.pinVerified)),
+                ],
+              ),
+            ],
           ],
-        ],
-      );
-    }),
+        );
+      }),
     );
   }
 }
