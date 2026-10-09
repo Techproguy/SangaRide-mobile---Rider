@@ -1,4 +1,6 @@
 import 'package:google_maps_flutter/google_maps_flutter.dart' show LatLng;
+import 'package:sanga_ride/core/api/server_codes.dart';
+import 'package:sanga_ride/core/copy/common_copy.dart';
 import 'package:sanga_ride/core/extensions/lat_lng.dart';
 import 'package:sanga_ride/model/ride/ride_match.dart' show ScheduledBooking;
 import 'package:sanga_ride/model/ride/ride_load_problem.dart';
@@ -271,10 +273,10 @@ enum BookingProblem {
   sameCity('same_city', 'Pick a drop off in a different city.'),
   reminderTooLate('reminder_too_late', 'This ride is too close for a reminder.'),
   tooEarly('too_early', 'Your flight hasn’t landed yet. You can notify your driver once it has.'),
-  quoteExpired('quote_expired', 'Your price changed. Have a look at the new one, then go again.'),
-  notFound('not_found', 'We can’t find that ride. It may already be gone.'),
-  connection('connection', 'You’re offline. Check your connection and give it another go.'),
-  unknown('unknown', 'Something went wrong on our side. Try again in a moment.');
+  quoteExpired(ServerCode.quoteExpired, 'Your price changed. Have a look at the new one, then go again.'),
+  notFound(ServerCode.notFound, 'We can’t find that ride. It may already be gone.'),
+  connection('connection', CommonCopy.offline),
+  unknown('unknown', CommonCopy.serverTrouble);
 
   const BookingProblem(this.code, this.message);
 

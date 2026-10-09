@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:sanga_ride/core/api/server_codes.dart';
+import 'package:sanga_ride/core/copy/common_copy.dart';
 import 'package:sanga_ride/model/history/history_item.dart';
 import 'package:sanga_ride_core/sanga_ride_core.dart';
 import 'package:sanga_ride/model/ride/ride_match.dart';
@@ -79,7 +81,7 @@ class HistoryDriver {
   const HistoryDriver({required this.profile, required this.isBlocked});
 
   factory HistoryDriver.fromJson(Map<String, dynamic> json) =>
-      HistoryDriver(profile: OfferDriver.fromJson(json), isBlocked: json['blocked'] as bool? ?? false);
+      HistoryDriver(profile: OfferDriver.fromJson(json), isBlocked: JsonReader(json).boolOr('blocked', false));
 
   final OfferDriver profile;
   final bool isBlocked;
@@ -95,7 +97,6 @@ class HistoryDelivery {
     this.description,
     this.sizeLabel,
     this.weightLabel,
-    this.itemPhotoUrl,
     this.proofPhotoUrl,
   });
 
@@ -108,7 +109,6 @@ class HistoryDelivery {
       description: item.strOrNull('description'),
       sizeLabel: item.strOrNull('sizeLabel'),
       weightLabel: item.strOrNull('weightLabel'),
-      itemPhotoUrl: item.strOrNull('photoUrl'),
       recipientName: recipient.strOr('name', ''),
       recipientPhone: recipient.strOr('phone', ''),
       proofPhotoUrl: reader.objectOrNull('deliveryProof')?.strOrNull('photoUrl'),
@@ -119,7 +119,6 @@ class HistoryDelivery {
   final String? description;
   final String? sizeLabel;
   final String? weightLabel;
-  final String? itemPhotoUrl;
   final String recipientName;
   final String recipientPhone;
   final String? proofPhotoUrl;
@@ -156,7 +155,8 @@ class HistoryDetail {
   });
 
   factory HistoryDetail.fromJson(Map<String, dynamic> json) {
-    Map<String, dynamic>? map(String key) => json[key] is Map ? Map<String, dynamic>.from(json[key] as Map) : null;
+    final reader = JsonReader(json);
+    Map<String, dynamic>? map(String key) => reader.objectOrNull(key)?.raw;
     T? attempt<T>(Map<String, dynamic>? source, T Function(Map<String, dynamic> source) parse) {
       if (source == null) return null;
       try {
@@ -171,8 +171,7 @@ class HistoryDetail {
     final paidWith = map('paidWith');
     final cancellation = map('cancellation');
     final delivery = map('delivery');
-    final rating = map('rating');
-    final reader = JsonReader(json);
+    final rating = reader.objectOrNull('rating');
     return HistoryDetail(
       id: reader.str('id'),
       kind: HistoryKind.fromCode(reader.strOrNull('kind')),
@@ -191,7 +190,7 @@ class HistoryDetail {
       driver: attempt(driver, HistoryDriver.fromJson),
       vehicle: attempt(vehicle, DriverVehicle.fromJson),
       events: [for (final event in reader.listOf('events', HistoryEvent.tryFromReader)) ?event],
-      ratedStars: (rating?['stars'] as num?)?.toInt(),
+      ratedStars: rating?.numOrNull('stars')?.toInt(),
       cancellation: attempt(cancellation, HistoryCancellation.fromJson),
       delivery: attempt(delivery, HistoryDelivery.fromJson),
       returnFee: reader.intOrNull('returnFee'),
@@ -267,9 +266,9 @@ class HistoryDetail {
 }
 
 enum HistoryFailure {
-  notFound('not_found', 'We can’t find this one', 'It may have been removed. Head back and try again.'),
-  connection('connection', 'We couldn’t load the details', 'Check your connection and give it another go.'),
-  unknown('unknown', 'Something went wrong on our side', 'Try again in a moment.');
+  notFound(ServerCode.notFound, 'We can’t find this one', 'It may have been removed. Head back and try again.'),
+  connection('connection', 'We couldn’t load the details', CommonCopy.connectionBody),
+  unknown('unknown', CommonCopy.serverTroubleTitle, CommonCopy.tryAgainInAMoment);
 
   const HistoryFailure(this.code, this.title, this.message);
 
@@ -280,14 +279,14 @@ enum HistoryFailure {
   bool get canRetry => this != notFound;
 
   static HistoryFailure of(Object error) => switch (ProblemKind.of(error)) {
-    ProblemRejected(code: 'not_found' || 'ride_not_found') => notFound,
+    ProblemRejected(code: ServerCode.notFound || ServerCode.rideNotFound) => notFound,
     ProblemOffline() => connection,
     _ => unknown,
   };
 }
 
 enum HistoryProblem {
-  driverNotFound('driver_not_found', 'We can’t find that driver.'),
+  driverNotFound(ServerCode.driverNotFound, 'We can’t find that driver.'),
   unknown('unknown', 'We couldn’t do that. Give it another go.');
 
   const HistoryProblem(this.code, this.message);
@@ -296,7 +295,7 @@ enum HistoryProblem {
   final String message;
 
   static HistoryProblem of(Object error) => switch (ProblemKind.of(error)) {
-    ProblemRejected(code: 'driver_not_found') => driverNotFound,
+    ProblemRejected(code: ServerCode.driverNotFound) => driverNotFound,
     _ => unknown,
   };
 }

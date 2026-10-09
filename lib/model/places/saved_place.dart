@@ -1,3 +1,5 @@
+import 'package:sanga_ride/core/api/server_codes.dart';
+import 'package:sanga_ride/core/copy/common_copy.dart';
 import 'package:sanga_ride/model/location/place.dart';
 import 'package:sanga_ride/model/ride/ride_load_problem.dart';
 import 'package:sanga_ride_core/sanga_ride_core.dart';
@@ -103,9 +105,9 @@ enum SavedPlaceProblem {
   limitReached('limit_reached', 'You’ve saved as many places as you can. Remove one to add another.'),
   invalidLabel('invalid_label', 'Give this place a short name.'),
   invalidPlace('invalid_place', 'We couldn’t use that location. Pick another one.'),
-  notFound('not_found', 'We can’t find that place. It may already be gone.'),
-  connection('connection', 'You’re offline. Check your connection and give it another go.'),
-  unknown('unknown', 'Something went wrong on our side. Try again in a moment.');
+  notFound(ServerCode.notFound, 'We can’t find that place. It may already be gone.'),
+  connection('connection', CommonCopy.offline),
+  unknown('unknown', CommonCopy.serverTrouble);
 
   const SavedPlaceProblem(this.code, this.message);
 

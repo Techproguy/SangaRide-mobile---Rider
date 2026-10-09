@@ -204,7 +204,6 @@ class FareEstimate {
   final num? hourlyRate;
   final num? meetGreetFee;
   final String? quoteId;
-  bool get isHourly => hours != null && hourlyRate != null;
 
   num adjustmentFor(PricingOption option) => (pricing[option] ?? total) - total;
 }

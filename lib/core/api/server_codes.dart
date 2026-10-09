@@ -8,6 +8,7 @@ abstract final class ServerCode {
   static const String cardExpired = 'card_expired';
   static const String chatEnded = 'chat_ended';
   static const String chatUnavailable = 'chat_unavailable';
+  static const String driverNotFound = 'driver_not_found';
   static const String emailTaken = 'email_taken';
   static const String faceNotMatched = 'face_not_matched';
   static const String fileTooLarge = 'file_too_large';
@@ -18,6 +19,7 @@ abstract final class ServerCode {
   static const String invalidOption = 'invalid_option';
   static const String invalidPhone = 'invalid_phone';
   static const String nameRequired = 'name_required';
+  static const String notFound = 'not_found';
   static const String noteTooLong = 'note_too_long';
   static const String otpExpired = 'otp_expired';
   static const String otpMismatch = 'otp_mismatch';
@@ -25,6 +27,7 @@ abstract final class ServerCode {
   static const String photoUnreadable = 'photo_unreadable';
   static const String quoteExpired = 'quote_expired';
   static const String requiresApproval = 'requires_approval';
+  static const String rideNotFound = 'ride_not_found';
   static const String samePhone = 'same_phone';
   static const String ticketNotFound = 'ticket_not_found';
   static const String transactionNotFound = 'transaction_not_found';

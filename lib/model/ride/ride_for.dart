@@ -1,3 +1,5 @@
+import 'package:sanga_ride/core/api/server_codes.dart';
+import 'package:sanga_ride/core/copy/common_copy.dart';
 import 'package:sanga_ride/model/ride/ride_load_problem.dart';
 import 'package:sanga_ride/model/ride/server_deadline.dart';
 import 'package:sanga_ride_core/sanga_ride_core.dart';
@@ -27,8 +29,8 @@ enum PassengerGender {
 }
 
 enum PassengerFailure {
-  otpMismatch('otp_mismatch', 'That code didn’t match. Give it another go.', needsNewCode: false),
-  otpExpired('otp_expired', 'That code has expired. Grab a new one below.', needsNewCode: true),
+  otpMismatch(ServerCode.otpMismatch, 'That code didn’t match. Give it another go.', needsNewCode: false),
+  otpExpired(ServerCode.otpExpired, 'That code has expired. Grab a new one below.', needsNewCode: true),
   tooManyAttempts('too_many_attempts', 'Too many wrong tries. Grab a new code below.', needsNewCode: true),
   verificationNotFound(
     'verification_not_found',
@@ -36,9 +38,9 @@ enum PassengerFailure {
     needsNewCode: true,
   ),
   ownNumber('own_number', 'That’s your own number. Pick Just for me instead.', needsNewCode: false),
-  invalidPhone('invalid_phone', 'We can’t text that number. Check it and try again.', needsNewCode: false),
-  connection('connection', 'You’re offline. Check your connection and give it another go.', needsNewCode: false),
-  unknown('unknown', 'Something went wrong on our side. Try again in a moment.', needsNewCode: false);
+  invalidPhone(ServerCode.invalidPhone, 'We can’t text that number. Check it and try again.', needsNewCode: false),
+  connection('connection', CommonCopy.offline, needsNewCode: false),
+  unknown('unknown', CommonCopy.serverTrouble, needsNewCode: false);
 
   const PassengerFailure(this.code, this.message, {required this.needsNewCode});
 
