@@ -10,10 +10,19 @@ enum ChatStatus {
 
   final String code;
 
-  static ChatStatus fromCode(Object? code) => enumByCode(values, '$code', (status) => status.code, ChatStatus.queued);
+  static ChatStatus fromCode(Object? code) => codedEnum(values, (status) => status.code, code, orElse: queued);
 }
 
-enum ChatDelivery { sending, sent, read, failed }
+enum ChatDelivery {
+  sending('sending'),
+  sent('sent'),
+  read('read'),
+  failed('failed');
+
+  const ChatDelivery(this.code);
+
+  final String code;
+}
 
 enum ChatRole {
   rider('rider'),
@@ -24,7 +33,7 @@ enum ChatRole {
 
   final String code;
 
-  static ChatRole fromCode(Object? code) => enumByCode(values, '$code', (role) => role.code, ChatRole.system);
+  static ChatRole fromCode(Object? code) => codedEnum(values, (role) => role.code, code, orElse: system);
 }
 
 class ChatAgent {
@@ -77,7 +86,7 @@ class ChatMessage {
       text: reader.strOr('text', ''),
       role: ChatRole.fromCode(reader.strOrNull('senderRole')),
       sentAt: reader.timeOrNull('createdAt')?.toLocal() ?? DateTime.now(),
-      delivery: reader.strOrNull('status') == 'read' ? ChatDelivery.read : ChatDelivery.sent,
+      delivery: reader.strOrNull('status') == ChatDelivery.read.code ? ChatDelivery.read : ChatDelivery.sent,
     );
   }
 
@@ -142,8 +151,6 @@ final class ChatLive extends ChatState {
   final List<ChatMessage> messages;
   final bool isEnding;
   final SupportProblem? problem;
-
-  bool get hasSentMessage => messages.any((message) => message.isMine);
 
   ChatLive copyWith({
     SupportChat? chat,

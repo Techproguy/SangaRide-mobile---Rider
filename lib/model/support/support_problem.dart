@@ -1,8 +1,10 @@
+import 'package:sanga_ride/core/api/server_codes.dart';
+import 'package:sanga_ride/core/copy/common_copy.dart';
 import 'package:sanga_ride_core/sanga_ride_core.dart';
 
 enum SupportProblem {
-  connection('We couldn’t reach the server. Check your connection and try again.'),
-  unknown('Something went wrong on our side. Try again in a moment.'),
+  connection(CommonCopy.unreachableTryAgain),
+  unknown(CommonCopy.serverTrouble),
   unconfirmed('We’re not sure that went through. Check before you send it again.'),
   articleNotFound('We couldn’t find that article. It may have moved.'),
   ticketNotFound('We couldn’t find that report.'),
@@ -23,13 +25,13 @@ enum SupportProblem {
   };
 
   static SupportProblem fromCode(String? code) => switch (code) {
-    'article_not_found' => articleNotFound,
-    'ticket_not_found' => ticketNotFound,
-    'type_required' => typeRequired,
-    'note_too_long' => noteTooLong,
-    'invalid_option' => invalidOption,
-    'chat_ended' => chatEnded,
-    'chat_unavailable' => chatUnavailable,
+    ServerCode.articleNotFound => articleNotFound,
+    ServerCode.ticketNotFound => ticketNotFound,
+    ServerCode.typeRequired => typeRequired,
+    ServerCode.noteTooLong => noteTooLong,
+    ServerCode.invalidOption => invalidOption,
+    ServerCode.chatEnded => chatEnded,
+    ServerCode.chatUnavailable => chatUnavailable,
     _ => unknown,
   };
 }

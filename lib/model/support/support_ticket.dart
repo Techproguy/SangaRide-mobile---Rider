@@ -11,7 +11,7 @@ enum IssueContext {
 
   final String code;
 
-  static IssueContext fromCode(String? code) => enumByCode(values, code, (value) => value.code, IssueContext.trip);
+  static IssueContext fromCode(String? code) => codedEnum(values, (value) => value.code, code, orElse: trip);
 }
 
 enum IssueIcon {
@@ -30,7 +30,7 @@ enum IssueIcon {
 
   final String code;
 
-  static IssueIcon fromCode(Object? code) => enumByCode(values, '$code', (icon) => icon.code, IssueIcon.other);
+  static IssueIcon fromCode(Object? code) => codedEnum(values, (icon) => icon.code, code, orElse: other);
 }
 
 class IssueType {
@@ -65,8 +65,7 @@ enum TicketStatus {
 
   bool get isWaiting => this == reported || this == investigating;
 
-  static TicketStatus fromCode(Object? code) =>
-      enumByCode(values, '$code', (status) => status.code, TicketStatus.unknown);
+  static TicketStatus fromCode(Object? code) => codedEnum(values, (status) => status.code, code, orElse: unknown);
 }
 
 enum TicketEventType {
@@ -149,8 +148,6 @@ class SupportTicket {
   final String? tripId;
 
   TicketEvent? eventOf(TicketEventType type) => events.where((event) => event.type == type).firstOrNull;
-
-  TicketEvent? get latestEvent => events.lastOrNull;
 }
 
 class TicketSummary {

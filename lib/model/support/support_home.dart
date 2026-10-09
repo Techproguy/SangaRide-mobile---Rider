@@ -18,8 +18,7 @@ enum SupportTopicIcon {
 
   final String code;
 
-  static SupportTopicIcon fromCode(Object? code) =>
-      enumByCode(values, '$code', (icon) => icon.code, SupportTopicIcon.help);
+  static SupportTopicIcon fromCode(Object? code) => codedEnum(values, (icon) => icon.code, code, orElse: help);
 }
 
 class SupportTopic {
