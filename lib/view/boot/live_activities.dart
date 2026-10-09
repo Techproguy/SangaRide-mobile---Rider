@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:sanga_ride/core/safety_config.dart';
 import 'package:sanga_ride/core/router/routes.dart';
 import 'package:sanga_ride/core/router/safety_routes.dart';
 import 'package:sanga_ride/core/router/trip_routes.dart';
@@ -22,8 +21,6 @@ abstract final class LiveActivities {
           icon: Icons.shield_outlined,
           title: 'SOS is active',
           subtitle: 'Tap to open your Safety Centre',
-          actionLabel: 'Call ${SafetyConfig.emergencyNumber}',
-          actionIcon: Icons.call_rounded,
         ),
       if (trip != null && path != TripRoutes.tripOf(trip.id))
         const SangaLiveActivity(
