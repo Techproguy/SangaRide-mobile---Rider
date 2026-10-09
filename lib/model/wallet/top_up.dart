@@ -195,8 +195,6 @@ class SavedTopUp {
   final TopUpStatus? status;
   final String? savedCardId;
 
-  bool get isResumable => topUpId != null && (status == null || status!.isOpen);
-
   Map<String, dynamic> toJson() => {
     'intentKey': intentKey,
     'method': method.code,

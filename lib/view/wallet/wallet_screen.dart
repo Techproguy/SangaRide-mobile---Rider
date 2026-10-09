@@ -45,7 +45,6 @@ class _WalletBodyState extends State<WalletBody> {
   late final _wallet = WalletControllers.wallet(widget.scope);
   late final _topUp = WalletControllers.topUp(widget.scope);
   StreamSubscription<void>? _resumeSubscription;
-  bool _hasAutoResumed = false;
 
   @override
   void initState() {
@@ -64,21 +63,12 @@ class _WalletBodyState extends State<WalletBody> {
     if (!mounted) return;
     await _wallet.open();
     if (!mounted) return;
-    await _reviveSaved(canAutoResume: true);
+    await _topUp.reviveSaved();
   }
 
   Future<void> _refresh() async {
     if (!mounted) return;
-    await _wallet.reloadQuietly();
-    if (mounted) await _reviveSaved(canAutoResume: false);
-  }
-
-  Future<void> _reviveSaved({required bool canAutoResume}) async {
-    final saved = await _topUp.reviveSaved();
-    if (!mounted || saved == null || _hasAutoResumed || !canAutoResume || !widget.canTopUp) return;
-    if (saved.method != TopUpMethod.card || !saved.isResumable) return;
-    _hasAutoResumed = true;
-    await _openSaved(saved);
+    await _reloadAll();
   }
 
   Future<void> _openSaved(SavedTopUp saved) async {
@@ -94,7 +84,7 @@ class _WalletBodyState extends State<WalletBody> {
 
   Future<void> _reloadAll() async {
     await _wallet.reloadQuietly();
-    if (mounted) await _reviveSaved(canAutoResume: false);
+    if (mounted) await _topUp.reviveSaved();
   }
 
   _WalletStage _stageOf(WalletState state) => switch (state) {
