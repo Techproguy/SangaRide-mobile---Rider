@@ -20,10 +20,7 @@ class HistoryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DecoratedBox(
-      decoration: const BoxDecoration(
-        borderRadius: SangaRadii.field,
-        boxShadow: [BoxShadow(color: SangaColors.cardShadow, blurRadius: 20, offset: Offset(0, 4))],
-      ),
+      decoration: const BoxDecoration(borderRadius: SangaRadii.field, boxShadow: SangaShadows.card),
       child: Material(
         color: SangaColors.surface,
         shape: const RoundedRectangleBorder(
@@ -40,7 +37,7 @@ class HistoryCard extends StatelessWidget {
                 spacing: SangaSpacing.md,
                 children: [
                   _visual(),
-                  const VerticalDivider(width: 1, thickness: 1, color: SangaColors.divider),
+                  const VerticalDivider(width: 1, thickness: 1, color: SangaColors.cardBorder),
                   Expanded(child: _details()),
                 ],
               ),
@@ -121,7 +118,7 @@ class HistoryCard extends StatelessWidget {
     return Row(
       spacing: SangaSpacing.xxs,
       children: [
-        const Icon(Icons.person_outline_rounded, size: 14, color: SangaColors.primary),
+        const Icon(Icons.person_outline_rounded, size: 18, color: SangaColors.primary),
         Flexible(
           child: Text(
             purpose == null ? name : '$name · $purpose',

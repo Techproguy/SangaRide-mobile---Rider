@@ -40,23 +40,11 @@ class _HistoryScreenState extends State<HistoryScreen> with SingleTickerProvider
     return AnnotatedRegion(
       value: SangaSystemUi.onLight,
       child: Scaffold(
-        backgroundColor: SangaColors.surface,
         body: SafeArea(
           bottom: false,
           child: Column(
             children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(SangaSpacing.gutter, SangaSpacing.md, SangaSpacing.gutter, 0),
-                child: Row(
-                  children: [
-                    const SangaCircleButton.back(),
-                    const Expanded(
-                      child: Text('Rides', textAlign: TextAlign.center, style: SangaTextStyles.toolbarTitle),
-                    ),
-                    const SizedBox(width: 41),
-                  ],
-                ),
-              ),
+              const SangaPageHeader(title: 'Rides'),
               const SizedBox(height: SangaSpacing.sm),
               HistoryTabBar(controller: _tabs, labels: [for (final tab in HistoryTab.values) tab.label]),
               Expanded(

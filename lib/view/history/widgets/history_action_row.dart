@@ -16,10 +16,7 @@ class HistoryActionRow extends StatelessWidget {
     final color = action.isDestructive ? SangaColors.dangerStrong : SangaColors.primary;
     final wash = action.isDestructive ? SangaColors.dangerSoft : SangaColors.primaryTint;
     return DecoratedBox(
-      decoration: const BoxDecoration(
-        borderRadius: SangaRadii.field,
-        boxShadow: [BoxShadow(color: SangaColors.cardShadow, blurRadius: 16, offset: Offset(0, 3))],
-      ),
+      decoration: const BoxDecoration(borderRadius: SangaRadii.field, boxShadow: SangaShadows.card),
       child: Material(
         color: SangaColors.surface,
         shape: const RoundedRectangleBorder(
@@ -48,9 +45,9 @@ class HistoryActionRow extends StatelessWidget {
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    spacing: 2,
+                    spacing: SangaSpacing.xxs,
                     children: [
-                      Text(action.label, style: SangaTextStyles.cardTitle.copyWith(fontWeight: FontWeight.w600)),
+                      Text(action.label, style: SangaTextStyles.cardTitleStrong),
                       Text(action.subtitle, style: SangaTextStyles.cardSubtitle),
                     ],
                   ),
