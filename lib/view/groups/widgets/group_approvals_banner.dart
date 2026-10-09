@@ -15,7 +15,7 @@ class GroupApprovalsBanner extends StatelessWidget {
       icon: SangaAssets.bell,
       title: GroupCopy.approvalsTitle(approvals.length),
       subtitle: GroupCopy.approvalsSubtitle(approvals),
-      actionLabel: 'Review',
+      actionLabel: GroupCopy.review,
       onTap: onTap,
     );
   }

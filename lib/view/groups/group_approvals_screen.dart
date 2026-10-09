@@ -1,11 +1,12 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:get/get.dart';
+import 'package:go_router/go_router.dart';
 import 'package:sanga_ride/controller/rider/groups/group_bindings.dart';
 import 'package:sanga_ride/controller/rider/groups/group_controller.dart';
 import 'package:sanga_ride/model/groups/group_models.dart';
+import 'package:sanga_ride/view/groups/group_copy.dart';
 import 'package:sanga_ride/view/groups/widgets/approval_card.dart';
 import 'package:sanga_ride/view/wallet/widgets/wallet_page.dart';
 import 'package:sanga_ride_core/sanga_ride_core.dart' show RefreshMoments;
@@ -51,13 +52,10 @@ class _GroupApprovalsScreenState extends State<GroupApprovalsScreen> {
     final failure = await _group.decide(approval, approve: approve);
     if (!mounted) return;
     if (failure == null) {
-      SangaToast.show(
-        approve ? '${approval.firstName}’s ride is approved' : '${approval.firstName}’s ride was declined',
-        tone: SangaToastTone.success,
-      );
+      SangaToast.show(GroupCopy.approvalDecided(approval.firstName, approved: approve), tone: SangaToastTone.success);
     } else {
       SangaToast.show(
-        '${failure.title}. ${failure.message}',
+        GroupCopy.failureText(failure),
         tone: failure.closesApproval ? SangaToastTone.warning : SangaToastTone.error,
       );
     }
@@ -69,7 +67,7 @@ class _GroupApprovalsScreenState extends State<GroupApprovalsScreen> {
     ],
     ApprovalsFailed(:final failure) => [
       SangaFailureMessage(
-        title: 'We couldn’t load the requests',
+        title: GroupCopy.requestsLoadFailed,
         message: failure.message,
         onRetry: _group.retryApprovals,
       ),
@@ -77,17 +75,17 @@ class _GroupApprovalsScreenState extends State<GroupApprovalsScreen> {
     ApprovalsUnavailable() => [
       SangaEmptyMessage(
         icon: Icons.lock_outline_rounded,
-        title: 'No longer available',
-        message: 'You can’t see these requests any more. Your role in the group may have changed.',
-        actionLabel: 'Back',
+        title: GroupCopy.requestsUnavailableTitle,
+        message: GroupCopy.requestsUnavailableMessage,
+        actionLabel: GroupCopy.back,
         onAction: context.pop,
       ),
     ],
     ApprovalsLoaded(:final approvals) when approvals.isEmpty => [
       const SangaEmptyMessage(
         icon: Icons.check_circle_outline_rounded,
-        title: 'All caught up',
-        message: 'When a ride goes past someone’s limit, it lands here for your OK.',
+        title: GroupCopy.allCaughtUp,
+        message: GroupCopy.allCaughtUpMessage,
       ),
     ],
     ApprovalsLoaded(:final approvals, :final deciding, :final isStale) => [
@@ -112,7 +110,7 @@ class _GroupApprovalsScreenState extends State<GroupApprovalsScreen> {
   @override
   Widget build(BuildContext context) {
     return WalletPage(
-      title: 'Ride requests',
+      title: GroupCopy.rideRequests,
       body: Obx(() {
         final state = _group.approvalsState;
         return SangaHandoff(

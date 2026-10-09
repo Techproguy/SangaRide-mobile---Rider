@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:sanga_ride/model/groups/group_models.dart';
 import 'package:sanga_ride/view/groups/group_copy.dart';
-import 'package:sanga_ride/view/wallet/wallet_format.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 class ApprovalCard extends StatelessWidget {
@@ -35,22 +34,22 @@ class ApprovalCard extends StatelessWidget {
             children: [
               Text(GroupCopy.approvalLine(approval), style: SangaTextStyles.cardTitle),
               SangaRouteSummary(pickup: approval.pickup, dropoff: approval.dropoff),
-              if (purpose != null) Text('For: $purpose', style: SangaTextStyles.cardSubtitle),
-              Text('Fare ${WalletFormat.money(approval.fare)}', style: SangaTextStyles.cardValue),
+              if (purpose != null) Text(GroupCopy.forPurpose(purpose), style: SangaTextStyles.cardSubtitle),
+              Text(GroupCopy.fare(approval.fare), style: SangaTextStyles.cardValue),
               if (approval.expiresAt case final expiresAt?) _ExpiryLine(expiresAt: expiresAt, onExpired: onExpired),
               Row(
                 spacing: SangaSpacing.sm,
                 children: [
                   Expanded(
                     child: SangaButton.outline(
-                      label: 'Decline',
+                      label: GroupCopy.decline,
                       size: SangaButtonSize.compact,
                       onPressed: isLocked ? null : onDecline,
                     ),
                   ),
                   Expanded(
                     child: SangaButton.primary(
-                      label: 'Approve',
+                      label: GroupCopy.approve,
                       size: SangaButtonSize.compact,
                       isLoading: isDeciding,
                       onPressed: isLocked ? null : onApprove,
@@ -78,7 +77,7 @@ class _ExpiryLine extends StatelessWidget {
       endsAt: expiresAt,
       onFinished: onExpired,
       builder: (context, remaining) => Text(
-        remaining == Duration.zero ? 'This request has closed' : GroupCopy.approvalExpiry(remaining),
+        remaining == Duration.zero ? GroupCopy.requestClosed : GroupCopy.approvalExpiry(remaining),
         style: SangaTextStyles.caption,
       ),
     );

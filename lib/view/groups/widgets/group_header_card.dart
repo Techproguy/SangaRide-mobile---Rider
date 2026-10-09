@@ -11,7 +11,7 @@ class GroupHeaderCard extends StatelessWidget {
   String get _caption {
     final company = detail.company?.rcNumber;
     final count = GroupCopy.membersCount(detail.activeCount);
-    return company == null ? count : '$count · $company';
+    return company == null ? count : GroupCopy.countWithCompany(count, company);
   }
 
   @override

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:sanga_ride/controller/rider/groups/group_controller.dart';
 import 'package:sanga_ride/model/groups/group_models.dart';
 import 'package:sanga_ride/model/location/place.dart';
+import 'package:sanga_ride/view/groups/group_copy.dart';
 import 'package:sanga_ride/view/groups/member/member_setting_page.dart';
 import 'package:sanga_ride/view/groups/widgets/group_member_gate.dart';
 import 'package:sanga_ride/view/ride/widgets/place_search_sheet.dart';
@@ -18,7 +19,7 @@ class MemberPlacesScreen extends StatelessWidget {
     return GroupMemberGate(
       groupId: groupId,
       memberId: memberId,
-      title: 'Approved places',
+      title: GroupCopy.approvedPlacesTitle,
       builder: (context, group, detail, member) => _Form(group: group, member: member),
     );
   }
@@ -40,8 +41,8 @@ class _FormState extends State<_Form> {
   late List<ApprovedPlace> _places = [...widget.member.limits.approvedPlaces];
 
   String? _validate(Place place) {
-    if (_places.length >= maxPlaces) return 'You can add up to $maxPlaces places.';
-    if (_places.any((entry) => entry.place.isSameAs(place))) return 'That place is already on the list.';
+    if (_places.length >= maxPlaces) return GroupCopy.placesCap(maxPlaces);
+    if (_places.any((entry) => entry.place.isSameAs(place))) return GroupCopy.placeAlreadyListed;
     return null;
   }
 
@@ -49,7 +50,7 @@ class _FormState extends State<_Form> {
     final place = await PlaceSearchSheet.show(
       context,
       kind: SangaStopKind.dropoff,
-      hintText: 'Search for a place',
+      hintText: GroupCopy.searchForPlace,
       onPick: _validate,
     );
     if (place == null || !mounted) return;
@@ -62,7 +63,7 @@ class _FormState extends State<_Form> {
   Widget build(BuildContext context) {
     final name = widget.member.firstName;
     return MemberSettingPage(
-      title: 'Approved places',
+      title: GroupCopy.approvedPlacesTitle,
       group: widget.group,
       member: widget.member,
       onSave: () => saveMemberPatch(
@@ -72,23 +73,20 @@ class _FormState extends State<_Form> {
         patch: MemberPatch(limits: widget.member.limits.copyWith(approvedPlaces: _places)),
       ),
       children: [
-        Text(
-          'When there are places on this list, $name’s rides have to start or end at one of them.',
-          style: SangaTextStyles.body,
-        ),
-        SangaButton.outline(label: 'Add a place', onPressed: _places.length >= maxPlaces ? null : _add),
+        Text(GroupCopy.placesLead(name), style: SangaTextStyles.body),
+        SangaButton.outline(label: GroupCopy.addPlace, onPressed: _places.length >= maxPlaces ? null : _add),
         if (_places.isEmpty)
           SangaEmptyMessage(
             icon: Icons.location_on_outlined,
-            title: 'Anywhere goes',
-            message: 'No places yet, so $name can ride to and from anywhere.',
+            title: GroupCopy.anywhereGoes,
+            message: GroupCopy.noPlacesYet(name),
           )
         else
           Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             spacing: SangaSpacing.sm,
             children: [
-              const SangaSectionHeader('Approved places'),
+              const SangaSectionHeader(GroupCopy.approvedPlacesTitle),
               SangaListGroup(
                 children: [
                   for (final entry in _places)
@@ -97,7 +95,7 @@ class _FormState extends State<_Form> {
                       subtitle: entry.place.address,
                       onTap: null,
                       trailing: IconButton(
-                        tooltip: 'Remove ${entry.label}',
+                        tooltip: GroupCopy.removePlace(entry.label),
                         onPressed: () => _remove(entry),
                         icon: const Icon(Icons.remove_circle_outline_rounded, color: SangaColors.dangerStrong),
                       ),

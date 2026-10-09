@@ -34,6 +34,8 @@ class MemberPermissions {
   };
 }
 
+enum MemberAlertKind { tripStarted, tripEnded, sos, overLimit }
+
 class MemberAlerts {
   const MemberAlerts({required this.tripStarted, required this.tripEnded, required this.sos, required this.overLimit});
 

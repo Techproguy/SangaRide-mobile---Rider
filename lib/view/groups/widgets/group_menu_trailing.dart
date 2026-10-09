@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:sanga_ride/controller/rider/groups/groups_controller.dart';
 import 'package:sanga_ride/model/groups/group_models.dart';
+import 'package:sanga_ride/view/groups/group_copy.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 class GroupMenuTrailing extends StatefulWidget {
@@ -28,7 +29,7 @@ class _GroupMenuTrailingState extends State<GroupMenuTrailing> {
 
   Widget _invites(int count) {
     if (count == 0) return const SizedBox.shrink();
-    return SangaTag.scheduled(label: count == 1 ? '1 invite' : '$count invites', icon: Icons.mail_outline_rounded);
+    return SangaTag.scheduled(label: GroupCopy.invitesCount(count), icon: Icons.mail_outline_rounded);
   }
 
   @override

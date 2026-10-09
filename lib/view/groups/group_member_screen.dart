@@ -19,7 +19,7 @@ class GroupMemberScreen extends StatelessWidget {
     return GroupMemberGate(
       groupId: groupId,
       memberId: memberId,
-      title: 'Manage member',
+      title: GroupCopy.manageMember,
       builder: (context, group, detail, member) => _MemberMenu(group: group, detail: detail, member: member),
     );
   }
@@ -52,7 +52,7 @@ class _MemberMenu extends StatelessWidget {
   Widget _relationRow(BuildContext context) => _row(
     context,
     icon: Icons.favorite_border_rounded,
-    title: 'Relation',
+    title: GroupCopy.relationTitle,
     subtitle: member.relation,
     route: GroupRoutes.relationOf(detail.id, member.id),
   );
@@ -65,49 +65,49 @@ class _MemberMenu extends StatelessWidget {
       _row(
         context,
         icon: Icons.tune_rounded,
-        title: 'Permissions',
+        title: GroupCopy.permissionsTitle,
         subtitle: GroupCopy.permissionsSummary(member.permissions),
         route: route(GroupRoutes.permissionsOf),
       ),
       _row(
         context,
         icon: Icons.payments_outlined,
-        title: 'Spending limit',
+        title: GroupCopy.spendingLimitTitle,
         subtitle: GroupCopy.spendSummary(limits),
         route: route(GroupRoutes.spendingOf),
       ),
       _row(
         context,
         icon: Icons.directions_car_filled_outlined,
-        title: 'Ride limit',
+        title: GroupCopy.rideLimitTitle,
         subtitle: GroupCopy.ridesSummary(limits),
         route: route(GroupRoutes.rideLimitOf),
       ),
       _row(
         context,
         icon: Icons.location_on_outlined,
-        title: 'Approved places',
+        title: GroupCopy.approvedPlacesTitle,
         subtitle: GroupCopy.placesSummary(limits),
         route: route(GroupRoutes.placesOf),
       ),
       _row(
         context,
         icon: Icons.schedule_rounded,
-        title: 'Time window',
+        title: GroupCopy.timeWindowTitle,
         subtitle: GroupCopy.timeSummary(limits, localizations),
         route: route(GroupRoutes.timeOf),
       ),
       _row(
         context,
         icon: Icons.local_taxi_outlined,
-        title: 'Ride types',
+        title: GroupCopy.rideTypesTitle,
         subtitle: GroupCopy.typesSummary(limits),
         route: route(GroupRoutes.rideTypesOf),
       ),
       _row(
         context,
         icon: Icons.notifications_none_rounded,
-        title: 'Alerts',
+        title: GroupCopy.alertsTitle,
         subtitle: GroupCopy.alertsSummary(member.alerts),
         route: route(GroupRoutes.alertsOf),
       ),
@@ -122,7 +122,7 @@ class _MemberMenu extends StatelessWidget {
       icon: Icons.shield_outlined,
       title: promote ? GroupCopy.adminPrompt(member) : GroupCopy.demotePrompt(member),
       message: promote ? GroupCopy.adminMessage(member, detail.name) : GroupCopy.demoteMessage(member),
-      actionLabel: promote ? 'Make admin' : 'Make member',
+      actionLabel: promote ? GroupCopy.makeAdmin : GroupCopy.makeMember,
     );
     if (!confirmed || !context.mounted) return;
     final failure = await group.updateMember(
@@ -131,13 +131,10 @@ class _MemberMenu extends StatelessWidget {
     );
     if (!context.mounted) return;
     if (failure != null) {
-      SangaToast.show('${failure.title}. ${failure.message}', tone: SangaToastTone.error);
+      SangaToast.show(GroupCopy.failureText(failure), tone: SangaToastTone.error);
       return;
     }
-    SangaToast.show(
-      promote ? '${member.firstName} is now an admin' : '${member.firstName} is now a member',
-      tone: SangaToastTone.success,
-    );
+    SangaToast.show(GroupCopy.roleChanged(member.firstName, promoted: promote), tone: SangaToastTone.success);
   }
 
   Future<void> _remove(BuildContext context) async {
@@ -148,20 +145,17 @@ class _MemberMenu extends StatelessWidget {
       title: GroupCopy.removePrompt(member),
       message: GroupCopy.removeMessage(member, detail.name),
       actionLabel: GroupCopy.removeAction(member),
-      secondaryLabel: 'Keep',
+      secondaryLabel: GroupCopy.keep,
       isDestructive: true,
     );
     if (!confirmed || !context.mounted) return;
     final failure = await group.removeMember(member.id);
     if (!context.mounted) return;
     if (failure != null && failure != GroupFailure.memberNotFound) {
-      SangaToast.show('${failure.title}. ${failure.message}', tone: SangaToastTone.error);
+      SangaToast.show(GroupCopy.failureText(failure), tone: SangaToastTone.error);
       return;
     }
-    SangaToast.show(
-      member.isInvited ? 'Invite cancelled' : '${member.firstName} was removed',
-      tone: SangaToastTone.success,
-    );
+    SangaToast.show(GroupCopy.memberRemoved(member), tone: SangaToastTone.success);
     context.pop();
   }
 
@@ -169,7 +163,7 @@ class _MemberMenu extends StatelessWidget {
   Widget build(BuildContext context) {
     final canChangeRole = !member.isInvited && (!_isManager || detail.role == GroupRole.owner);
     return SangaPageLayout(
-      title: 'Manage member',
+      title: GroupCopy.manageMember,
       children: [
         Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -185,10 +179,8 @@ class _MemberMenu extends StatelessWidget {
                       size: 36,
                       child: Icon(_isManager ? Icons.person_outline_rounded : Icons.shield_outlined),
                     ),
-                    title: _isManager ? 'Make member' : 'Make admin',
-                    subtitle: _isManager
-                        ? 'They stay in, without managing the group.'
-                        : 'They can manage the group with you.',
+                    title: _isManager ? GroupCopy.makeMember : GroupCopy.makeAdmin,
+                    subtitle: _isManager ? GroupCopy.staysInWithoutManaging : GroupCopy.canManageWithYou,
                     onTap: () => _changeRole(context),
                   ),
                 SangaListRow(

@@ -48,14 +48,14 @@ class GroupInviteCard extends StatelessWidget {
                 children: [
                   Expanded(
                     child: SangaButton.outline(
-                      label: 'Decline',
+                      label: GroupCopy.decline,
                       size: SangaButtonSize.compact,
                       onPressed: isBusy ? null : onDecline,
                     ),
                   ),
                   Expanded(
                     child: SangaButton.primary(
-                      label: 'Accept',
+                      label: GroupCopy.accept,
                       size: SangaButtonSize.compact,
                       onPressed: isBusy ? null : onAccept,
                     ),

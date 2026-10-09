@@ -15,7 +15,7 @@ class MemberRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return SangaListRow(
       leading: MemberAvatar(name: member.name, photoUrl: member.photoUrl),
-      title: isYou ? '${member.name} (You)' : member.name,
+      title: isYou ? GroupCopy.youSuffix(member.name) : member.name,
       subtitle: GroupCopy.roleCaption(member),
       trailing: onTap == null ? null : SangaListRow.chevron,
       onTap: onTap,

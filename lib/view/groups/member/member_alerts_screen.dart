@@ -17,7 +17,7 @@ class MemberAlertsScreen extends StatelessWidget {
     return GroupMemberGate(
       groupId: groupId,
       memberId: memberId,
-      title: 'Alerts',
+      title: GroupCopy.alertsTitle,
       builder: (context, group, detail, member) => _Form(group: group, member: member),
     );
   }
@@ -40,7 +40,7 @@ class _FormState extends State<_Form> {
   Widget build(BuildContext context) {
     final name = widget.member.firstName;
     return MemberSettingPage(
-      title: 'Alerts',
+      title: GroupCopy.alertsTitle,
       group: widget.group,
       member: widget.member,
       onSave: () => saveMemberPatch(
@@ -50,34 +50,34 @@ class _FormState extends State<_Form> {
         patch: MemberPatch(alerts: _draft),
       ),
       children: [
-        Text('What should we ping you about for $name?', style: SangaTextStyles.body),
+        Text(GroupCopy.alertsLead(name), style: SangaTextStyles.body),
         MemberToggleList(
           rows: [
             MemberToggle(
               icon: Icons.play_circle_outline_rounded,
-              title: GroupCopy.alertTitle('tripStarted'),
-              subtitle: GroupCopy.alertBody('tripStarted', name),
+              title: GroupCopy.alertTitle(MemberAlertKind.tripStarted),
+              subtitle: GroupCopy.alertBody(MemberAlertKind.tripStarted, name),
               value: _draft.tripStarted,
               onChanged: (value) => setState(() => _draft = _draft.copyWith(tripStarted: value)),
             ),
             MemberToggle(
               icon: Icons.flag_outlined,
-              title: GroupCopy.alertTitle('tripEnded'),
-              subtitle: GroupCopy.alertBody('tripEnded', name),
+              title: GroupCopy.alertTitle(MemberAlertKind.tripEnded),
+              subtitle: GroupCopy.alertBody(MemberAlertKind.tripEnded, name),
               value: _draft.tripEnded,
               onChanged: (value) => setState(() => _draft = _draft.copyWith(tripEnded: value)),
             ),
             MemberToggle(
               icon: Icons.sos_rounded,
-              title: GroupCopy.alertTitle('sos'),
-              subtitle: GroupCopy.alertBody('sos', name),
+              title: GroupCopy.alertTitle(MemberAlertKind.sos),
+              subtitle: GroupCopy.alertBody(MemberAlertKind.sos, name),
               value: _draft.sos,
               onChanged: (value) => setState(() => _draft = _draft.copyWith(sos: value)),
             ),
             MemberToggle(
               icon: Icons.payments_outlined,
-              title: GroupCopy.alertTitle('overLimit'),
-              subtitle: GroupCopy.alertBody('overLimit', name),
+              title: GroupCopy.alertTitle(MemberAlertKind.overLimit),
+              subtitle: GroupCopy.alertBody(MemberAlertKind.overLimit, name),
               value: _draft.overLimit,
               onChanged: (value) => setState(() => _draft = _draft.copyWith(overLimit: value)),
             ),

@@ -61,7 +61,7 @@ class _GroupsHubScreenState extends State<GroupsHubScreen> {
       case GroupDone(:final groupId) when accept && groupId != null:
         _openGroup(groupId);
       case GroupDone():
-        SangaToast.show('Invite declined');
+        SangaToast.show(GroupCopy.inviteDeclined);
       case GroupRejected(:final failure):
         SangaToast.show(failure.message, tone: SangaToastTone.error);
     }
@@ -80,7 +80,7 @@ class _GroupsHubScreenState extends State<GroupsHubScreen> {
     ],
     _HubStage.failed => [
       SangaFailureMessage(
-        title: 'We couldn’t load this',
+        title: GroupCopy.loadFailed,
         message: state is GroupsFailed ? state.failure.message : GroupFailure.connection.message,
         onRetry: _groups.reload,
       ),

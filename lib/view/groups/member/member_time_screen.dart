@@ -17,7 +17,7 @@ class MemberTimeScreen extends StatelessWidget {
     return GroupMemberGate(
       groupId: groupId,
       memberId: memberId,
-      title: 'Time window',
+      title: GroupCopy.timeWindowTitle,
       builder: (context, group, detail, member) => _Form(group: group, member: member),
     );
   }
@@ -52,12 +52,12 @@ class _FormState extends State<_Form> {
   }
 
   Future<void> _pickFrom() async {
-    final value = await _pick('Rides can start from', _from);
+    final value = await _pick(GroupCopy.ridesStartFrom, _from);
     if (value != null && mounted) setState(() => _from = value);
   }
 
   Future<void> _pickTo() async {
-    final value = await _pick('Rides can run until', _to);
+    final value = await _pick(GroupCopy.ridesRunUntil, _to);
     if (value != null && mounted) setState(() => _to = value);
   }
 
@@ -67,7 +67,7 @@ class _FormState extends State<_Form> {
     final name = widget.member.firstName;
     final isValid = !_hasWindow || _from != _to;
     return MemberSettingPage(
-      title: 'Time window',
+      title: GroupCopy.timeWindowTitle,
       group: widget.group,
       member: widget.member,
       canSave: isValid,
@@ -88,8 +88,8 @@ class _FormState extends State<_Form> {
               padding: const EdgeInsets.symmetric(horizontal: SangaSpacing.md),
               child: SangaToggleRow(
                 leading: const SangaIconBadge(child: Icon(Icons.schedule_rounded)),
-                title: 'Only allow rides at set times',
-                subtitle: 'Outside these hours, $name can’t book a group ride.',
+                title: GroupCopy.onlyAtSetTimes,
+                subtitle: GroupCopy.outsideHours(name),
                 value: _hasWindow,
                 onChanged: (value) => setState(() => _hasWindow = value),
               ),
@@ -107,17 +107,21 @@ class _FormState extends State<_Form> {
                       children: [
                         Expanded(
                           child: _TimeField(
-                            label: 'From',
+                            label: GroupCopy.from,
                             value: GroupCopy.clock(_from, localizations),
                             onTap: _pickFrom,
                           ),
                         ),
                         Expanded(
-                          child: _TimeField(label: 'To', value: GroupCopy.clock(_to, localizations), onTap: _pickTo),
+                          child: _TimeField(
+                            label: GroupCopy.to,
+                            value: GroupCopy.clock(_to, localizations),
+                            onTap: _pickTo,
+                          ),
                         ),
                       ],
                     ),
-                    if (!isValid) const SangaFieldError('Pick two different times.'),
+                    if (!isValid) const SangaFieldError(GroupCopy.pickTwoTimes),
                   ],
                 ),
               ),

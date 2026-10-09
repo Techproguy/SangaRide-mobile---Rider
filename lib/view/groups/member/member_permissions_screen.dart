@@ -17,7 +17,7 @@ class MemberPermissionsScreen extends StatelessWidget {
     return GroupMemberGate(
       groupId: groupId,
       memberId: memberId,
-      title: 'Permissions',
+      title: GroupCopy.permissionsTitle,
       builder: (context, group, detail, member) => _Form(group: group, kind: detail.kind, member: member),
     );
   }
@@ -42,7 +42,7 @@ class _FormState extends State<_Form> {
     final kind = widget.kind;
     final name = widget.member.firstName;
     return MemberSettingPage(
-      title: 'Permissions',
+      title: GroupCopy.permissionsTitle,
       group: widget.group,
       member: widget.member,
       onSave: () => saveMemberPatch(

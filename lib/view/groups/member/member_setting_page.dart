@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sanga_ride/controller/rider/groups/group_controller.dart';
 import 'package:sanga_ride/model/groups/group_models.dart';
+import 'package:sanga_ride/view/groups/group_copy.dart';
 import 'package:sanga_ride/view/groups/widgets/member_summary.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
@@ -45,7 +46,7 @@ class _MemberSettingPageState extends State<MemberSettingPage> {
       title: widget.title,
       footer: Obx(
         () => SangaButton.primary(
-          label: 'Save settings',
+          label: GroupCopy.saveSettings,
           isLoading: widget.group.isBusy,
           onPressed: widget.canSave ? widget.onSave : null,
         ),
@@ -74,10 +75,10 @@ Future<void> saveMemberPatch({
   final failure = await group.updateMember(member.id, patch, base: member);
   if (!context.mounted) return;
   if (failure != null) {
-    SangaToast.show('${failure.title}. ${failure.message}', tone: SangaToastTone.error);
+    SangaToast.show(GroupCopy.failureText(failure), tone: SangaToastTone.error);
     return;
   }
-  SangaToast.show('Saved for ${member.firstName}', tone: SangaToastTone.success);
+  SangaToast.show(GroupCopy.savedFor(member.firstName), tone: SangaToastTone.success);
   context.pop();
 }
 

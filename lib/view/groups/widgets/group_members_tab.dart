@@ -38,8 +38,8 @@ class GroupMembersTab extends StatelessWidget {
                 children: [
                   SangaListRow(
                     leading: const SangaIconBadge(size: 40, child: Icon(Icons.person_add_alt_1_rounded)),
-                    title: 'Invite someone',
-                    subtitle: 'By phone number or with the invite code',
+                    title: GroupCopy.inviteSomeone,
+                    subtitle: GroupCopy.inviteHow,
                     onTap: onInvite,
                   ),
                 ],

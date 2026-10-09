@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:sanga_ride/controller/rider/groups/group_mutations.dart';
 import 'package:sanga_ride/core/api/api.dart';
 import 'package:sanga_ride/core/api/group_endpoints.dart';
+import 'package:sanga_ride/core/api/idempotency_intents.dart';
 import 'package:sanga_ride/model/groups/group_models.dart';
 import 'package:sanga_ride_core/sanga_ride_core.dart';
 
@@ -15,7 +16,7 @@ class GroupsController extends GetxController {
   final RxBool _isBusy = false.obs;
   StreamSubscription<void>? _resumeSubscription;
   DateTime? _loadedAt;
-  int _epoch = 0;
+  final Epoch _epoch = Epoch();
 
   Rx<GroupsState> get stateRx => _state;
 
@@ -42,7 +43,7 @@ class GroupsController extends GetxController {
   void onClose() {
     _resumeSubscription?.cancel();
     _mutations.dispose();
-    _epoch++;
+    _epoch.next();
     super.onClose();
   }
 
@@ -64,14 +65,14 @@ class GroupsController extends GetxController {
   }
 
   Future<void> reloadQuietly() async {
-    final epoch = ++_epoch;
+    final epoch = _epoch.next();
     try {
       final response = await _api.get(GroupEndpoints.groups, suppressErrorToast: true);
-      if (epoch != _epoch) return;
+      if (!_epoch.isCurrent(epoch)) return;
       _loadedAt = DateTime.now();
-      _state.value = GroupsLoaded(GroupsOverview.fromJson(_dataOf(response.data)));
+      _state.value = GroupsLoaded(GroupsOverview.fromJson(response.dataMapOrEmpty));
     } on Object catch (error) {
-      if (epoch != _epoch) return;
+      if (!_epoch.isCurrent(epoch)) return;
       final current = state;
       _state.value = current is GroupsLoaded
           ? GroupsLoaded(current.overview, isStale: true)
@@ -88,19 +89,23 @@ class GroupsController extends GetxController {
     final body = {'kind': kind.code, 'name': name.trim(), 'role': role, 'company': company?.toJson()};
     return _submit(
       signature: 'create:${kind.code}:${name.trim()}:$role',
-      intent: 'group-create',
+      intent: IdempotencyIntent.groupCreate,
       endpoint: GroupEndpoints.groups,
       body: body,
       reconcile: () => _reconcileCreate(kind, name.trim()),
     );
   }
 
-  Future<GroupOutcome> join(String code) =>
-      _submit(signature: 'join:$code', intent: 'group-join', endpoint: GroupEndpoints.join, body: {'code': code});
+  Future<GroupOutcome> join(String code) => _submit(
+    signature: 'join:$code',
+    intent: IdempotencyIntent.groupJoin,
+    endpoint: GroupEndpoints.join,
+    body: {'code': code},
+  );
 
   Future<GroupOutcome> accept(GroupInvite invite) => _submit(
     signature: 'accept:${invite.id}',
-    intent: 'invite-accept',
+    intent: IdempotencyIntent.inviteAccept,
     endpoint: GroupEndpoints.inviteAcceptOf(invite.id),
     body: null,
     reconcile: () => _reconcileJoined(invite.kind),
@@ -108,7 +113,7 @@ class GroupsController extends GetxController {
 
   Future<GroupOutcome> decline(GroupInvite invite) => _submit(
     signature: 'decline:${invite.id}',
-    intent: 'invite-decline',
+    intent: IdempotencyIntent.inviteDecline,
     endpoint: GroupEndpoints.inviteDeclineOf(invite.id),
     body: null,
     reconcile: () => _reconcileInviteGone(invite.id),
@@ -129,8 +134,7 @@ class GroupsController extends GetxController {
         intent: intent,
         send: (key) async {
           final response = await _api.post(endpoint, data: body, key: key, suppressErrorToast: true);
-          final data = JsonReader.of(response.data).raw['data'];
-          return JsonReader.of(data).strOrNull('id');
+          return JsonReader(response.dataMapOrEmpty).strOrNull('id');
         },
         reconcile: reconcile,
       );
@@ -163,8 +167,6 @@ class GroupsController extends GetxController {
 
   Future<GroupsOverview> _fetchOverview() async {
     final response = await _api.get(GroupEndpoints.groups, suppressErrorToast: true);
-    return GroupsOverview.fromJson(_dataOf(response.data));
+    return GroupsOverview.fromJson(response.dataMapOrEmpty);
   }
-
-  Map<String, dynamic> _dataOf(dynamic body) => JsonReader.of(JsonReader.of(body).raw['data']).raw;
 }

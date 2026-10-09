@@ -19,9 +19,9 @@ import 'package:sanga_ride/view/wallet/widgets/wallet_page.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 enum GroupTab {
-  members('Members'),
-  wallet('Wallet'),
-  rides('Rides');
+  members(GroupCopy.tabMembers),
+  wallet(GroupCopy.tabWallet),
+  rides(GroupCopy.tabRides);
 
   const GroupTab(this.label);
 
@@ -78,18 +78,18 @@ class _GroupScreenState extends State<GroupScreen> with SingleTickerProviderStat
       icon: Icons.door_back_door_outlined,
       title: GroupCopy.leaveTitle(detail.kind),
       message: GroupCopy.leaveMessage(detail.name),
-      actionLabel: 'Leave',
-      secondaryLabel: 'Stay',
+      actionLabel: GroupCopy.leave,
+      secondaryLabel: GroupCopy.stay,
       isDestructive: true,
     );
     if (!confirmed || !mounted) return;
     final failure = await _group.leave();
     if (!mounted) return;
     if (failure != null) {
-      SangaToast.show('${failure.title}. ${failure.message}', tone: SangaToastTone.error);
+      SangaToast.show(GroupCopy.failureText(failure), tone: SangaToastTone.error);
       return;
     }
-    SangaToast.show('You left ${detail.name}', tone: SangaToastTone.success);
+    SangaToast.show(GroupCopy.youLeft(detail.name), tone: SangaToastTone.success);
     context.pop();
     WidgetsBinding.instance.addPostFrameCallback((_) => GroupControllers.release(detail.id));
   }
@@ -140,7 +140,7 @@ class _GroupScreenState extends State<GroupScreen> with SingleTickerProviderStat
           title: failure.title,
           message: failure.message,
           icon: failure.isNotFound ? Icons.search_off_rounded : Icons.cloud_off_rounded,
-          retryLabel: failure.isNotFound ? 'Back' : 'Try again',
+          retryLabel: failure.isNotFound ? GroupCopy.back : GroupCopy.tryAgain,
           onRetry: failure.isNotFound ? context.pop : _group.reload,
         ),
       ],
@@ -160,7 +160,7 @@ class _GroupScreenState extends State<GroupScreen> with SingleTickerProviderStat
       final state = _group.state;
       final detail = state is GroupDetailLoaded ? state.detail : null;
       return WalletPage(
-        title: detail == null ? 'Family and business' : GroupCopy.label(detail.kind),
+        title: detail == null ? GroupCopy.familyAndBusiness : GroupCopy.label(detail.kind),
         tabs: detail == null ? null : Column(children: [_header(detail), _tabBar()]),
         body: SangaHandoff(value: _stageOf(state), child: _body(state)),
       );

@@ -55,6 +55,140 @@ abstract final class GroupCopy {
 
   static const String invitesHeading = 'Waiting for you';
 
+  static const String back = 'Back';
+  static const String tryAgain = 'Try again';
+  static const String confirm = 'Confirm';
+  static const String optional = 'Optional';
+  static const String copy = 'Copy';
+  static const String share = 'Share';
+  static const String review = 'Review';
+  static const String decline = 'Decline';
+  static const String accept = 'Accept';
+  static const String approve = 'Approve';
+  static const String keep = 'Keep';
+  static const String leave = 'Leave';
+  static const String stay = 'Stay';
+  static const String join = 'Join';
+  static const String everyone = 'Everyone';
+  static const String from = 'From';
+  static const String to = 'To';
+  static const String tabMembers = 'Members';
+  static const String tabWallet = 'Wallet';
+  static const String tabRides = 'Rides';
+  static const String familyAndBusiness = 'Family and business';
+  static const String loadFailed = 'We couldn’t load this';
+  static const String inviteDeclined = 'Invite declined';
+  static const String requestsLoadFailed = 'We couldn’t load the requests';
+  static const String requestsUnavailableTitle = 'No longer available';
+  static const String requestsUnavailableMessage =
+      'You can’t see these requests any more. Your role in the group may have changed.';
+  static const String allCaughtUp = 'All caught up';
+  static const String allCaughtUpMessage = 'When a ride goes past someone’s limit, it lands here for your OK.';
+  static const String rideRequests = 'Ride requests';
+  static const String requestClosed = 'This request has closed';
+  static const String rcNumber = 'RC number';
+  static const String companyAddress = 'Company address';
+  static const String inviteSomeone = 'Invite someone';
+  static const String inviteHow = 'By phone number or with the invite code';
+  static const String sendInvite = 'Send invite';
+  static const String whoAreTheyToYou = 'Who are they to you?';
+  static const String makeThemAdmin = 'Make them an admin';
+  static const String adminCan = 'Admins can invite people, set limits and top up the wallet.';
+  static const String codeCopied = 'Code copied';
+  static const String inviteCode = 'Invite code';
+  static const String inviteCodeHint = 'XXXX-XXXX';
+  static const String shareYourCode = 'Or share your invite code';
+  static const String manageMember = 'Manage member';
+  static const String makeAdmin = 'Make admin';
+  static const String makeMember = 'Make member';
+  static const String staysInWithoutManaging = 'They stay in, without managing the group.';
+  static const String canManageWithYou = 'They can manage the group with you.';
+  static const String notInGroupTitle = 'They’re not in the group any more';
+  static const String notInGroupMessage = 'Head back to see who’s in.';
+  static const String relationTitle = 'Relation';
+  static const String permissionsTitle = 'Permissions';
+  static const String spendingLimitTitle = 'Spending limit';
+  static const String rideLimitTitle = 'Ride limit';
+  static const String approvedPlacesTitle = 'Approved places';
+  static const String timeWindowTitle = 'Time window';
+  static const String rideTypesTitle = 'Ride types';
+  static const String alertsTitle = 'Alerts';
+  static const String saveSettings = 'Save settings';
+  static const String placeAlreadyListed = 'That place is already on the list.';
+  static const String searchForPlace = 'Search for a place';
+  static const String addPlace = 'Add a place';
+  static const String anywhereGoes = 'Anywhere goes';
+  static const String limitRidesPerDay = 'Limit rides per day';
+  static const String ridesPerDay = 'Rides per day';
+  static const String rideTypesLoadFailed = 'We couldn’t load the ride types';
+  static const String setMonthlyLimit = 'Set a monthly limit';
+  static const String enterAmount = 'Enter amount';
+  static const String overLimitHeading = 'When a ride goes over the limit';
+  static const String ridesStartFrom = 'Rides can start from';
+  static const String ridesRunUntil = 'Rides can run until';
+  static const String onlyAtSetTimes = 'Only allow rides at set times';
+  static const String pickTwoTimes = 'Pick two different times.';
+
+  static String failureText(GroupFailure failure) => '${failure.title}. ${failure.message}';
+
+  static String approvalDecided(String firstName, {required bool approved}) =>
+      approved ? '$firstName’s ride is approved' : '$firstName’s ride was declined';
+
+  static String inviteSent(String maskedPhone) => 'Invite sent to $maskedPhone';
+
+  static String roleChanged(String firstName, {required bool promoted}) =>
+      promoted ? '$firstName is now an admin' : '$firstName is now a member';
+
+  static String memberRemoved(GroupMember member) =>
+      member.isInvited ? 'Invite cancelled' : '${member.firstName} was removed';
+
+  static String youLeft(String groupName) => 'You left $groupName';
+
+  static String alertsLead(String firstName) => 'What should we ping you about for $firstName?';
+
+  static String placesCap(int maxPlaces) => 'You can add up to $maxPlaces places.';
+
+  static String placesLead(String firstName) =>
+      'When there are places on this list, $firstName’s rides have to start or end at one of them.';
+
+  static String noPlacesYet(String firstName) => 'No places yet, so $firstName can ride to and from anywhere.';
+
+  static String removePlace(String label) => 'Remove $label';
+
+  static String whoIsToYou(String firstName) => 'Who is $firstName to you?';
+
+  static String rideCount(int count) => count == 1 ? '1 ride' : '$count rides';
+
+  static String capRides(String firstName) => 'Cap how many group rides $firstName can take each day.';
+
+  static String pickRideTypes(String firstName) => 'Pick the rides $firstName can book with the group wallet.';
+
+  static String savedFor(String firstName) => 'Saved for $firstName';
+
+  static String setAtLeast(int minimum) => 'Set at least ${WalletFormat.money(minimum)}';
+
+  static String spendComfort(String firstName) => 'So $firstName can’t spend more than you’re comfortable with.';
+
+  static String spentThisMonth(int amount) => 'Spent this month: ${WalletFormat.money(amount)}';
+
+  static String outsideHours(String firstName) => 'Outside these hours, $firstName can’t book a group ride.';
+
+  static String forPurpose(String purpose) => 'For: $purpose';
+
+  static String fare(int amount) => 'Fare ${WalletFormat.money(amount)}';
+
+  static String countWithCompany(String count, String company) => '$count · $company';
+
+  static String invitesCount(int count) => count == 1 ? '1 invite' : '$count invites';
+
+  static String shareText({required GroupKind kind, required String groupName, required String formattedCode}) =>
+      'Join $groupName on Sanga Ride. Open the app, go to Menu, then ${label(kind)}, tap '
+      '"${joinTile(kind)}" and enter this code: $formattedCode';
+
+  static String anyoneCanAsk(String groupName) => 'Anyone with this code can ask to join $groupName.';
+
+  static String youSuffix(String name) => '$name (You)';
+
   static String inviteLine(GroupInvite invite, {DateTime? now}) {
     final days = invite.expiresAt.difference(now ?? DateTime.now()).inDays;
     final expiry = switch (days) {
@@ -68,11 +202,6 @@ abstract final class GroupCopy {
   static List<String> relations(GroupKind kind) => switch (kind) {
     GroupKind.family => const ['Spouse', 'Son', 'Daughter', 'Parent', 'Sibling', 'Other'],
     GroupKind.business => const ['Employee', 'Manager', 'Contractor', 'Other'],
-  };
-
-  static String memberNoun(GroupKind kind) => switch (kind) {
-    GroupKind.family => 'family member',
-    GroupKind.business => 'team member',
   };
 
   static String membersCount(int count) => count == 1 ? '1 member' : '$count members';
@@ -129,18 +258,18 @@ abstract final class GroupCopy {
     OverLimitAction.usePersonal => Icons.account_balance_wallet_outlined,
   };
 
-  static String alertTitle(String key) => switch (key) {
-    'tripStarted' => 'Trip started',
-    'tripEnded' => 'Trip ended',
-    'sos' => 'SOS alerts',
-    _ => 'Over the spending limit',
+  static String alertTitle(MemberAlertKind kind) => switch (kind) {
+    MemberAlertKind.tripStarted => 'Trip started',
+    MemberAlertKind.tripEnded => 'Trip ended',
+    MemberAlertKind.sos => 'SOS alerts',
+    MemberAlertKind.overLimit => 'Over the spending limit',
   };
 
-  static String alertBody(String key, String firstName) => switch (key) {
-    'tripStarted' => 'Know when $firstName’s ride gets going.',
-    'tripEnded' => 'Know when $firstName reaches the drop off.',
-    'sos' => 'Hear straight away if $firstName asks for help.',
-    _ => 'Hear when a ride goes past $firstName’s monthly limit.',
+  static String alertBody(MemberAlertKind kind, String firstName) => switch (kind) {
+    MemberAlertKind.tripStarted => 'Know when $firstName’s ride gets going.',
+    MemberAlertKind.tripEnded => 'Know when $firstName reaches the drop off.',
+    MemberAlertKind.sos => 'Hear straight away if $firstName asks for help.',
+    MemberAlertKind.overLimit => 'Hear when a ride goes past $firstName’s monthly limit.',
   };
 
   static String spendSummary(MemberLimits limits) {

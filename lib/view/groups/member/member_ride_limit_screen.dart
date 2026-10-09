@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:sanga_ride/controller/rider/groups/group_controller.dart';
 import 'package:sanga_ride/model/groups/group_models.dart';
+import 'package:sanga_ride/view/groups/group_copy.dart';
 import 'package:sanga_ride/view/groups/member/member_setting_page.dart';
 import 'package:sanga_ride/view/groups/widgets/group_member_gate.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
@@ -16,7 +17,7 @@ class MemberRideLimitScreen extends StatelessWidget {
     return GroupMemberGate(
       groupId: groupId,
       memberId: memberId,
-      title: 'Ride limit',
+      title: GroupCopy.rideLimitTitle,
       builder: (context, group, detail, member) => _Form(group: group, member: member),
     );
   }
@@ -39,13 +40,13 @@ class _FormState extends State<_Form> {
   late bool _hasLimit = widget.member.limits.ridesPerDay != null;
   late int _perDay = widget.member.limits.ridesPerDay ?? defaultLimit;
 
-  String get _valueLabel => _perDay == 1 ? '1 ride' : '$_perDay rides';
+  String get _valueLabel => GroupCopy.rideCount(_perDay);
 
   @override
   Widget build(BuildContext context) {
     final name = widget.member.firstName;
     return MemberSettingPage(
-      title: 'Ride limit',
+      title: GroupCopy.rideLimitTitle,
       group: widget.group,
       member: widget.member,
       onSave: () => saveMemberPatch(
@@ -61,8 +62,8 @@ class _FormState extends State<_Form> {
               padding: const EdgeInsets.symmetric(horizontal: SangaSpacing.md),
               child: SangaToggleRow(
                 leading: const SangaIconBadge(child: Icon(Icons.directions_car_filled_outlined)),
-                title: 'Limit rides per day',
-                subtitle: 'Cap how many group rides $name can take each day.',
+                title: GroupCopy.limitRidesPerDay,
+                subtitle: GroupCopy.capRides(name),
                 value: _hasLimit,
                 onChanged: (value) => setState(() => _hasLimit = value),
               ),
@@ -71,7 +72,7 @@ class _FormState extends State<_Form> {
               Padding(
                 padding: const EdgeInsets.all(SangaSpacing.md),
                 child: SangaCounterField(
-                  label: 'Rides per day',
+                  label: GroupCopy.ridesPerDay,
                   icon: Icons.directions_car_filled_outlined,
                   valueLabel: _valueLabel,
                   value: _perDay,

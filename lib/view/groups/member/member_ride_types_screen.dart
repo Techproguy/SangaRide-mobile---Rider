@@ -4,8 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:sanga_ride/controller/rider/groups/group_controller.dart';
 import 'package:sanga_ride/controller/rider/ride_request_controller.dart';
+import 'package:sanga_ride/core/copy/common_copy.dart';
 import 'package:sanga_ride/model/groups/group_models.dart';
 import 'package:sanga_ride/model/ride/ride_request.dart';
+import 'package:sanga_ride/view/groups/group_copy.dart';
 import 'package:sanga_ride/view/groups/member/member_setting_page.dart';
 import 'package:sanga_ride/view/groups/widgets/group_member_gate.dart';
 import 'package:sanga_ride/view/ride/widgets/ride_option_image.dart';
@@ -22,7 +24,7 @@ class MemberRideTypesScreen extends StatelessWidget {
     return GroupMemberGate(
       groupId: groupId,
       memberId: memberId,
-      title: 'Ride types',
+      title: GroupCopy.rideTypesTitle,
       builder: (context, group, detail, member) => _Form(group: group, member: member),
     );
   }
@@ -90,22 +92,19 @@ class _FormState extends State<_Form> {
       final options = _booking.options.toList();
       final selection = _selectionOf(options);
       return MemberSettingPage(
-        title: 'Ride types',
+        title: GroupCopy.rideTypesTitle,
         group: widget.group,
         member: widget.member,
         canSave: options.isNotEmpty && selection.isNotEmpty,
         onSave: () => _save(options),
         children: [
-          Text(
-            'Pick the rides ${widget.member.firstName} can book with the group wallet.',
-            style: SangaTextStyles.body,
-          ),
+          Text(GroupCopy.pickRideTypes(widget.member.firstName), style: SangaTextStyles.body),
           if (options.isEmpty && _booking.isLoadingOptions)
             const Center(child: SangaActivityIndicator(size: 32))
           else if (options.isEmpty)
             SangaFailureMessage(
-              title: 'We couldn’t load the ride types',
-              message: 'Check your connection and give it another go.',
+              title: GroupCopy.rideTypesLoadFailed,
+              message: CommonCopy.connectionBody,
               onRetry: _booking.loadOptions,
             )
           else

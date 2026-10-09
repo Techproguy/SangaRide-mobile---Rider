@@ -19,15 +19,13 @@ class InviteCodeCard extends StatelessWidget {
   final String code;
   final VoidCallback onCopied;
 
-  String get _shareText =>
-      'Join $groupName on Sanga Ride. Open the app, go to Menu, then ${GroupCopy.label(kind)}, tap '
-      '"${GroupCopy.joinTile(kind)}" and enter this code: ${InviteCode.group(code)}';
+  String get _shareText => GroupCopy.shareText(kind: kind, groupName: groupName, formattedCode: InviteCode.group(code));
 
   @override
   Widget build(BuildContext context) {
     return SangaSectionCard(
-      title: 'Or share your invite code',
-      subtitle: 'Anyone with this code can ask to join $groupName.',
+      title: GroupCopy.shareYourCode,
+      subtitle: GroupCopy.anyoneCanAsk(groupName),
       children: [
         Padding(
           padding: const EdgeInsets.all(SangaSpacing.md),
@@ -44,11 +42,15 @@ class InviteCodeCard extends StatelessWidget {
                 spacing: SangaSpacing.sm,
                 children: [
                   Expanded(
-                    child: SangaButton.outline(label: 'Copy', size: SangaButtonSize.compact, onPressed: onCopied),
+                    child: SangaButton.outline(
+                      label: GroupCopy.copy,
+                      size: SangaButtonSize.compact,
+                      onPressed: onCopied,
+                    ),
                   ),
                   Expanded(
                     child: SangaButton.primary(
-                      label: 'Share',
+                      label: GroupCopy.share,
                       size: SangaButtonSize.compact,
                       onPressed: () => SharePlus.instance.share(ShareParams(text: _shareText)),
                     ),

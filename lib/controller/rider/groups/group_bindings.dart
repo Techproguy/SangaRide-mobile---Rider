@@ -11,8 +11,10 @@ void registerGroupControllers() {
 }
 
 abstract final class GroupControllers {
+  static String _tagOf(String groupId) => 'group:$groupId';
+
   static GroupController group(String groupId) {
-    final tag = 'group:$groupId';
+    final tag = _tagOf(groupId);
     if (!Get.isRegistered<GroupController>(tag: tag)) {
       Get.lazyPut(() => GroupController(groupId), tag: tag, fenix: true);
     }
@@ -20,7 +22,7 @@ abstract final class GroupControllers {
   }
 
   static void release(String groupId) {
-    final tag = 'group:$groupId';
+    final tag = _tagOf(groupId);
     if (Get.isRegistered<GroupController>(tag: tag)) Get.delete<GroupController>(tag: tag, force: true);
     final ridesTag = HistoryScope.group(groupId).tag;
     if (Get.isRegistered<RideHistoryController>(tag: ridesTag)) {

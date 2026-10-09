@@ -38,7 +38,7 @@ class _GroupJoinScreenState extends State<GroupJoinScreen> {
           when failure == GroupFailure.connection ||
               failure == GroupFailure.unknown ||
               failure == GroupFailure.unconfirmed:
-        SangaToast.show('${failure.title}. ${failure.message}', tone: SangaToastTone.error);
+        SangaToast.show(GroupCopy.failureText(failure), tone: SangaToastTone.error);
       case GroupRejected(:final failure):
         setState(() => _failure = failure);
     }
@@ -57,7 +57,7 @@ class _GroupJoinScreenState extends State<GroupJoinScreen> {
         listenable: _code,
         builder: (context, _) => Obx(
           () => SangaButton.primary(
-            label: 'Join',
+            label: GroupCopy.join,
             isLoading: _groups.isBusy,
             onPressed: InviteCode.isComplete(_code.text) ? _join : null,
           ),
@@ -70,11 +70,11 @@ class _GroupJoinScreenState extends State<GroupJoinScreen> {
           children: [
             Text(GroupCopy.joinLead(widget.kind), style: SangaTextStyles.body),
             SangaTextField(
-              label: 'Invite code',
+              label: GroupCopy.inviteCode,
               isRequired: true,
-              hintText: 'XXXX-XXXX',
+              hintText: GroupCopy.inviteCodeHint,
               controller: _code,
-              errorText: failure == null ? null : '${failure.title}. ${failure.message}',
+              errorText: failure == null ? null : GroupCopy.failureText(failure),
               textCapitalization: TextCapitalization.characters,
               textInputAction: TextInputAction.done,
               inputFormatters: const [InviteCodeFormatter()],

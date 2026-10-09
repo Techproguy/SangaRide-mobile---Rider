@@ -55,7 +55,7 @@ class _GroupCreateScreenState extends State<GroupCreateScreen> {
       case GroupRejected(:final failure) when failure == GroupFailure.nameRequired:
         setState(() => _nameError = failure.message);
       case GroupRejected(:final failure):
-        SangaToast.show('${failure.title}. ${failure.message}', tone: SangaToastTone.error);
+        SangaToast.show(GroupCopy.failureText(failure), tone: SangaToastTone.error);
     }
   }
 
@@ -64,7 +64,7 @@ class _GroupCreateScreenState extends State<GroupCreateScreen> {
     final kind = widget.kind;
     return SangaPageLayout(
       title: GroupCopy.createTile(kind),
-      footer: Obx(() => SangaButton.primary(label: 'Confirm', isLoading: _groups.isBusy, onPressed: _confirm)),
+      footer: Obx(() => SangaButton.primary(label: GroupCopy.confirm, isLoading: _groups.isBusy, onPressed: _confirm)),
       children: [
         Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -84,15 +84,15 @@ class _GroupCreateScreenState extends State<GroupCreateScreen> {
             ),
             if (kind == GroupKind.business) ...[
               SangaTextField(
-                label: 'RC number',
-                hintText: 'Optional',
+                label: GroupCopy.rcNumber,
+                hintText: GroupCopy.optional,
                 controller: _rcNumber,
                 textCapitalization: TextCapitalization.characters,
                 inputFormatters: [LengthLimitingTextInputFormatter(rcLimit)],
               ),
               SangaTextField(
-                label: 'Company address',
-                hintText: 'Optional',
+                label: GroupCopy.companyAddress,
+                hintText: GroupCopy.optional,
                 controller: _address,
                 textCapitalization: TextCapitalization.words,
                 inputFormatters: [LengthLimitingTextInputFormatter(addressLimit)],

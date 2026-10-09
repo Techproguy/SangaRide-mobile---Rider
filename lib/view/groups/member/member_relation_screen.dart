@@ -17,7 +17,7 @@ class MemberRelationScreen extends StatelessWidget {
     return GroupMemberGate(
       groupId: groupId,
       memberId: memberId,
-      title: 'Relation',
+      title: GroupCopy.relationTitle,
       builder: (context, group, detail, member) => _Form(group: group, kind: detail.kind, member: member),
     );
   }
@@ -46,7 +46,7 @@ class _FormState extends State<_Form> {
   Widget build(BuildContext context) {
     final name = widget.member.firstName;
     return MemberSettingPage(
-      title: 'Relation',
+      title: GroupCopy.relationTitle,
       group: widget.group,
       member: widget.member,
       onSave: () => saveMemberPatch(
@@ -56,7 +56,7 @@ class _FormState extends State<_Form> {
         patch: MemberPatch(relation: _relation),
       ),
       children: [
-        Text('Who is $name to you?', style: SangaTextStyles.body),
+        Text(GroupCopy.whoIsToYou(name), style: SangaTextStyles.body),
         SangaChoiceChips<String>(
           options: [for (final option in _options) SangaSelectOption(option, option)],
           value: _relation,

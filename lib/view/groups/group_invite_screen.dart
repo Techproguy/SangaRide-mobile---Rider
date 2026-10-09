@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sanga_ride/controller/rider/groups/group_controller.dart';
+import 'package:sanga_ride/core/copy/common_copy.dart';
 import 'package:sanga_ride/model/groups/group_models.dart';
 import 'package:sanga_ride/view/groups/group_copy.dart';
 import 'package:sanga_ride/view/groups/widgets/group_member_gate.dart';
@@ -18,7 +19,7 @@ class GroupInviteScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return GroupGate(
       groupId: groupId,
-      title: 'Invite someone',
+      title: GroupCopy.inviteSomeone,
       builder: (context, group, detail) => _InviteForm(group: group, detail: detail),
     );
   }
@@ -49,7 +50,7 @@ class _InviteFormState extends State<_InviteForm> {
   Future<void> _send() async {
     FocusScope.of(context).unfocus();
     if (!SangaPhoneNumber.isValid(_phone.text)) {
-      return setState(() => _phoneError = 'Enter a valid Nigerian phone number');
+      return setState(() => _phoneError = CommonCopy.invalidPhone);
     }
     final outcome = await widget.group.invite(
       phone: SangaPhoneNumber.toE164(_phone.text),
@@ -59,13 +60,13 @@ class _InviteFormState extends State<_InviteForm> {
     if (!mounted) return;
     switch (outcome) {
       case GroupDone():
-        SangaToast.show('Invite sent to ${SangaPhoneNumber.masked(_phone.text)}', tone: SangaToastTone.success);
+        SangaToast.show(GroupCopy.inviteSent(SangaPhoneNumber.masked(_phone.text)), tone: SangaToastTone.success);
         context.pop();
       case GroupRejected(:final failure)
           when failure == GroupFailure.invalidPhone || failure == GroupFailure.phoneInGroup:
-        setState(() => _phoneError = '${failure.title}. ${failure.message}');
+        setState(() => _phoneError = GroupCopy.failureText(failure));
       case GroupRejected(:final failure):
-        SangaToast.show('${failure.title}. ${failure.message}', tone: SangaToastTone.error);
+        SangaToast.show(GroupCopy.failureText(failure), tone: SangaToastTone.error);
     }
   }
 
@@ -74,7 +75,9 @@ class _InviteFormState extends State<_InviteForm> {
     final detail = widget.detail;
     return SangaPageLayout(
       title: GroupCopy.inviteTitle(detail.kind),
-      footer: Obx(() => SangaButton.primary(label: 'Send invite', isLoading: widget.group.isBusy, onPressed: _send)),
+      footer: Obx(
+        () => SangaButton.primary(label: GroupCopy.sendInvite, isLoading: widget.group.isBusy, onPressed: _send),
+      ),
       children: [
         Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -93,7 +96,7 @@ class _InviteFormState extends State<_InviteForm> {
               crossAxisAlignment: CrossAxisAlignment.start,
               spacing: SangaSpacing.xs,
               children: [
-                const SangaSectionHeader('Who are they to you?'),
+                const SangaSectionHeader(GroupCopy.whoAreTheyToYou),
                 SangaChoiceChips<String>(
                   options: [
                     for (final relation in GroupCopy.relations(detail.kind)) SangaSelectOption(relation, relation),
@@ -109,8 +112,8 @@ class _InviteFormState extends State<_InviteForm> {
                   padding: const EdgeInsets.symmetric(horizontal: SangaSpacing.md),
                   child: SangaToggleRow(
                     leading: const SangaIconBadge(child: Icon(Icons.shield_outlined)),
-                    title: 'Make them an admin',
-                    subtitle: 'Admins can invite people, set limits and top up the wallet.',
+                    title: GroupCopy.makeThemAdmin,
+                    subtitle: GroupCopy.adminCan,
                     value: _asAdmin,
                     onChanged: (value) => setState(() => _asAdmin = value),
                   ),
@@ -124,7 +127,7 @@ class _InviteFormState extends State<_InviteForm> {
               onCopied: () {
                 Clipboard.setData(ClipboardData(text: detail.inviteCode));
                 HapticFeedback.selectionClick();
-                SangaToast.show('Code copied', tone: SangaToastTone.success);
+                SangaToast.show(GroupCopy.codeCopied, tone: SangaToastTone.success);
               },
             ),
           ],

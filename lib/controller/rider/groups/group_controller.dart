@@ -6,6 +6,7 @@ import 'package:sanga_ride/controller/rider/groups/groups_controller.dart';
 import 'package:sanga_ride/controller/shared/user_controller.dart';
 import 'package:sanga_ride/core/api/api.dart';
 import 'package:sanga_ride/core/api/group_endpoints.dart';
+import 'package:sanga_ride/core/api/idempotency_intents.dart';
 import 'package:sanga_ride/model/groups/group_models.dart';
 import 'package:sanga_ride_core/sanga_ride_core.dart';
 
@@ -20,8 +21,8 @@ class GroupController extends GetxController {
   final Rx<ApprovalsState> _approvals = Rx<ApprovalsState>(const ApprovalsLoading());
   final RxBool _isBusy = false.obs;
   StreamSubscription<void>? _resumeSubscription;
-  int _epoch = 0;
-  int _approvalsEpoch = 0;
+  final Epoch _epoch = Epoch();
+  final Epoch _approvalsEpoch = Epoch();
 
   Rx<GroupDetailState> get stateRx => _state;
 
@@ -40,11 +41,6 @@ class GroupController extends GetxController {
     final userId = Get.find<UserController>().user?.id;
     return userId == null ? null : detail?.memberOf(userId);
   }
-
-  int get pendingApprovalCount => switch (approvalsState) {
-    ApprovalsLoaded(:final approvals) => approvals.length,
-    _ => 0,
-  };
 
   bool canManageMember(GroupMember member) {
     final current = detail;
@@ -66,8 +62,8 @@ class GroupController extends GetxController {
   void onClose() {
     _resumeSubscription?.cancel();
     _mutations.dispose();
-    _epoch++;
-    _approvalsEpoch++;
+    _epoch.next();
+    _approvalsEpoch.next();
     super.onClose();
   }
 
@@ -82,11 +78,11 @@ class GroupController extends GetxController {
   }
 
   Future<void> reloadQuietly() async {
-    final epoch = ++_epoch;
+    final epoch = _epoch.next();
     try {
       final response = await _api.get(GroupEndpoints.groupOf(groupId), suppressErrorToast: true);
-      if (epoch != _epoch) return;
-      final loaded = GroupDetail.fromJson(_dataOf(response.data));
+      if (!_epoch.isCurrent(epoch)) return;
+      final loaded = GroupDetail.fromJson(response.dataMapOrEmpty);
       _state.value = GroupDetailLoaded(loaded);
       if (loaded.canManage) {
         unawaited(loadApprovals());
@@ -94,7 +90,7 @@ class GroupController extends GetxController {
         _approvals.value = const ApprovalsUnavailable();
       }
     } on Object catch (error) {
-      if (epoch != _epoch) return;
+      if (!_epoch.isCurrent(epoch)) return;
       final failure = GroupFailure.of(error);
       final current = state;
       if (failure.isGone) {
@@ -120,7 +116,7 @@ class GroupController extends GetxController {
     try {
       final result = await _mutations.run<GroupMember>(
         signature: 'member:$memberId:${changes.toString()}',
-        intent: 'member-update',
+        intent: IdempotencyIntent.memberUpdate,
         send: (key) async {
           final response = await _api.patch(
             GroupEndpoints.memberOf(groupId, memberId),
@@ -128,7 +124,7 @@ class GroupController extends GetxController {
             key: key,
             suppressErrorToast: true,
           );
-          return GroupMember.fromJson(_dataOf(response.data));
+          return GroupMember.fromJson(response.dataMapOrEmpty);
         },
         reconcile: () async {
           await reloadQuietly();
@@ -152,7 +148,7 @@ class GroupController extends GetxController {
     try {
       final result = await _mutations.run<void>(
         signature: 'remove:$memberId',
-        intent: 'member-remove',
+        intent: IdempotencyIntent.memberRemove,
         send: (key) async {
           await _api.delete(GroupEndpoints.memberOf(groupId, memberId), key: key, suppressErrorToast: true);
         },
@@ -178,7 +174,7 @@ class GroupController extends GetxController {
     try {
       final result = await _mutations.run<GroupMember>(
         signature: 'invite:$phone',
-        intent: 'group-invite',
+        intent: IdempotencyIntent.groupInvite,
         send: (key) async {
           final response = await _api.post(
             GroupEndpoints.invitesOf(groupId),
@@ -186,7 +182,7 @@ class GroupController extends GetxController {
             key: key,
             suppressErrorToast: true,
           );
-          return GroupMember.fromJson(_dataOf(response.data));
+          return GroupMember.fromJson(response.dataMapOrEmpty);
         },
         reconcile: () async {
           await reloadQuietly();
@@ -227,13 +223,13 @@ class GroupController extends GetxController {
     try {
       final result = await _mutations.run<void>(
         signature: 'leave',
-        intent: 'group-leave',
+        intent: IdempotencyIntent.groupLeave,
         send: (key) async {
           await _api.post(GroupEndpoints.leaveOf(groupId), key: key, suppressErrorToast: true);
         },
         reconcile: () async {
           final response = await _api.get(GroupEndpoints.groups, suppressErrorToast: true);
-          final overview = GroupsOverview.fromJson(_dataOf(response.data));
+          final overview = GroupsOverview.fromJson(response.dataMapOrEmpty);
           final stillIn = overview.groups.any((group) => group.id == groupId);
           return stillIn ? const ReconciledNotDone<void>() : const ReconciledDone<void>(null);
         },
@@ -246,20 +242,20 @@ class GroupController extends GetxController {
   }
 
   Future<void> loadApprovals() async {
-    final epoch = ++_approvalsEpoch;
+    final epoch = _approvalsEpoch.next();
     try {
       final response = await _api.get(GroupEndpoints.approvalsOf(groupId), suppressErrorToast: true);
-      if (epoch != _approvalsEpoch) return;
+      if (!_approvalsEpoch.isCurrent(epoch)) return;
       final deciding = switch (approvalsState) {
         ApprovalsLoaded(:final deciding) => deciding,
         _ => null,
       };
       _approvals.value = ApprovalsLoaded(
-        JsonReader(_dataOf(response.data)).listOf('approvals', GroupApproval.fromReader),
+        JsonReader(response.dataMapOrEmpty).listOf('approvals', GroupApproval.fromReader),
         deciding: deciding,
       );
     } on Object catch (error) {
-      if (epoch != _approvalsEpoch) return;
+      if (!_approvalsEpoch.isCurrent(epoch)) return;
       final failure = GroupFailure.of(error);
       final current = approvalsState;
       if (failure.isGone) {
@@ -284,7 +280,7 @@ class GroupController extends GetxController {
     final action = approve ? 'approve' : 'decline';
     final result = await _mutations.run<void>(
       signature: 'approval:${approval.id}:$action',
-      intent: 'approval-$action',
+      intent: IdempotencyIntent.approval(action),
       send: (key) async {
         final endpoint = approve
             ? GroupEndpoints.approvalApproveOf(groupId, approval.id)
@@ -293,7 +289,7 @@ class GroupController extends GetxController {
       },
       reconcile: () async {
         final response = await _api.get(GroupEndpoints.approvalsOf(groupId), suppressErrorToast: true);
-        final open = JsonReader(_dataOf(response.data)).listOf('approvals', GroupApproval.fromReader);
+        final open = JsonReader(response.dataMapOrEmpty).listOf('approvals', GroupApproval.fromReader);
         final stillOpen = open.any((item) => item.id == approval.id);
         return stillOpen ? const ReconciledNotDone<void>() : const ReconciledDone<void>(null);
       },
@@ -329,6 +325,4 @@ class GroupController extends GetxController {
         if (approval.id != id) approval,
     ]);
   }
-
-  Map<String, dynamic> _dataOf(dynamic body) => JsonReader.of(JsonReader.of(body).raw['data']).raw;
 }

@@ -3,6 +3,7 @@ import 'package:sanga_ride/controller/rider/groups/group_bindings.dart';
 import 'package:sanga_ride/model/groups/group_models.dart';
 import 'package:sanga_ride/model/history/history_item.dart';
 import 'package:sanga_ride/model/history/history_scope.dart';
+import 'package:sanga_ride/view/groups/group_copy.dart';
 import 'package:sanga_ride/view/history/widgets/history_feed.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
@@ -48,7 +49,11 @@ class _GroupRidesTabState extends State<GroupRidesTab> {
         if (widget.detail.canManage)
           _ChipRow(
             children: [
-              SangaChoiceChip(label: 'Everyone', isSelected: _memberId == null, onSelected: (_) => _selectMember(null)),
+              SangaChoiceChip(
+                label: GroupCopy.everyone,
+                isSelected: _memberId == null,
+                onSelected: (_) => _selectMember(null),
+              ),
               for (final member in _members)
                 SangaChoiceChip(
                   label: member.firstName,

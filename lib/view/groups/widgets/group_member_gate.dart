@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:sanga_ride/controller/rider/groups/group_bindings.dart';
 import 'package:sanga_ride/controller/rider/groups/group_controller.dart';
 import 'package:sanga_ride/model/groups/group_models.dart';
+import 'package:sanga_ride/view/groups/group_copy.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 class GroupGate extends StatefulWidget {
@@ -41,7 +42,7 @@ class _GroupGateState extends State<GroupGate> {
             title: failure.title,
             message: failure.message,
             icon: failure.isNotFound ? Icons.search_off_rounded : Icons.cloud_off_rounded,
-            retryLabel: failure.isNotFound ? 'Back' : 'Try again',
+            retryLabel: failure.isNotFound ? GroupCopy.back : GroupCopy.tryAgain,
             onRetry: failure.isNotFound ? context.pop : _group.reload,
           ),
         ),
@@ -78,9 +79,9 @@ class GroupMemberGate extends StatelessWidget {
             children: [
               SangaEmptyMessage(
                 icon: Icons.person_off_outlined,
-                title: 'They’re not in the group any more',
-                message: 'Head back to see who’s in.',
-                actionLabel: 'Back',
+                title: GroupCopy.notInGroupTitle,
+                message: GroupCopy.notInGroupMessage,
+                actionLabel: GroupCopy.back,
                 onAction: context.pop,
               ),
             ],
