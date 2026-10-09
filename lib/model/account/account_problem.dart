@@ -1,27 +1,33 @@
+import 'package:sanga_ride/core/api/server_codes.dart';
+import 'package:sanga_ride/core/copy/common_copy.dart';
 import 'package:sanga_ride_core/sanga_ride_core.dart';
 
 enum AccountProblem {
-  connection('We couldn’t reach the server. Check your connection and try again.'),
-  unknown('Something went wrong on our side. Try again in a moment.'),
+  connection(CommonCopy.unreachableTryAgain),
+  unknown(CommonCopy.serverTrouble),
   deleteUnconfirmed('We’re not sure the request went through. Check again before you try deleting.'),
-  invalidEmail('That email doesn’t look right. Check it and try again.'),
-  emailTaken('Another account already uses that email.'),
-  tooYoung('You need to be at least 16 to ride with Sanga.'),
-  nameRequired('Add your first and last name.'),
-  invalidPhone('Enter a valid Nigerian phone number.'),
-  phoneTaken('This number already has an account.'),
-  samePhone('That’s the number you already use.'),
-  otpMismatch('That code didn’t match. Give it another go.'),
-  otpExpired('That code has expired. Grab a new one.'),
-  photoUnreadable('We couldn’t read that photo. Try a different one.'),
-  photoTooLarge('That photo is too big. Try a smaller one.'),
+  invalidEmail('That email doesn’t look right. Check it and try again.', code: ServerCode.invalidEmail),
+  emailTaken('Another account already uses that email.', code: ServerCode.emailTaken),
+  tooYoung('You need to be at least 16 to ride with Sanga.', code: ServerCode.tooYoung),
+  nameRequired('Add your first and last name.', code: ServerCode.nameRequired),
+  invalidPhone(CommonCopy.invalidPhoneSentence, code: ServerCode.invalidPhone),
+  phoneTaken('This number already has an account.', code: ServerCode.phoneTaken),
+  samePhone('That’s the number you already use.', code: ServerCode.samePhone),
+  otpMismatch('That code didn’t match. Give it another go.', code: ServerCode.otpMismatch),
+  otpExpired('That code has expired. Grab a new one.', code: ServerCode.otpExpired),
+  photoUnreadable('We couldn’t read that photo. Try a different one.', code: ServerCode.photoUnreadable),
+  photoTooLarge('That photo is too big. Try a smaller one.', code: ServerCode.fileTooLarge),
   cameraDenied('Camera is switched off. Allow it in Settings to take a photo.'),
   photosDenied('Photos are switched off. Allow them in Settings to pick one.'),
-  activeTrip('You have a trip in progress. Finish it first, then you can delete your account.');
+  activeTrip(
+    'You have a trip in progress. Finish it first, then you can delete your account.',
+    code: ServerCode.activeTrip,
+  );
 
-  const AccountProblem(this.message);
+  const AccountProblem(this.message, {this.code});
 
   final String message;
+  final String? code;
 
   bool get opensSettings => this == cameraDenied || this == photosDenied;
 
@@ -31,19 +37,6 @@ enum AccountProblem {
     _ => unknown,
   };
 
-  static AccountProblem fromCode(String? code) => switch (code) {
-    'invalid_email' => invalidEmail,
-    'email_taken' => emailTaken,
-    'too_young' => tooYoung,
-    'name_required' => nameRequired,
-    'invalid_phone' => invalidPhone,
-    'phone_taken' => phoneTaken,
-    'same_phone' => samePhone,
-    'otp_mismatch' => otpMismatch,
-    'otp_expired' => otpExpired,
-    'photo_unreadable' => photoUnreadable,
-    'file_too_large' => photoTooLarge,
-    'active_trip' => activeTrip,
-    _ => unknown,
-  };
+  static AccountProblem fromCode(String? code) =>
+      codedEnum(values.where((problem) => problem.code != null), (problem) => problem.code!, code, orElse: unknown);
 }
