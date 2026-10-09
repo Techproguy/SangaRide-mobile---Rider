@@ -130,6 +130,37 @@ abstract final class DevScenarios {
       effect: 'The top up fails with amount_out_of_range.',
     ),
     DevScenario(
+      area: 'Wallet',
+      trigger: 'Top up with card ending 0004, then enter the OTP',
+      effect: 'The payment stays pending for 14 seconds before it settles (confirming state, busy escape, resume).',
+    ),
+    DevScenario(
+      area: 'Groups',
+      trigger: 'Approve apr_seed_2 more than 40 seconds after the groups mock first loads',
+      effect: 'The rider cancelled that ride about 40 seconds in, so approving it fails with ride_cancelled.',
+    ),
+    DevScenario(
+      area: 'Groups',
+      trigger: 'Wait 30 minutes after the mock builds, then decide apr_seed_1',
+      effect: 'The approval has expired: deciding fails with approval_expired.',
+    ),
+    DevScenario(
+      area: 'Groups',
+      trigger: 'Decide an approval that was already decided',
+      effect: 'Fails with approval_already_decided and the card is removed.',
+    ),
+    DevScenario(
+      area: 'Booking',
+      trigger: 'Clock skew +5 min on, then book a ride from a fresh review',
+      effect: 'The 5 minute quote already looks expired to the server: the request fails with quote_expired and the review refreshes the price.',
+    ),
+    DevScenario(
+      area: 'Booking',
+      trigger: 'Lose responses on ride create and on confirm',
+      effect:
+          'The server did the work but the reply is lost: the app reconciles instead of creating or confirming twice.',
+    ),
+    DevScenario(
       area: 'Groups',
       trigger: 'Join code JOIN2026',
       effect: 'Joins the business group behind that code (Ray). A second join fails with already_in_group.',
