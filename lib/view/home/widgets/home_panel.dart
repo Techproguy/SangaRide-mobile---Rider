@@ -56,7 +56,7 @@ class HomePanel extends StatelessWidget {
           ],
         ),
         const SizedBox(height: SangaSpacing.md),
-        const Divider(height: 1, thickness: 1, color: SangaColors.divider),
+        const Divider(height: 1, thickness: 1, color: SangaColors.cardBorder),
         const SizedBox(height: SangaSpacing.md),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
