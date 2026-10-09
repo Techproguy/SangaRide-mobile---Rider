@@ -36,10 +36,7 @@ class ScheduledRideCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DecoratedBox(
-      decoration: const BoxDecoration(
-        borderRadius: SangaRadii.field,
-        boxShadow: [BoxShadow(color: SangaColors.cardShadow, blurRadius: 20, offset: Offset(0, 4))],
-      ),
+      decoration: const BoxDecoration(borderRadius: SangaRadii.field, boxShadow: SangaShadows.card),
       child: Material(
         color: SangaColors.surface,
         shape: const RoundedRectangleBorder(
@@ -59,7 +56,7 @@ class ScheduledRideCard extends StatelessWidget {
                     spacing: SangaSpacing.md,
                     children: [
                       _vehicle(),
-                      const VerticalDivider(width: 1, thickness: 1, color: SangaColors.divider),
+                      const VerticalDivider(width: 1, thickness: 1, color: SangaColors.cardBorder),
                       Expanded(child: _details(context)),
                     ],
                   ),
@@ -158,7 +155,7 @@ class ScheduledRideCard extends StatelessWidget {
             child: Row(
               spacing: SangaSpacing.xs,
               children: [
-                const Icon(Icons.notifications_active_outlined, size: 16, color: SangaColors.primary),
+                const Icon(Icons.notifications_active_outlined, size: 18, color: SangaColors.primary),
                 Expanded(child: Text(reminderLabel!, style: SangaTextStyles.cardSubtitle)),
               ],
             ),
