@@ -110,10 +110,15 @@ class _RiderHomeScreenState extends State<RiderHomeScreen> {
 
   List<Widget> _notices() {
     final access = _home.locationAccess;
+    final status = _home.locationStatus;
+    final needsLocation =
+        status == LocationStatus.denied ||
+        status == LocationStatus.deniedForever ||
+        status == LocationStatus.serviceDisabled;
     return [
       if (_restore.restoreFailed)
         SangaStaleNotice(message: 'We couldn’t check for an active trip.', retryLabel: 'Retry', onRetry: _retryRestore),
-      if (!access.isUsable)
+      if (needsLocation)
         SangaStaleNotice(
           message: access == PermissionAccess.serviceOff
               ? 'Location is off. Turn it on so drivers can find you.'
