@@ -15,6 +15,9 @@ import 'package:sanga_ride/model/wallet/wallet.dart';
 import 'package:sanga_ride_core/sanga_ride_core.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
+part 'trip_payment_cash.dart';
+part 'trip_payment_polling.dart';
+
 class _Attempt {
   _Attempt({required this.signature, required this.method, required this.mutation, this.cardToken});
 
@@ -28,17 +31,27 @@ class TripPaymentController extends GetxController {
   static const Duration pollInterval = Duration(milliseconds: 1500);
 
   final _api = Get.find<ApiService>();
+
   final _wallet = Get.find<WalletController>();
+
   final _tokenizer = Get.find<CardTokenizer>();
 
   final Rx<PaymentState> _state = Rx<PaymentState>(const PaymentLoading());
+
   LivePoller? _poller;
+
   VoidCallback? _detachLink;
+
   Worker? _walletWorker;
+
   Timer? _cashTimer;
+
   _Attempt? _attempt;
+
   Mutation<TripPayment>? _cancelCashMutation;
+
   String? _tripId;
+
   final Epoch _epoch = Epoch();
 
   Rx<PaymentState> get stateRx => _state;
@@ -152,26 +165,6 @@ class TripPaymentController extends GetxController {
     }
   }
 
-  CashWaitLink _cashLinkOf(TripPayment payment) {
-    final deadline = payment.cashWaitExpiresAt;
-    if (deadline != null && !deadline.isAfter(DateTime.now())) return CashWaitLink.timedOut;
-    return _poller?.link.value == LinkState.lost ? CashWaitLink.offline : CashWaitLink.live;
-  }
-
-  void _scheduleCashDeadline(TripPayment payment) {
-    _cashTimer?.cancel();
-    _cashTimer = null;
-    final deadline = payment.cashWaitExpiresAt;
-    if (deadline == null) return;
-    final left = deadline.difference(DateTime.now());
-    if (left <= Duration.zero) return;
-    _cashTimer = Timer(left, () {
-      final current = state;
-      if (current is PaymentAwaitingDriver) _state.value = current.withLink(CashWaitLink.timedOut);
-      unawaited(_poller?.refreshNow());
-    });
-  }
-
   bool _walletCovers(int fare) => WalletPayOption.from(_wallet.state, fare) is WalletCovers;
 
   bool _isChoosable(TripPayment payment, PaymentMethod method) =>
@@ -213,24 +206,11 @@ class TripPaymentController extends GetxController {
     _state.value = PaymentChoosing(payment, selected: method);
   }
 
-  void chooseCashInstead() {
-    final current = state;
-    if (current is! PaymentLoaded || isProcessing || current is PaymentPaid || current is PaymentUnconfirmed) return;
-    if (!current.payment.allowedMethods.contains(PaymentMethod.cash)) return;
-    _state.value = PaymentChoosing(current.payment, selected: PaymentMethod.cash);
-  }
-
   void retryCard() {
     final current = state;
     if (current is PaymentDeclined || current is PaymentCardEntry) {
       _state.value = PaymentCardEntry((current as PaymentLoaded).payment);
     }
-  }
-
-  Future<void> payCash() async {
-    final current = state;
-    if (current is! PaymentChoosing || current.selected != PaymentMethod.cash) return;
-    await _submit(current.payment, const PaymentRequest.cash(), signature: 'cash');
   }
 
   Future<void> payWallet() async {
@@ -397,91 +377,5 @@ class TripPaymentController extends GetxController {
     final result = await attempt.mutation.recheck();
     if (!_epoch.isCurrent(epoch)) return;
     _settle(result, attempt, current.payment, epoch);
-  }
-
-  Future<void> cancelCash() async {
-    final id = _tripId;
-    final current = state;
-    if (id == null || current is! PaymentAwaitingDriver) return;
-    if (LiveProblem.isOffline) {
-      LiveProblem.toastOffline();
-      return;
-    }
-    final epoch = _invalidate();
-    final mutation = _cancelCashMutation ??= Mutation<TripPayment>(
-      intent: IdempotencyIntent.tripPayCancel,
-      run: (key) async {
-        final response = await _api.post(AppEndpoints.tripPaymentCancelOf(id), key: key, suppressErrorToast: true);
-        return TripPayment.fromJson(response.dataMapOrEmpty);
-      },
-      reconcile: () async {
-        final fresh = await _fetchPayment(id, profile: RequestProfile.interactive);
-        return fresh.status == PaymentStatus.awaitingDriver ? const ReconciledNotDone() : ReconciledDone(fresh);
-      },
-    );
-    final result = await mutation.start();
-    if (!_epoch.isCurrent(epoch)) return;
-    switch (result) {
-      case MutationDone<TripPayment>(:final value):
-        _cancelCashMutation?.dispose();
-        _cancelCashMutation = null;
-        _apply(value, epoch);
-      case MutationRejected<TripPayment>(:final error):
-        _cancelCashMutation?.dispose();
-        _cancelCashMutation = null;
-        if (error.code == ServerCode.alreadyPaid) {
-          unawaited(_load());
-        } else {
-          LiveProblem.toast(error);
-          _apply(current.payment, epoch);
-        }
-      case MutationFailed<TripPayment>(:final error):
-        LiveProblem.toast(error);
-        _state.value = current;
-        _startPolling(epoch);
-      case MutationUnknown<TripPayment>():
-        SangaToast.show(LiveProblem.checking, tone: SangaToastTone.warning);
-        _state.value = current;
-        _startPolling(epoch);
-      default:
-        break;
-    }
-  }
-
-  void _stopPolling() {
-    _cashTimer?.cancel();
-    _cashTimer = null;
-    _detachLink?.call();
-    _detachLink = null;
-    _poller?.dispose();
-    _poller = null;
-  }
-
-  void _startPolling(int epoch) {
-    if (_poller != null) return;
-    final poller = LivePoller(fetch: () => _pollOnce(epoch), interval: pollInterval);
-    void mirror() => _onPollLink(poller.link.value);
-    poller.link.addListener(mirror);
-    _detachLink = () => poller.link.removeListener(mirror);
-    _poller = poller;
-    poller.start();
-  }
-
-  void _onPollLink(LinkState link) {
-    final current = state;
-    if (current is! PaymentAwaitingDriver || current.link == CashWaitLink.timedOut) return;
-    _state.value = current.withLink(link == LinkState.lost ? CashWaitLink.offline : CashWaitLink.live);
-  }
-
-  Future<void> _pollOnce(int epoch) async {
-    final id = _tripId;
-    final current = state;
-    final isWaiting = current is PaymentAwaitingDriver || current is PaymentChecking;
-    if (id == null || !_epoch.isCurrent(epoch) || !isWaiting) return;
-    final fresh = await _fetchPayment(id);
-    if (!_epoch.isCurrent(epoch)) return;
-    final latest = state;
-    if (latest is! PaymentAwaitingDriver && latest is! PaymentChecking) return;
-    _apply(fresh, epoch);
   }
 }
