@@ -93,7 +93,7 @@ class _InviteFormState extends State<_InviteForm> {
               crossAxisAlignment: CrossAxisAlignment.start,
               spacing: SangaSpacing.xs,
               children: [
-                Text('Who are they to you?', style: SangaTextStyles.label),
+                const SangaSectionHeader('Who are they to you?'),
                 SangaChoiceChips<String>(
                   options: [
                     for (final relation in GroupCopy.relations(detail.kind)) SangaSelectOption(relation, relation),

@@ -130,7 +130,7 @@ class _FormState extends State<_Form> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             spacing: SangaSpacing.sm,
             children: [
-              Text('When a ride goes over the limit', style: SangaTextStyles.label),
+              const SangaSectionHeader('When a ride goes over the limit'),
               for (final action in OverLimitAction.values)
                 SangaOptionCard(
                   leading: SangaIconBadge(child: Icon(GroupCopy.overLimitIcon(action))),

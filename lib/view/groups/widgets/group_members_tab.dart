@@ -54,13 +54,7 @@ class GroupMembersTab extends StatelessWidget {
                   ),
               ],
             ),
-            TextButton(
-              onPressed: onLeave,
-              child: Text(
-                GroupCopy.leaveTitle(detail.kind),
-                style: SangaTextStyles.label.copyWith(color: SangaColors.dangerStrong),
-              ),
-            ),
+            SangaTextAction(label: GroupCopy.leaveTitle(detail.kind), onPressed: onLeave, isDestructive: true),
           ],
         ),
       ],

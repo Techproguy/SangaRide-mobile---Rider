@@ -216,7 +216,7 @@ class _DangerBadge extends StatelessWidget {
       alignment: Alignment.center,
       decoration: BoxDecoration(
         color: SangaColors.dangerSoft,
-        borderRadius: const BorderRadius.all(Radius.circular(4)),
+        borderRadius: SangaRadii.digit,
         border: Border.all(color: SangaColors.dangerStrong, width: 0.5),
       ),
       child: const Icon(Icons.person_remove_outlined, size: 20, color: SangaColors.dangerStrong),

@@ -77,7 +77,7 @@ class _ChipRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.symmetric(horizontal: SangaSpacing.gutter, vertical: SangaSpacing.xs),
+      padding: const EdgeInsets.symmetric(horizontal: SangaSpacing.gutter, vertical: SangaSpacing.sm),
       child: Row(spacing: SangaSpacing.sm, children: children),
     );
   }

@@ -102,7 +102,7 @@ class _GroupCreateScreenState extends State<GroupCreateScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               spacing: SangaSpacing.sm,
               children: [
-                Text(GroupCopy.roleTitle(kind), style: SangaTextStyles.label),
+                SangaSectionHeader(GroupCopy.roleTitle(kind)),
                 for (final role in CreatorRole.of(kind))
                   SangaOptionCard(
                     leading: SangaIconBadge(child: Icon(_iconOf(role))),
