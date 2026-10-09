@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:sanga_ride/core/assets.dart';
 import 'package:sanga_ride/model/history/history_item.dart';
+import 'package:sanga_ride/view/history/widgets/history_delivery_cards.dart';
 import 'package:sanga_ride/view/history/widgets/rebook_button.dart';
 import 'package:sanga_ride/view/ride/widgets/ride_option_image.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
@@ -56,17 +58,28 @@ class HistoryCard extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         spacing: SangaSpacing.xs,
         children: [
-          if (item.kind.isDelivery)
-            Container(
-              width: _packageSize,
-              height: _packageSize,
-              decoration: const BoxDecoration(color: SangaColors.primaryTint, shape: BoxShape.circle),
-              child: const Icon(Icons.inventory_2_rounded, size: 28, color: SangaColors.primary),
-            )
-          else
-            Image(image: item.category.image, fit: BoxFit.contain),
+          if (item.kind.isDelivery) _packageVisual() else Image(image: item.category.image, fit: BoxFit.contain),
           Text(SangaMoney.naira(item.fare), style: SangaTextStyles.cardValue),
         ],
+      ),
+    );
+  }
+
+  Widget _packageVisual() {
+    final photo = item.packagePhotoUrl;
+    return ClipRRect(
+      borderRadius: SangaRadii.field,
+      child: Image(
+        image: photo == null ? const AssetImage(AppAssets.serviceDelivery) : HistoryDeliveryCards.proofImage(photo),
+        width: _visualWidth,
+        height: _packageSize,
+        fit: photo == null ? BoxFit.contain : BoxFit.cover,
+        errorBuilder: (context, error, stack) => const Image(
+          image: AssetImage(AppAssets.serviceDelivery),
+          width: _visualWidth,
+          height: _packageSize,
+          fit: BoxFit.contain,
+        ),
       ),
     );
   }
@@ -86,8 +99,10 @@ class HistoryCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 spacing: SangaSpacing.xxs,
                 children: [
-                  Text(whenLabel, style: SangaTextStyles.cardTitle),
+                  Text(whenLabel, maxLines: 1, overflow: TextOverflow.ellipsis, style: SangaTextStyles.cardTitle),
                   if (isCancelled) const SangaTag.urgent(label: 'Cancelled', icon: Icons.close_rounded),
+                  if (item.status == HistoryStatus.unknown)
+                    const SangaTag.scheduled(label: 'Updating', icon: Icons.sync_rounded),
                   if (item.memberName case final name?) _who(name),
                 ],
               ),

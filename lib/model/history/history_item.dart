@@ -1,9 +1,12 @@
 import 'package:sanga_ride/model/location/place.dart';
+import 'package:sanga_ride/model/account/load_problem.dart';
 import 'package:sanga_ride/model/ride/ride_request.dart';
+import 'package:sanga_ride_core/sanga_ride_core.dart';
 
 enum HistoryKind {
   ride('ride'),
-  delivery('delivery');
+  delivery('delivery'),
+  unknown('unknown');
 
   const HistoryKind(this.code);
 
@@ -11,35 +14,36 @@ enum HistoryKind {
 
   bool get isDelivery => this == delivery;
 
-  static HistoryKind fromCode(String code) => values.firstWhere(
-    (kind) => kind.code == code,
-    orElse: () => throw FormatException('Unknown history kind: $code'),
-  );
+  static HistoryKind fromCode(String? code) => enumByCode(values, code, (kind) => kind.code, HistoryKind.unknown);
 }
 
 enum HistoryStatus {
   completed('completed', 'Completed'),
-  cancelled('cancelled', 'Cancelled');
+  cancelled('cancelled', 'Cancelled'),
+  unknown('unknown', 'Updating');
 
   const HistoryStatus(this.code, this.label);
 
   final String code;
   final String label;
 
-  static HistoryStatus fromCode(String code) => values.firstWhere(
-    (status) => status.code == code,
-    orElse: () => throw FormatException('Unknown history status: $code'),
-  );
+  static const List<HistoryStatus> tabs = [completed, cancelled];
+
+  static HistoryStatus fromCode(String? code) =>
+      enumByCode(values, code, (status) => status.code, HistoryStatus.unknown);
 }
 
 class HistoryRoute {
   const HistoryRoute({required this.pickup, required this.stops, required this.dropoff});
 
-  factory HistoryRoute.fromJson(Map<String, dynamic> json) => HistoryRoute(
-    pickup: Place.fromJson(Map<String, dynamic>.from(json['pickup'] as Map)),
-    stops: [for (final stop in json['stops'] as List) Place.fromJson(Map<String, dynamic>.from(stop as Map))],
-    dropoff: Place.fromJson(Map<String, dynamic>.from(json['dropoff'] as Map)),
-  );
+  factory HistoryRoute.fromJson(Map<String, dynamic> json) {
+    final reader = JsonReader(json);
+    return HistoryRoute(
+      pickup: Place.fromJson(reader.object('pickup').raw),
+      stops: reader.listOf('stops', (stop) => Place.fromJson(stop.raw)),
+      dropoff: Place.fromJson(reader.object('dropoff').raw),
+    );
+  }
 
   final Place pickup;
   final List<Place> stops;
@@ -58,20 +62,25 @@ class HistoryItem {
     this.itemName,
     this.memberName,
     this.purpose,
+    this.packagePhotoUrl,
   });
 
-  factory HistoryItem.fromJson(Map<String, dynamic> json) => HistoryItem(
-    id: json['id'] as String,
-    kind: HistoryKind.fromCode(json['kind'] as String),
-    status: HistoryStatus.fromCode(json['status'] as String),
-    category: RideCategory.values.asNameMap()[json['category']] ?? RideCategory.go,
-    occurredAt: DateTime.parse(json['occurredAt'] as String).toLocal(),
-    route: HistoryRoute.fromJson(json),
-    fare: (json['fare'] as num).toInt(),
-    itemName: json['itemName'] as String?,
-    memberName: json['memberName'] as String?,
-    purpose: json['purpose'] as String?,
-  );
+  factory HistoryItem.fromJson(Map<String, dynamic> json) {
+    final reader = JsonReader(json);
+    return HistoryItem(
+      id: reader.str('id'),
+      kind: HistoryKind.fromCode(reader.strOrNull('kind')),
+      status: HistoryStatus.fromCode(reader.strOrNull('status')),
+      category: RideCategory.values.asNameMap()[reader.strOrNull('category')] ?? RideCategory.go,
+      occurredAt: reader.time('occurredAt').toLocal(),
+      route: HistoryRoute.fromJson(json),
+      fare: reader.intOr('fare', 0),
+      itemName: reader.strOrNull('itemName'),
+      memberName: reader.strOrNull('memberName'),
+      purpose: reader.strOrNull('purpose'),
+      packagePhotoUrl: reader.strOrNull('packagePhotoUrl'),
+    );
+  }
 
   final String id;
   final HistoryKind kind;
@@ -83,6 +92,7 @@ class HistoryItem {
   final String? itemName;
   final String? memberName;
   final String? purpose;
+  final String? packagePhotoUrl;
 
   bool get canRebook => kind == HistoryKind.ride;
 }
@@ -90,11 +100,14 @@ class HistoryItem {
 class HistoryPage {
   const HistoryPage({required this.items, required this.page, required this.hasMore});
 
-  factory HistoryPage.fromJson(Map<String, dynamic> json) => HistoryPage(
-    items: [for (final item in json['items'] as List) HistoryItem.fromJson(Map<String, dynamic>.from(item as Map))],
-    page: (json['page'] as num).toInt(),
-    hasMore: json['hasMore'] as bool,
-  );
+  factory HistoryPage.fromJson(Map<String, dynamic> json) {
+    final reader = JsonReader(json);
+    return HistoryPage(
+      items: reader.listOf('items', (item) => HistoryItem.fromJson(item.raw)),
+      page: reader.intOr('page', 1),
+      hasMore: reader.boolOr('hasMore', false),
+    );
+  }
 
   final List<HistoryItem> items;
   final int page;
@@ -110,7 +123,9 @@ final class HistoryFeedLoading extends HistoryFeedState {
 }
 
 final class HistoryFeedFailed extends HistoryFeedState {
-  const HistoryFeedFailed();
+  const HistoryFeedFailed(this.problem);
+
+  final LoadProblem problem;
 }
 
 enum HistoryMore { idle, loading, failed }
@@ -121,18 +136,21 @@ final class HistoryFeedLoaded extends HistoryFeedState {
     required this.page,
     required this.hasMore,
     this.more = HistoryMore.idle,
+    this.isStale = false,
   });
 
   final List<HistoryItem> items;
   final int page;
   final bool hasMore;
   final HistoryMore more;
+  final bool isStale;
 
-  HistoryFeedLoaded copyWith({List<HistoryItem>? items, int? page, bool? hasMore, HistoryMore? more}) =>
+  HistoryFeedLoaded copyWith({List<HistoryItem>? items, int? page, bool? hasMore, HistoryMore? more, bool? isStale}) =>
       HistoryFeedLoaded(
         items: items ?? this.items,
         page: page ?? this.page,
         hasMore: hasMore ?? this.hasMore,
         more: more ?? this.more,
+        isStale: isStale ?? this.isStale,
       );
 }

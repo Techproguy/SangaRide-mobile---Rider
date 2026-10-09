@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
@@ -11,8 +13,8 @@ import 'package:sanga_ride/view/history/widgets/history_payment_cards.dart';
 import 'package:sanga_ride/view/history/widgets/history_rating_card.dart';
 import 'package:sanga_ride/view/history/widgets/history_rebook.dart';
 import 'package:sanga_ride/view/history/widgets/history_trip_card.dart';
-import 'package:sanga_ride/view/ride/widgets/ride_option_async_state.dart';
 import 'package:sanga_ride/view/ride/widgets/ride_option_image.dart';
+import 'package:sanga_ride_core/sanga_ride_core.dart' show AppLifecycle;
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 class HistoryDetailScreen extends StatefulWidget {
@@ -26,11 +28,19 @@ class HistoryDetailScreen extends StatefulWidget {
 
 class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
   final _history = Get.find<RideHistoryController>();
+  StreamSubscription<void>? _resumeSubscription;
 
   @override
   void initState() {
     super.initState();
+    _resumeSubscription = AppLifecycle.instance.onResume.listen((_) => unawaited(_history.refreshDetail()));
     WidgetsBinding.instance.addPostFrameCallback((_) => _history.openDetail(widget.id));
+  }
+
+  @override
+  void dispose() {
+    _resumeSubscription?.cancel();
+    super.dispose();
   }
 
   @override
@@ -41,24 +51,29 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
       return SangaPageLayout(
         title: title,
         children: [
-          RideOptionAsyncState(
-            isLoading: state is HistoryDetailLoading,
-            hasFailed: state is HistoryDetailFailed && state.reason.canRetry,
-            errorTitle: 'We couldn’t load the details',
-            onRetry: _history.reloadDetail,
-            skeletonCount: 3,
-            skeletonHeight: 150,
-            builder: (context) => switch (_history.detailStateFor(widget.id)) {
-              HistoryDetailLoaded(:final detail) => _body(context, detail),
-              HistoryDetailFailed(:final reason) => SangaInlineMessage(
-                title: reason.title,
-                message: reason.message,
-                actionLabel: 'Go back',
-                onAction: context.pop,
-              ),
-              HistoryDetailLoading() => const SizedBox.shrink(),
-            },
-          ),
+          switch (state) {
+            HistoryDetailLoading() => const SangaSkeleton.list(count: 3, height: 150),
+            HistoryDetailFailed(:final reason) when reason.canRetry => SangaFailureMessage(
+              title: reason.title,
+              message: reason.message,
+              onRetry: _history.reloadDetail,
+            ),
+            HistoryDetailFailed(:final reason) => SangaFailureMessage(
+              title: reason.title,
+              message: reason.message,
+              icon: Icons.search_off_rounded,
+              retryLabel: 'Go back',
+              onRetry: context.pop,
+            ),
+            HistoryDetailLoaded(:final detail, :final isStale) => Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              spacing: SangaSpacing.md,
+              children: [
+                if (isStale) SangaStaleNotice(onRetry: _history.refreshDetail),
+                _body(context, detail),
+              ],
+            ),
+          },
         ],
       );
     });

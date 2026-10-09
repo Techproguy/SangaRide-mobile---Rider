@@ -37,7 +37,7 @@ class _GroupRidesTabState extends State<GroupRidesTab> {
       children: [
         _ChipRow(
           children: [
-            for (final status in HistoryStatus.values)
+            for (final status in HistoryStatus.tabs)
               SangaChoiceChip(
                 label: status.label,
                 isSelected: status == _status,

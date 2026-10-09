@@ -1,7 +1,7 @@
-import 'dart:developer';
-
 import 'package:dio/dio.dart' show Options;
 import 'package:get/get.dart';
+import 'package:sanga_ride/model/account/load_problem.dart';
+import 'package:sanga_ride_core/sanga_ride_core.dart';
 import 'package:sanga_ride/core/api/api.dart';
 import 'package:sanga_ride/core/api/group_endpoints.dart';
 import 'package:sanga_ride/core/api/history_endpoints.dart';
@@ -33,10 +33,7 @@ class RideHistoryController extends GetxController {
 
   HistoryDetailState detailStateFor(String id) => _detailId.value == id ? detailState : const HistoryDetailLoading();
 
-  Future<void> open(HistoryStatus status) async {
-    if (_feeds[status] is HistoryFeedLoaded) return;
-    await _loadFirstPage(status);
-  }
+  Future<void> open(HistoryStatus status) => _loadFirstPage(status);
 
   Future<void> reload(HistoryStatus status) => _loadFirstPage(status);
 
@@ -56,11 +53,12 @@ class RideHistoryController extends GetxController {
       final page = await _fetch(status, 1);
       if (epoch != _feedEpochs[status]) return;
       _feeds[status] = HistoryFeedLoaded(items: page.items, page: page.page, hasMore: page.hasMore);
-    } catch (e) {
-      log('load ${status.code} history failed: $e');
-      if (epoch == _feedEpochs[status] && _feeds[status] is! HistoryFeedLoaded) {
-        _feeds[status] = const HistoryFeedFailed();
-      }
+    } on Object catch (error) {
+      if (epoch != _feedEpochs[status]) return;
+      final latest = _feeds[status];
+      _feeds[status] = latest is HistoryFeedLoaded
+          ? latest.copyWith(isStale: true)
+          : HistoryFeedFailed(LoadProblem.of(error));
     }
   }
 
@@ -77,8 +75,7 @@ class RideHistoryController extends GetxController {
         page: page.page,
         hasMore: page.hasMore,
       );
-    } catch (e) {
-      log('load more ${status.code} history failed: $e');
+    } on Object {
       if (epoch == _feedEpochs[status]) _feeds[status] = current.copyWith(more: HistoryMore.failed);
     }
   }
@@ -92,35 +89,49 @@ class RideHistoryController extends GetxController {
       queryParameters: {'status': status.code, 'page': page, 'pageSize': pageSize, 'memberId': ?memberId},
       suppressErrorToast: true,
     );
-    return HistoryPage.fromJson(Map<String, dynamic>.from((response.data as Map)['data'] as Map));
+    return HistoryPage.fromJson(JsonReader.of(JsonReader.of(response.data).raw['data']).raw);
   }
 
+  Future<void> refreshOpenFeeds() => Future.wait([for (final status in _feeds.keys.toList()) _loadFirstPage(status)]);
+
   Future<void> openDetail(String id) async {
-    if (_detailId.value == id && detailState is HistoryDetailLoaded) return;
+    final isSame = _detailId.value == id;
     _detailId.value = id;
-    await _loadDetail();
+    await _loadDetail(showLoading: !isSame || detailState is! HistoryDetailLoaded);
   }
 
   Future<void> reloadDetail() async {
     if (_detailId.value == null || detailState is HistoryDetailLoading) return;
-    await _loadDetail();
+    await _loadDetail(showLoading: detailState is! HistoryDetailLoaded);
   }
 
-  Future<void> _loadDetail() async {
+  Future<void> refreshDetail() async {
+    if (_detailId.value == null) return;
+    await _loadDetail(showLoading: false);
+  }
+
+  Future<void> _loadDetail({required bool showLoading}) async {
     final id = _detailId.value;
     if (id == null) return;
     final epoch = ++_detailEpoch;
-    _detail.value = const HistoryDetailLoading();
+    final previous = detailState;
+    if (showLoading) _detail.value = const HistoryDetailLoading();
     try {
       final response = await _api.get(HistoryEndpoints.rideOf(id), suppressErrorToast: true);
       if (epoch != _detailEpoch) return;
-      final data = Map<String, dynamic>.from((response.data as Map)['data'] as Map);
-      _detail.value = HistoryDetailLoaded(HistoryDetail.fromJson(data));
-    } catch (e) {
-      log('load history detail failed: ${e is ApiException ? e.code : e.runtimeType}');
-      if (epoch == _detailEpoch) {
-        _detail.value = HistoryDetailFailed(HistoryFailure.fromCode(e is ApiException ? e.code : null));
-      }
+      final data = JsonReader.of(JsonReader.of(response.data).raw['data']).raw;
+      final latest = detailState;
+      _detail.value = HistoryDetailLoaded(
+        HistoryDetail.fromJson(data),
+        driverAction: latest is HistoryDetailLoaded ? latest.driverAction : null,
+      );
+    } on Object catch (error) {
+      if (epoch != _detailEpoch) return;
+      final failure = HistoryFailure.of(error);
+      final keepsPrevious = previous is HistoryDetailLoaded && failure.canRetry;
+      _detail.value = keepsPrevious
+          ? HistoryDetailLoaded(previous.detail, driverAction: previous.driverAction, isStale: true)
+          : HistoryDetailFailed(failure);
     }
   }
 
@@ -137,18 +148,17 @@ class RideHistoryController extends GetxController {
     try {
       final endpoint = HistoryEndpoints.blockDriverOf(driver.profile.id);
       if (isBlocked) {
-        await _api.post(endpoint, suppressErrorToast: true);
+        await _api.post(endpoint, key: IdempotencyKey.newFor('block-driver'), suppressErrorToast: true);
       } else {
-        await _api.delete(endpoint, options: _quiet);
+        await _api.delete(endpoint, key: IdempotencyKey.newFor('unblock-driver'), options: _quiet);
       }
       if (epoch == _detailEpoch) {
         _detail.value = HistoryDetailLoaded(current.detail.withDriver(driver.copyWith(isBlocked: isBlocked)));
       }
       return null;
-    } catch (e) {
-      log('set driver blocked failed: ${e is ApiException ? e.code : e.runtimeType}');
+    } on Object catch (error) {
       if (epoch == _detailEpoch) _detail.value = HistoryDetailLoaded(current.detail);
-      return HistoryProblem.fromCode(e is ApiException ? e.code : null);
+      return HistoryProblem.of(error);
     }
   }
 }

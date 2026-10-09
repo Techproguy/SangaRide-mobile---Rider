@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:sanga_ride/model/history/history_item.dart';
+import 'package:sanga_ride_core/sanga_ride_core.dart';
 import 'package:sanga_ride/model/ride/ride_match.dart';
 import 'package:sanga_ride/model/ride/ride_request.dart';
 import 'package:sanga_ride/model/trip/wrapup/receipt.dart';
@@ -13,7 +14,8 @@ enum HistoryEventType {
   packagePickedUp('package_picked_up', 'Package picked up', Icons.inventory_2_rounded),
   packageDelivered('package_delivered', 'Package delivered', Icons.check_rounded),
   rideCancelled('ride_cancelled', 'Ride cancelled', Icons.close_rounded),
-  deliveryCancelled('delivery_cancelled', 'Delivery cancelled', Icons.close_rounded);
+  deliveryCancelled('delivery_cancelled', 'Delivery cancelled', Icons.close_rounded),
+  unknown('unknown', 'Update', Icons.circle_outlined);
 
   const HistoryEventType(this.code, this.label, this.icon);
 
@@ -23,19 +25,18 @@ enum HistoryEventType {
 
   bool get isCancellation => this == rideCancelled || this == deliveryCancelled;
 
-  static HistoryEventType fromCode(String code) => values.firstWhere(
-    (type) => type.code == code,
-    orElse: () => throw FormatException('Unknown history event: $code'),
-  );
+  static HistoryEventType fromCode(String? code) =>
+      enumByCode(values, code, (type) => type.code, HistoryEventType.unknown);
 }
 
 class HistoryEvent {
   const HistoryEvent({required this.type, required this.at});
 
-  factory HistoryEvent.fromJson(Map<String, dynamic> json) => HistoryEvent(
-    type: HistoryEventType.fromCode(json['type'] as String),
-    at: DateTime.parse(json['at'] as String).toLocal(),
-  );
+  static HistoryEvent? tryFromReader(JsonReader reader) {
+    final type = HistoryEventType.fromCode(reader.strOrNull('type'));
+    if (type == HistoryEventType.unknown) return null;
+    return HistoryEvent(type: type, at: reader.time('at').toLocal());
+  }
 
   final HistoryEventType type;
   final DateTime at;
@@ -44,25 +45,28 @@ class HistoryEvent {
 enum CancelledBy {
   rider('rider', 'You cancelled'),
   driver('driver', 'Your driver cancelled'),
-  system('system', 'Sanga cancelled');
+  system('system', 'Sanga cancelled'),
+  unknown('unknown', 'This was cancelled');
 
   const CancelledBy(this.code, this.label);
 
   final String code;
   final String label;
 
-  static CancelledBy fromCode(String code) =>
-      values.firstWhere((by) => by.code == code, orElse: () => throw FormatException('Unknown cancelled by: $code'));
+  static CancelledBy fromCode(String? code) => enumByCode(values, code, (by) => by.code, CancelledBy.unknown);
 }
 
 class HistoryCancellation {
   const HistoryCancellation({required this.by, required this.reason, required this.fee});
 
-  factory HistoryCancellation.fromJson(Map<String, dynamic> json) => HistoryCancellation(
-    by: CancelledBy.fromCode(json['by'] as String),
-    reason: json['reason'] as String,
-    fee: (json['fee'] as num).toInt(),
-  );
+  factory HistoryCancellation.fromJson(Map<String, dynamic> json) {
+    final reader = JsonReader(json);
+    return HistoryCancellation(
+      by: CancelledBy.fromCode(reader.strOrNull('by')),
+      reason: reader.strOr('reason', ''),
+      fee: reader.intOr('fee', 0),
+    );
+  }
 
   final CancelledBy by;
   final String reason;
@@ -158,26 +162,25 @@ class HistoryDetail {
     final cancellation = map('cancellation');
     final delivery = map('delivery');
     final rating = map('rating');
+    final reader = JsonReader(json);
     return HistoryDetail(
-      id: json['id'] as String,
-      kind: HistoryKind.fromCode(json['kind'] as String),
-      status: HistoryStatus.fromCode(json['status'] as String),
-      category: RideCategory.values.asNameMap()[json['category']] ?? RideCategory.go,
-      reference: json['reference'] as String,
-      requestedAt: DateTime.parse(json['requestedAt'] as String).toLocal(),
-      occurredAt: DateTime.parse(json['occurredAt'] as String).toLocal(),
+      id: reader.str('id'),
+      kind: HistoryKind.fromCode(reader.strOrNull('kind')),
+      status: HistoryStatus.fromCode(reader.strOrNull('status')),
+      category: RideCategory.values.asNameMap()[reader.strOrNull('category')] ?? RideCategory.go,
+      reference: reader.strOr('reference', ''),
+      requestedAt: reader.time('requestedAt').toLocal(),
+      occurredAt: reader.time('occurredAt').toLocal(),
       route: HistoryRoute.fromJson(json),
-      fare: (json['fare'] as num).toInt(),
-      counterOffer: (json['counterOffer'] as num?)?.toInt(),
-      distanceKm: (json['distanceKm'] as num?)?.toDouble(),
-      durationMinutes: (json['durationMinutes'] as num?)?.toInt(),
-      lines: [for (final line in json['lines'] as List) ReceiptLine.fromJson(Map<String, dynamic>.from(line as Map))],
+      fare: reader.intOr('fare', 0),
+      counterOffer: reader.intOrNull('counterOffer'),
+      distanceKm: reader.doubleOrNull('distanceKm'),
+      durationMinutes: reader.intOrNull('durationMinutes'),
+      lines: reader.listOf('lines', (line) => ReceiptLine.fromJson(line.raw)),
       paidWith: paidWith == null ? null : ReceiptPayment.fromJson(paidWith),
       driver: driver == null ? null : HistoryDriver.fromJson(driver),
       vehicle: vehicle == null ? null : DriverVehicle.fromJson(vehicle),
-      events: [
-        for (final event in json['events'] as List) HistoryEvent.fromJson(Map<String, dynamic>.from(event as Map)),
-      ],
+      events: [for (final event in reader.listOf('events', HistoryEvent.tryFromReader)) ?event],
       ratedStars: (rating?['stars'] as num?)?.toInt(),
       cancellation: cancellation == null ? null : HistoryCancellation.fromJson(cancellation),
       delivery: delivery == null ? null : HistoryDelivery.fromJson(delivery),
@@ -252,7 +255,8 @@ class HistoryDetail {
 
 enum HistoryFailure {
   notFound('not_found', 'We can’t find this one', 'It may have been removed. Head back and try again.'),
-  connection('connection', 'We couldn’t load the details', 'Check your connection and give it another go.');
+  connection('connection', 'We couldn’t load the details', 'Check your connection and give it another go.'),
+  unknown('unknown', 'Something went wrong on our side', 'Try again in a moment.');
 
   const HistoryFailure(this.code, this.title, this.message);
 
@@ -262,8 +266,11 @@ enum HistoryFailure {
 
   bool get canRetry => this != notFound;
 
-  static HistoryFailure fromCode(String? code) =>
-      values.firstWhere((failure) => failure.code == code, orElse: () => connection);
+  static HistoryFailure of(Object error) => switch (ProblemKind.of(error)) {
+    ProblemRejected(code: 'not_found' || 'ride_not_found') => notFound,
+    ProblemOffline() => connection,
+    _ => unknown,
+  };
 }
 
 enum HistoryProblem {
@@ -275,8 +282,10 @@ enum HistoryProblem {
   final String code;
   final String message;
 
-  static HistoryProblem fromCode(String? code) =>
-      values.firstWhere((problem) => problem.code == code, orElse: () => unknown);
+  static HistoryProblem of(Object error) => switch (ProblemKind.of(error)) {
+    ProblemRejected(code: 'driver_not_found') => driverNotFound,
+    _ => unknown,
+  };
 }
 
 enum HistoryDriverAction { blocking, unblocking }
@@ -296,8 +305,9 @@ final class HistoryDetailFailed extends HistoryDetailState {
 }
 
 final class HistoryDetailLoaded extends HistoryDetailState {
-  const HistoryDetailLoaded(this.detail, {this.driverAction});
+  const HistoryDetailLoaded(this.detail, {this.driverAction, this.isStale = false});
 
   final HistoryDetail detail;
+  final bool isStale;
   final HistoryDriverAction? driverAction;
 }

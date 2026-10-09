@@ -18,6 +18,7 @@ abstract final class MockHistory {
   static const int _minutesBetweenTrips = 1290;
   static const int _cancellationFee = 300;
   static const String _proofAsset = 'assets/images/service_delivery.webp';
+  static const String _packagePhotoAsset = 'assets/images/delivery_pickup_proof.webp';
 
   static final DateTime _anchor = DateTime.now();
   static final Set<String> _blockedDrivers = {};
@@ -222,6 +223,7 @@ abstract final class MockHistory {
     'dropoff': _dropoff(i),
     'fare': _fareOf(i),
     if (_isDelivery(i)) 'itemName': _items[i % _items.length]['name'],
+    if (_isDelivery(i) && i % 2 == 0) 'packagePhotoUrl': _packagePhotoAsset,
   };
 
   static List<Map<String, dynamic>> summaries(String status) => [
@@ -304,7 +306,7 @@ abstract final class MockHistory {
         'description': item['description'],
         'sizeLabel': item['size'],
         'weightLabel': item['weight'],
-        'photoUrl': null,
+        'photoUrl': i % 2 == 0 ? _packagePhotoAsset : null,
       },
       'recipient': {'name': recipient['name'], 'phone': recipient['phone']},
       'deliveryProof': hasProof ? {'photoUrl': _proofAsset, 'at': _iso(_occurredAt(i))} : null,
