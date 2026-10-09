@@ -18,7 +18,7 @@ typedef _Preference = ({
 class RidePreferencesScreen extends StatelessWidget {
   const RidePreferencesScreen({super.key});
 
-  static const _divider = Divider(height: 1, color: SangaColors.divider);
+  static const _divider = Divider(height: 1, thickness: 1, color: SangaColors.cardBorder);
 
   static const _languages = ['English', 'Yoruba', 'Igbo', 'Hausa', 'Pidgin'];
 

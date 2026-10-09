@@ -79,10 +79,7 @@ class _ApprovalSheetState extends State<_ApprovalSheet> {
             : 'An admin has to say yes before this ride goes out. We’ll carry on the moment they do.',
         secondary: isApproved
             ? null
-            : TextButton(
-                onPressed: _isCancelling ? null : _cancel,
-                child: Text('Cancel request', style: SangaTextStyles.label.copyWith(color: SangaColors.primary)),
-              ),
+            : SangaTextAction(label: 'Cancel request', onPressed: _isCancelling ? null : _cancel),
       );
     });
   }

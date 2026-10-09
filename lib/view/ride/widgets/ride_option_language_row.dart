@@ -44,7 +44,7 @@ class RideOptionLanguageRow extends StatelessWidget {
               for (final (index, option) in options.indexed)
                 DecoratedBox(
                   decoration: BoxDecoration(
-                    border: index == 0 ? null : const Border(top: BorderSide(color: SangaColors.divider)),
+                    border: index == 0 ? null : const Border(top: BorderSide(color: SangaColors.cardBorder)),
                   ),
                   child: MenuItemButton(
                     onPressed: () => onChanged(option),

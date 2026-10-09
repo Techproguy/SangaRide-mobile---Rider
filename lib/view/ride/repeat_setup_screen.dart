@@ -146,10 +146,10 @@ class _RepeatSetupScreenState extends State<RepeatSetupScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       spacing: SangaSpacing.sm,
       children: [
-        const Text('When to repeat', style: SangaTextStyles.label),
+        const SangaSectionHeader('When to repeat'),
         Wrap(
-          spacing: SangaSpacing.xs,
-          runSpacing: SangaSpacing.xs,
+          spacing: SangaSpacing.sm,
+          runSpacing: SangaSpacing.sm,
           children: [
             for (final day in Weekday.values)
               SangaChoiceChip(

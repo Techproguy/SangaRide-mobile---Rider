@@ -100,7 +100,7 @@ class _HourlyHoursScreenState extends State<HourlyHoursScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       spacing: SangaSpacing.sm,
       children: [
-        const Text('Your price covers', style: SangaTextStyles.cardHeading),
+        const SangaSectionHeader('Your price covers'),
         for (final item in catalog.includes)
           Row(
             spacing: SangaSpacing.sm,
