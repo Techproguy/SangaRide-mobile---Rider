@@ -1,5 +1,3 @@
-export 'buttons/inkwell.dart';
-
 export 'layout/error.dart';
 
 export 'map/sanga_map.dart';
