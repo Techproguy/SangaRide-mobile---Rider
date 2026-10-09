@@ -36,12 +36,7 @@ class ProfilePhotoEditor extends StatelessWidget {
                     dimension: _size,
                     child: DecoratedBox(
                       decoration: BoxDecoration(shape: BoxShape.circle, color: SangaColors.scrim),
-                      child: Center(
-                        child: SizedBox.square(
-                          dimension: 28,
-                          child: CircularProgressIndicator(strokeWidth: 2.5, color: SangaColors.onPrimary),
-                        ),
-                      ),
+                      child: Center(child: SangaActivityIndicator(size: 24, color: SangaColors.onPrimary)),
                     ),
                   ),
               ],

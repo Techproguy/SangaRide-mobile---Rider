@@ -138,10 +138,10 @@ class _Bullet extends StatelessWidget {
       spacing: SangaSpacing.sm,
       children: [
         const Padding(
-          padding: EdgeInsets.only(top: 2),
+          padding: EdgeInsets.only(top: SangaSpacing.xxs),
           child: Icon(Icons.circle, size: 6, color: SangaColors.textMuted),
         ),
-        Expanded(child: Text(text, style: SangaTextStyles.cardSubtitle.copyWith(fontSize: 13))),
+        Expanded(child: Text(text, style: SangaTextStyles.cardBody)),
       ],
     );
   }
