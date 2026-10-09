@@ -12,7 +12,7 @@ enum CounterpartRole {
   final String code;
   final String label;
 
-  static CounterpartRole fromCode(String? code) => values.firstWhere((role) => role.code == code, orElse: () => driver);
+  static CounterpartRole fromCode(String? code) => codedEnum(values, (role) => role.code, code, orElse: driver);
 }
 
 class SafetyTrip {

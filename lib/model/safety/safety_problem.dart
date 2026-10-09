@@ -1,3 +1,5 @@
+import 'package:sanga_ride/core/api/server_codes.dart';
+import 'package:sanga_ride/core/copy/common_copy.dart';
 import 'package:sanga_ride_core/sanga_ride_core.dart';
 
 enum SafetyProblem {
@@ -5,12 +7,12 @@ enum SafetyProblem {
   locationUnavailable('location_unavailable', 'We couldn’t find your location. We can still send your SOS without it.'),
   duplicateContact('duplicate_contact', 'That person is already one of your contacts.'),
   contactsLimit('contacts_limit', 'You’ve added the most contacts you can. Remove one to add another.'),
-  invalidPhone('invalid_phone', 'Enter a valid Nigerian phone number.'),
+  invalidPhone(ServerCode.invalidPhone, CommonCopy.invalidPhoneSentence),
   ownNumber('own_number', 'That’s your own number. Add someone else.'),
   detailsTooShort('details_too_short', 'Tell us a little more so we can help.'),
   connection('connection', 'We couldn’t reach the server. Check your connection and give it another go.'),
   unconfirmed('unconfirmed', 'We couldn’t confirm your SOS went out. Try again, or call for help right away.'),
-  unknown('unknown', 'Something went wrong on our side. Try again in a moment.'),
+  unknown('unknown', CommonCopy.serverTrouble),
   generic('generic', 'Something went wrong. Give it another go.');
 
   const SafetyProblem(this.code, this.message);
