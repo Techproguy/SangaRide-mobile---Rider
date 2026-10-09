@@ -194,11 +194,10 @@ class TripPaymentController extends GetxController {
       payment.allowedMethods.contains(method) && (method != PaymentMethod.wallet || _walletCovers(payment.amount));
 
   PaymentMethod? _preferredOf(TripPayment payment) {
+    if (_isChoosable(payment, PaymentMethod.groupWallet)) return PaymentMethod.groupWallet;
     final last = payment.lastMethod;
-    if (last != null && last != PaymentMethod.groupWallet && _isChoosable(payment, last)) return last;
-    return payment.allowedMethods
-        .where((method) => method != PaymentMethod.groupWallet && _isChoosable(payment, method))
-        .firstOrNull;
+    if (last != null && _isChoosable(payment, last)) return last;
+    return payment.allowedMethods.where((method) => _isChoosable(payment, method)).firstOrNull;
   }
 
   void _onWalletChanged() {
