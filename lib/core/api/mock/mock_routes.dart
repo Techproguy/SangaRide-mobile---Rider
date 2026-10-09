@@ -8,7 +8,7 @@ import 'package:sanga_ride/core/api/mock/mock_groups.dart';
 import 'package:sanga_ride/core/api/mock/mock_who_for.dart';
 import 'package:sanga_ride/core/api/mock/mock_data.dart';
 import 'package:sanga_ride/core/api/mock/mock_history.dart';
-import 'package:sanga_ride/core/api/mock/mock_endpoints.dart';
+import 'package:sanga_ride/core/api/app_endpoints.dart';
 import 'package:sanga_ride/core/api/mock/mock_safety.dart';
 import 'package:sanga_ride/core/api/mock/mock_notifications.dart';
 import 'package:sanga_ride/core/api/mock/mock_saved_places.dart';
@@ -38,36 +38,36 @@ class MockRoutes {
     ...MockSupport.routes,
     ...MockWallet.routes,
     ...MockGroups.routes,
-    MockRoute.post(MockEndpoints.signUp, (request) => {'phone': request.body['phone'], 'expiresInSeconds': 300}),
+    MockRoute.post(AppEndpoints.signUp, (request) => {'phone': request.body['phone'], 'expiresInSeconds': 300}),
     MockRoute.post(
-      MockEndpoints.checkExistence,
+      AppEndpoints.checkExistence,
       (request) => {'exists': request.body['phone'] == MockData.user['phone']},
     ),
-    MockRoute.post(MockEndpoints.requestOtp, _requestOtp),
-    MockRoute.post(MockEndpoints.verifyOtp, _verifyOtp),
-    MockRoute.post(MockEndpoints.googleSignIn, (_) => _session),
-    MockRoute.post(MockEndpoints.appleSignIn, (_) => _session),
-    MockRoute.post(MockEndpoints.refreshToken, (_) => MockData.tokens),
-    MockRoute.post(MockEndpoints.logout, (_) => null),
-    MockRoute.post(MockEndpoints.selfie, MockVerification.selfie),
-    MockRoute.get(MockEndpoints.recentPlaces, (_) => _recentPlaces),
-    MockRoute.post(MockEndpoints.recentPlaces, _addRecentPlace),
-    MockRoute.delete(MockEndpoints.recentPlace, (request) {
+    MockRoute.post(AppEndpoints.requestOtp, _requestOtp),
+    MockRoute.post(AppEndpoints.verifyOtp, _verifyOtp),
+    MockRoute.post(AppEndpoints.googleSignIn, (_) => _session),
+    MockRoute.post(AppEndpoints.appleSignIn, (_) => _session),
+    MockRoute.post(AppEndpoints.refreshToken, (_) => MockData.tokens),
+    MockRoute.post(AppEndpoints.logout, (_) => null),
+    MockRoute.post(AppEndpoints.selfie, MockVerification.selfie),
+    MockRoute.get(AppEndpoints.recentPlaces, (_) => _recentPlaces),
+    MockRoute.post(AppEndpoints.recentPlaces, _addRecentPlace),
+    MockRoute.delete(AppEndpoints.recentPlace, (request) {
       _recentPlaces.removeWhere((place) => place['place_id'] == request.params['id']);
       return null;
     }),
-    MockRoute.get(MockEndpoints.weather, (_) => MockData.weather),
-    MockRoute.get(MockEndpoints.rideOptions, (_) => MockData.rideOptions),
-    MockRoute.post(MockEndpoints.rideEstimate, _rideEstimate),
-    MockRoute.post(MockEndpoints.rideRequests, _createRideRequest),
-    MockRoute.post(MockEndpoints.rideRequestsScheduled, _scheduleRide),
-    MockRoute.get(MockEndpoints.rideRequest, _rideRequestStatus),
-    MockRoute.get(MockEndpoints.rideRequestOffers, _rideOffers),
-    MockRoute.post(MockEndpoints.rideOfferIgnore, (_) => null),
-    MockRoute.post(MockEndpoints.rideOfferHold, _holdOffer),
-    MockRoute.delete(MockEndpoints.rideRequestHold, (_) => null),
-    MockRoute.post(MockEndpoints.rideOfferConfirm, _confirmOffer),
-    MockRoute.post(MockEndpoints.rideRequestCancel, _cancelRideRequest),
+    MockRoute.get(AppEndpoints.weather, (_) => MockData.weather),
+    MockRoute.get(AppEndpoints.rideOptions, (_) => MockData.rideOptions),
+    MockRoute.post(AppEndpoints.rideEstimate, _rideEstimate),
+    MockRoute.post(AppEndpoints.rideRequests, _createRideRequest),
+    MockRoute.post(AppEndpoints.rideRequestsScheduled, _scheduleRide),
+    MockRoute.get(AppEndpoints.rideRequest, _rideRequestStatus),
+    MockRoute.get(AppEndpoints.rideRequestOffers, _rideOffers),
+    MockRoute.post(AppEndpoints.rideOfferIgnore, (_) => null),
+    MockRoute.post(AppEndpoints.rideOfferHold, _holdOffer),
+    MockRoute.delete(AppEndpoints.rideRequestHold, (_) => null),
+    MockRoute.post(AppEndpoints.rideOfferConfirm, _confirmOffer),
+    MockRoute.post(AppEndpoints.rideRequestCancel, _cancelRideRequest),
   ];
 
   static final Map<String, _MockRideRequest> _rideRequests = {};

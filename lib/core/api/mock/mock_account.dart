@@ -1,7 +1,7 @@
 import 'package:sanga_ride/core/api/account_endpoints.dart';
 import 'package:sanga_ride/core/api/mock/mock_data.dart';
 import 'package:sanga_ride/core/api/mock/mock_delivery.dart';
-import 'package:sanga_ride/core/api/mock/mock_endpoints.dart';
+import 'package:sanga_ride/core/api/app_endpoints.dart';
 import 'package:sanga_ride/core/api/mock/mock_server.dart';
 import 'package:sanga_ride/core/api/mock/mock_trip.dart';
 import 'package:sanga_ride/core/api/mock/mock_verification.dart';
@@ -132,8 +132,8 @@ abstract final class MockAccount {
   }
 
   static bool _hasActiveTrip() {
-    final route = MockTrip.routes.where((route) => route.match('GET', MockEndpoints.activeTrip) != null).firstOrNull;
-    final request = MockRequest(path: MockEndpoints.activeTrip, body: const {}, query: const {}, params: const {});
+    final route = MockTrip.routes.where((route) => route.match('GET', AppEndpoints.activeTrip) != null).firstOrNull;
+    final request = MockRequest(path: AppEndpoints.activeTrip, body: const {}, query: const {}, params: const {});
     return route?.handler(request) != null;
   }
 }

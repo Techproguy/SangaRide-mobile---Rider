@@ -5,7 +5,7 @@ import 'package:dio/dio.dart' show Options;
 import 'package:get/get.dart';
 import 'package:sanga_ride/controller/rider/wallet_controller.dart';
 import 'package:sanga_ride/core/api/api.dart';
-import 'package:sanga_ride/core/api/mock/mock_endpoints.dart';
+import 'package:sanga_ride/core/api/app_endpoints.dart';
 import 'package:sanga_ride/core/services/toast_service.dart';
 import 'package:sanga_ride/model/trip/wrapup/wrapup.dart';
 import 'package:sanga_ride/model/wallet/wallet.dart';
@@ -66,7 +66,7 @@ class TripPaymentController extends GetxController {
     _state.value = const PaymentLoading();
     final walletReady = _wallet.open();
     try {
-      final response = await _api.get(MockEndpoints.tripPaymentOf(id), suppressErrorToast: true);
+      final response = await _api.get(AppEndpoints.tripPaymentOf(id), suppressErrorToast: true);
       await walletReady;
       if (epoch != _epoch) return;
       _apply(TripPayment.fromJson(_dataOf(response.data)), epoch);
@@ -178,7 +178,7 @@ class TripPaymentController extends GetxController {
     _state.value = PaymentProcessing(payment, method: request.method);
     try {
       final response = await _api.post(
-        MockEndpoints.tripPaymentOf(id),
+        AppEndpoints.tripPaymentOf(id),
         data: request.toJson(),
         options: _noAutoRetry,
         suppressErrorToast: true,
@@ -220,7 +220,7 @@ class TripPaymentController extends GetxController {
     if (id == null || current is! PaymentAwaitingDriver) return;
     final epoch = _invalidate();
     try {
-      final response = await _api.post(MockEndpoints.tripPaymentCancelOf(id), suppressErrorToast: true);
+      final response = await _api.post(AppEndpoints.tripPaymentCancelOf(id), suppressErrorToast: true);
       if (epoch != _epoch) return;
       _apply(TripPayment.fromJson(_dataOf(response.data)), epoch);
     } catch (e) {
@@ -246,7 +246,7 @@ class TripPaymentController extends GetxController {
     if (_isPolling || id == null || epoch != _epoch || state is! PaymentAwaitingDriver) return;
     _isPolling = true;
     try {
-      final response = await _api.get(MockEndpoints.tripPaymentOf(id), suppressErrorToast: true);
+      final response = await _api.get(AppEndpoints.tripPaymentOf(id), suppressErrorToast: true);
       if (epoch != _epoch || state is! PaymentAwaitingDriver) return;
       _apply(TripPayment.fromJson(_dataOf(response.data)), epoch);
     } catch (e) {

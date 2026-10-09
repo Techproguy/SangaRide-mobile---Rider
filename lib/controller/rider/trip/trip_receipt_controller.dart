@@ -2,7 +2,7 @@ import 'dart:developer';
 
 import 'package:get/get.dart';
 import 'package:sanga_ride/core/api/api.dart';
-import 'package:sanga_ride/core/api/mock/mock_endpoints.dart';
+import 'package:sanga_ride/core/api/app_endpoints.dart';
 import 'package:sanga_ride/model/trip/wrapup/wrapup.dart';
 
 class TripReceiptController extends GetxController {
@@ -44,7 +44,7 @@ class TripReceiptController extends GetxController {
     final epoch = ++_epoch;
     _state.value = const ReceiptLoading();
     try {
-      final response = await _api.get(MockEndpoints.tripReceiptOf(id), suppressErrorToast: true);
+      final response = await _api.get(AppEndpoints.tripReceiptOf(id), suppressErrorToast: true);
       if (epoch != _epoch) return;
       final data = Map<String, dynamic>.from((response.data as Map)['data'] as Map);
       _state.value = ReceiptLoaded(TripReceipt.fromJson(data));

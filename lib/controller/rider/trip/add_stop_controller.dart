@@ -5,7 +5,7 @@ import 'package:get/get.dart';
 import 'package:sanga_ride/controller/rider/ride_request_controller.dart';
 import 'package:sanga_ride/controller/rider/trip/trip_controller.dart';
 import 'package:sanga_ride/core/api/api.dart';
-import 'package:sanga_ride/core/api/mock/mock_endpoints.dart';
+import 'package:sanga_ride/core/api/app_endpoints.dart';
 import 'package:sanga_ride/model/models.dart';
 
 class AddStopController extends GetxController {
@@ -94,7 +94,7 @@ class AddStopController extends GetxController {
     _state.value = AddStopQuoting(stops);
     try {
       final response = await _api.post(
-        MockEndpoints.liveTripStopsQuoteOf(id),
+        AppEndpoints.liveTripStopsQuoteOf(id),
         data: _stopsBody(stops),
         suppressErrorToast: true,
       );
@@ -116,7 +116,7 @@ class AddStopController extends GetxController {
     _state.value = current.applying();
     try {
       final response = await _api.post(
-        MockEndpoints.liveTripStopsOf(id),
+        AppEndpoints.liveTripStopsOf(id),
         data: {..._stopsBody(current.added), 'quoteId': current.quote.id},
         suppressErrorToast: true,
       );

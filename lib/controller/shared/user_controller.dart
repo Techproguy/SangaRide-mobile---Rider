@@ -3,7 +3,7 @@ import 'dart:developer';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:sanga_ride/core/api/api.dart';
-import 'package:sanga_ride/core/api/mock/mock_endpoints.dart';
+import 'package:sanga_ride/core/api/app_endpoints.dart';
 import 'package:sanga_ride/core/storage_keys.dart';
 import 'package:sanga_ride/model/models.dart';
 
@@ -27,7 +27,7 @@ class UserController extends GetxController {
 
   Future<void> fetchMe() async {
     try {
-      final response = await _api.get(MockEndpoints.me, suppressErrorToast: true);
+      final response = await _api.get(AppEndpoints.me, suppressErrorToast: true);
       await setUser(UserModel.fromJson(response.data['data'] as Map<String, dynamic>));
     } catch (e) {
       log('fetchMe failed: $e');
@@ -37,7 +37,7 @@ class UserController extends GetxController {
   Future<bool> updateProfile(Map<String, dynamic> fields) async {
     _isSaving.value = true;
     try {
-      final response = await _api.patch(MockEndpoints.me, data: fields);
+      final response = await _api.patch(AppEndpoints.me, data: fields);
       await setUser(UserModel.fromJson(response.data['data'] as Map<String, dynamic>));
       return true;
     } catch (e) {

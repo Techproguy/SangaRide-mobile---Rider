@@ -53,8 +53,11 @@ abstract final class BookingRoutes {
 
   static String afterRoute(TripType type) => switch (type) {
     TripType.delivery => DeliveryRoutes.tier,
-    TripType.oneWay || TripType.roundTrip || TripType.hourly || TripType.intercity || TripType.airport =>
-      SangaRoutes.tripType,
+    TripType.oneWay ||
+    TripType.roundTrip ||
+    TripType.hourly ||
+    TripType.intercity ||
+    TripType.airport => SangaRoutes.tripType,
   };
 
   static String afterOptions(TripType type) => switch (type) {

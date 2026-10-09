@@ -6,7 +6,7 @@ import 'package:get/get.dart';
 import 'package:sanga_ride/controller/rider/account/account_api.dart';
 import 'package:sanga_ride/controller/rider/account/account_controller.dart';
 import 'package:sanga_ride/core/api/api.dart';
-import 'package:sanga_ride/core/api/mock/mock_endpoints.dart';
+import 'package:sanga_ride/core/api/app_endpoints.dart';
 import 'package:sanga_ride/core/api/verification_endpoints.dart';
 import 'package:sanga_ride/core/services/image_compression_service.dart';
 import 'package:sanga_ride/core/services/package_photo_service.dart';
@@ -127,7 +127,7 @@ class VerificationController extends GetxController {
 
   Future<bool> verifySelfie(String photoPath) async {
     try {
-      final response = await _api.post(MockEndpoints.selfie, data: {'photo': photoPath}, options: quietOptions);
+      final response = await _api.post(AppEndpoints.selfie, data: {'photo': photoPath}, options: quietOptions);
       final passed = dataOf(response)['status'] == 'verified';
       if (passed) await load();
       return passed;

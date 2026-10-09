@@ -2,7 +2,7 @@ import 'dart:developer';
 
 import 'package:get/get.dart';
 import 'package:sanga_ride/core/api/api.dart';
-import 'package:sanga_ride/core/api/mock/mock_endpoints.dart';
+import 'package:sanga_ride/core/api/app_endpoints.dart';
 import 'package:sanga_ride/model/trip/wrapup/wrapup.dart';
 
 class TripRatingController extends GetxController {
@@ -54,7 +54,7 @@ class TripRatingController extends GetxController {
     final epoch = ++_epoch;
     _state.value = RatingSubmitting(rating);
     try {
-      await _api.post(MockEndpoints.tripRatingOf(id), data: rating.toJson(), suppressErrorToast: true);
+      await _api.post(AppEndpoints.tripRatingOf(id), data: rating.toJson(), suppressErrorToast: true);
     } catch (e) {
       log('rating failed: ${e is ApiException ? e.code : e.runtimeType}');
       final isDone = e is ApiException && e.statusCode == 409 && e.code == alreadyRatedCode;

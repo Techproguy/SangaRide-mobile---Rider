@@ -3,7 +3,7 @@ import 'dart:math' as math;
 import 'package:sanga_ride/core/api/mock/mock_airport.dart';
 import 'package:sanga_ride/core/api/mock/mock_data.dart';
 import 'package:sanga_ride/core/api/mock/mock_delivery_live.dart';
-import 'package:sanga_ride/core/api/mock/mock_endpoints.dart';
+import 'package:sanga_ride/core/api/app_endpoints.dart';
 import 'package:sanga_ride/core/api/mock/mock_history.dart';
 import 'package:sanga_ride/core/api/mock/mock_server.dart';
 import 'package:sanga_ride/core/api/mock/mock_trip_changes.dart';
@@ -12,16 +12,16 @@ import 'package:sanga_ride/core/api/mock/mock_trip_wrapup.dart';
 
 abstract final class MockTrip {
   static final List<MockRoute> routes = [
-    MockRoute.get(MockEndpoints.activeTrip, (_) => _active()),
-    MockRoute.get(MockEndpoints.liveTrip, (request) => _payload(request.params['id']!)),
-    MockRoute.post(MockEndpoints.liveTripConfirmDetails, _confirmDetails),
-    MockRoute.post(MockEndpoints.liveTripPinRefresh, _refreshPin),
-    MockRoute.post(MockEndpoints.liveTripReport, _report),
-    MockRoute.post(MockEndpoints.liveTripComplete, _complete),
-    MockRoute.post(MockEndpoints.liveTripCall, (_) => {'maskedNumber': _maskedNumber}),
-    MockRoute.get(MockEndpoints.liveTripMessages, _messages),
-    MockRoute.post(MockEndpoints.liveTripMessages, _sendMessage),
-    MockRoute.get(MockEndpoints.liveTripEvents, (request) => {'events': _events(request.params['id']!)}),
+    MockRoute.get(AppEndpoints.activeTrip, (_) => _active()),
+    MockRoute.get(AppEndpoints.liveTrip, (request) => _payload(request.params['id']!)),
+    MockRoute.post(AppEndpoints.liveTripConfirmDetails, _confirmDetails),
+    MockRoute.post(AppEndpoints.liveTripPinRefresh, _refreshPin),
+    MockRoute.post(AppEndpoints.liveTripReport, _report),
+    MockRoute.post(AppEndpoints.liveTripComplete, _complete),
+    MockRoute.post(AppEndpoints.liveTripCall, (_) => {'maskedNumber': _maskedNumber}),
+    MockRoute.get(AppEndpoints.liveTripMessages, _messages),
+    MockRoute.post(AppEndpoints.liveTripMessages, _sendMessage),
+    MockRoute.get(AppEndpoints.liveTripEvents, (request) => {'events': _events(request.params['id']!)}),
     ...MockTripChanges.routes,
     ...MockDeliveryLive.routes,
   ];

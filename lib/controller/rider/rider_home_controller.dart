@@ -5,7 +5,7 @@ import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:sanga_ride/controller/rider/saved_places_controller.dart';
 import 'package:sanga_ride/core/api/api.dart';
-import 'package:sanga_ride/core/api/mock/mock_endpoints.dart';
+import 'package:sanga_ride/core/api/app_endpoints.dart';
 import 'package:sanga_ride/core/services/location_service.dart';
 import 'package:sanga_ride/core/services/places_service.dart';
 import 'package:sanga_ride/core/services/toast_service.dart';
@@ -99,7 +99,7 @@ class RiderHomeController extends GetxController {
       ..insert(0, place);
     if (_recent.length > _maxRecent) _recent.removeRange(_maxRecent, _recent.length);
     try {
-      await _api.post(MockEndpoints.recentPlaces, data: place.toJson(), suppressErrorToast: true);
+      await _api.post(AppEndpoints.recentPlaces, data: place.toJson(), suppressErrorToast: true);
     } catch (e) {
       log('remember place failed: $e');
     }
@@ -111,7 +111,7 @@ class RiderHomeController extends GetxController {
     _recent.removeAt(index);
     try {
       await _api.delete(
-        MockEndpoints.recentPlaceOf(place.placeId),
+        AppEndpoints.recentPlaceOf(place.placeId),
         options: Options(extra: {'suppressErrorToast': true}),
       );
     } catch (e) {
@@ -122,7 +122,7 @@ class RiderHomeController extends GetxController {
 
   Future<void> _loadWeather() async {
     try {
-      final response = await _api.get(MockEndpoints.weather);
+      final response = await _api.get(AppEndpoints.weather);
       _weather.value = Weather.fromJson(Map<String, dynamic>.from(response.data['data'] as Map));
     } catch (e) {
       log('weather failed: $e');
@@ -131,7 +131,7 @@ class RiderHomeController extends GetxController {
 
   Future<void> _loadPlaces() async {
     try {
-      final response = await _api.get(MockEndpoints.recentPlaces);
+      final response = await _api.get(AppEndpoints.recentPlaces);
       _recent.assignAll((response.data['data'] as List).map(_place).whereType<Place>());
     } catch (e) {
       log('places failed: $e');

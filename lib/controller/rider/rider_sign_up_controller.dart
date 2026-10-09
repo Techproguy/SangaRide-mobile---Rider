@@ -3,7 +3,7 @@ import 'dart:developer';
 import 'package:get/get.dart';
 import 'package:sanga_ride/controller/shared/auth_controller.dart';
 import 'package:sanga_ride/core/api/api.dart';
-import 'package:sanga_ride/core/api/mock/mock_endpoints.dart';
+import 'package:sanga_ride/core/api/app_endpoints.dart';
 import 'package:sanga_ride/core/api/places_endpoints.dart';
 import 'package:sanga_ride/model/models.dart';
 
@@ -26,7 +26,7 @@ class RiderSignUpController extends GetxController {
         _phoneError.value = 'This number already has an account.';
         return false;
       }
-      await _api.post(MockEndpoints.signUp, data: {'firstName': firstName, 'lastName': lastName, 'phone': phone});
+      await _api.post(AppEndpoints.signUp, data: {'firstName': firstName, 'lastName': lastName, 'phone': phone});
       return true;
     } catch (e) {
       log('start sign up failed: $e');
@@ -39,7 +39,7 @@ class RiderSignUpController extends GetxController {
   Future<bool> saveProfile({required String email, DateTime? birthday, String? referralCode}) {
     return _save(
       () => _api.patch(
-        MockEndpoints.me,
+        AppEndpoints.me,
         data: {'email': email, 'birthday': ?birthday?.toIso8601String(), 'referralCode': ?referralCode},
       ),
     );
@@ -47,7 +47,7 @@ class RiderSignUpController extends GetxController {
 
   Future<bool> verifySelfie(String photoPath) async {
     try {
-      final response = await _api.post(MockEndpoints.selfie, data: {'photo': photoPath}, suppressErrorToast: true);
+      final response = await _api.post(AppEndpoints.selfie, data: {'photo': photoPath}, suppressErrorToast: true);
       return response.data['data']['status'] == 'verified';
     } catch (e) {
       log('verifySelfie failed: $e');
@@ -55,9 +55,8 @@ class RiderSignUpController extends GetxController {
     }
   }
 
-  Future<bool> saveHome(Place place) => _save(
-    () => _api.post(PlacesEndpoints.saved, data: {'kind': 'home', 'label': 'Home', 'place': place.toJson()}),
-  );
+  Future<bool> saveHome(Place place) =>
+      _save(() => _api.post(PlacesEndpoints.saved, data: {'kind': 'home', 'label': 'Home', 'place': place.toJson()}));
 
   Future<bool> _save(Future<Object?> Function() request) async {
     _isSaving.value = true;

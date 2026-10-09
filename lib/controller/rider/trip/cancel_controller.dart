@@ -4,7 +4,7 @@ import 'dart:developer';
 import 'package:get/get.dart';
 import 'package:sanga_ride/controller/rider/trip/trip_controller.dart';
 import 'package:sanga_ride/core/api/api.dart';
-import 'package:sanga_ride/core/api/mock/mock_endpoints.dart';
+import 'package:sanga_ride/core/api/app_endpoints.dart';
 import 'package:sanga_ride/model/models.dart';
 
 class CancelController extends GetxController {
@@ -63,7 +63,7 @@ class CancelController extends GetxController {
     _state.value = CancelLoadingReview(reason, current.note);
     try {
       final response = await _api.get(
-        MockEndpoints.liveTripCancellationOf(id),
+        AppEndpoints.liveTripCancellationOf(id),
         queryParameters: {'reason': reason.code},
         suppressErrorToast: true,
       );
@@ -84,7 +84,7 @@ class CancelController extends GetxController {
     final note = current.note.trim();
     try {
       final response = await _api.post(
-        MockEndpoints.liveTripCancelOf(id),
+        AppEndpoints.liveTripCancelOf(id),
         data: {'reason': current.reason.code, if (note.isNotEmpty) 'note': note},
         suppressErrorToast: true,
       );

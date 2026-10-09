@@ -7,7 +7,7 @@ import 'package:sanga_ride/controller/rider/ride_for_controller.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart' show LatLng;
 import 'package:sanga_ride/core/api/api.dart';
 import 'package:sanga_ride/core/api/booking_endpoints.dart';
-import 'package:sanga_ride/core/api/mock/mock_endpoints.dart';
+import 'package:sanga_ride/core/api/app_endpoints.dart';
 import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride/model/ride/booking.dart';
 
@@ -404,7 +404,7 @@ class RideRequestController extends GetxController {
     _optionsFailed.value = false;
     _isLoadingOptions.value = true;
     try {
-      final response = await _api.get(MockEndpoints.rideOptions);
+      final response = await _api.get(AppEndpoints.rideOptions);
       final data = response.data['data'] as List;
       _options.assignAll(data.map((json) => RideOption.fromJson(Map<String, dynamic>.from(json as Map))));
       final preferred = _preferredCategory;
@@ -428,7 +428,7 @@ class RideRequestController extends GetxController {
     _isEstimating.value = true;
     try {
       final response = await _api.post(
-        MockEndpoints.rideEstimate,
+        AppEndpoints.rideEstimate,
         data: {
           'pickup': pickup.toJson(),
           'dropoff': dropoff.toJson(),

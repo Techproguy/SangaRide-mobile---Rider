@@ -1,5 +1,5 @@
 import 'package:sanga_ride/core/api/mock/mock_data.dart';
-import 'package:sanga_ride/core/api/mock/mock_endpoints.dart';
+import 'package:sanga_ride/core/api/app_endpoints.dart';
 import 'package:sanga_ride/core/api/mock/mock_groups.dart';
 import 'package:sanga_ride/core/api/mock/mock_server.dart';
 import 'package:sanga_ride/core/api/mock/mock_trip.dart';
@@ -8,11 +8,11 @@ import 'package:sanga_ride/core/api/mock/mock_wallet.dart';
 
 abstract final class MockTripWrapUp {
   static final List<MockRoute> routes = [
-    MockRoute.get(MockEndpoints.tripPayment, _payment),
-    MockRoute.post(MockEndpoints.tripPayment, _pay),
-    MockRoute.post(MockEndpoints.tripPaymentCancel, _cancelPayment),
-    MockRoute.get(MockEndpoints.tripReceipt, _receipt),
-    MockRoute.post(MockEndpoints.tripRating, _rate),
+    MockRoute.get(AppEndpoints.tripPayment, _payment),
+    MockRoute.post(AppEndpoints.tripPayment, _pay),
+    MockRoute.post(AppEndpoints.tripPaymentCancel, _cancelPayment),
+    MockRoute.get(AppEndpoints.tripReceipt, _receipt),
+    MockRoute.post(AppEndpoints.tripRating, _rate),
   ];
 
   static const Duration _cashConfirmDelay = Duration(seconds: 4);

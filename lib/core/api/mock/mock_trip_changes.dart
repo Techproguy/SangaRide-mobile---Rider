@@ -1,6 +1,6 @@
 import 'dart:math' as math;
 
-import 'package:sanga_ride/core/api/mock/mock_endpoints.dart';
+import 'package:sanga_ride/core/api/app_endpoints.dart';
 import 'package:sanga_ride/core/api/mock/mock_server.dart';
 import 'package:sanga_ride/core/api/mock/mock_trip.dart';
 import 'package:sanga_ride/core/api/mock/mock_trip_state.dart';
@@ -8,10 +8,10 @@ import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 abstract final class MockTripChanges {
   static final List<MockRoute> routes = [
-    MockRoute.post(MockEndpoints.liveTripStopsQuote, _quote),
-    MockRoute.post(MockEndpoints.liveTripStops, _addStops),
-    MockRoute.get(MockEndpoints.liveTripCancellation, _cancellation),
-    MockRoute.post(MockEndpoints.liveTripCancel, _cancel),
+    MockRoute.post(AppEndpoints.liveTripStopsQuote, _quote),
+    MockRoute.post(AppEndpoints.liveTripStops, _addStops),
+    MockRoute.get(AppEndpoints.liveTripCancellation, _cancellation),
+    MockRoute.post(AppEndpoints.liveTripCancel, _cancel),
   ];
 
   static const int _maxStops = 3;

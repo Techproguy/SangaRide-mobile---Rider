@@ -1,7 +1,7 @@
 import 'package:sanga_ride/core/api/account_endpoints.dart';
 
-class MockEndpoints {
-  MockEndpoints._();
+class AppEndpoints {
+  AppEndpoints._();
 
   static const String _auth = '/auth';
   static const String _users = '/users';

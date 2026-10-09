@@ -4,7 +4,7 @@ import 'dart:developer';
 import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 import 'package:sanga_ride/core/api/api.dart';
-import 'package:sanga_ride/core/api/mock/mock_endpoints.dart';
+import 'package:sanga_ride/core/api/app_endpoints.dart';
 import 'package:sanga_ride/core/services/toast_service.dart';
 import 'package:sanga_ride/model/models.dart';
 
@@ -153,7 +153,7 @@ class TripController extends GetxController {
     final epoch = _epoch;
     final seq = ++_seq;
     try {
-      final response = await _api.get(MockEndpoints.liveTripOf(id), suppressErrorToast: true);
+      final response = await _api.get(AppEndpoints.liveTripOf(id), suppressErrorToast: true);
       if (epoch != _epoch) return;
       final trip = Trip.fromJson(_dataOf(response.data));
       _missedPolls = 0;
@@ -209,7 +209,7 @@ class TripController extends GetxController {
 
   Future<Trip?> loadActive() async {
     try {
-      final response = await _api.get(MockEndpoints.activeTrip, suppressErrorToast: true);
+      final response = await _api.get(AppEndpoints.activeTrip, suppressErrorToast: true);
       final data = (response.data as Map)['data'];
       if (data == null) return null;
       return Trip.fromJson(Map<String, dynamic>.from(data as Map));
@@ -219,17 +219,17 @@ class TripController extends GetxController {
     }
   }
 
-  Future<bool> confirmDetails() => _act(isConfirmingDetails, MockEndpoints.liveTripConfirmDetailsOf);
+  Future<bool> confirmDetails() => _act(isConfirmingDetails, AppEndpoints.liveTripConfirmDetailsOf);
 
-  Future<bool> refreshPin() => _act(isRefreshingPin, MockEndpoints.liveTripPinRefreshOf);
+  Future<bool> refreshPin() => _act(isRefreshingPin, AppEndpoints.liveTripPinRefreshOf);
 
-  Future<bool> completeRide() => _act(isCompleting, MockEndpoints.liveTripCompleteOf);
+  Future<bool> completeRide() => _act(isCompleting, AppEndpoints.liveTripCompleteOf);
 
   Future<bool> reportIssue(Iterable<TripIssue> issues) {
     if (issues.isEmpty) return Future.value(false);
     return _act(
       isReporting,
-      MockEndpoints.liveTripReportOf,
+      AppEndpoints.liveTripReportOf,
       data: {
         'reasons': [for (final issue in issues) issue.code],
       },
@@ -263,7 +263,7 @@ class TripController extends GetxController {
     if (id == null || isCalling.value) return null;
     isCalling.value = true;
     try {
-      final response = await _api.post(MockEndpoints.liveTripCallOf(id), suppressErrorToast: true);
+      final response = await _api.post(AppEndpoints.liveTripCallOf(id), suppressErrorToast: true);
       return _dataOf(response.data)['maskedNumber'] as String?;
     } catch (e) {
       log('startCall failed: $e');
@@ -306,7 +306,7 @@ class TripController extends GetxController {
     _isChatPolling = true;
     final epoch = _epoch;
     try {
-      final response = await _api.get(MockEndpoints.liveTripMessagesOf(id), suppressErrorToast: true);
+      final response = await _api.get(AppEndpoints.liveTripMessagesOf(id), suppressErrorToast: true);
       if (epoch != _epoch || !isChatOpen) return;
       final server = [
         for (final json in _dataOf(response.data)['messages'] as List)
@@ -353,7 +353,7 @@ class TripController extends GetxController {
     final epoch = _epoch;
     try {
       final response = await _api.post(
-        MockEndpoints.liveTripMessagesOf(id),
+        AppEndpoints.liveTripMessagesOf(id),
         data: {'body': body, 'clientId': clientId},
         suppressErrorToast: true,
       );

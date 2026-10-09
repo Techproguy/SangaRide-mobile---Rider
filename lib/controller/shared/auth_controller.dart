@@ -5,7 +5,7 @@ import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 import 'package:sanga_ride/controller/shared/user_controller.dart';
 import 'package:sanga_ride/core/api/api.dart';
-import 'package:sanga_ride/core/api/mock/mock_endpoints.dart';
+import 'package:sanga_ride/core/api/app_endpoints.dart';
 import 'package:sanga_ride/core/router/router.dart';
 import 'package:sanga_ride/core/router/routes.dart';
 import 'package:sanga_ride/core/services/secure_token_store.dart';
@@ -43,7 +43,7 @@ class AuthController extends GetxController {
   void clearPhoneError() => _phoneError.value = null;
 
   Future<bool> isRegistered(String phone) async {
-    final response = await _api.post(MockEndpoints.checkExistence, data: {'phone': phone, 'userType': 'rider'});
+    final response = await _api.post(AppEndpoints.checkExistence, data: {'phone': phone, 'userType': 'rider'});
     return response.data['data']['exists'] == true;
   }
 
@@ -52,7 +52,7 @@ class AuthController extends GetxController {
     _phoneError.value = null;
     try {
       await _api.post(
-        MockEndpoints.requestOtp,
+        AppEndpoints.requestOtp,
         data: {'phone': phone, 'purpose': purpose.name},
         suppressErrorToast: purpose == OtpPurpose.login,
       );
@@ -73,7 +73,7 @@ class AuthController extends GetxController {
     _otpError.value = null;
     try {
       final response = await _api.post(
-        MockEndpoints.verifyOtp,
+        AppEndpoints.verifyOtp,
         data: {'phone': phone, 'code': code},
         suppressErrorToast: true,
       );
@@ -95,8 +95,8 @@ class AuthController extends GetxController {
     _signingInWith.value = provider;
     try {
       final endpoint = switch (provider) {
-        AuthProvider.google => MockEndpoints.googleSignIn,
-        AuthProvider.apple => MockEndpoints.appleSignIn,
+        AuthProvider.google => AppEndpoints.googleSignIn,
+        AuthProvider.apple => AppEndpoints.appleSignIn,
       };
       final response = await _api.post(endpoint);
       await _startSession(response.data['data'] as Map<String, dynamic>);
@@ -111,7 +111,7 @@ class AuthController extends GetxController {
 
   Future<void> logout() async {
     try {
-      await _api.post(MockEndpoints.logout);
+      await _api.post(AppEndpoints.logout);
     } catch (e) {
       log('logout request failed: $e');
     }

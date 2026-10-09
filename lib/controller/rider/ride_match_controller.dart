@@ -5,7 +5,7 @@ import 'package:get/get.dart';
 import 'package:sanga_ride/controller/rider/ride_request_controller.dart';
 import 'package:sanga_ride/core/api/api.dart';
 import 'package:sanga_ride/core/api/group_endpoints.dart';
-import 'package:sanga_ride/core/api/mock/mock_endpoints.dart';
+import 'package:sanga_ride/core/api/app_endpoints.dart';
 import 'package:sanga_ride/core/services/toast_service.dart';
 import 'package:sanga_ride/model/groups/group_models.dart';
 import 'package:sanga_ride/model/models.dart';
@@ -88,7 +88,7 @@ class RideMatchController extends GetxController {
     _missedPolls = 0;
     _state.value = const MatchStarting();
     try {
-      final response = await _api.post(MockEndpoints.rideRequests, data: payload, suppressErrorToast: true);
+      final response = await _api.post(AppEndpoints.rideRequests, data: payload, suppressErrorToast: true);
       final data = _dataOf(response.data);
       if (data['status'] == 'scheduled') {
         if (epoch == _epoch) _state.value = MatchScheduled(ScheduledBooking.fromJson(data));
@@ -164,7 +164,7 @@ class RideMatchController extends GetxController {
     _state.value = const MatchStarting();
     try {
       final response = await _api.post(
-        MockEndpoints.rideRequestsScheduled,
+        AppEndpoints.rideRequestsScheduled,
         data: {...payload, 'scheduledAt': scheduledAt.toUtc().toIso8601String()},
       );
       return ScheduledBooking.fromJson(_dataOf(response.data));
@@ -191,7 +191,7 @@ class RideMatchController extends GetxController {
     if (id == null) return false;
     final epoch = _invalidate();
     try {
-      await _api.post(MockEndpoints.rideRequestCancelOf(id));
+      await _api.post(AppEndpoints.rideRequestCancelOf(id));
     } catch (e) {
       log('cancelRequest failed: $e');
       if (epoch == _epoch && state is MatchSearching) _startPolling();
@@ -214,7 +214,7 @@ class RideMatchController extends GetxController {
 
   Future<void> _sendCancel(String id) async {
     try {
-      await _api.post(MockEndpoints.rideRequestCancelOf(id), suppressErrorToast: true);
+      await _api.post(AppEndpoints.rideRequestCancelOf(id), suppressErrorToast: true);
     } catch (e) {
       log('cancel of $id failed: $e');
     }
@@ -257,7 +257,7 @@ class RideMatchController extends GetxController {
     if (_isPolling || id == null || epoch != _epoch || state is! MatchSearching) return;
     _isPolling = true;
     try {
-      final response = await _api.get(MockEndpoints.rideRequestOf(id), suppressErrorToast: true);
+      final response = await _api.get(AppEndpoints.rideRequestOf(id), suppressErrorToast: true);
       if (epoch != _epoch) return;
       _missedPolls = 0;
       _applyRequest(MatchRequest.fromJson(_dataOf(response.data)));
@@ -282,7 +282,7 @@ class RideMatchController extends GetxController {
     final epoch = _epoch;
     _state.value = const MatchOffersLoading();
     try {
-      final response = await _api.get(MockEndpoints.rideRequestOffersOf(id), suppressErrorToast: true);
+      final response = await _api.get(AppEndpoints.rideRequestOffersOf(id), suppressErrorToast: true);
       if (epoch != _epoch) return;
       final offers = _dataOf(response.data)['offers'] as List;
       _state.value = MatchOffersListed([
@@ -313,7 +313,7 @@ class RideMatchController extends GetxController {
 
   Future<void> _sendIgnore(String id, String offerId) async {
     try {
-      await _api.post(MockEndpoints.rideOfferIgnoreOf(id, offerId), suppressErrorToast: true);
+      await _api.post(AppEndpoints.rideOfferIgnoreOf(id, offerId), suppressErrorToast: true);
     } catch (e) {
       log('ignore failed: $e');
     }
@@ -328,7 +328,7 @@ class RideMatchController extends GetxController {
     final epoch = _epoch;
     _state.value = MatchOffersListed(current.rows, acceptingOfferId: offer.id);
     try {
-      final response = await _api.post(MockEndpoints.rideOfferHoldOf(id, offer.id), suppressErrorToast: true);
+      final response = await _api.post(AppEndpoints.rideOfferHoldOf(id, offer.id), suppressErrorToast: true);
       if (epoch != _epoch) return false;
       _state.value = MatchHolding(current.rows, hold: DriverHold.fromJson(_dataOf(response.data)));
       return true;
@@ -345,7 +345,7 @@ class RideMatchController extends GetxController {
     if (id == null || current is! MatchHolding || current.isConfirming) return;
     _state.value = MatchOffersListed(current.rows);
     try {
-      await _api.delete(MockEndpoints.rideRequestHoldOf(id));
+      await _api.delete(AppEndpoints.rideRequestHoldOf(id));
     } catch (e) {
       log('releaseHold failed: $e');
     }
@@ -365,7 +365,7 @@ class RideMatchController extends GetxController {
     _state.value = MatchHolding(current.rows, hold: current.hold, isConfirming: true);
     try {
       final response = await _api.post(
-        MockEndpoints.rideOfferConfirmOf(id, current.hold.offerId),
+        AppEndpoints.rideOfferConfirmOf(id, current.hold.offerId),
         suppressErrorToast: true,
       );
       if (epoch != _epoch) return false;
