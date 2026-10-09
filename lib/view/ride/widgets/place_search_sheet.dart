@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:sanga_ride/controller/rider/place_search.dart';
+import 'package:sanga_ride/core/copy/common_copy.dart';
 import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride/view/ride/widgets/place_search_results.dart';
 import 'package:sanga_ride/view/ride/widgets/place_suggestions.dart';
@@ -52,7 +53,7 @@ class _PlaceSearchSheetState extends State<PlaceSearchSheet> {
     final place = await _search.open(prediction);
     if (!mounted) return;
     if (place == null) {
-      return SangaToast.show('We couldn’t load that place. Try another one.', tone: SangaToastTone.error);
+      return SangaToast.show(CommonCopy.placeLoadFailed, tone: SangaToastTone.error);
     }
     _pick(place);
   }

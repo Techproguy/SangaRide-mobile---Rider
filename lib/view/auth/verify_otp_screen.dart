@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sanga_ride/controller/shared/auth_controller.dart';
+import 'package:sanga_ride/core/copy/common_copy.dart';
 import 'package:sanga_ride/core/services/session_restore.dart';
 import 'package:sanga_ride/model/auth/otp_session.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
@@ -80,7 +81,7 @@ class _VerifyOtpScreenState extends State<VerifyOtpScreen> {
       case OtpSent(:final session):
         _auth.clearOtpError();
         _code.clear();
-        SangaToast.show('New code sent. Check your messages.', tone: SangaToastTone.success);
+        SangaToast.show(CommonCopy.newCodeSent, tone: SangaToastTone.success);
         setState(() {
           _session = session;
           _isExpired = false;

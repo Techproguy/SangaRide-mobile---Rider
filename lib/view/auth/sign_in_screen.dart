@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sanga_ride/controller/shared/auth_controller.dart';
+import 'package:sanga_ride/core/copy/common_copy.dart';
 import 'package:sanga_ride/core/router/routes.dart';
 import 'package:sanga_ride/model/auth/otp_session.dart';
 import 'package:sanga_ride/view/auth/verify_otp_screen.dart';
@@ -31,7 +32,7 @@ class _SignInScreenState extends State<SignInScreen> {
   Future<void> _submit() async {
     if (_auth.isSendingCode) return;
     if (!SangaPhoneNumber.isValid(_phone.text)) {
-      setState(() => _phoneError = 'Enter a valid Nigerian phone number');
+      setState(() => _phoneError = CommonCopy.invalidPhone);
       return;
     }
     final phone = SangaPhoneNumber.toE164(_phone.text);

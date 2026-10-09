@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sanga_ride/controller/rider/ride_for_controller.dart';
 import 'package:sanga_ride/controller/shared/auth_controller.dart';
+import 'package:sanga_ride/core/copy/common_copy.dart';
 import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
@@ -62,7 +63,7 @@ class _PassengerOtpScreenState extends State<PassengerOtpScreen> {
     final sent = await _flow.resendPassengerCode();
     if (!sent || !mounted) return;
     _code.clear();
-    SangaToast.show('New code sent. Check your messages.', tone: SangaToastTone.success);
+    SangaToast.show(CommonCopy.newCodeSent, tone: SangaToastTone.success);
     setState(() => _isExpired = false);
   }
 

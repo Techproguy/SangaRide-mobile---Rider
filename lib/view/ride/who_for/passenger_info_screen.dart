@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:sanga_ride/controller/rider/ride_for_controller.dart';
+import 'package:sanga_ride/core/copy/common_copy.dart';
 import 'package:sanga_ride/core/router/who_for_routes.dart';
 import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride/view/ride/who_for/widgets/passenger_gender_picker.dart';
@@ -49,7 +50,7 @@ class _PassengerInfoScreenState extends State<PassengerInfoScreen> {
     return {
       if (_name.text.trim().isEmpty) _Field.name: 'Add the passenger’s name',
       if (email.isNotEmpty && !_emailPattern.hasMatch(email)) _Field.email: 'Enter a valid email or leave it blank',
-      if (!SangaPhoneNumber.isValid(_phone.text)) _Field.phone: 'Enter a valid Nigerian phone number',
+      if (!SangaPhoneNumber.isValid(_phone.text)) _Field.phone: CommonCopy.invalidPhone,
     };
   }
 

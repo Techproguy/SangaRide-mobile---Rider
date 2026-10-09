@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sanga_ride/controller/rider/ride_match_controller.dart';
 import 'package:sanga_ride/controller/rider/ride_request_controller.dart';
+import 'package:sanga_ride/core/copy/common_copy.dart';
 import 'package:sanga_ride/core/router/routes.dart';
 import 'package:sanga_ride/model/groups/group_models.dart';
 import 'package:sanga_ride/model/models.dart';
@@ -96,7 +97,7 @@ Future<void> _showBlocked(BuildContext context, GroupRideBlock block) async {
     title: block.title,
     message: block.message,
     actionLabel: 'Got it',
-    secondaryLabel: 'Back to home',
+    secondaryLabel: CommonCopy.backToHome,
   );
   if (context.mounted && !stay) context.go(SangaRoutes.home);
 }
@@ -133,7 +134,7 @@ Future<void> _showFailure(BuildContext context, MatchFailure reason, {required b
     title: reason.title,
     message: reason.message,
     actionLabel: checksAgain ? 'Check again' : 'Try again',
-    secondaryLabel: 'Back to home',
+    secondaryLabel: CommonCopy.backToHome,
   );
   if (!context.mounted) return;
   if (!shouldRetry) return context.go(SangaRoutes.home);

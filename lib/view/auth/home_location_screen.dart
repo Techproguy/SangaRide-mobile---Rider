@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sanga_ride/controller/rider/rider_sign_up_controller.dart';
+import 'package:sanga_ride/core/copy/common_copy.dart';
 import 'package:sanga_ride/core/router/routes.dart';
 import 'package:sanga_ride/core/services/location_service.dart';
 import 'package:sanga_ride/core/services/places_service.dart';
@@ -79,7 +80,7 @@ class _HomeLocationScreenState extends State<HomeLocationScreen> {
         icon: Icons.location_disabled_rounded,
         title: 'Location access is off',
         message: 'Let Sanga Ride use your location in Settings, or search for your address instead.',
-        actionLabel: 'Open Settings',
+        actionLabel: CommonCopy.openSettings,
       );
       if (openSettings) await _permissions.openSettings();
       return;

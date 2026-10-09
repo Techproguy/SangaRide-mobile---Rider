@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sanga_ride/controller/rider/ride_match_controller.dart';
+import 'package:sanga_ride/core/copy/common_copy.dart';
 import 'package:sanga_ride/core/router/routes.dart';
 import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride/view/ride/matching/matching_flow.dart';
@@ -134,7 +135,7 @@ class _RideOffersScreenState extends State<RideOffersScreen> {
         icon: Icons.directions_car_outlined,
         title: MatchFailure.noDriverFound.title,
         message: MatchFailure.noDriverFound.message,
-        actionLabel: 'Back to home',
+        actionLabel: CommonCopy.backToHome,
         onAction: _close,
       ),
       MatchFailed(:final reason) => SangaFailureMessage(
@@ -147,7 +148,7 @@ class _RideOffersScreenState extends State<RideOffersScreen> {
         icon: Icons.event_busy_rounded,
         title: 'This request has ended',
         message: 'Start a new one whenever you’re ready.',
-        actionLabel: 'Back to home',
+        actionLabel: CommonCopy.backToHome,
         onAction: () => context.go(SangaRoutes.home),
       ),
     };

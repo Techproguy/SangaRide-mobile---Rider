@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sanga_ride/controller/rider/rider_sign_up_controller.dart';
 import 'package:sanga_ride/controller/shared/auth_controller.dart';
+import 'package:sanga_ride/core/copy/common_copy.dart';
 import 'package:sanga_ride/core/router/routes.dart';
 import 'package:sanga_ride/view/auth/sign_up_steps.dart';
 import 'package:sanga_ride/view/auth/verify_otp_screen.dart';
@@ -43,7 +44,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
     return {
       if (_firstName.text.trim().isEmpty) _Field.firstName: 'Add your first name',
       if (_lastName.text.trim().isEmpty) _Field.lastName: 'Add your last name',
-      if (!SangaPhoneNumber.isValid(_phone.text)) _Field.phone: 'Enter a valid Nigerian phone number',
+      if (!SangaPhoneNumber.isValid(_phone.text)) _Field.phone: CommonCopy.invalidPhone,
     };
   }
 
