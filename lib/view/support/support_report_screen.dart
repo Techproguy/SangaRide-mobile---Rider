@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sanga_ride/controller/rider/support/support_report_controller.dart';
+import 'package:sanga_ride/core/copy/common_copy.dart';
 import 'package:sanga_ride/core/router/support_routes.dart';
 import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride/view/support/support_copy.dart';
@@ -48,10 +49,10 @@ class _SupportReportScreenState extends State<SupportReportScreen> {
     final isTracking = await showSangaStatusSheet(
       context: context,
       status: SangaStatus.success,
-      title: 'Report sent',
-      message: 'Your reference is ${ticket.reference}. We’ll keep you posted.',
-      actionLabel: 'Track it',
-      secondaryLabel: 'Done',
+      title: SupportCopy.reportSent,
+      message: SupportCopy.reportSentMessage(ticket.reference),
+      actionLabel: SupportCopy.trackIt,
+      secondaryLabel: SupportCopy.done,
     );
     if (!mounted) return;
     if (isTracking) {
@@ -81,12 +82,12 @@ class _SupportReportScreenState extends State<SupportReportScreen> {
       spacing: SangaSpacing.lg,
       children: [
         _section(
-          'What happened?',
+          SupportCopy.whatHappened,
           IssueTypeList(types: draft.types, selectedId: draft.typeId, onSelected: _controller.selectType),
         ),
         if (isTripScoped)
           _section(
-            'Which trip? (optional)',
+            SupportCopy.whichTrip,
             TripLinkList(
               rides: draft.recentRides,
               selectedId: draft.tripId,
@@ -95,9 +96,9 @@ class _SupportReportScreenState extends State<SupportReportScreen> {
             ),
           ),
         SangaTextArea(
-          label: 'Anything else we should know? (optional)',
+          label: SupportCopy.anythingElse,
           controller: _note,
-          hintText: 'Share as much as you can',
+          hintText: SupportCopy.shareAsMuch,
           maxLength: _maxNoteLength,
           minLines: 4,
           isEnabled: !draft.isSubmitting,
@@ -113,11 +114,11 @@ class _SupportReportScreenState extends State<SupportReportScreen> {
       final state = _controller.state;
       final draft = state is SupportReportDraft ? state : null;
       return SangaPageLayout(
-        title: 'Report an issue',
+        title: CommonCopy.reportIssue,
         footer: draft == null
             ? null
             : SangaButton.primary(
-                label: 'Submit report',
+                label: SupportCopy.submitReport,
                 isLoading: draft.isSubmitting,
                 onPressed: draft.typeId == null ? null : _submit,
               ),
@@ -127,7 +128,7 @@ class _SupportReportScreenState extends State<SupportReportScreen> {
             spacing: SangaSpacing.lg,
             children: [
               _section(
-                'What’s this about?',
+                SupportCopy.whatsThisAbout,
                 SangaChoiceChips<IssueContext>(
                   options: [
                     for (final value in IssueContext.values)

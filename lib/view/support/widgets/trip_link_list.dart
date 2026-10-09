@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:sanga_ride/model/history/history_item.dart';
+import 'package:sanga_ride/view/support/support_copy.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 class TripLinkList extends StatelessWidget {
@@ -27,7 +28,7 @@ class TripLinkList extends StatelessWidget {
         if (unknown != null)
           SangaOptionCard(
             leading: const SangaIconBadge(size: 36, child: Icon(Icons.directions_car_outlined)),
-            title: 'The trip you came from',
+            title: SupportCopy.tripYouCameFrom,
             isSelected: selectedId == unknown,
             onTap: () => onSelected(unknown),
           ),
@@ -44,7 +45,7 @@ class TripLinkList extends StatelessWidget {
           ),
         SangaOptionCard(
           leading: const SangaIconBadge(size: 36, child: Icon(Icons.not_interested_rounded)),
-          title: 'Not about a trip',
+          title: SupportCopy.notAboutTrip,
           isSelected: selectedId == null,
           onTap: () => onSelected(null),
         ),

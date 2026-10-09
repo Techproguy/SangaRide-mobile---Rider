@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:sanga_ride/controller/rider/support/support_help_controller.dart';
 import 'package:sanga_ride/core/router/support_routes.dart';
 import 'package:sanga_ride/model/models.dart';
+import 'package:sanga_ride/view/support/support_copy.dart';
 import 'package:sanga_ride/view/support/widgets/article_body.dart';
 import 'package:sanga_ride/view/support/widgets/article_feedback.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
@@ -54,7 +55,7 @@ class _SupportArticleScreenState extends State<SupportArticleScreen> {
     return Obx(() {
       final state = _controller.detailFor(widget.id);
       return SangaPageLayout(
-        title: 'Help article',
+        title: SupportCopy.helpArticle,
         children: [
           switch (state) {
             ArticleLoading() => const SangaSkeleton.heights([32, 120, 56]),

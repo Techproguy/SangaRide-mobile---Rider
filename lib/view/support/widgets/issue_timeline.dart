@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:sanga_ride/model/models.dart';
+import 'package:sanga_ride/view/support/support_copy.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 class IssueTimeline extends StatelessWidget {
@@ -9,11 +10,11 @@ class IssueTimeline extends StatelessWidget {
   final TicketStatus status;
 
   static String _titleOf(TicketEventType type) => switch (type) {
-    TicketEventType.reported => 'Report received',
-    TicketEventType.investigating => 'We’re on it',
-    TicketEventType.actionRequested => 'Over to you',
-    TicketEventType.actionTaken => 'You chose',
-    TicketEventType.resolved => 'Resolved',
+    TicketEventType.reported => SupportCopy.timelineReported,
+    TicketEventType.investigating => SupportCopy.timelineInvestigating,
+    TicketEventType.actionRequested => SupportCopy.timelineActionRequested,
+    TicketEventType.actionTaken => SupportCopy.timelineActionTaken,
+    TicketEventType.resolved => SupportCopy.timelineResolved,
   };
 
   static IconData _iconOf(TicketEventType type) => switch (type) {
@@ -43,10 +44,10 @@ class IssueTimeline extends StatelessWidget {
         ),
       if (status.isWaiting)
         const SangaTimelineEntry.step(
-          title: 'Resolution',
+          title: SupportCopy.resolution,
           icon: Icons.verified_outlined,
           state: SangaTimelineState.pending,
-          detail: 'We’ll update you here',
+          detail: SupportCopy.resolutionDetail,
         ),
     ];
   }

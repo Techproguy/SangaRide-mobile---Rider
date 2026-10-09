@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+import 'package:sanga_ride/core/format/clock_formats.dart';
 import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 class SupportMessageList extends StatelessWidget {
   const SupportMessageList({super.key, required this.messages, required this.onRetry});
-
-  static final DateFormat _clock = DateFormat('h:mm a');
 
   final List<ChatMessage> messages;
   final ValueChanged<String> onRetry;
@@ -35,7 +33,7 @@ class SupportMessageList extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: SangaSpacing.xs),
       child: SangaChatBubble(
         text: message.text,
-        time: _clock.format(message.sentAt),
+        time: ClockFormats.time(message.sentAt),
         isMine: message.isMine,
         state: stateOf(message.delivery),
         onRetry: clientId == null ? null : () => onRetry(clientId),

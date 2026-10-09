@@ -5,13 +5,14 @@ import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sanga_ride/controller/rider/support/support_chat_controller.dart';
 import 'package:sanga_ride/controller/rider/support/support_help_controller.dart';
+import 'package:sanga_ride/core/copy/common_copy.dart';
 import 'package:sanga_ride/core/router/support_routes.dart';
 import 'package:sanga_ride/model/models.dart';
-import 'package:sanga_ride_core/sanga_ride_core.dart' show LinkState;
+import 'package:sanga_ride/view/safety/widgets/dial_number.dart';
 import 'package:sanga_ride/view/support/support_copy.dart';
 import 'package:sanga_ride/view/support/widgets/support_message_list.dart';
+import 'package:sanga_ride_core/sanga_ride_core.dart' show LinkState;
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 class SupportChatScreen extends StatefulWidget {
   const SupportChatScreen({super.key, this.ticketId, this.tripId});
@@ -53,20 +54,17 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
   Future<void> _call() async {
     final phone = _contact?.phone;
     if (phone == null) return;
-    final isLaunched = await launchUrl(Uri(scheme: 'tel', path: phone));
-    if (!isLaunched) {
-      SangaToast.show('We couldn’t open your phone app. You can reach us on $phone.', tone: SangaToastTone.error);
-    }
+    await dialNumber(phone, failureMessage: SupportCopy.callFailed(phone));
   }
 
   Future<void> _end() async {
     final isConfirmed = await showSangaPromptSheet(
       context: context,
       icon: Icons.chat_bubble_outline_rounded,
-      title: 'End this chat?',
-      message: 'You can always start a new one if you need us again.',
-      actionLabel: 'End chat',
-      dismissLabel: 'Keep chatting',
+      title: SupportCopy.endChatTitle,
+      message: SupportCopy.endChatMessage,
+      actionLabel: SupportCopy.endChat,
+      dismissLabel: SupportCopy.keepChatting,
     );
     if (!isConfirmed || !mounted) return;
     final isEnded = await _controller.end();
@@ -75,7 +73,7 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
 
   String _title(ChatState state) => switch (state) {
     ChatLive(:final chat) when chat.agent != null => chat.agent!.name,
-    _ => 'Customer support',
+    _ => SupportCopy.customerSupport,
   };
 
   Widget _header(ChatState state) {
@@ -96,13 +94,13 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
           ),
           if (_contact != null)
             IconButton(
-              tooltip: 'Call support',
+              tooltip: SupportCopy.callSupport,
               onPressed: _call,
               icon: const Icon(Icons.phone_rounded, color: SangaColors.primary),
             ),
           if (live != null)
             IconButton(
-              tooltip: 'End chat',
+              tooltip: SupportCopy.endChat,
               onPressed: live.isEnding ? null : _end,
               icon: const Icon(Icons.more_vert_rounded, color: SangaColors.textPrimary),
             )
@@ -147,8 +145,8 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
     return Center(
       child: SangaEmptyMessage(
         icon: Icons.chat_bubble_outline_rounded,
-        title: isQueued ? 'Hang tight' : 'Say hi',
-        message: isQueued ? 'An agent will join you shortly.' : 'Tell us what’s going on.',
+        title: isQueued ? SupportCopy.hangTight : SupportCopy.sayHi,
+        message: isQueued ? SupportCopy.agentJoining : SupportCopy.tellUsWhatsGoingOn,
       ),
     );
   }
@@ -163,9 +161,9 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           spacing: SangaSpacing.xs,
           children: [
-            Text('This chat has ended.', textAlign: TextAlign.center, style: SangaTextStyles.caption),
+            Text(SupportCopy.chatEnded, textAlign: TextAlign.center, style: SangaTextStyles.caption),
             SangaButton.outline(
-              label: 'Back to support',
+              label: SupportCopy.backToSupport,
               size: SangaButtonSize.compact,
               onPressed: () => context.go(SupportRoutes.home),
             ),
@@ -199,12 +197,12 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
           spacing: SangaSpacing.md,
           children: [
             SangaFailureMessage(
-              title: 'Chat isn’t available',
+              title: SupportCopy.chatUnavailable,
               message: problem.message,
               onRetry: () => _controller.open(ticketId: widget.ticketId, tripId: widget.tripId),
             ),
             SangaButton.outline(
-              label: 'Report an issue',
+              label: CommonCopy.reportIssue,
               size: SangaButtonSize.compact,
               onPressed: () => context.push(SupportRoutes.reportOf()),
             ),

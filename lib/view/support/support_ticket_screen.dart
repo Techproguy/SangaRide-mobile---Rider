@@ -55,7 +55,7 @@ class _SupportTicketScreenState extends State<SupportTicketScreen> {
             spacing: SangaSpacing.xxs,
             children: [
               Text(ticket.typeLabel, style: SangaTextStyles.headline),
-              Text('Reference ${ticket.reference}', style: SangaTextStyles.body),
+              Text(SupportCopy.ticketReference(ticket.reference), style: SangaTextStyles.body),
             ],
           ),
         ),
@@ -70,7 +70,7 @@ class _SupportTicketScreenState extends State<SupportTicketScreen> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       spacing: SangaSpacing.sm,
       children: [
-        const SangaSectionHeader('How would you like to sort this?'),
+        const SangaSectionHeader(SupportCopy.sortThisOut),
         ResolutionOptions(
           options: ticket.resolutionOptions,
           selectedId: _optionId,
@@ -106,13 +106,13 @@ class _SupportTicketScreenState extends State<SupportTicketScreen> {
       children: [
         if (needsDecision)
           SangaButton.primary(
-            label: 'Confirm',
+            label: SupportCopy.confirm,
             isLoading: state.isChoosing,
             onPressed: _optionId == null ? null : _choose,
           ),
         if (ticket.status.isOpen || needsDecision)
           SangaButton.outline(
-            label: 'Chat with support',
+            label: SupportCopy.chatWithSupport,
             onPressed: () => context.push(SupportRoutes.chatOf(ticketId: ticket.id, tripId: ticket.tripId)),
           ),
       ],
@@ -124,7 +124,7 @@ class _SupportTicketScreenState extends State<SupportTicketScreen> {
     return Obx(() {
       final state = _controller.detail;
       return SangaPageLayout(
-        title: 'Your report',
+        title: SupportCopy.yourReport,
         footer: _footer(state),
         children: [
           switch (state) {

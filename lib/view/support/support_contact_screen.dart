@@ -4,10 +4,12 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sanga_ride/controller/rider/support/support_help_controller.dart';
+import 'package:sanga_ride/core/copy/common_copy.dart';
 import 'package:sanga_ride/core/router/support_routes.dart';
 import 'package:sanga_ride/model/models.dart';
+import 'package:sanga_ride/view/safety/widgets/dial_number.dart';
+import 'package:sanga_ride/view/support/support_copy.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 class SupportContactScreen extends StatefulWidget {
   const SupportContactScreen({super.key});
@@ -28,18 +30,12 @@ class _SupportContactScreenState extends State<SupportContactScreen> {
   }
 
   Future<void> _call(SupportContact contact) async {
-    final isLaunched = await launchUrl(Uri(scheme: 'tel', path: contact.phone));
-    if (!isLaunched) {
-      SangaToast.show(
-        'We couldn’t open your phone app. You can reach us on ${contact.phone}.',
-        tone: SangaToastTone.error,
-      );
-    }
+    await dialNumber(contact.phone, failureMessage: SupportCopy.callFailed(contact.phone));
   }
 
   String _chatSubtitle(SupportContact contact) {
     final minutes = contact.chatWaitMinutes;
-    return minutes > 0 ? 'Chat with our team · about $minutes min wait' : 'Chat with our team';
+    return minutes > 0 ? SupportCopy.chatWithTeamWait(minutes) : SupportCopy.chatWithTeam;
   }
 
   Widget _options(SupportContact? contact) {
@@ -52,36 +48,32 @@ class _SupportContactScreenState extends State<SupportContactScreen> {
             if (contact != null && contact.chatAvailable)
               SangaListRow(
                 leading: const SangaIconBadge(size: 36, child: Icon(Icons.chat_bubble_outline_rounded)),
-                title: 'Live chat',
+                title: SupportCopy.liveChat,
                 subtitle: _chatSubtitle(contact),
                 onTap: () => context.push(SupportRoutes.chatOf()),
               ),
             if (contact != null)
               SangaListRow(
                 leading: const SangaIconBadge(size: 36, child: Icon(Icons.call_outlined)),
-                title: 'Call support',
-                subtitle: 'Speak with our team · ${contact.hours}',
+                title: SupportCopy.callSupport,
+                subtitle: SupportCopy.speakWithTeam(contact.hours),
                 onTap: () => _call(contact),
               ),
             SangaListRow(
               leading: const SangaIconBadge(size: 36, child: Icon(Icons.shield_outlined)),
-              title: 'Report an issue',
-              subtitle: 'Send us a detailed report',
+              title: CommonCopy.reportIssue,
+              subtitle: SupportCopy.sendDetailedReport,
               onTap: () => context.push(SupportRoutes.reportOf()),
             ),
             SangaListRow(
               leading: const SangaIconBadge(size: 36, child: Icon(Icons.assignment_outlined)),
-              title: 'My reports',
-              subtitle: 'Follow up on issues you reported',
+              title: SupportCopy.myReports,
+              subtitle: SupportCopy.followUp,
               onTap: () => context.push(SupportRoutes.tickets),
             ),
           ],
         ),
-        if (contact == null || !contact.chatAvailable)
-          Text(
-            'Live chat is resting right now. You can still call us or send a report.',
-            style: SangaTextStyles.caption,
-          ),
+        if (contact == null || !contact.chatAvailable) Text(SupportCopy.chatResting, style: SangaTextStyles.caption),
       ],
     );
   }
@@ -91,8 +83,8 @@ class _SupportContactScreenState extends State<SupportContactScreen> {
     return Obx(() {
       final state = _controller.home;
       return SangaPageLayout(
-        title: 'Contact support',
-        subtitle: 'We’re here to help',
+        title: SupportCopy.contactSupport,
+        subtitle: SupportCopy.hereToHelp,
         children: [
           switch (state) {
             SupportHomeLoading() => const SangaSkeleton.heights([56, 56, 56, 56]),

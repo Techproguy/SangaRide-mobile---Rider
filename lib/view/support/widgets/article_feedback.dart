@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:sanga_ride/model/models.dart';
+import 'package:sanga_ride/view/support/support_copy.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 class ArticleFeedback extends StatelessWidget {
@@ -29,20 +30,20 @@ class ArticleFeedback extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               spacing: SangaSpacing.sm,
               children: [
-                Text('Was this helpful?', textAlign: TextAlign.center, style: SangaTextStyles.cardTitle),
+                Text(SupportCopy.wasHelpful, textAlign: TextAlign.center, style: SangaTextStyles.cardTitle),
                 Row(
                   spacing: SangaSpacing.sm,
                   children: [
                     Expanded(
                       child: SangaButton.outline(
-                        label: 'Yes',
+                        label: SupportCopy.yes,
                         size: SangaButtonSize.compact,
                         onPressed: isVoting ? null : () => onVote(true),
                       ),
                     ),
                     Expanded(
                       child: SangaButton.outline(
-                        label: 'No',
+                        label: SupportCopy.no,
                         size: SangaButtonSize.compact,
                         onPressed: isVoting ? null : () => onVote(false),
                       ),
@@ -52,7 +53,7 @@ class ArticleFeedback extends StatelessWidget {
               ],
             ),
             ArticleVote.helpful => Text(
-              'Glad that helped. Thanks for telling us.',
+              SupportCopy.gladHelped,
               textAlign: TextAlign.center,
               style: SangaTextStyles.cardTitle,
             ),
@@ -60,12 +61,12 @@ class ArticleFeedback extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               spacing: SangaSpacing.sm,
               children: [
-                Text(
-                  'Sorry about that. Our team can help.',
-                  textAlign: TextAlign.center,
-                  style: SangaTextStyles.cardTitle,
+                Text(SupportCopy.sorryAboutThat, textAlign: TextAlign.center, style: SangaTextStyles.cardTitle),
+                SangaButton.primary(
+                  label: SupportCopy.contactSupport,
+                  size: SangaButtonSize.compact,
+                  onPressed: onContact,
                 ),
-                SangaButton.primary(label: 'Contact support', size: SangaButtonSize.compact, onPressed: onContact),
               ],
             ),
           },

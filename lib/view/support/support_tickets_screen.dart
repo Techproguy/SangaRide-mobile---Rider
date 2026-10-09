@@ -4,8 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sanga_ride/controller/rider/support/support_tickets_controller.dart';
+import 'package:sanga_ride/core/copy/common_copy.dart';
 import 'package:sanga_ride/core/router/support_routes.dart';
 import 'package:sanga_ride/model/models.dart';
+import 'package:sanga_ride/view/support/support_copy.dart';
 import 'package:sanga_ride/view/support/widgets/ticket_row.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
@@ -38,9 +40,9 @@ class _SupportTicketsScreenState extends State<SupportTicketsScreen> {
     if (state.items.isEmpty) {
       return SangaEmptyMessage(
         icon: Icons.assignment_outlined,
-        title: 'No reports yet',
-        message: 'If something goes wrong on a trip, you can tell us here.',
-        actionLabel: 'Report an issue',
+        title: SupportCopy.noReports,
+        message: SupportCopy.noReportsMessage,
+        actionLabel: CommonCopy.reportIssue,
         onAction: () => context.push(SupportRoutes.reportOf()),
       );
     }
@@ -57,7 +59,7 @@ class _SupportTicketsScreenState extends State<SupportTicketsScreen> {
         if (state.isLoadingMore) const SangaSkeleton.heights([56]),
         if (state.loadMoreFailed)
           SangaFailureMessage(
-            title: 'We couldn’t load more',
+            title: CommonCopy.loadMoreFailed,
             message: SupportProblem.connection.message,
             onRetry: _controller.loadMore,
           ),
@@ -72,9 +74,9 @@ class _SupportTicketsScreenState extends State<SupportTicketsScreen> {
       return NotificationListener<ScrollNotification>(
         onNotification: _onScroll,
         child: SangaPageLayout(
-          title: 'My reports',
+          title: SupportCopy.myReports,
           footer: SangaButton.outline(
-            label: 'Report an issue',
+            label: CommonCopy.reportIssue,
             onPressed: () => context.push(SupportRoutes.reportOf()),
           ),
           children: [

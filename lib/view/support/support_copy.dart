@@ -57,6 +57,79 @@ abstract final class SupportCopy {
     };
   }
 
+  static const String reportSent = 'Report sent';
+  static const String trackIt = 'Track it';
+  static const String done = 'Done';
+  static const String whatHappened = 'What happened?';
+  static const String whichTrip = 'Which trip? (optional)';
+  static const String anythingElse = 'Anything else we should know? (optional)';
+  static const String shareAsMuch = 'Share as much as you can';
+  static const String submitReport = 'Submit report';
+  static const String whatsThisAbout = 'What’s this about?';
+  static const String helpArticles = 'Help articles';
+  static const String helpArticle = 'Help article';
+  static const String noArticles = 'No articles here yet';
+  static const String tryDifferentWords = 'Try different words, or talk to our team.';
+  static const String checkBackSoon = 'Check back soon, or talk to our team.';
+  static const String contactSupport = 'Contact support';
+  static const String searchArticles = 'Search for help articles';
+  static const String contactSubtitle = 'Chat, call or report an issue';
+  static const String myReports = 'My reports';
+  static const String followUp = 'Follow up on issues you reported';
+  static const String commonTopics = 'Common topics';
+  static const String popularArticles = 'Popular articles';
+  static const String support = 'Support';
+  static const String sortThisOut = 'How would you like to sort this?';
+  static const String confirm = 'Confirm';
+  static const String chatWithSupport = 'Chat with support';
+  static const String yourReport = 'Your report';
+  static const String noReports = 'No reports yet';
+  static const String noReportsMessage = 'If something goes wrong on a trip, you can tell us here.';
+  static const String endChatTitle = 'End this chat?';
+  static const String endChatMessage = 'You can always start a new one if you need us again.';
+  static const String endChat = 'End chat';
+  static const String keepChatting = 'Keep chatting';
+  static const String customerSupport = 'Customer support';
+  static const String callSupport = 'Call support';
+  static const String hangTight = 'Hang tight';
+  static const String sayHi = 'Say hi';
+  static const String agentJoining = 'An agent will join you shortly.';
+  static const String tellUsWhatsGoingOn = 'Tell us what’s going on.';
+  static const String chatEnded = 'This chat has ended.';
+  static const String backToSupport = 'Back to support';
+  static const String chatUnavailable = 'Chat isn’t available';
+  static const String chatWithTeam = 'Chat with our team';
+  static const String liveChat = 'Live chat';
+  static const String sendDetailedReport = 'Send us a detailed report';
+  static const String chatResting = 'Live chat is resting right now. You can still call us or send a report.';
+  static const String hereToHelp = 'We’re here to help';
+  static const String tripYouCameFrom = 'The trip you came from';
+  static const String notAboutTrip = 'Not about a trip';
+  static const String wasHelpful = 'Was this helpful?';
+  static const String yes = 'Yes';
+  static const String no = 'No';
+  static const String gladHelped = 'Glad that helped. Thanks for telling us.';
+  static const String sorryAboutThat = 'Sorry about that. Our team can help.';
+  static const String timelineReported = 'Report received';
+  static const String timelineInvestigating = 'We’re on it';
+  static const String timelineActionRequested = 'Over to you';
+  static const String timelineActionTaken = 'You chose';
+  static const String timelineResolved = 'Resolved';
+  static const String resolution = 'Resolution';
+  static const String resolutionDetail = 'We’ll update you here';
+
+  static String reportSentMessage(String reference) => 'Your reference is $reference. We’ll keep you posted.';
+
+  static String nothingFound(String text) => 'Nothing found for “$text”';
+
+  static String ticketReference(String reference) => 'Reference $reference';
+
+  static String callFailed(String phone) => 'We couldn’t open your phone app. You can reach us on $phone.';
+
+  static String chatWithTeamWait(int minutes) => '$chatWithTeam · about $minutes min wait';
+
+  static String speakWithTeam(String hours) => 'Speak with our team · $hours';
+
   static const String chatReconnecting = 'Trouble reaching support. We’ll keep trying.';
   static const String chatLost = 'You’re offline. Messages will send when you’re back.';
 

@@ -4,8 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sanga_ride/controller/rider/support/support_help_controller.dart';
+import 'package:sanga_ride/core/copy/common_copy.dart';
 import 'package:sanga_ride/core/router/support_routes.dart';
 import 'package:sanga_ride/model/models.dart';
+import 'package:sanga_ride/view/support/support_copy.dart';
 import 'package:sanga_ride/view/support/widgets/article_row.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
@@ -65,8 +67,8 @@ class _SupportArticlesScreenState extends State<SupportArticlesScreen> {
 
   String get _title {
     final id = widget.topic;
-    if (id == null) return 'Help articles';
-    return _controller.home.topicById(id)?.label ?? 'Help articles';
+    if (id == null) return SupportCopy.helpArticles;
+    return _controller.home.topicById(id)?.label ?? SupportCopy.helpArticles;
   }
 
   Widget _list(ArticlesLoaded state) {
@@ -84,7 +86,7 @@ class _SupportArticlesScreenState extends State<SupportArticlesScreen> {
         if (state.loadMoreFailed)
           SangaFailureMessage(
             message: SupportProblem.connection.message,
-            title: 'We couldn’t load more',
+            title: CommonCopy.loadMoreFailed,
             onRetry: () => _controller.loadMoreArticles(_query),
           ),
       ],
@@ -95,9 +97,9 @@ class _SupportArticlesScreenState extends State<SupportArticlesScreen> {
     final hasText = _text.isNotEmpty;
     return SangaEmptyMessage(
       icon: Icons.search_off_rounded,
-      title: hasText ? 'Nothing found for “$_text”' : 'No articles here yet',
-      message: hasText ? 'Try different words, or talk to our team.' : 'Check back soon, or talk to our team.',
-      actionLabel: 'Contact support',
+      title: hasText ? SupportCopy.nothingFound(_text) : SupportCopy.noArticles,
+      message: hasText ? SupportCopy.tryDifferentWords : SupportCopy.checkBackSoon,
+      actionLabel: SupportCopy.contactSupport,
       onAction: () => context.push(SupportRoutes.contact),
     );
   }
@@ -117,7 +119,7 @@ class _SupportArticlesScreenState extends State<SupportArticlesScreen> {
               children: [
                 SangaSearchField(
                   controller: _search,
-                  hintText: 'Search for help articles',
+                  hintText: SupportCopy.searchArticles,
                   autofocus: widget.focusSearch,
                   onChanged: _onChanged,
                   onCleared: () => _apply(''),

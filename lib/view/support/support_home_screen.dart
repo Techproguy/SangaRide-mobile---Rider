@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:sanga_ride/controller/rider/support/support_help_controller.dart';
 import 'package:sanga_ride/core/router/support_routes.dart';
 import 'package:sanga_ride/model/models.dart';
+import 'package:sanga_ride/view/support/support_copy.dart';
 import 'package:sanga_ride/view/support/widgets/article_row.dart';
 import 'package:sanga_ride/view/support/widgets/support_topic_grid.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
@@ -33,14 +34,14 @@ class _SupportHomeScreenState extends State<SupportHomeScreen> {
       children: [
         SangaListRow(
           leading: const SangaIconBadge(size: 36, child: Icon(Icons.headset_mic_outlined)),
-          title: 'Contact support',
-          subtitle: 'Chat, call or report an issue',
+          title: SupportCopy.contactSupport,
+          subtitle: SupportCopy.contactSubtitle,
           onTap: () => context.push(SupportRoutes.contact),
         ),
         SangaListRow(
           leading: const SangaIconBadge(size: 36, child: Icon(Icons.assignment_outlined)),
-          title: 'My reports',
-          subtitle: 'Follow up on issues you reported',
+          title: SupportCopy.myReports,
+          subtitle: SupportCopy.followUp,
           onTap: () => context.push(SupportRoutes.tickets),
         ),
       ],
@@ -53,7 +54,7 @@ class _SupportHomeScreenState extends State<SupportHomeScreen> {
       spacing: SangaSpacing.lg,
       children: [
         SangaSearchTrigger(
-          hint: 'Search for help articles',
+          hint: SupportCopy.searchArticles,
           onTap: () => context.push(SupportRoutes.articlesOf(focusSearch: true)),
         ),
         if (home.topics.isNotEmpty)
@@ -61,7 +62,7 @@ class _SupportHomeScreenState extends State<SupportHomeScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             spacing: SangaSpacing.sm,
             children: [
-              const SangaSectionHeader('Common topics'),
+              const SangaSectionHeader(SupportCopy.commonTopics),
               SupportTopicGrid(
                 topics: home.topics,
                 onSelected: (topic) => context.push(SupportRoutes.articlesOf(topic: topic.id)),
@@ -73,7 +74,7 @@ class _SupportHomeScreenState extends State<SupportHomeScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             spacing: SangaSpacing.sm,
             children: [
-              const SangaSectionHeader('Popular articles'),
+              const SangaSectionHeader(SupportCopy.popularArticles),
               SangaListGroup(
                 children: [
                   for (final article in home.popular)
@@ -92,7 +93,7 @@ class _SupportHomeScreenState extends State<SupportHomeScreen> {
     return Obx(() {
       final state = _controller.home;
       return SangaPageLayout(
-        title: 'Support',
+        title: SupportCopy.support,
         children: [
           switch (state) {
             SupportHomeLoading() => const SangaSkeleton.heights([48, 120, 56, 56]),
