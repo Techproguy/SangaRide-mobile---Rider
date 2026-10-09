@@ -30,12 +30,7 @@ class AuthenticatedPanel extends StatelessWidget {
         TripDriverHeader(driver: trip.driver),
         const TripPanelDivider(),
         Text('Your driver confirmed your PIN', style: SangaTextStyles.cardTitle.copyWith(color: SangaColors.success)),
-        TripActionTiles(
-          unreadCount: unreadCount,
-          onCall: onCall,
-          onMessage: onMessage,
-          onSafety: onSafety,
-        ),
+        TripActionTiles(unreadCount: unreadCount, onCall: onCall, onMessage: onMessage, onSafety: onSafety),
         SangaButton.primary(label: 'Make payment', onPressed: onMakePayment),
       ],
     );
