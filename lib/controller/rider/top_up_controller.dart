@@ -3,14 +3,20 @@ import 'dart:async';
 import 'package:get/get.dart';
 import 'package:sanga_ride/controller/rider/wallet_controller.dart';
 import 'package:sanga_ride/core/api/api.dart';
+import 'package:sanga_ride/core/api/idempotency_intents.dart';
+import 'package:sanga_ride/core/api/server_codes.dart';
 import 'package:sanga_ride/core/api/wallet_endpoints.dart';
 import 'package:sanga_ride/core/services/card_tokenizer.dart';
 import 'package:sanga_ride/core/services/me_state.dart';
 import 'package:sanga_ride/core/services/session_restore.dart';
 import 'package:sanga_ride/core/services/session_storage.dart';
+import 'package:sanga_ride/core/storage/draft_keys.dart';
 import 'package:sanga_ride/model/trip/wrapup/card_details.dart';
 import 'package:sanga_ride/model/wallet/wallet.dart';
 import 'package:sanga_ride_core/sanga_ride_core.dart';
+
+part 'top_up_polling.dart';
+part 'top_up_resume.dart';
 
 class TopUpController extends GetxController {
   TopUpController(this.scope);
@@ -35,36 +41,32 @@ class TopUpController extends GetxController {
   Mutation<TopUp>? _authorization;
   LivePoller? _poller;
   DateTime? _watchStartedAt;
-  int _epoch = 0;
+  final Epoch _epoch = Epoch();
 
   Rx<TopUpState> get stateRx => _state;
 
   TopUpState get state => _state.value;
 
-  Rx<TopUpDraft> get draftRx => _draft;
-
   TopUpDraft get draft => _draft.value;
-
-  Rxn<SavedTopUp> get savedRx => _saved;
 
   SavedTopUp? get saved => _saved.value;
 
   Rx<LinkState> get linkRx => _link;
 
-  String get _draftKey => 'topup:${scope.tag ?? 'personal'}';
+  String get _draftKey => DraftKeys.topUp(scope.tag);
 
   @override
   void onClose() {
     _stopPolling();
     _disposeMutations();
-    _epoch++;
+    _epoch.next();
     super.onClose();
   }
 
   void begin({int? amount}) {
     _stopPolling();
     _disposeMutations();
-    _epoch++;
+    _epoch.next();
     _state.value = const TopUpEditing();
     _draft.value = TopUpDraft(amount: amount);
   }
@@ -94,16 +96,16 @@ class TopUpController extends GetxController {
     final savedCardId = draft.savedCardId;
     if (state is! TopUpEditing || amount == null || (savedCardId == null && details == null)) return;
     if (_isOffline) return _failBeforeSending(TopUpMethod.card);
-    final epoch = ++_epoch;
+    final epoch = _epoch.next();
     _state.value = const TopUpSubmitting(TopUpMethod.card);
     final String? token;
     try {
       token = savedCardId == null ? await _tokenizer.tokenize(details!) : null;
     } catch (_) {
-      if (epoch == _epoch) _state.value = const TopUpFailed(TopUpFailure.unknown, method: TopUpMethod.card);
+      if (_epoch.isCurrent(epoch)) _state.value = const TopUpFailed(TopUpFailure.unknown, method: TopUpMethod.card);
       return;
     }
-    if (epoch != _epoch) return;
+    if (!_epoch.isCurrent(epoch)) return;
     _cardToken = token;
     final mutation = _newCreation(TopUpMethod.card, amount);
     await _persistIntent(mutation, TopUpMethod.card, amount, savedCardId);
@@ -116,7 +118,7 @@ class TopUpController extends GetxController {
     final current = state;
     if (mutation == null || amount == null || current is! TopUpFailed || !current.canRetryAsIs) return;
     if (_isOffline) return _failBeforeSending(TopUpMethod.card);
-    final epoch = ++_epoch;
+    final epoch = _epoch.next();
     _state.value = const TopUpSubmitting(TopUpMethod.card);
     mutation.reset(keepKey: true);
     await _runCreation(mutation, TopUpMethod.card, amount, epoch);
@@ -130,13 +132,13 @@ class TopUpController extends GetxController {
       _state.value = current.withStage(OtpStage.failed, failure: TopUpFailure.connection);
       return;
     }
-    final epoch = ++_epoch;
+    final epoch = _epoch.next();
     _stopPolling();
     _state.value = current.withStage(OtpStage.verifying);
     _authorization?.dispose();
     final topUpId = current.topUp.id;
     final mutation = Mutation<TopUp>(
-      intent: 'topup-otp',
+      intent: IdempotencyIntent.topUpOtp,
       run: (key) async {
         final response = await _api.post(
           WalletEndpoints.topUpAuthorizeAt(topUpId, groupId: scope.groupId),
@@ -144,18 +146,18 @@ class TopUpController extends GetxController {
           key: key,
           suppressErrorToast: true,
         );
-        return TopUp.fromJson(_dataOf(response.data));
+        return TopUp.fromJson(response.dataMapOrEmpty);
       },
       reconcile: () => _reconcileById(topUpId, whileStill: TopUpStatus.requiresAction),
     );
     _authorization = mutation;
     _mirrorChecking(mutation, TopUpMethod.card, epoch);
     final result = await mutation.start();
-    if (epoch != _epoch) return;
+    if (!_epoch.isCurrent(epoch)) return;
     switch (result) {
       case MutationDone<TopUp>(:final value):
         await _apply(value, amount: amount, method: TopUpMethod.card, epoch: epoch);
-      case MutationRejected<TopUp>(:final error) when error.code == 'otp_mismatch':
+      case MutationRejected<TopUp>(:final error) when error.code == ServerCode.otpMismatch:
         _state.value = current.withStage(OtpStage.mismatch);
       case MutationRejected<TopUp>(:final error):
         await _clearSaved();
@@ -177,7 +179,7 @@ class TopUpController extends GetxController {
   void cancelOtp() {
     if (state is! TopUpOtp) return;
     _disposeMutations();
-    _epoch++;
+    _epoch.next();
     _state.value = const TopUpEditing();
   }
 
@@ -185,7 +187,7 @@ class TopUpController extends GetxController {
     final amount = draft.amount;
     if (state is! TopUpEditing || amount == null) return;
     if (_isOffline) return _failBeforeSending(TopUpMethod.transfer);
-    final epoch = ++_epoch;
+    final epoch = _epoch.next();
     _state.value = const TopUpSubmitting(TopUpMethod.transfer);
     final previous = _creation;
     final isRetry = previous != null && _creationAmount == amount && previous.state.value is MutationFailed<TopUp>;
@@ -209,62 +211,11 @@ class TopUpController extends GetxController {
       await _wallet.reloadFresh();
       return;
     }
-    final epoch = ++_epoch;
+    final epoch = _epoch.next();
     _state.value = TopUpChecking(current.method);
     final result = await mutation.recheck();
-    if (epoch != _epoch) return;
+    if (!_epoch.isCurrent(epoch)) return;
     await _settle(result, method: current.method, amount: draft.amount ?? 0, epoch: epoch);
-  }
-
-  Future<SavedTopUp?> reviveSaved() async {
-    var candidate = SavedTopUp.tryFromJson(SessionStorage.drafts.read(_draftKey)) ?? _fromMeState();
-    if (candidate == null) {
-      _saved.value = null;
-      return null;
-    }
-    try {
-      final topUp = await _lookup(candidate);
-      if (topUp == null || !topUp.status.isOpen) {
-        await _clearSaved();
-        if (topUp?.status == TopUpStatus.completed) unawaited(_wallet.reloadQuietly());
-        return null;
-      }
-      candidate = candidate.copyWith(topUpId: topUp.id, status: topUp.status);
-    } on Object {
-      _saved.value = candidate;
-      return candidate;
-    }
-    await SessionStorage.drafts.write(_draftKey, candidate.toJson());
-    _saved.value = candidate;
-    return candidate;
-  }
-
-  Future<void> resume(SavedTopUp target) async {
-    final id = target.topUpId;
-    if (id == null) return;
-    final epoch = ++_epoch;
-    _stopPolling();
-    _draft.value = draft.copyWith(amount: () => target.amount, method: target.method);
-    _state.value = TopUpSubmitting(target.method);
-    try {
-      final topUp = await _fetch(id);
-      if (epoch != _epoch) return;
-      final amount = topUp.amount ?? target.amount;
-      _draft.value = draft.copyWith(amount: () => amount, method: topUp.method ?? target.method);
-      await _apply(topUp, amount: amount, method: topUp.method ?? target.method, epoch: epoch);
-    } on Object catch (error) {
-      if (epoch != _epoch) return;
-      if (error is ApiException && error.kind == ApiFailureKind.rejected) await _clearSaved();
-      _state.value = TopUpFailed(TopUpFailure.of(error), method: target.method, canRetryAsIs: false);
-    }
-  }
-
-  Future<void> resumeTransfer(String id) {
-    return resume(SavedTopUp(intentKey: '', method: TopUpMethod.transfer, amount: draft.amount ?? 0, topUpId: id));
-  }
-
-  Future<void> refreshNow() async {
-    await _poller?.refreshNow();
   }
 
   bool get _isOffline => ConnectionMonitor.current?.isOnline == false;
@@ -280,7 +231,7 @@ class TopUpController extends GetxController {
     final saveCard = draft.saveCard;
     final token = _cardToken;
     final mutation = Mutation<TopUp>(
-      intent: 'topup-${method.code}',
+      intent: IdempotencyIntent.topUp(method.code),
       run: (key) async {
         final response = await _api.post(
           WalletEndpoints.topUpsOf(scope.groupId),
@@ -296,7 +247,7 @@ class TopUpController extends GetxController {
           key: key,
           suppressErrorToast: true,
         );
-        return TopUp.fromJson(_dataOf(response.data));
+        return TopUp.fromJson(response.dataMapOrEmpty);
       },
       reconcile: () => _reconcileByKey(),
     );
@@ -307,7 +258,7 @@ class TopUpController extends GetxController {
   Future<void> _runCreation(Mutation<TopUp> mutation, TopUpMethod method, int amount, int epoch) async {
     _mirrorChecking(mutation, method, epoch);
     final result = await mutation.start();
-    if (epoch != _epoch) return;
+    if (!_epoch.isCurrent(epoch)) return;
     await _settle(result, method: method, amount: amount, epoch: epoch);
   }
 
@@ -335,7 +286,7 @@ class TopUpController extends GetxController {
 
   void _mirrorChecking(Mutation<TopUp> mutation, TopUpMethod method, int epoch) {
     void listener() {
-      if (epoch != _epoch) return;
+      if (!_epoch.isCurrent(epoch)) return;
       if (mutation.state.value is MutationChecking<TopUp>) _state.value = TopUpChecking(method);
     }
 
@@ -350,7 +301,7 @@ class TopUpController extends GetxController {
       queryParameters: {'idempotencyKey': key},
       suppressErrorToast: true,
     );
-    final found = JsonReader.of(_dataOf(response.data)).listOf('topUps', (item) => TopUp.fromJson(item.raw));
+    final found = JsonReader(response.dataMapOrEmpty).listOf('topUps', (item) => TopUp.fromJson(item.raw));
     return found.isEmpty ? const ReconciledNotDone<TopUp>() : ReconciledDone<TopUp>(found.first);
   }
 
@@ -362,44 +313,7 @@ class TopUpController extends GetxController {
 
   Future<TopUp> _fetch(String id) async {
     final response = await _api.get(WalletEndpoints.topUpAt(id, groupId: scope.groupId), suppressErrorToast: true);
-    return TopUp.fromJson(_dataOf(response.data));
-  }
-
-  Future<TopUp?> _lookup(SavedTopUp target) async {
-    final id = target.topUpId;
-    if (id != null) {
-      try {
-        return await _fetch(id);
-      } on ApiException catch (error) {
-        if (error.kind == ApiFailureKind.rejected) return null;
-        rethrow;
-      }
-    }
-    if (target.intentKey.isEmpty) return null;
-    final response = await _api.get(
-      WalletEndpoints.topUpsOf(scope.groupId),
-      queryParameters: {'idempotencyKey': target.intentKey},
-      suppressErrorToast: true,
-    );
-    final found = JsonReader.of(_dataOf(response.data)).listOf('topUps', (item) => TopUp.fromJson(item.raw));
-    return found.firstOrNull;
-  }
-
-  SavedTopUp? _fromMeState() {
-    final pending = Get.find<SessionRestore>().meState?.pendingTopUps ?? const <PendingTopUp>[];
-    for (final item in pending) {
-      final isMine = scope.isGroup ? item.scope == 'group' && item.groupId == scope.groupId : item.scope == 'personal';
-      if (!isMine) continue;
-      final status = TopUpStatus.fromCode(item.status);
-      return SavedTopUp(
-        intentKey: '',
-        method: status == TopUpStatus.awaitingTransfer ? TopUpMethod.transfer : TopUpMethod.card,
-        amount: 0,
-        topUpId: item.id,
-        status: status,
-      );
-    }
-    return null;
+    return TopUp.fromJson(response.dataMapOrEmpty);
   }
 
   Future<void> _apply(TopUp topUp, {required int amount, required TopUpMethod method, required int epoch}) async {
@@ -447,92 +361,12 @@ class TopUpController extends GetxController {
     var balance = topUp.balance;
     if (balance == null) {
       final isFresh = await _wallet.reloadFresh();
-      if (epoch != _epoch) return;
+      if (!_epoch.isCurrent(epoch)) return;
       balance = isFresh ? _wallet.balance : null;
     } else {
       unawaited(_wallet.reloadQuietly());
     }
     _state.value = TopUpSucceeded(amount: topUp.amount ?? amount, balance: balance, method: method);
-  }
-
-  Future<void> _persistIntent(Mutation<TopUp> mutation, TopUpMethod method, int amount, String? savedCardId) {
-    final intent = SavedTopUp(intentKey: mutation.key.value, method: method, amount: amount, savedCardId: savedCardId);
-    _saved.value = null;
-    return SessionStorage.drafts.write(_draftKey, intent.toJson());
-  }
-
-  Future<void> _remember(TopUp topUp, TopUpMethod method) async {
-    final current = SavedTopUp.tryFromJson(SessionStorage.drafts.read(_draftKey));
-    final base =
-        current ??
-        SavedTopUp(intentKey: _creation?.key.value ?? '', method: method, amount: topUp.amount ?? draft.amount ?? 0);
-    final next = base.copyWith(topUpId: topUp.id, status: topUp.status);
-    await SessionStorage.drafts.write(_draftKey, next.toJson());
-    _saved.value = next;
-    unawaited(Get.find<SessionRestore>().refreshQuietly());
-  }
-
-  Future<void> _clearSaved() async {
-    _saved.value = null;
-    await SessionStorage.drafts.remove(_draftKey);
-    unawaited(Get.find<SessionRestore>().refreshQuietly());
-  }
-
-  void _startPolling(int epoch, Duration interval) {
-    _stopPolling();
-    _watchStartedAt = ServerClock.instance.now();
-    final poller = LivePoller(fetch: () => _pollOnce(epoch), interval: interval);
-    poller.link.addListener(() => _link.value = poller.link.value);
-    _poller = poller;
-    poller.start();
-  }
-
-  void _stopPolling() {
-    final poller = _poller;
-    _poller = null;
-    _link.value = LinkState.live;
-    if (poller == null) return;
-    Future<void>.microtask(poller.dispose);
-  }
-
-  Future<void> _pollOnce(int epoch) async {
-    final current = state;
-    final id = switch (current) {
-      TopUpTransferWatching(:final expectation) || TopUpTransferDelayed(:final expectation) => expectation.id,
-      TopUpConfirming(:final topUp) => topUp.id,
-      _ => null,
-    };
-    if (id == null || epoch != _epoch) return;
-    final TopUp topUp;
-    try {
-      topUp = await _fetch(id);
-    } on ApiException catch (error) {
-      if (error.kind != ApiFailureKind.rejected || epoch != _epoch) rethrow;
-      _stopPolling();
-      await _clearSaved();
-      _state.value = TopUpFailed(
-        TopUpFailure.unknown,
-        method: current is TopUpConfirming ? TopUpMethod.card : TopUpMethod.transfer,
-      );
-      return;
-    }
-    if (epoch != _epoch) return;
-    final method = current is TopUpConfirming ? TopUpMethod.card : TopUpMethod.transfer;
-    final amount = topUp.amount ?? draft.amount ?? 0;
-    if (topUp.status == TopUpStatus.awaitingTransfer) {
-      _markDelayedIfDue(current, topUp);
-    } else if (topUp.status != TopUpStatus.pending && topUp.status != TopUpStatus.unknown) {
-      _stopPolling();
-      await _apply(topUp, amount: amount, method: method, epoch: epoch);
-    }
-  }
-
-  void _markDelayedIfDue(TopUpState current, TopUp topUp) {
-    if (current is! TopUpTransferWatching) return;
-    final since = topUp.createdAt ?? _watchStartedAt ?? ServerClock.instance.now();
-    if (ServerClock.instance.now().difference(since) >= transferDelayedAfter) {
-      _state.value = TopUpTransferDelayed(current.expectation);
-    }
   }
 
   void _disposeCreation() {
@@ -547,6 +381,4 @@ class TopUpController extends GetxController {
     _authorization?.dispose();
     _authorization = null;
   }
-
-  Map<String, dynamic> _dataOf(dynamic body) => JsonReader.of(JsonReader.of(body).raw['data']).raw;
 }

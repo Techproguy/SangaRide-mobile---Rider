@@ -20,7 +20,7 @@ class WalletController extends GetxController {
   final Rx<WalletState> _state = Rx<WalletState>(const WalletLoading());
   LivePoller? _watcher;
   DateTime? _loadedAt;
-  int _epoch = 0;
+  final Epoch _epoch = Epoch();
 
   Rx<WalletState> get stateRx => _state;
 
@@ -35,7 +35,7 @@ class WalletController extends GetxController {
 
   @override
   void onClose() {
-    _epoch++;
+    _epoch.next();
     _stopWatching();
     super.onClose();
   }
@@ -65,13 +65,13 @@ class WalletController extends GetxController {
   }
 
   Future<void> _load() async {
-    final epoch = ++_epoch;
+    final epoch = _epoch.next();
     final previous = state;
     final overviewResult = _fetchOverview();
     final recentResult = _fetchRecent();
     final fetched = await overviewResult;
     final recent = await recentResult;
-    if (epoch != _epoch) return;
+    if (!_epoch.isCurrent(epoch)) return;
     final overview = fetched.overview;
     if (overview != null) {
       _loadedAt = DateTime.now();
@@ -87,7 +87,7 @@ class WalletController extends GetxController {
   Future<({WalletOverview? overview, LoadProblem? problem})> _fetchOverview() async {
     try {
       final response = await _api.get(WalletEndpoints.walletOf(scope.groupId), suppressErrorToast: true);
-      return (overview: WalletOverview.fromJson(_dataOf(response.data)), problem: null);
+      return (overview: WalletOverview.fromJson(response.dataMapOrEmpty), problem: null);
     } on Object catch (error) {
       return (overview: null, problem: LoadProblem.of(error));
     }
@@ -100,7 +100,7 @@ class WalletController extends GetxController {
         queryParameters: {'page': 1, 'limit': recentCount},
         suppressErrorToast: true,
       );
-      return RecentLoaded(TransactionPage.fromJson(_dataOf(response.data)).entries);
+      return RecentLoaded(TransactionPage.fromJson(response.dataMapOrEmpty).entries);
     } on Object catch (error) {
       return RecentFailed(LoadProblem.of(error));
     }
@@ -122,17 +122,17 @@ class WalletController extends GetxController {
   }
 
   Future<void> _watchOnce() async {
-    final epoch = ++_epoch;
+    final epoch = _epoch.next();
     final overview = await _fetchOverviewOrThrow();
     final recent = await _fetchRecentOrThrow();
-    if (epoch != _epoch) return;
+    if (!_epoch.isCurrent(epoch)) return;
     _state.value = WalletLoaded(overview, recent);
     _syncWatcher();
   }
 
   Future<WalletOverview> _fetchOverviewOrThrow() async {
     final response = await _api.get(WalletEndpoints.walletOf(scope.groupId), suppressErrorToast: true);
-    return WalletOverview.fromJson(_dataOf(response.data));
+    return WalletOverview.fromJson(response.dataMapOrEmpty);
   }
 
   Future<RecentTransactions> _fetchRecentOrThrow() async {
@@ -141,7 +141,7 @@ class WalletController extends GetxController {
       queryParameters: {'page': 1, 'limit': recentCount},
       suppressErrorToast: true,
     );
-    return RecentLoaded(TransactionPage.fromJson(_dataOf(response.data)).entries);
+    return RecentLoaded(TransactionPage.fromJson(response.dataMapOrEmpty).entries);
   }
 
   void _stopWatching() {
@@ -149,6 +149,4 @@ class WalletController extends GetxController {
     _watcher = null;
     if (watcher != null) Future<void>.microtask(watcher.dispose);
   }
-
-  Map<String, dynamic> _dataOf(dynamic body) => JsonReader.of(JsonReader.of(body).raw['data']).raw;
 }

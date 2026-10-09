@@ -15,10 +15,10 @@ class WalletTransactionsController extends GetxController {
 
   final Rx<TransactionFilter> _filter = TransactionFilter.all.obs;
   final RxMap<TransactionFilter, TransactionFeed> _feeds = <TransactionFilter, TransactionFeed>{}.obs;
-  final Map<TransactionFilter, int> _feedEpochs = {};
+  final Map<TransactionFilter, Epoch> _feedEpochs = {};
   final Rx<TransactionDetailState> _detail = Rx<TransactionDetailState>(const TransactionDetailLoading());
   String? _detailId;
-  int _detailEpoch = 0;
+  final Epoch _detailEpoch = Epoch();
 
   TransactionFilter get filter => _filter.value;
 
@@ -44,17 +44,19 @@ class WalletTransactionsController extends GetxController {
 
   Future<void> refreshFeed() => _loadFirstPage(filter);
 
-  int _nextEpoch(TransactionFilter target) => _feedEpochs[target] = (_feedEpochs[target] ?? 0) + 1;
+  int _nextEpoch(TransactionFilter target) => (_feedEpochs[target] ??= Epoch()).next();
+
+  bool _isCurrent(TransactionFilter target, int epoch) => _feedEpochs[target]?.isCurrent(epoch) ?? false;
 
   Future<void> _loadFirstPage(TransactionFilter target) async {
     final epoch = _nextEpoch(target);
     if (_feeds[target] is! TransactionsLoaded) _feeds[target] = const TransactionsLoading();
     try {
       final page = await _fetch(target, 1);
-      if (epoch != _feedEpochs[target]) return;
+      if (!_isCurrent(target, epoch)) return;
       _feeds[target] = TransactionsLoaded(page.entries, page: page.page, hasMore: page.hasMore);
     } on Object catch (error) {
-      if (epoch != _feedEpochs[target]) return;
+      if (!_isCurrent(target, epoch)) return;
       final current = _feeds[target];
       _feeds[target] = current is TransactionsLoaded ? current.markStale() : TransactionsFailed(LoadProblem.of(error));
     }
@@ -68,14 +70,14 @@ class WalletTransactionsController extends GetxController {
     _feeds[target] = current.withMore(TransactionMore.loading);
     try {
       final next = await _fetch(target, current.page + 1);
-      if (epoch != _feedEpochs[target]) return;
+      if (!_isCurrent(target, epoch)) return;
       _feeds[target] = TransactionsLoaded(
         [...current.entries, ...next.entries],
         page: next.page,
         hasMore: next.hasMore,
       );
     } on Object {
-      if (epoch == _feedEpochs[target]) _feeds[target] = current.withMore(TransactionMore.failed);
+      if (_isCurrent(target, epoch)) _feeds[target] = current.withMore(TransactionMore.failed);
     }
   }
 
@@ -95,16 +97,16 @@ class WalletTransactionsController extends GetxController {
   Future<void> _loadDetail() async {
     final id = _detailId;
     if (id == null) return;
-    final epoch = ++_detailEpoch;
+    final epoch = _detailEpoch.next();
     try {
       final response = await _api.get(
         WalletEndpoints.transactionAt(id, groupId: scope.groupId),
         suppressErrorToast: true,
       );
-      if (epoch != _detailEpoch) return;
-      _detail.value = TransactionDetailLoaded(WalletTransaction.fromJson(_dataOf(response.data)));
+      if (!_detailEpoch.isCurrent(epoch)) return;
+      _detail.value = TransactionDetailLoaded(WalletTransaction.fromJson(response.dataMapOrEmpty));
     } on Object catch (error) {
-      if (epoch != _detailEpoch) return;
+      if (!_detailEpoch.isCurrent(epoch)) return;
       final failure = TransactionFailure.of(error);
       if (_detail.value is TransactionDetailLoaded && failure.canRetry) return;
       _detail.value = TransactionDetailFailed(failure);
@@ -117,8 +119,6 @@ class WalletTransactionsController extends GetxController {
       queryParameters: {'page': page, 'limit': pageSize, 'kind': ?target.query},
       suppressErrorToast: true,
     );
-    return TransactionPage.fromJson(_dataOf(response.data));
+    return TransactionPage.fromJson(response.dataMapOrEmpty);
   }
-
-  Map<String, dynamic> _dataOf(dynamic body) => JsonReader.of(JsonReader.of(body).raw['data']).raw;
 }
