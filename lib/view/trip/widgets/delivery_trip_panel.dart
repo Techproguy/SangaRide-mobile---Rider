@@ -13,7 +13,6 @@ class DeliveryPanelActions {
     required this.onCall,
     required this.onMessage,
     required this.onSafety,
-    required this.onSos,
     required this.onShare,
     required this.onReportIssue,
     required this.onCancel,
@@ -29,7 +28,6 @@ class DeliveryPanelActions {
   final VoidCallback onCall;
   final VoidCallback onMessage;
   final VoidCallback onSafety;
-  final VoidCallback onSos;
   final VoidCallback onShare;
   final VoidCallback onReportIssue;
   final VoidCallback onCancel;
@@ -97,7 +95,6 @@ class DeliveryTripPanel extends StatelessWidget {
       onMessage: actions.onMessage,
       onShare: phase.index >= DeliveryPhase.onTheWay.index ? actions.onShare : null,
       onSafety: actions.onSafety,
-      onSos: actions.onSos,
       onReportIssue: phase.canReport ? actions.onReportIssue : null,
       onCancel: trip.canChange ? actions.onCancel : null,
     );

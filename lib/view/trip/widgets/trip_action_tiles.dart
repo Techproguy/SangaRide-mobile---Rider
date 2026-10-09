@@ -7,7 +7,6 @@ class TripActionTiles extends StatelessWidget {
     this.unreadCount = 0,
     this.onCall,
     this.onMessage,
-    this.onSos,
     this.onSafety,
     this.onShare,
     this.onAddStops,
@@ -22,7 +21,6 @@ class TripActionTiles extends StatelessWidget {
   final int unreadCount;
   final VoidCallback? onCall;
   final VoidCallback? onMessage;
-  final VoidCallback? onSos;
   final VoidCallback? onSafety;
   final VoidCallback? onShare;
   final VoidCallback? onAddStops;
@@ -37,7 +35,6 @@ class TripActionTiles extends StatelessWidget {
     if (onShare != null) SangaActionTile(icon: Icons.ios_share_rounded, label: 'Share', onPressed: onShare),
     if (onSafety != null)
       SangaActionTile(icon: Icons.shield_rounded, label: 'Safety', onPressed: onSafety, tone: SangaTone.danger),
-    if (onSos != null) SangaActionTile(icon: Icons.sos_rounded, label: 'SOS', onPressed: onSos, tone: SangaTone.danger),
     if (onAddStops != null)
       SangaActionTile(icon: Icons.add_location_alt_rounded, label: 'Add stops', onPressed: onAddStops),
     if (onReportIssue != null)

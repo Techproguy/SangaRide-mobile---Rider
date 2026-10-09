@@ -29,12 +29,11 @@ List<LatLng> tripFramePoints(Trip trip) {
 }
 
 class TripMap extends StatefulWidget {
-  const TripMap({super.key, required this.trip, required this.camera, this.onMapCreated, this.onUserPan});
+  const TripMap({super.key, required this.trip, required this.camera, this.onMapCreated});
 
   final Trip? trip;
   final MapCamera camera;
   final VoidCallback? onMapCreated;
-  final VoidCallback? onUserPan;
 
   @override
   State<TripMap> createState() => _TripMapState();
@@ -45,7 +44,6 @@ class _TripMapState extends State<TripMap> with SingleTickerProviderStateMixin {
   static const int _dashesPerRoute = 40;
   static const Duration _glideDuration = TripController.pollInterval;
   static const Duration _frameGap = Duration(milliseconds: 60);
-  static const double _panSlop = 10;
 
   final _directions = DirectionsService();
   late final AnimationController _glide = AnimationController(vsync: this, duration: _glideDuration)
@@ -64,7 +62,6 @@ class _TripMapState extends State<TripMap> with SingleTickerProviderStateMixin {
   LatLng? _carNow;
   double _headingNow = 0;
   DateTime _lastFrame = DateTime.fromMillisecondsSinceEpoch(0);
-  double _panned = 0;
 
   List<LatLng> get _routePoints => [for (final place in widget.trip?.route ?? const <TripPlace>[]) place.position];
 
@@ -266,27 +263,14 @@ class _TripMapState extends State<TripMap> with SingleTickerProviderStateMixin {
     );
   }
 
-  void _onPointerMove(PointerMoveEvent event) {
-    _panned += event.delta.distance;
-    if (_panned > _panSlop) {
-      _panned = 0;
-      widget.onUserPan?.call();
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
-    return Listener(
-      behavior: HitTestBehavior.translucent,
-      onPointerDown: (_) => _panned = 0,
-      onPointerMove: _onPointerMove,
-      child: SangaMap(
-        camera: widget.camera,
-        followsUser: false,
-        onMapCreated: widget.onMapCreated,
-        extraMarkers: {..._placeMarkers, ..._carMarkers},
-        extraPolylines: _polylines,
-      ),
+    return SangaMap(
+      camera: widget.camera,
+      followsUser: false,
+      onMapCreated: widget.onMapCreated,
+      extraMarkers: {..._placeMarkers, ..._carMarkers},
+      extraPolylines: _polylines,
     );
   }
 }

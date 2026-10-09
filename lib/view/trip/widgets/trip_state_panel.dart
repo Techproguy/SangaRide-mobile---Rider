@@ -49,14 +49,12 @@ class TripUpdatingPanel extends StatelessWidget {
     required this.onCall,
     required this.onMessage,
     required this.onSafety,
-    required this.onSos,
   });
 
   final int unreadCount;
   final VoidCallback onCall;
   final VoidCallback onMessage;
   final VoidCallback onSafety;
-  final VoidCallback onSos;
 
   @override
   Widget build(BuildContext context) {
@@ -74,7 +72,6 @@ class TripUpdatingPanel extends StatelessWidget {
           onCall: onCall,
           onMessage: onMessage,
           onSafety: onSafety,
-          onSos: onSos,
           alignment: MainAxisAlignment.center,
         ),
       ],

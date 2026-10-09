@@ -14,7 +14,6 @@ class EnRoutePanel extends StatelessWidget {
     required this.onCall,
     required this.onMessage,
     required this.onSafety,
-    required this.onSos,
     required this.onAddStops,
     required this.onCancel,
   });
@@ -24,7 +23,6 @@ class EnRoutePanel extends StatelessWidget {
   final VoidCallback onCall;
   final VoidCallback onMessage;
   final VoidCallback onSafety;
-  final VoidCallback onSos;
   final VoidCallback onAddStops;
   final VoidCallback onCancel;
 
@@ -40,7 +38,6 @@ class EnRoutePanel extends StatelessWidget {
           onCall: onCall,
           onMessage: onMessage,
           onSafety: onSafety,
-          onSos: onSos,
           onAddStops: trip.canAddStops ? onAddStops : null,
           onCancel: trip.canChange ? onCancel : null,
         ),

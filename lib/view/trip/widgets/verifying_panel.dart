@@ -13,7 +13,6 @@ class VerifyingPanel extends StatelessWidget {
     required this.onCall,
     required this.onMessage,
     required this.onSafety,
-    required this.onSos,
     required this.onAddStops,
     required this.onCancel,
     required this.onShowPin,
@@ -25,7 +24,6 @@ class VerifyingPanel extends StatelessWidget {
   final VoidCallback onCall;
   final VoidCallback onMessage;
   final VoidCallback onSafety;
-  final VoidCallback onSos;
   final VoidCallback onAddStops;
   final VoidCallback onCancel;
   final VoidCallback onShowPin;
@@ -43,7 +41,6 @@ class VerifyingPanel extends StatelessWidget {
           onCall: onCall,
           onMessage: onMessage,
           onSafety: onSafety,
-          onSos: onSos,
           onAddStops: trip.canAddStops ? onAddStops : null,
           onCancel: trip.canChange ? onCancel : null,
         ),

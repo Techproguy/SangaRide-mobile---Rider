@@ -15,7 +15,6 @@ class ActiveRidePanel extends StatelessWidget {
     required this.onMessage,
     required this.onShare,
     required this.onSafety,
-    required this.onSos,
     required this.onAddStops,
     required this.onCancel,
     required this.action,
@@ -27,7 +26,6 @@ class ActiveRidePanel extends StatelessWidget {
   final VoidCallback onMessage;
   final VoidCallback onShare;
   final VoidCallback onSafety;
-  final VoidCallback onSos;
   final VoidCallback onAddStops;
   final VoidCallback onCancel;
   final Widget action;
@@ -59,7 +57,6 @@ class ActiveRidePanel extends StatelessWidget {
         TripActionTiles(
           onShare: onShare,
           onSafety: onSafety,
-          onSos: onSos,
           onAddStops: trip.canAddStops ? onAddStops : null,
           onCancel: trip.canChange ? onCancel : null,
           alignment: MainAxisAlignment.center,

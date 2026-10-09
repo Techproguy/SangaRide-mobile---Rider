@@ -13,7 +13,6 @@ class AuthenticatedPanel extends StatelessWidget {
     required this.onCall,
     required this.onMessage,
     required this.onSafety,
-    required this.onSos,
     required this.onMakePayment,
   });
 
@@ -22,7 +21,6 @@ class AuthenticatedPanel extends StatelessWidget {
   final VoidCallback onCall;
   final VoidCallback onMessage;
   final VoidCallback onSafety;
-  final VoidCallback onSos;
   final VoidCallback onMakePayment;
 
   @override
@@ -37,7 +35,6 @@ class AuthenticatedPanel extends StatelessWidget {
           onCall: onCall,
           onMessage: onMessage,
           onSafety: onSafety,
-          onSos: onSos,
         ),
         SangaButton.primary(label: 'Make payment', onPressed: onMakePayment),
       ],
