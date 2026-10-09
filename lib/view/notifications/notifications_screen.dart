@@ -55,7 +55,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       final access = permissions.accessOf(PermissionKind.notifications);
       if (access.isUsable || access.canAskAgain) return const SizedBox.shrink();
       return Padding(
-        padding: const EdgeInsets.fromLTRB(SangaSpacing.gutter, 0, SangaSpacing.gutter, SangaSpacing.sm),
+        padding: const EdgeInsets.fromLTRB(SangaSpacing.gutter, SangaSpacing.sm, SangaSpacing.gutter, SangaSpacing.sm),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           spacing: SangaSpacing.xs,
@@ -77,28 +77,17 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   }
 
   Widget _header() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(SangaSpacing.gutter, SangaSpacing.md, SangaSpacing.gutter, SangaSpacing.sm),
-      child: Row(
-        children: [
-          const SangaCircleButton.back(),
-          const Expanded(
-            child: Text('Notifications', textAlign: TextAlign.center, style: SangaTextStyles.toolbarTitle),
-          ),
-          Obx(
-            () => SizedBox(
-              width: 41,
-              child: _controller.unreadCount == 0
-                  ? null
-                  : IconButton(
-                      tooltip: 'Mark all as read',
-                      padding: EdgeInsets.zero,
-                      onPressed: _controller.markAllRead,
-                      icon: const Icon(Icons.done_all_rounded, color: SangaColors.primary),
-                    ),
-            ),
-          ),
-        ],
+    return SangaPageHeader(
+      title: 'Notifications',
+      trailing: Obx(
+        () => _controller.unreadCount == 0
+            ? const SizedBox.shrink()
+            : IconButton(
+                tooltip: 'Mark all as read',
+                padding: EdgeInsets.zero,
+                onPressed: _controller.markAllRead,
+                icon: const Icon(Icons.done_all_rounded, color: SangaColors.primary),
+              ),
       ),
     );
   }
@@ -122,7 +111,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       child: ListView.separated(
         controller: _scroll,
         physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.fromLTRB(SangaSpacing.gutter, SangaSpacing.xs, SangaSpacing.gutter, SangaSpacing.xl),
+        padding: const EdgeInsets.fromLTRB(SangaSpacing.gutter, SangaSpacing.md, SangaSpacing.gutter, SangaSpacing.xl),
         itemCount: state.items.length + 1 + staleOffset,
         separatorBuilder: (context, index) => const SizedBox(height: SangaSpacing.sm),
         itemBuilder: (context, rawIndex) {
@@ -156,7 +145,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     return AnnotatedRegion(
       value: SangaSystemUi.onLight,
       child: Scaffold(
-        backgroundColor: SangaColors.surface,
         body: SafeArea(
           child: Column(
             children: [

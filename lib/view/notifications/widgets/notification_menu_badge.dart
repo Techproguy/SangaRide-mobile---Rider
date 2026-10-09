@@ -22,7 +22,7 @@ class NotificationMenuBadge extends StatelessWidget {
               excludeSemantics: true,
               child: Container(
                 constraints: const BoxConstraints(minWidth: 22),
-                padding: const EdgeInsets.symmetric(horizontal: SangaSpacing.xs, vertical: 2),
+                padding: const EdgeInsets.symmetric(horizontal: SangaSpacing.xs, vertical: SangaSpacing.xxs),
                 decoration: const BoxDecoration(color: SangaColors.primary, borderRadius: SangaRadii.pill),
                 child: Text(
                   AccountCopy.unreadLabel(count),
