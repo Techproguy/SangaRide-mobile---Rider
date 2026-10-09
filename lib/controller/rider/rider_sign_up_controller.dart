@@ -1,8 +1,10 @@
+import 'dart:async';
 import 'dart:developer';
 import 'dart:io';
 
 import 'package:get/get.dart';
 import 'package:sanga_ride/controller/shared/auth_controller.dart';
+import 'package:sanga_ride/core/api/account_endpoints.dart';
 import 'package:sanga_ride/core/api/api.dart';
 import 'package:sanga_ride/core/api/app_endpoints.dart';
 import 'package:sanga_ride/core/api/places_endpoints.dart';
@@ -16,6 +18,8 @@ enum SelfieResult { verified, noMatch, unavailable }
 class RiderSignUpController extends GetxController {
   static const String selfiePurpose = 'selfie';
   static const String noMatchCode = 'face_not_matched';
+  static const String homeStepCode = 'home';
+  static const Duration skipCap = Duration(seconds: 3);
 
   final _api = Get.find<ApiService>();
 
@@ -103,6 +107,26 @@ class RiderSignUpController extends GetxController {
       () => _api.post(PlacesEndpoints.saved, data: body, key: _keyFor(body, isHome: true), suppressErrorToast: true),
       onDone: () => _homeKey = null,
     );
+  }
+
+  void skipHome() {
+    if (_isOffline) return;
+    unawaited(_sendSkip(homeStepCode));
+  }
+
+  Future<void> _sendSkip(String step) async {
+    try {
+      await _api
+          .post(
+            AccountEndpoints.onboardingSkip,
+            data: {'step': step},
+            key: IdempotencyKey.newFor('skip-$step'),
+            suppressErrorToast: true,
+          )
+          .timeout(skipCap);
+    } catch (e) {
+      log('skip $step failed: $e');
+    }
   }
 
   IdempotencyKey _keyFor(Map<String, dynamic> body, {required bool isHome}) {

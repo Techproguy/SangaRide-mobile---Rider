@@ -163,7 +163,7 @@ class AccountController extends GetxController {
   Future<void> loadDeletionPreview() async {
     _preview.value = const DeletionPreviewLoading();
     try {
-      final response = await _api.get(AccountDeletionEndpoints.preview, options: quietOptions);
+      final response = await _api.get(AccountEndpoints.deletionPreview, options: quietOptions);
       _preview.value = DeletionPreviewLoaded(DeletionPreview.fromJson(dataOf(response)));
     } on Object catch (error) {
       _preview.value = DeletionPreviewFailed(AccountProblem.of(error).message);

@@ -1,4 +1,3 @@
-import 'package:sanga_ride/controller/rider/account/account_api.dart';
 import 'package:sanga_ride/core/api/account_endpoints.dart';
 import 'package:sanga_ride/core/api/mock/mock_data.dart';
 import 'package:sanga_ride/core/api/mock/mock_delivery.dart';
@@ -33,7 +32,8 @@ abstract final class MockAccount {
     MockRoute.get(AccountEndpoints.me, (_) => _json()),
     MockRoute.patch(AccountEndpoints.me, _update),
     MockRoute.delete(AccountEndpoints.me, _delete),
-    MockRoute.get(AccountDeletionEndpoints.preview, _deletionPreview),
+    MockRoute.get(AccountEndpoints.deletionPreview, _deletionPreview),
+    MockRoute.post(AccountEndpoints.onboardingSkip, _skipOnboarding),
     MockRoute.post(AccountEndpoints.photo, _photo),
     MockRoute.post(AccountEndpoints.phone, _requestPhone),
     MockRoute.post(AccountEndpoints.phoneVerify, _verifyPhone),
@@ -62,6 +62,17 @@ abstract final class MockAccount {
   static void beginOnboarding() => _onboardingStep = MockOnboardingStep.aboutYou;
 
   static void finishOnboarding() => _onboardingStep = null;
+
+  static Object? _skipOnboarding(MockRequest request) {
+    if (request.body['step'] != MockOnboardingStep.home.code) {
+      throw const MockFailure(422, 'That step can’t be skipped.', code: 'step_not_skippable');
+    }
+    completeOnboardingStep(MockOnboardingStep.home);
+    return {
+      'onboarding': {'nextStep': onboardingNextStep},
+      'serverTime': DateTime.now().toUtc().toIso8601String(),
+    };
+  }
 
   static void completeOnboardingStep(MockOnboardingStep step) {
     if (_onboardingStep == step) _onboardingStep = step.next;

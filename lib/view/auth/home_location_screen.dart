@@ -105,6 +105,11 @@ class _HomeLocationScreenState extends State<HomeLocationScreen> {
     if (await _signUp.saveHome(home)) await _finish();
   }
 
+  Future<void> _skip() async {
+    _signUp.skipHome();
+    await _finish();
+  }
+
   Future<void> _finish() async {
     await showSangaStatusSheet(
       context: context,
@@ -171,7 +176,7 @@ class _HomeLocationScreenState extends State<HomeLocationScreen> {
         const SizedBox(height: SangaSpacing.xs),
         Center(
           child: TextButton(
-            onPressed: _finish,
+            onPressed: _skip,
             child: Text('Skip for now', style: SangaTextStyles.label.copyWith(color: SangaColors.textSubtle)),
           ),
         ),

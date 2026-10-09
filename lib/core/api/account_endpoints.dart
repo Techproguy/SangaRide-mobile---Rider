@@ -4,4 +4,6 @@ abstract final class AccountEndpoints {
   static const String phone = '/me/phone';
   static const String phoneVerify = '/me/phone/verify';
   static const String uploads = '/uploads';
+  static const String deletionPreview = '/me/deletion-preview';
+  static const String onboardingSkip = '/me/onboarding/skip';
 }
