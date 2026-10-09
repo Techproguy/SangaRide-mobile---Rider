@@ -567,7 +567,8 @@ class FlightTracking {
 
 enum FlightTrackingFailure {
   notFound('We can’t find this flight', 'It may no longer be on your ride. Head back and try again.', canRetry: false),
-  connection('We couldn’t load your flight', 'Check your connection and give it another go.', canRetry: true);
+  connection('We couldn’t load your flight', 'Check your connection and give it another go.', canRetry: true),
+  unknown('We couldn’t load your flight', 'Something went wrong on our side. Try again in a moment.', canRetry: true);
 
   const FlightTrackingFailure(this.title, this.message, {required this.canRetry});
 

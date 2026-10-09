@@ -116,6 +116,8 @@ class MatchRequest {
 }
 
 class OfferDriver {
+  static const String fallbackName = 'Driver';
+
   const OfferDriver({
     required this.id,
     required this.name,
@@ -128,10 +130,11 @@ class OfferDriver {
 
   factory OfferDriver.fromJson(Object? body) {
     final json = JsonReader.of(body);
+    final name = json.strOr('name', fallbackName);
     return OfferDriver(
-      id: json.str('id'),
-      name: json.str('name'),
-      firstName: json.strOr('firstName', json.strOr('name', '').split(' ').first),
+      id: json.strOr('id', ''),
+      name: name,
+      firstName: json.strOr('firstName', name.split(' ').first),
       photoUrl: json.strOrNull('photoUrl'),
       isVerified: json.boolOr('verified', false),
       rating: json.doubleOr('rating', 0),
@@ -170,7 +173,7 @@ class DriverOffer {
     counterOffer: json.intOrNull('counterOffer'),
     etaMinutes: json.intOr('etaMinutes', 0),
     distanceKm: json.doubleOr('distanceKm', 0),
-    driver: OfferDriver.fromJson(json.object('driver')),
+    driver: OfferDriver.fromJson(json.raw['driver']),
   );
 
   final String id;
@@ -234,7 +237,11 @@ class DriverVehicle {
   final String plate;
   final List<String> features;
 
-  String get title => year == 0 ? '$make $model' : '$make $model ($year)';
+  String get title {
+    final name = [make, model].where((part) => part.isNotEmpty).join(' ');
+    if (name.isEmpty) return 'Vehicle';
+    return year == 0 ? name : '$name ($year)';
+  }
 
   String get colourLabel => colour.isEmpty ? colour : '${colour[0].toUpperCase()}${colour.substring(1)}';
 
@@ -302,7 +309,7 @@ class ConfirmedTrip {
     return ConfirmedTrip(
       tripId: json.str('tripId'),
       etaMinutes: json.intOr('etaMinutes', 0),
-      driver: OfferDriver.fromJson(json.object('driver')),
+      driver: OfferDriver.fromJson(json.raw['driver']),
     );
   }
 

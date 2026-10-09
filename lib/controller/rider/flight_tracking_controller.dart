@@ -88,10 +88,15 @@ class FlightTrackingController extends GetxController {
         _state.value = const FlightTrackingFailed(FlightTrackingFailure.notFound);
         return;
       }
-      if (state is! FlightTrackingReady) _state.value = const FlightTrackingFailed(FlightTrackingFailure.connection);
+      if (state is! FlightTrackingReady) _state.value = FlightTrackingFailed(_failureOf(e));
       rethrow;
     }
   }
+
+  FlightTrackingFailure _failureOf(Object error) => switch (ProblemKind.of(error)) {
+    ProblemOffline() => FlightTrackingFailure.connection,
+    _ => FlightTrackingFailure.unknown,
+  };
 
   Future<BookingProblem?> notifyDriver() async {
     final id = _rideId;
