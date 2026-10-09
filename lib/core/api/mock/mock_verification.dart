@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:sanga_ride/core/api/mock/mock_server.dart';
 import 'package:sanga_ride/core/api/verification_endpoints.dart';
 
@@ -44,11 +45,11 @@ abstract final class MockVerification {
     return (at: submittedAt.add(_reviewTime), isVerified: isVerified);
   }
 
-  static bool rejectNextSelfie = false;
+  static final ValueNotifier<bool> rejectNextSelfie = ValueNotifier(false);
 
   static Object? selfie(MockRequest request) {
-    if (rejectNextSelfie) {
-      rejectNextSelfie = false;
+    if (rejectNextSelfie.value) {
+      rejectNextSelfie.value = false;
       throw MockFailure(422, 'We couldn’t match your face.', code: 'face_not_matched');
     }
     final item = _item('selfie');
