@@ -3,10 +3,12 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:sanga_ride/core/router/router.dart';
+import 'package:sanga_ride/core/safety_config.dart';
 import 'package:sanga_ride/core/router/routes.dart';
 import 'package:sanga_ride/core/services/connectivity_service.dart';
 import 'package:sanga_ride/core/services/session_restore.dart';
 import 'package:sanga_ride/view/boot/live_activities.dart';
+import 'package:sanga_ride/view/safety/widgets/dial_number.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 class AppOverlays extends StatefulWidget {
@@ -64,6 +66,10 @@ class _AppOverlaysState extends State<AppOverlays> {
     });
   }
 
+  void _actOnActivity(SangaLiveActivity activity) {
+    if (activity.id == LiveActivities.sosId) unawaited(dialNumber(SafetyConfig.emergencyNumber));
+  }
+
   void _openActivity(SangaLiveActivity activity) {
     final route = LiveActivities.routeFor(activity.id, _restore.meState);
     if (route != null) unawaited(SangaRouter.router.push<Object?>(route));
@@ -88,6 +94,7 @@ class _AppOverlaysState extends State<AppOverlays> {
                   () => SangaLiveActivityBar(
                     activities: LiveActivities.from(_restore.meStateRx.value, path),
                     onTap: _openActivity,
+                    onAction: _actOnActivity,
                   ),
                 ),
               ),
