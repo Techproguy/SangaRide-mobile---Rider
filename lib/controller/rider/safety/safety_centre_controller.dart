@@ -3,6 +3,7 @@ import 'dart:developer';
 
 import 'package:get/get.dart';
 import 'package:sanga_ride/controller/rider/safety/safety_api.dart';
+import 'package:sanga_ride/controller/rider/safety/sos_controller.dart';
 import 'package:sanga_ride/core/api/api.dart';
 import 'package:sanga_ride/core/api/safety_endpoints.dart';
 import 'package:sanga_ride/model/models.dart';
@@ -38,9 +39,12 @@ class SafetyCentreController extends GetxController {
         SafetyEndpoints.centre,
         queryParameters: {'tripId': ?_tripId},
         suppressErrorToast: true,
+        profile: RequestProfile.interactive,
       );
       if (epoch != _epoch) return;
-      _state.value = SafetyCentreLoaded(SafetyCentre.fromJson(safetyDataOf(response.data)));
+      final centre = SafetyCentre.fromJson(safetyDataOf(response.data));
+      Get.find<SosController>().learnFrom(centre);
+      _state.value = SafetyCentreLoaded(centre);
     } catch (e) {
       log('safety centre failed: $e');
       if (epoch == _epoch) _state.value = SafetyCentreFailed(safetyProblemOf(e));

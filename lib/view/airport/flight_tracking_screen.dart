@@ -6,7 +6,6 @@ import 'package:go_router/go_router.dart';
 import 'package:sanga_ride/controller/rider/flight_tracking_controller.dart';
 import 'package:sanga_ride/controller/rider/scheduled_rides_controller.dart';
 import 'package:sanga_ride/core/router/trip_routes.dart';
-import 'package:sanga_ride/core/services/toast_service.dart';
 import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride/model/ride/scheduled_ride.dart';
 import 'package:sanga_ride/view/airport/widgets/flight_summary_card.dart';
@@ -44,7 +43,7 @@ class _FlightTrackingScreenState extends State<FlightTrackingScreen> {
   Future<void> _notify() async {
     final problem = await _tracking.notifyDriver();
     if (!mounted) return;
-    if (problem != null) return Toast.error(problem.message);
+    if (problem != null) return SangaToast.show(problem.message, tone: SangaToastTone.error);
     await showSangaStatusSheet(
       context: context,
       status: SangaStatus.success,
@@ -68,10 +67,10 @@ class _FlightTrackingScreenState extends State<FlightTrackingScreen> {
     final problem = await _rides.cancel(widget.rideId);
     if (!mounted) return;
     if (problem == null) {
-      Toast.success('Ride cancelled. You won’t be charged.');
+      SangaToast.show('Ride cancelled. You won’t be charged.', tone: SangaToastTone.success);
       context.pop();
     } else {
-      Toast.error(problem.message);
+      SangaToast.show(problem.message, tone: SangaToastTone.error);
     }
   }
 
@@ -131,16 +130,17 @@ class _FlightTrackingScreenState extends State<FlightTrackingScreen> {
 
   Widget _body(BuildContext context, FlightTrackingState state) {
     return switch (state) {
-      FlightTrackingLoading() => const Padding(
-        padding: EdgeInsets.all(SangaSpacing.xxl),
-        child: Center(child: SangaActivityIndicator(size: 40)),
-      ),
-      FlightTrackingFailed(:final reason) => SangaInlineMessage(
-        title: reason.title,
-        message: reason.message,
-        actionLabel: reason.canRetry ? 'Try again' : 'Go back',
-        onAction: reason.canRetry ? _tracking.retry : context.pop,
-      ),
+      FlightTrackingLoading() => const SangaSkeleton.heights([120, 72, 160]),
+      FlightTrackingFailed(:final reason) =>
+        reason.canRetry
+            ? SangaFailureMessage(title: reason.title, message: reason.message, onRetry: _tracking.retry)
+            : SangaEmptyMessage(
+                icon: Icons.flight_land_rounded,
+                title: reason.title,
+                message: reason.message,
+                actionLabel: 'Go back',
+                onAction: context.pop,
+              ),
       FlightTrackingReady(:final tracking) => _ready(context, tracking),
     };
   }

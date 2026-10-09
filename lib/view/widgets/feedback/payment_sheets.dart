@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
-const EdgeInsets _statusPadding = EdgeInsets.fromLTRB(
+const EdgeInsets paymentSheetPadding = EdgeInsets.fromLTRB(
   SangaSpacing.xl,
   SangaSpacing.xxl,
   SangaSpacing.xl,
@@ -36,19 +36,24 @@ Future<bool?> showPaymentPendingSheet({
   required String title,
   required String message,
   String? cancelLabel,
+  bool offersEscape = false,
 }) {
   return showSangaSheet<bool>(
     context: context,
     isDismissible: false,
     enableDrag: false,
-    padding: _statusPadding,
+    padding: paymentSheetPadding,
     builder: (context) => PopScope(
       canPop: false,
       child: SangaStatusContent(
         status: SangaStatus.pending,
         title: title,
         message: message,
-        secondary: cancelLabel == null ? null : _SheetTextAction(label: cancelLabel, result: true),
+        secondary: cancelLabel != null
+            ? PaymentSheetAction(label: cancelLabel, result: true)
+            : offersEscape
+            ? SangaBusyEscape(onClose: () => Navigator.of(context).pop(false))
+            : null,
       ),
     ),
   );
@@ -65,7 +70,7 @@ Future<bool?> showPaymentFailureSheet({
     context: context,
     isDismissible: false,
     enableDrag: false,
-    padding: _statusPadding,
+    padding: paymentSheetPadding,
     builder: (context) => PopScope(
       canPop: false,
       child: SangaStatusContent(
@@ -73,7 +78,7 @@ Future<bool?> showPaymentFailureSheet({
         title: title,
         message: message,
         action: SangaButton.primary(label: primaryLabel, onPressed: () => Navigator.of(context).pop(true)),
-        secondary: _SheetTextAction(label: secondaryLabel, result: false),
+        secondary: PaymentSheetAction(label: secondaryLabel, result: false),
       ),
     ),
   );
@@ -89,8 +94,8 @@ Future<void> showPaymentPaidSheet({required BuildContext context, required Strin
   );
 }
 
-class _SheetTextAction extends StatelessWidget {
-  const _SheetTextAction({required this.label, required this.result});
+class PaymentSheetAction extends StatelessWidget {
+  const PaymentSheetAction({super.key, required this.label, required this.result});
 
   final String label;
   final bool result;

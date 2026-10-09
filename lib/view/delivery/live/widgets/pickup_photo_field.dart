@@ -107,7 +107,7 @@ class _Preview extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isLocked = state.isBusy || state is PickupConfirmed;
+    final isLocked = (state.isBusy && state is! PickupUploading) || state is PickupConfirmed;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       spacing: SangaSpacing.xs,
@@ -155,7 +155,14 @@ class _Problem extends StatelessWidget {
       (_, true) => ('Try again', onRetry),
       _ => ('Take photo', onTake),
     };
-    return SangaInlineMessage(title: problem.title, message: problem.message, actionLabel: label, onAction: action);
+    return SangaInlineMessage(
+      icon: problem.opensSettings ? Icons.no_photography_outlined : Icons.photo_camera_outlined,
+      tone: SangaMessageTone.warning,
+      title: problem.title,
+      message: problem.message,
+      actionLabel: label,
+      onAction: action,
+    );
   }
 }
 

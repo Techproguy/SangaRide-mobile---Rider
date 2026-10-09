@@ -2,12 +2,15 @@ import 'package:sanga_ride/model/ride/ride_match.dart';
 import 'package:sanga_ride/model/ride/ride_request.dart';
 import 'package:sanga_ride/model/trip/trip_delivery.dart';
 import 'package:sanga_ride/model/trip/wrapup/payment.dart';
+import 'package:sanga_ride_core/sanga_ride_core.dart';
 
 class ReceiptPlace {
   const ReceiptPlace({required this.name, required this.address});
 
-  factory ReceiptPlace.fromJson(Map<String, dynamic> json) =>
-      ReceiptPlace(name: json['name'] as String, address: json['address'] as String);
+  factory ReceiptPlace.fromJson(Map<String, dynamic> json) {
+    final reader = JsonReader.of(json);
+    return ReceiptPlace(name: reader.str('name'), address: reader.strOr('address', ''));
+  }
 
   final String name;
   final String address;
@@ -16,8 +19,10 @@ class ReceiptPlace {
 class ReceiptLine {
   const ReceiptLine({required this.key, required this.label, required this.amount});
 
-  factory ReceiptLine.fromJson(Map<String, dynamic> json) =>
-      ReceiptLine(key: json['key'] as String, label: json['label'] as String, amount: (json['amount'] as num).toInt());
+  factory ReceiptLine.fromJson(Map<String, dynamic> json) {
+    final reader = JsonReader.of(json);
+    return ReceiptLine(key: reader.strOr('key', ''), label: reader.str('label'), amount: reader.integer('amount'));
+  }
 
   final String key;
   final String label;
@@ -28,22 +33,32 @@ class ReceiptPayment {
   const ReceiptPayment({required this.method, this.last4, this.group});
 
   factory ReceiptPayment.fromJson(Map<String, dynamic> json) {
-    final group = json['group'];
+    final reader = JsonReader.of(json);
+    final group = reader.objectOrNull('group');
     return ReceiptPayment(
-      method: PaymentMethod.fromCode(json['method'] as String),
-      last4: json['last4'] as String?,
-      group: group is Map ? PaymentGroup.fromJson(Map<String, dynamic>.from(group)) : null,
+      method: PaymentMethod.tryFromCode(reader.strOrNull('method')),
+      last4: reader.strOrNull('last4'),
+      group: group == null ? null : _groupOf(group),
     );
   }
 
-  final PaymentMethod method;
+  static PaymentGroup? _groupOf(JsonReader reader) {
+    try {
+      return PaymentGroup.fromJson(reader.raw);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  final PaymentMethod? method;
   final String? last4;
   final PaymentGroup? group;
 
   String get label => switch ((method, group)) {
     (PaymentMethod.card, _) when last4 != null => '•••• $last4',
     (PaymentMethod.groupWallet, final group?) => '${group.name} wallet',
-    _ => method.label,
+    (final PaymentMethod method?, _) => method.label,
+    _ => 'Paid',
   };
 }
 
@@ -57,13 +72,13 @@ class ReceiptDelivery {
   });
 
   factory ReceiptDelivery.fromJson(Map<String, dynamic> json) {
-    final deliveredAt = json['deliveredAt'] as String?;
+    final reader = JsonReader.of(json);
     return ReceiptDelivery(
-      tier: json['tier'] as String,
-      itemName: json['itemName'] as String? ?? '',
-      recipientName: json['recipientName'] as String? ?? '',
-      deliveredAt: deliveredAt == null ? null : DateTime.parse(deliveredAt).toLocal(),
-      proofPhotoUrl: json['proofPhotoUrl'] as String?,
+      tier: reader.strOr('tier', 'standard'),
+      itemName: reader.strOr('itemName', ''),
+      recipientName: reader.strOr('recipientName', ''),
+      deliveredAt: reader.timeOrNull('deliveredAt')?.toLocal(),
+      proofPhotoUrl: reader.strOrNull('proofPhotoUrl'),
     );
   }
 
@@ -97,25 +112,25 @@ class TripReceipt {
   });
 
   factory TripReceipt.fromJson(Map<String, dynamic> json) {
-    final rating = json['rating'] as Map?;
-    final delivery = json['delivery'] as Map?;
+    final reader = JsonReader.of(json);
+    final delivery = reader.objectOrNull('delivery');
     return TripReceipt(
-      id: json['id'] as String,
-      tripId: json['tripId'] as String,
-      pickup: ReceiptPlace.fromJson(Map<String, dynamic>.from(json['pickup'] as Map)),
-      dropoff: ReceiptPlace.fromJson(Map<String, dynamic>.from(json['dropoff'] as Map)),
-      stops: [for (final stop in json['stops'] as List) ReceiptPlace.fromJson(Map<String, dynamic>.from(stop as Map))],
-      distanceKm: (json['distanceKm'] as num).toDouble(),
-      durationMinutes: (json['durationMinutes'] as num).toInt(),
-      lines: [for (final line in json['lines'] as List) ReceiptLine.fromJson(Map<String, dynamic>.from(line as Map))],
-      total: (json['total'] as num).toInt(),
-      paidWith: ReceiptPayment.fromJson(Map<String, dynamic>.from(json['paidWith'] as Map)),
-      paidAt: DateTime.parse(json['paidAt'] as String).toLocal(),
-      driver: OfferDriver.fromJson(Map<String, dynamic>.from(json['driver'] as Map)),
-      vehicle: DriverVehicle.fromJson(Map<String, dynamic>.from(json['vehicle'] as Map)),
-      category: RideCategory.values.asNameMap()[json['category']] ?? RideCategory.go,
-      ratedStars: rating == null ? null : (rating['stars'] as num).toInt(),
-      delivery: delivery == null ? null : ReceiptDelivery.fromJson(Map<String, dynamic>.from(delivery)),
+      id: reader.str('id'),
+      tripId: reader.str('tripId'),
+      pickup: ReceiptPlace.fromJson(reader.object('pickup').raw),
+      dropoff: ReceiptPlace.fromJson(reader.object('dropoff').raw),
+      stops: reader.listOf('stops', (stop) => ReceiptPlace.fromJson(stop.raw)),
+      distanceKm: reader.doubleOr('distanceKm', 0),
+      durationMinutes: reader.intOr('durationMinutes', 0),
+      lines: reader.listOf('lines', (line) => ReceiptLine.fromJson(line.raw)),
+      total: reader.integer('total'),
+      paidWith: ReceiptPayment.fromJson(reader.objectOrNull('paidWith')?.raw ?? const {}),
+      paidAt: reader.timeOrNull('paidAt')?.toLocal() ?? DateTime.now(),
+      driver: OfferDriver.fromJson(reader.object('driver')),
+      vehicle: DriverVehicle.fromJson(reader.object('vehicle')),
+      category: RideCategory.values.asNameMap()[reader.strOrNull('category')] ?? RideCategory.go,
+      ratedStars: reader.objectOrNull('rating')?.intOrNull('stars'),
+      delivery: delivery == null ? null : ReceiptDelivery.fromJson(delivery.raw),
     );
   }
 
@@ -151,7 +166,8 @@ class TripReceipt {
 enum ReceiptFailure {
   notReady('payment_pending', 'Your receipt isn’t ready yet', 'It shows up as soon as your payment is confirmed.'),
   notFound('trip_not_found', 'We can’t find this receipt', 'This trip may have been removed. Head back and try again.'),
-  connection('connection', 'We couldn’t load your receipt', 'Check your connection and try again.');
+  connection('connection', 'We couldn’t load your receipt', 'Check your connection and try again.'),
+  unknown('unknown', 'Something went wrong', 'Something went wrong on our side. Try again in a moment.');
 
   const ReceiptFailure(this.code, this.title, this.message);
 
@@ -161,8 +177,15 @@ enum ReceiptFailure {
 
   bool get canRetry => this != notFound;
 
-  static ReceiptFailure fromCode(String? code) =>
-      values.firstWhere((failure) => failure.code == code, orElse: () => connection);
+  static ReceiptFailure fromCode(String? code) => enumByCode(values, code, (failure) => failure.code, unknown);
+
+  static ReceiptFailure of(Object error) {
+    if (error is ApiException && error.kind == ApiFailureKind.rejected) return fromCode(error.code);
+    return switch (ProblemKind.of(error)) {
+      ProblemOffline() => connection,
+      _ => unknown,
+    };
+  }
 }
 
 sealed class ReceiptState {

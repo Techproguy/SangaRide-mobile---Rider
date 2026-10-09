@@ -6,12 +6,12 @@ import 'package:go_router/go_router.dart';
 import 'package:sanga_ride/controller/rider/trip/cancel_controller.dart';
 import 'package:sanga_ride/controller/rider/trip/trip_controller.dart';
 import 'package:sanga_ride/core/router/routes.dart';
-import 'package:sanga_ride/core/services/toast_service.dart';
 import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride/view/trip/cancel/cancel_reasons_view.dart';
 import 'package:sanga_ride/view/trip/cancel/cancel_review_view.dart';
 import 'package:sanga_ride/view/trip/cancel/widgets/cancel_copy.dart';
 import 'package:sanga_ride/view/trip/cancel/widgets/cancel_sheets.dart';
+import 'package:sanga_ride/view/trip/widgets/trip_page_gate.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 class CancelScreen extends StatefulWidget {
@@ -50,7 +50,7 @@ class _CancelScreenState extends State<CancelScreen> {
       case CancelFailed():
         unawaited(_showFailure(next.failure));
       case CancelSettled():
-        Toast.info(next.failure.message);
+        unawaited(_showSettled(next));
       case CancelDone():
         unawaited(_showDone(next.outcome));
       default:
@@ -62,6 +62,16 @@ class _CancelScreenState extends State<CancelScreen> {
     final isPrimary = await showCancelFailureSheet(context, failure);
     if (!mounted) return;
     if (_cancel.resolveFailure(isPrimary: isPrimary)) context.pop();
+  }
+
+  Future<void> _showSettled(CancelSettled settled) async {
+    await showCancelSettledSheet(context, settled);
+    if (!mounted) return;
+    if (settled.isCancelled) {
+      context.go(SangaRoutes.home);
+    } else {
+      context.pop();
+    }
   }
 
   Future<void> _showDone(CancelOutcome outcome) async {
@@ -84,7 +94,8 @@ class _CancelScreenState extends State<CancelScreen> {
 
   Widget _body(Trip trip, CancelState state) {
     return switch (state) {
-      CancelReviewing(:final reason, :final review, :final isSubmitting) => CancelReviewView(
+      CancelReviewing(:final reason, :final review, :final isSubmitting, :final feeWas) => CancelReviewView(
+        feeWas: feeWas,
         copy: CancelCopy.of(isDelivery: trip.isDelivery),
         trip: trip,
         reason: reason,
@@ -122,27 +133,23 @@ class _CancelScreenState extends State<CancelScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Obx(() {
-      final trip = _trip.trip;
-      final state = _cancel.state;
-      if (trip == null) {
-        return SangaPageLayout(
-          title: _copy.title,
-          children: const [
-            Padding(
-              padding: EdgeInsets.all(SangaSpacing.xl),
-              child: Center(child: SangaActivityIndicator(size: 40)),
-            ),
-          ],
+    return TripPageGate(
+      tripId: widget.tripId,
+      title: _copy.title,
+      child: Obx(() {
+        final trip = _trip.trip;
+        final state = _cancel.state;
+        if (trip == null) {
+          return SangaPageLayout(title: _copy.title, children: const [SangaSkeleton.heights([120, 64, 64, 64])]);
+        }
+        return PopScope(
+          canPop: state is CancelChoosing,
+          onPopInvokedWithResult: (didPop, _) {
+            if (!didPop) _handleBack(state);
+          },
+          child: _body(trip, state),
         );
-      }
-      return PopScope(
-        canPop: state is CancelChoosing,
-        onPopInvokedWithResult: (didPop, _) {
-          if (!didPop) _handleBack(state);
-        },
-        child: _body(trip, state),
-      );
-    });
+      }),
+    );
   }
 }

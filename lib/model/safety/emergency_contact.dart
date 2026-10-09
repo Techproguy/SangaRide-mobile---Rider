@@ -1,10 +1,13 @@
+import 'package:sanga_ride_core/sanga_ride_core.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 class EmergencyContact {
   const EmergencyContact({required this.id, required this.name, required this.phone});
 
-  factory EmergencyContact.fromJson(Map<String, dynamic> json) =>
-      EmergencyContact(id: json['id'] as String, name: json['name'] as String, phone: json['phone'] as String);
+  factory EmergencyContact.fromJson(Map<String, dynamic> json) {
+    final reader = JsonReader.of(json);
+    return EmergencyContact(id: reader.str('id'), name: reader.str('name'), phone: reader.str('phone'));
+  }
 
   final String id;
   final String name;

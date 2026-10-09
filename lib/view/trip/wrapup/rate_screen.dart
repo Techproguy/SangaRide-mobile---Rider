@@ -168,6 +168,8 @@ class _RateBody extends StatelessWidget {
         RatingCommentField(controller: comment, onChanged: onComment, isEnabled: !isLocked),
         if (state is RatingFailed)
           SangaInlineMessage(
+            icon: Icons.cloud_off_rounded,
+            tone: SangaMessageTone.warning,
             title: RatingFailed.title,
             message: RatingFailed.message,
             actionLabel: 'Try again',

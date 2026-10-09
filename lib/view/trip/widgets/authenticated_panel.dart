@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:sanga_ride/model/models.dart';
-import 'package:sanga_ride/view/trip/widgets/trip_contact_tiles.dart';
+import 'package:sanga_ride/view/trip/widgets/trip_action_tiles.dart';
 import 'package:sanga_ride/view/trip/widgets/trip_driver_header.dart';
 import 'package:sanga_ride/view/trip/widgets/trip_panel_body.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
@@ -13,6 +13,7 @@ class AuthenticatedPanel extends StatelessWidget {
     required this.onCall,
     required this.onMessage,
     required this.onSafety,
+    required this.onSos,
     required this.onMakePayment,
   });
 
@@ -21,6 +22,7 @@ class AuthenticatedPanel extends StatelessWidget {
   final VoidCallback onCall;
   final VoidCallback onMessage;
   final VoidCallback onSafety;
+  final VoidCallback onSos;
   final VoidCallback onMakePayment;
 
   @override
@@ -29,18 +31,13 @@ class AuthenticatedPanel extends StatelessWidget {
       children: [
         TripDriverHeader(driver: trip.driver),
         const TripPanelDivider(),
-        Row(
-          spacing: SangaSpacing.md,
-          children: [
-            TripContactTiles(unreadCount: unreadCount, onCall: onCall, onMessage: onMessage, onSafety: onSafety),
-            Expanded(
-              child: Text(
-                'Your driver confirmed your PIN',
-                textAlign: TextAlign.end,
-                style: SangaTextStyles.cardTitle.copyWith(color: SangaColors.success),
-              ),
-            ),
-          ],
+        Text('Your driver confirmed your PIN', style: SangaTextStyles.cardTitle.copyWith(color: SangaColors.success)),
+        TripActionTiles(
+          unreadCount: unreadCount,
+          onCall: onCall,
+          onMessage: onMessage,
+          onSafety: onSafety,
+          onSos: onSos,
         ),
         SangaButton.primary(label: 'Make payment', onPressed: onMakePayment),
       ],

@@ -26,12 +26,12 @@ Future<void> showStopUpdatingSheet(BuildContext context) {
   );
 }
 
-Future<bool> showStopFailureSheet(BuildContext context, AddStopFailure failure) {
+Future<bool> showStopFailureSheet(BuildContext context, AddStopFailure failure, {String? message}) {
   return showSangaStatusSheet(
     context: context,
-    status: SangaStatus.failure,
+    status: failure.isRuleBlock ? SangaStatus.caution : SangaStatus.failure,
     title: failure.title,
-    message: failure.message,
+    message: message ?? failure.message,
     actionLabel: failure.primaryLabel,
     secondaryLabel: failure.secondaryLabel,
   );

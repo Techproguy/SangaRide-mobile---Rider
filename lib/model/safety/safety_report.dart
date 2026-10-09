@@ -1,3 +1,5 @@
+import 'package:sanga_ride_core/sanga_ride_core.dart';
+
 enum ReportCategory {
   driving('driving', 'Unsafe driving'),
   harassment('harassment', 'Harassment'),
@@ -22,8 +24,10 @@ abstract final class SafetyReportRules {
 class SafetyReportReceipt {
   const SafetyReportReceipt({required this.id, required this.reference});
 
-  factory SafetyReportReceipt.fromJson(Map<String, dynamic> json) =>
-      SafetyReportReceipt(id: json['id'] as String, reference: json['reference'] as String);
+  factory SafetyReportReceipt.fromJson(Map<String, dynamic> json) {
+    final reader = JsonReader.of(json);
+    return SafetyReportReceipt(id: reader.str('id'), reference: reader.strOr('reference', ''));
+  }
 
   final String id;
   final String reference;

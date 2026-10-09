@@ -1,15 +1,16 @@
 import 'dart:async';
-import 'dart:developer';
 
+import 'package:flutter/foundation.dart' show VoidCallback;
 import 'package:get/get.dart';
+import 'package:sanga_ride/controller/rider/trip/live_problem.dart';
 import 'package:sanga_ride/controller/rider/trip/trip_controller.dart';
 import 'package:sanga_ride/core/api/api.dart';
 import 'package:sanga_ride/core/api/delivery_live_endpoints.dart';
 import 'package:sanga_ride/model/models.dart';
+import 'package:sanga_ride_core/sanga_ride_core.dart';
 
 class DeliveryIssueController extends GetxController {
   static const Duration pollInterval = Duration(seconds: 3);
-  static const int maxMissedPolls = 3;
 
   final _api = Get.find<ApiService>();
   final _trip = Get.find<TripController>();
@@ -17,11 +18,14 @@ class DeliveryIssueController extends GetxController {
   final Rx<DeliveryIssueState> _state = Rx<DeliveryIssueState>(const IssueIdle());
   final Map<String, String> _issueIds = {};
 
-  Timer? _poller;
+  LivePoller? _poller;
+  VoidCallback? _detachLink;
+  Mutation<DeliveryIssue>? _submitMutation;
+  String? _submitSignature;
+  Mutation<DeliveryIssue>? _resolveMutation;
+  String? _resolveSignature;
   String? _tripId;
   int _epoch = 0;
-  int _missedPolls = 0;
-  bool _isPolling = false;
 
   Rx<DeliveryIssueState> get stateRx => _state;
 
@@ -40,81 +44,84 @@ class DeliveryIssueController extends GetxController {
     super.onClose();
   }
 
+  String? _issueIdFor(String tripId) => _issueIds[tripId] ?? _trip.trip?.delivery?.openIssueId;
+
   Future<void> open(String tripId) async {
     if (_tripId == tripId && state is! IssueUnavailable) return;
     _stopPolling();
     _tripId = tripId;
     final epoch = ++_epoch;
-    _missedPolls = 0;
-    final issueId = _issueIds[tripId];
+    final issueId = _issueIdFor(tripId);
     if (issueId == null) {
       _state.value = const IssueIdle();
       return;
     }
+    _issueIds[tripId] = issueId;
     _state.value = const IssueLoading();
-    await _fetch(tripId, issueId, epoch);
-    if (epoch == _epoch) _startPolling();
+    _startPolling(epoch);
   }
 
   void close() {
     _stopPolling();
+    _releaseMutations();
     _epoch++;
     _tripId = null;
     _state.value = const IssueIdle();
   }
 
-  void pause() => _stopPolling();
-
-  void resume() {
-    if (_tripId == null || !hasOpenIssue) return;
-    _startPolling(immediate: true);
+  void _releaseMutations() {
+    _submitMutation?.dispose();
+    _submitMutation = null;
+    _submitSignature = null;
+    _resolveMutation?.dispose();
+    _resolveMutation = null;
+    _resolveSignature = null;
   }
 
-  void _startPolling({bool immediate = false}) {
+  void _startPolling(int epoch) {
     _stopPolling();
-    if (_tripId == null || !hasOpenIssue) return;
-    _poller = Timer.periodic(pollInterval, (_) => unawaited(_pollOnce()));
-    if (immediate) unawaited(_pollOnce());
+    final poller = LivePoller(fetch: () => _pollOnce(epoch), interval: pollInterval);
+    void mirror() => _onLink(poller.link.value);
+    poller.link.addListener(mirror);
+    _detachLink = () => poller.link.removeListener(mirror);
+    _poller = poller;
+    poller.start();
   }
 
   void _stopPolling() {
-    _poller?.cancel();
+    _detachLink?.call();
+    _detachLink = null;
+    _poller?.dispose();
     _poller = null;
   }
 
-  Future<void> _pollOnce() async {
+  void _onLink(LinkState link) {
+    final current = state;
+    if (current is! IssueInProgress) return;
+    final isStale = link != LinkState.live;
+    if (current.isStale != isStale) _state.value = IssueInProgress(current.issue, isStale: isStale);
+  }
+
+  Future<void> _pollOnce(int epoch) async {
     final tripId = _tripId;
     final issueId = tripId == null ? null : _issueIds[tripId];
-    if (tripId == null || issueId == null || _isPolling) return;
-    await _fetch(tripId, issueId, _epoch);
-  }
-
-  Future<void> _fetch(String tripId, String issueId, int epoch) async {
-    if (_isPolling) return;
-    _isPolling = true;
-    try {
-      final response = await _api.get(DeliveryLiveEndpoints.issueOf(tripId, issueId), suppressErrorToast: true);
-      if (epoch != _epoch) return;
-      _missedPolls = 0;
-      _apply(DeliveryIssue.fromJson(_dataOf(response.data)));
-    } catch (e) {
-      log('issue poll failed: ${e is ApiException ? e.code : e.runtimeType}');
-      if (epoch != _epoch) return;
-      _onMissedPoll(e);
-    } finally {
-      _isPolling = false;
-    }
-  }
-
-  void _onMissedPoll(Object error) {
+    if (tripId == null || issueId == null || epoch != _epoch) return;
     final current = state;
-    if (current is IssueLoading) {
-      _state.value = IssueUnavailable(_problemOf(error));
-      return;
+    if (current is IssueSubmitting || current is IssueResolving) return;
+    try {
+      final fetched = await _fetchIssue(tripId, issueId);
+      if (epoch != _epoch) return;
+      _apply(fetched);
+    } catch (error) {
+      if (epoch != _epoch) return;
+      if (state is IssueLoading) _state.value = IssueUnavailable(DeliveryIssueProblem.of(error));
+      rethrow;
     }
-    if (++_missedPolls >= maxMissedPolls && current is IssueInProgress && !current.isStale) {
-      _state.value = IssueInProgress(current.issue, isStale: true);
-    }
+  }
+
+  Future<DeliveryIssue> _fetchIssue(String tripId, String issueId) async {
+    final response = await _api.get(DeliveryLiveEndpoints.issueOf(tripId, issueId), suppressErrorToast: true);
+    return DeliveryIssue.fromJson(_dataOf(response.data));
   }
 
   void _apply(DeliveryIssue issue) {
@@ -129,7 +136,9 @@ class DeliveryIssueController extends GetxController {
           _ => null,
         },
       ),
-      DeliveryIssueStatus.reported || DeliveryIssueStatus.investigating => IssueInProgress(issue),
+      DeliveryIssueStatus.reported ||
+      DeliveryIssueStatus.investigating ||
+      DeliveryIssueStatus.unknown => IssueInProgress(issue),
     };
     if (issue.status == DeliveryIssueStatus.resolved) {
       _stopPolling();
@@ -140,27 +149,64 @@ class DeliveryIssueController extends GetxController {
   Future<bool> submit(DeliveryIssueReason reason, String note) async {
     final tripId = _tripId;
     if (tripId == null || state is IssueSubmitting) return false;
-    final epoch = ++_epoch;
     final trimmed = note.trim();
-    _state.value = IssueSubmitting(reason, trimmed);
-    try {
-      final response = await _api.post(
-        DeliveryLiveEndpoints.issuesOf(tripId),
-        data: {'reason': reason.code, 'note': trimmed.isEmpty ? null : trimmed},
-        suppressErrorToast: true,
-      );
-      if (epoch != _epoch) return false;
-      final issue = DeliveryIssue.fromJson(_dataOf(response.data));
-      _issueIds[tripId] = issue.id;
-      _missedPolls = 0;
-      _apply(issue);
-      _startPolling();
-      return true;
-    } catch (e) {
-      log('issue submit failed: ${e is ApiException ? e.code : e.runtimeType}');
-      if (epoch == _epoch) _state.value = IssueSubmitFailed(_problemOf(e), reason, trimmed);
+    if (LiveProblem.isOffline) {
+      _state.value = IssueSubmitFailed(DeliveryIssueProblem.connection, reason, trimmed);
       return false;
     }
+    final epoch = ++_epoch;
+    _stopPolling();
+    _state.value = IssueSubmitting(reason, trimmed);
+    final mutation = _submitMutationFor(tripId, reason, trimmed);
+    final result = await mutation.start();
+    if (epoch != _epoch) return false;
+    switch (result) {
+      case MutationDone<DeliveryIssue>(:final value):
+        _submitMutation?.dispose();
+        _submitMutation = null;
+        _issueIds[tripId] = value.id;
+        _apply(value);
+        _startPolling(epoch);
+        return true;
+      case MutationRejected<DeliveryIssue>(:final error):
+        _submitMutation?.dispose();
+        _submitMutation = null;
+        _state.value = IssueSubmitFailed(DeliveryIssueProblem.of(error), reason, trimmed);
+      case MutationFailed<DeliveryIssue>(:final error):
+        _state.value = IssueSubmitFailed(DeliveryIssueProblem.of(error), reason, trimmed);
+      case MutationUnknown<DeliveryIssue>():
+        _state.value = IssueSubmitFailed(DeliveryIssueProblem.unknown, reason, trimmed);
+      default:
+        break;
+    }
+    return false;
+  }
+
+  Mutation<DeliveryIssue> _submitMutationFor(String tripId, DeliveryIssueReason reason, String note) {
+    final signature = '$tripId|${reason.code}|$note';
+    final existing = _submitMutation;
+    if (existing != null && _submitSignature == signature) return existing;
+    existing?.dispose();
+    _submitSignature = signature;
+    return _submitMutation = Mutation<DeliveryIssue>(
+      intent: 'delivery-issue',
+      run: (key) async {
+        final response = await _api.post(
+          DeliveryLiveEndpoints.issuesOf(tripId),
+          data: {'reason': reason.code, 'note': note.isEmpty ? null : note},
+          key: key,
+          suppressErrorToast: true,
+        );
+        return DeliveryIssue.fromJson(_dataOf(response.data));
+      },
+      reconcile: () async {
+        final trip = await _trip.pollNow();
+        final issueId = trip?.delivery?.openIssueId;
+        if (trip == null) return const ReconciledPending();
+        if (issueId == null) return const ReconciledNotDone();
+        return ReconciledDone(await _fetchIssue(tripId, issueId));
+      },
+    );
   }
 
   void backToReasons() {
@@ -184,31 +230,61 @@ class DeliveryIssueController extends GetxController {
     };
     if (tripId == null || current is! IssueLoaded || optionId == null) return false;
     final issue = current.issue;
+    if (LiveProblem.isOffline) {
+      _state.value = IssueResolutionFailed(issue, optionId: optionId, problem: DeliveryIssueProblem.connection);
+      return false;
+    }
     final epoch = ++_epoch;
     _stopPolling();
     _state.value = IssueResolving(issue, optionId: optionId);
-    try {
-      final response = await _api.post(
-        DeliveryLiveEndpoints.issueResolutionOf(tripId, issue.id),
-        data: {'option': optionId},
-        suppressErrorToast: true,
-      );
-      if (epoch != _epoch) return false;
-      _apply(DeliveryIssue.fromJson(_dataOf(response.data)));
-      _startPolling();
-      return true;
-    } catch (e) {
-      log('issue resolution failed: ${e is ApiException ? e.code : e.runtimeType}');
-      if (epoch == _epoch) {
-        _state.value = IssueResolutionFailed(issue, optionId: optionId, problem: _problemOf(e));
-        _startPolling();
-      }
-      return false;
+    final mutation = _resolveMutationFor(tripId, issue, optionId);
+    final result = await mutation.start();
+    if (epoch != _epoch) return false;
+    switch (result) {
+      case MutationDone<DeliveryIssue>(:final value):
+        _resolveMutation?.dispose();
+        _resolveMutation = null;
+        _apply(value);
+        if (value.status != DeliveryIssueStatus.resolved) _startPolling(epoch);
+        return true;
+      case MutationRejected<DeliveryIssue>(:final error):
+        _resolveMutation?.dispose();
+        _resolveMutation = null;
+        _state.value = IssueResolutionFailed(issue, optionId: optionId, problem: DeliveryIssueProblem.of(error));
+      case MutationFailed<DeliveryIssue>(:final error):
+        _state.value = IssueResolutionFailed(issue, optionId: optionId, problem: DeliveryIssueProblem.of(error));
+      case MutationUnknown<DeliveryIssue>():
+        _state.value = IssueResolutionFailed(issue, optionId: optionId, problem: DeliveryIssueProblem.unknown);
+      default:
+        break;
     }
+    _startPolling(epoch);
+    return false;
   }
 
-  DeliveryIssueProblem _problemOf(Object error) =>
-      error is ApiException ? DeliveryIssueProblem.fromCode(error.code) : DeliveryIssueProblem.connection;
+  Mutation<DeliveryIssue> _resolveMutationFor(String tripId, DeliveryIssue issue, String optionId) {
+    final signature = '$tripId|${issue.id}|$optionId';
+    final existing = _resolveMutation;
+    if (existing != null && _resolveSignature == signature) return existing;
+    existing?.dispose();
+    _resolveSignature = signature;
+    return _resolveMutation = Mutation<DeliveryIssue>(
+      intent: 'delivery-issue-resolve',
+      run: (key) async {
+        final response = await _api.post(
+          DeliveryLiveEndpoints.issueResolutionOf(tripId, issue.id),
+          data: {'option': optionId},
+          key: key,
+          suppressErrorToast: true,
+        );
+        return DeliveryIssue.fromJson(_dataOf(response.data));
+      },
+      reconcile: () async {
+        final fresh = await _fetchIssue(tripId, issue.id);
+        return fresh.status == DeliveryIssueStatus.actionNeeded ? const ReconciledNotDone() : ReconciledDone(fresh);
+      },
+    );
+  }
 
-  Map<String, dynamic> _dataOf(dynamic body) => Map<String, dynamic>.from((body as Map)['data'] as Map);
+  Map<String, dynamic> _dataOf(dynamic body) => JsonReader.of(JsonReader.of(body).raw['data']).raw;
 }

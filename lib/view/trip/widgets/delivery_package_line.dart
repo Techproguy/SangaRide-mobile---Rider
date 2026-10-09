@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sanga_ride/core/assets.dart';
 import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride/view/delivery/live/widgets/delivery_photo.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
@@ -19,9 +20,7 @@ class DeliveryPackageLine extends StatelessWidget {
       children: [
         SizedBox.square(
           dimension: _thumb,
-          child: photo == null
-              ? const SangaIconBadge(size: _thumb, child: Icon(Icons.inventory_2_outlined))
-              : DeliveryPhoto(source: photo, aspectRatio: 1),
+          child: DeliveryPhoto(source: photo ?? AppAssets.serviceDelivery, aspectRatio: 1),
         ),
         Expanded(
           child: Column(

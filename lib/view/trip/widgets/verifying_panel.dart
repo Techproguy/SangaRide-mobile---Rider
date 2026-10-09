@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:sanga_ride/model/models.dart';
-import 'package:sanga_ride/view/trip/widgets/trip_change_tiles.dart';
-import 'package:sanga_ride/view/trip/widgets/trip_contact_tiles.dart';
+import 'package:sanga_ride/view/trip/widgets/trip_action_tiles.dart';
 import 'package:sanga_ride/view/trip/widgets/trip_driver_header.dart';
 import 'package:sanga_ride/view/trip/widgets/trip_panel_body.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
@@ -14,6 +13,7 @@ class VerifyingPanel extends StatelessWidget {
     required this.onCall,
     required this.onMessage,
     required this.onSafety,
+    required this.onSos,
     required this.onAddStops,
     required this.onCancel,
     required this.onShowPin,
@@ -25,6 +25,7 @@ class VerifyingPanel extends StatelessWidget {
   final VoidCallback onCall;
   final VoidCallback onMessage;
   final VoidCallback onSafety;
+  final VoidCallback onSos;
   final VoidCallback onAddStops;
   final VoidCallback onCancel;
   final VoidCallback onShowPin;
@@ -37,13 +38,14 @@ class VerifyingPanel extends StatelessWidget {
         TripDriverHeader(driver: trip.driver),
         const TripPanelDivider(),
         Text('Share your PIN to start the ride', style: SangaTextStyles.cardTitle.copyWith(color: SangaColors.primary)),
-        TripChangeTiles(
-          trip: trip,
-          onAddStops: onAddStops,
-          onCancel: onCancel,
-          leading: [
-            TripContactTiles(unreadCount: unreadCount, onCall: onCall, onMessage: onMessage, onSafety: onSafety),
-          ],
+        TripActionTiles(
+          unreadCount: unreadCount,
+          onCall: onCall,
+          onMessage: onMessage,
+          onSafety: onSafety,
+          onSos: onSos,
+          onAddStops: trip.canAddStops ? onAddStops : null,
+          onCancel: trip.canChange ? onCancel : null,
         ),
         SangaButton.primary(label: 'Show trip PIN', onPressed: onShowPin),
         SangaButton.muted(label: 'Report an issue', onPressed: onReport),

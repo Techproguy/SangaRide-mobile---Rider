@@ -21,28 +21,23 @@ class CardDetails {
 }
 
 class PaymentRequest {
-  const PaymentRequest.cash() : method = PaymentMethod.cash, card = null;
+  const PaymentRequest.cash() : method = PaymentMethod.cash, cardToken = null;
 
-  const PaymentRequest.card(CardDetails this.card) : method = PaymentMethod.card;
+  const PaymentRequest.card(String this.cardToken) : method = PaymentMethod.card;
 
-  const PaymentRequest.wallet() : method = PaymentMethod.wallet, card = null;
+  const PaymentRequest.wallet() : method = PaymentMethod.wallet, cardToken = null;
 
-  const PaymentRequest.groupWallet() : method = PaymentMethod.groupWallet, card = null;
+  const PaymentRequest.groupWallet() : method = PaymentMethod.groupWallet, cardToken = null;
 
   final PaymentMethod method;
-  final CardDetails? card;
+  final String? cardToken;
 
   Map<String, dynamic> toJson() {
-    final details = card;
-    if (details == null) return {'method': method.code};
+    final token = cardToken;
+    if (token == null) return {'method': method.code};
     return SensitiveBody({
       'method': method.code,
-      'card': SensitiveBody({
-        'number': details.number,
-        'expiry': details.expiry,
-        'cvv': details.cvv,
-        'pin': details.pin,
-      }),
+      'card': SensitiveBody({'token': token}),
     });
   }
 }

@@ -1,3 +1,5 @@
+import 'package:sanga_ride_core/sanga_ride_core.dart';
+
 enum TripMessageDelivery { sending, sent, failed }
 
 class TripMessage {
@@ -10,13 +12,16 @@ class TripMessage {
     this.delivery = TripMessageDelivery.sent,
   });
 
-  factory TripMessage.fromJson(Map<String, dynamic> json) => TripMessage(
-    id: json['id'] as String,
-    clientId: json['clientId'] as String?,
-    body: json['body'] as String,
-    sentAt: DateTime.parse(json['createdAt'] as String).toLocal(),
-    isMine: json['senderRole'] == 'rider',
-  );
+  factory TripMessage.fromJson(Map<String, dynamic> json) {
+    final reader = JsonReader.of(json);
+    return TripMessage(
+      id: reader.str('id'),
+      clientId: reader.strOrNull('clientId'),
+      body: reader.str('body'),
+      sentAt: reader.time('createdAt').toLocal(),
+      isMine: reader.strOrNull('senderRole') == 'rider',
+    );
+  }
 
   factory TripMessage.pending({required String clientId, required String body}) => TripMessage(
     id: clientId,

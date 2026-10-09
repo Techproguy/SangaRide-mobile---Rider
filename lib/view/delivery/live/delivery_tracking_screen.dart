@@ -10,6 +10,7 @@ import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride/view/delivery/live/widgets/delivery_live_status.dart';
 import 'package:sanga_ride/view/delivery/live/widgets/delivery_photo_strip.dart';
 import 'package:sanga_ride/view/delivery/live/widgets/delivery_timeline_entries.dart';
+import 'package:sanga_ride/view/trip/widgets/trip_page_gate.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 class DeliveryTrackingScreen extends StatefulWidget {
@@ -33,7 +34,6 @@ class _DeliveryTrackingScreenState extends State<DeliveryTrackingScreen> {
 
   @override
   void dispose() {
-    _issue.pause();
     super.dispose();
   }
 
@@ -46,7 +46,10 @@ class _DeliveryTrackingScreenState extends State<DeliveryTrackingScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Obx(() {
+    return TripPageGate(
+      tripId: widget.tripId,
+      title: 'Live tracking',
+      child: Obx(() {
       final trip = _trip.trip;
       final delivery = trip?.delivery;
       final isLive = trip != null && !trip.status.isTerminal;
@@ -60,10 +63,7 @@ class _DeliveryTrackingScreenState extends State<DeliveryTrackingScreen> {
             : null,
         children: [
           if (trip == null || delivery == null)
-            const Padding(
-              padding: EdgeInsets.all(SangaSpacing.xl),
-              child: Center(child: SangaActivityIndicator(size: 40)),
-            )
+            const SangaSkeleton.heights([72, 220, 120])
           else
             Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -76,6 +76,7 @@ class _DeliveryTrackingScreenState extends State<DeliveryTrackingScreen> {
             ),
         ],
       );
-    });
+    }),
+    );
   }
 }

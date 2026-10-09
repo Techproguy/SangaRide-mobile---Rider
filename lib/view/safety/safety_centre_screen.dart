@@ -9,13 +9,13 @@ import 'package:sanga_ride/controller/rider/safety/sos_controller.dart';
 import 'package:sanga_ride/controller/rider/trip/trip_controller.dart';
 import 'package:sanga_ride/core/router/safety_routes.dart';
 import 'package:sanga_ride/core/router/trip_routes.dart';
+import 'package:sanga_ride/core/services/permission_center.dart';
 import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride/view/safety/widgets/dial_number.dart';
 import 'package:sanga_ride/view/safety/widgets/remove_contact.dart';
 import 'package:sanga_ride/view/safety/widgets/safety_centre_body.dart';
 import 'package:sanga_ride/view/safety/widgets/sos_sheet.dart';
 import 'package:sanga_ride/view/trip/widgets/share_trip.dart';
-import 'package:sanga_ride/view/trip/wrapup/widgets/wrapup_async_body.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 class SafetyCentreScreen extends StatefulWidget {
@@ -35,7 +35,6 @@ class _SafetyCentreScreenState extends State<SafetyCentreScreen> {
   late final Worker _worker;
   SafetyCentreState _previous = const SafetyCentreLoading();
   String? _openedTripId;
-  bool _isSosSheetOpen = false;
   bool _isOpened = false;
 
   @override
@@ -47,6 +46,8 @@ class _SafetyCentreScreenState extends State<SafetyCentreScreen> {
       setState(() => _isOpened = true);
       _contacts.reset();
       unawaited(_centre.open(tripId: widget.tripId));
+      unawaited(_prepareLocation());
+      if (!_sos.isIdle) unawaited(SosLauncher.present(context));
     });
   }
 
@@ -57,6 +58,13 @@ class _SafetyCentreScreenState extends State<SafetyCentreScreen> {
     super.dispose();
   }
 
+  Future<void> _prepareLocation() async {
+    final permissions = Get.find<PermissionCenter>();
+    final access = await permissions.check(PermissionKind.location);
+    if (!mounted || !access.canAskAgain) return;
+    await permissions.prime(PermissionKind.location, context);
+  }
+
   void _onCentre(SafetyCentreState next) {
     final previous = _previous;
     _previous = next;
@@ -64,7 +72,7 @@ class _SafetyCentreScreenState extends State<SafetyCentreScreen> {
     final centre = next.centre;
     _openTripIfNeeded(centre.trip);
     if (centre.activeSos case final active?) _sos.resume(active);
-    if (!_sos.isIdle) unawaited(_openSosSheet(centre));
+    if (!_sos.isIdle) unawaited(SosLauncher.present(context));
   }
 
   void _openTripIfNeeded(SafetyTrip? trip) {
@@ -73,38 +81,7 @@ class _SafetyCentreScreenState extends State<SafetyCentreScreen> {
     unawaited(_trip.open(trip.id));
   }
 
-  void _startSos(SafetyCentre centre) {
-    if (!_sos.isIdle) return;
-    _sos.start(tripId: centre.trip?.id);
-    unawaited(_openSosSheet(centre));
-  }
-
-  Future<void> _openSosSheet(SafetyCentre centre) async {
-    if (_isSosSheetOpen || !mounted) return;
-    _isSosSheetOpen = true;
-    await showSosSheet(
-      context: context,
-      contactCount: centre.contacts.length,
-      grace: centre.sosGrace,
-      emergencyNumber: centre.emergencyNumber,
-      onEnd: () => unawaited(_confirmEndSos()),
-      onCallEmergency: () => unawaited(dialNumber(centre.emergencyNumber)),
-      onOpenContacts: _openContacts,
-    );
-    _isSosSheetOpen = false;
-  }
-
-  Future<void> _confirmEndSos() async {
-    final isConfirmed = await showSangaPromptSheet(
-      context: context,
-      icon: Icons.health_and_safety_rounded,
-      title: 'End SOS?',
-      message: 'Only end it if you’re safe. We’ll stop alerting and sharing your location.',
-      actionLabel: 'End SOS',
-      dismissLabel: 'Keep SOS on',
-    );
-    if (isConfirmed) await _sos.end();
-  }
+  void _startSos() => unawaited(SosLauncher.start(context, tripId: _centre.centre?.trip?.id ?? widget.tripId));
 
   void _openContacts() => unawaited(context.push(SafetyRoutes.contacts));
 
@@ -112,14 +89,17 @@ class _SafetyCentreScreenState extends State<SafetyCentreScreen> {
 
   void _openTripDetails(SafetyTrip trip) => unawaited(context.push(TripRoutes.timelineOf(trip.id)));
 
-  WrapUpFailure? _failureOf(SafetyCentreState state) => switch (state) {
-    SafetyCentreFailed(:final problem) => WrapUpFailure(
+  String get _sosMessage => _sos.contactCount == 0
+      ? 'Tap SOS to alert the Sanga safety team'
+      : 'Tap SOS to alert your emergency contacts and the Sanga safety team';
+
+  Widget _failure(SafetyProblem problem) {
+    return SangaFailureMessage(
       title: 'We couldn’t load your Safety Centre',
       message: problem.message,
       onRetry: () => unawaited(_centre.retry()),
-    ),
-    SafetyCentreLoading() || SafetyCentreLoaded() => null,
-  };
+    );
+  }
 
   Widget _body(SafetyCentreState state, ContactsState contactsState) {
     if (state is! SafetyCentreLoaded) return const SizedBox.shrink();
@@ -128,7 +108,6 @@ class _SafetyCentreScreenState extends State<SafetyCentreScreen> {
     return SafetyCentreBody(
       centre: centre,
       removingContactId: contactsState is ContactsRemoving ? contactsState.id : null,
-      onSos: () => _startSos(centre),
       onAddContact: _openContacts,
       onCallContact: (contact) => unawaited(dialNumber(contact.phone)),
       onRemoveContact: (contact) => unawaited(confirmRemoveContact(context, contact)),
@@ -142,6 +121,14 @@ class _SafetyCentreScreenState extends State<SafetyCentreScreen> {
     );
   }
 
+  Widget _content(SafetyCentreState state, ContactsState contactsState) {
+    return switch (state) {
+      SafetyCentreLoading() => const SangaSkeleton.heights([150, 210]),
+      SafetyCentreFailed(:final problem) => _failure(problem),
+      SafetyCentreLoaded() => _body(state, contactsState),
+    };
+  }
+
   @override
   Widget build(BuildContext context) {
     return Obx(() {
@@ -150,11 +137,18 @@ class _SafetyCentreScreenState extends State<SafetyCentreScreen> {
       return SangaPageLayout(
         title: 'Safety Centre',
         children: [
-          WrapUpAsyncBody(
-            isLoading: !_isOpened || state is SafetyCentreLoading,
-            failure: _failureOf(state),
-            skeletonHeights: const [90, 150, 210],
-            builder: (_) => _body(state, contactsState),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            spacing: SangaSpacing.md,
+            children: [
+              SangaSosCard(title: 'In an emergency?', message: _sosMessage, onSos: _startSos),
+              if (state is! SafetyCentreLoaded)
+                SangaButton.outline(
+                  label: 'Call ${_sos.emergencyNumber}',
+                  onPressed: () => unawaited(dialNumber(_sos.emergencyNumber)),
+                ),
+              _content(!_isOpened ? const SafetyCentreLoading() : state, contactsState),
+            ],
           ),
         ],
       );

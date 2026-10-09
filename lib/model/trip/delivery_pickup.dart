@@ -1,3 +1,5 @@
+import 'package:sanga_ride_core/sanga_ride_core.dart';
+
 enum DeliveryPickupProblem {
   cameraDenied(
     'camera_denied',
@@ -47,6 +49,12 @@ enum DeliveryPickupProblem {
     'We couldn’t reach the server',
     'Check your connection and give it another go.',
     isPhotoProblem: false,
+  ),
+  unknown(
+    'unknown',
+    'Something went wrong',
+    'Something went wrong on our side. Try again in a moment.',
+    isPhotoProblem: false,
   );
 
   const DeliveryPickupProblem(
@@ -63,8 +71,15 @@ enum DeliveryPickupProblem {
   final bool isPhotoProblem;
   final bool opensSettings;
 
-  static DeliveryPickupProblem fromCode(String? code) =>
-      values.firstWhere((problem) => problem.code == code, orElse: () => connection);
+  static DeliveryPickupProblem fromCode(String? code) => enumByCode(values, code, (problem) => problem.code, unknown);
+
+  static DeliveryPickupProblem of(Object error) {
+    if (error is ApiException && error.kind == ApiFailureKind.rejected) return fromCode(error.code);
+    return switch (ProblemKind.of(error)) {
+      ProblemOffline() => connection,
+      _ => unknown,
+    };
+  }
 }
 
 sealed class DeliveryPickupState {

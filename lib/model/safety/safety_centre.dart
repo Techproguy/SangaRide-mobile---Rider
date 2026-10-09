@@ -1,3 +1,5 @@
+import 'package:sanga_ride/core/safety_config.dart';
+import 'package:sanga_ride_core/sanga_ride_core.dart';
 import 'package:sanga_ride/model/safety/emergency_contact.dart';
 import 'package:sanga_ride/model/safety/sos.dart';
 
@@ -27,18 +29,21 @@ class SafetyTrip {
     required this.startedAt,
   });
 
-  factory SafetyTrip.fromJson(Map<String, dynamic> json) => SafetyTrip(
-    id: json['id'] as String,
-    reference: json['reference'] as String,
-    isLive: json['isLive'] as bool? ?? false,
-    counterpartName: json['counterpartName'] as String,
-    counterpartRole: CounterpartRole.fromCode(json['counterpartRole'] as String?),
-    vehicle: json['vehicle'] as String,
-    pickup: json['pickup'] as String,
-    dropoff: json['dropoff'] as String,
-    currentArea: json['currentArea'] as String?,
-    startedAt: DateTime.parse(json['startedAt'] as String).toLocal(),
-  );
+  factory SafetyTrip.fromJson(Map<String, dynamic> json) {
+    final reader = JsonReader.of(json);
+    return SafetyTrip(
+      id: reader.str('id'),
+      reference: reader.strOr('reference', ''),
+      isLive: reader.boolOr('isLive', false),
+      counterpartName: reader.strOr('counterpartName', ''),
+      counterpartRole: CounterpartRole.fromCode(reader.strOrNull('counterpartRole')),
+      vehicle: reader.strOr('vehicle', ''),
+      pickup: reader.strOr('pickup', ''),
+      dropoff: reader.strOr('dropoff', ''),
+      currentArea: reader.strOrNull('currentArea'),
+      startedAt: (reader.timeOrNull('startedAt') ?? DateTime.now()).toLocal(),
+    );
+  }
 
   final String id;
   final String reference;
@@ -63,21 +68,27 @@ class SafetyCentre {
   });
 
   factory SafetyCentre.fromJson(Map<String, dynamic> json) {
-    final activeSos = json['activeSos'] as Map?;
-    final trip = json['trip'] as Map?;
+    final reader = JsonReader.of(json);
+    final activeSos = reader.objectOrNull('activeSos');
+    final trip = reader.objectOrNull('trip');
     return SafetyCentre(
-      contacts: [
-        for (final contact in json['contacts'] as List)
-          EmergencyContact.fromJson(Map<String, dynamic>.from(contact as Map)),
-      ],
-      maxContacts: (json['maxContacts'] as num).toInt(),
-      sosGrace: Duration(seconds: (json['sosGraceSeconds'] as num).toInt()),
-      emergencyNumber: json['emergencyNumber'] as String,
-      activeSos: activeSos == null
-          ? null
-          : Sos.fromJson({'serverTime': json['serverTime'], ...Map<String, dynamic>.from(activeSos)}),
-      trip: trip == null ? null : SafetyTrip.fromJson(Map<String, dynamic>.from(trip)),
+      contacts: reader.listOf('contacts', (contact) => EmergencyContact.fromJson(contact.raw)),
+      maxContacts: reader.intOr('maxContacts', defaultMaxContacts),
+      sosGrace: Duration(seconds: reader.intOr('sosGraceSeconds', SafetyConfig.sosGrace.inSeconds)),
+      emergencyNumber: SafetyConfig.numberOr(reader.strOrNull('emergencyNumber')),
+      activeSos: activeSos == null ? null : _tryRead(() => Sos.fromJson(activeSos.raw)),
+      trip: trip == null ? null : _tryRead(() => SafetyTrip.fromJson(trip.raw)),
     );
+  }
+
+  static const int defaultMaxContacts = 5;
+
+  static T? _tryRead<T>(T Function() parse) {
+    try {
+      return parse();
+    } catch (_) {
+      return null;
+    }
   }
 
   final List<EmergencyContact> contacts;

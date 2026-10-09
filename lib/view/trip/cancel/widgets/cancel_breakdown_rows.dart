@@ -11,7 +11,7 @@ class CancelBreakdownRows extends StatelessWidget {
   String get _refundLabel {
     final refund = review.refund;
     if (refund == null) return 'Not applicable';
-    return '${SangaMoney.naira(refund.amount)} to your ${refund.method.label.toLowerCase()}';
+    return '${SangaMoney.naira(refund.amount)} to your ${refund.destination}';
   }
 
   @override
@@ -25,7 +25,7 @@ class CancelBreakdownRows extends StatelessWidget {
       children: [
         Text('Fare breakdown', style: SangaTextStyles.cardHeading),
         _Row(label: 'Cancellation fee', value: review.hasFee ? SangaMoney.naira(review.fee) : 'Free', style: feeStyle),
-        _Row(label: 'Payment method', value: review.paymentMethod.label),
+        _Row(label: 'Payment method', value: review.paymentMethod?.label ?? 'Not set yet'),
         _Row(label: 'Refund', value: _refundLabel),
         _Row(label: 'Reason', value: reason.summary),
       ],

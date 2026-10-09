@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:sanga_ride/controller/rider/trip/trip_controller.dart';
 import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride/view/trip/widgets/safety_check_row.dart';
+import 'package:sanga_ride/view/trip/widgets/trip_page_gate.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 class TripTimelineScreen extends StatelessWidget {
@@ -34,16 +35,16 @@ class TripTimelineScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final controller = Get.find<TripController>();
-    return Obx(() {
+    return TripPageGate(
+      tripId: tripId,
+      title: 'Trip timeline',
+      child: Obx(() {
       final trip = controller.trip;
       return SangaPageLayout(
         title: 'Trip timeline',
         children: [
           if (trip == null)
-            const Padding(
-              padding: EdgeInsets.all(SangaSpacing.xl),
-              child: Center(child: SangaActivityIndicator(size: 40)),
-            )
+            const SangaSkeleton.heights([48, 48, 48, 48])
           else ...[
             SangaTimeline(entries: _entries(trip)),
             const SizedBox(height: SangaSpacing.xl),
@@ -59,6 +60,7 @@ class TripTimelineScreen extends StatelessWidget {
           ],
         ],
       );
-    });
+    }),
+    );
   }
 }

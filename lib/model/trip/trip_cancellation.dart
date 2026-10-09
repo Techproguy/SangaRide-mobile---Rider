@@ -1,5 +1,6 @@
 import 'package:sanga_ride/model/trip/trip.dart';
 import 'package:sanga_ride/model/trip/wrapup/payment.dart';
+import 'package:sanga_ride_core/sanga_ride_core.dart';
 
 enum CancelReason {
   driverLate('driver_late', 'Driver is taking too long', 'Driver taking too long'),
@@ -48,56 +49,72 @@ enum CancelFeeReason {
     tripStarted => 'You’ll pay $amount for the distance you’ve already travelled, as our cancellation policy explains.',
   };
 
-  static CancelFeeReason fromCode(String? code) =>
-      values.firstWhere((reason) => reason.code == code, orElse: () => driverOnTheWay);
+  static CancelFeeReason fromCode(String? code) => enumByCode(values, code, (reason) => reason.code, driverOnTheWay);
 }
 
 class CancellationRefund {
   const CancellationRefund({required this.amount, required this.method});
 
-  factory CancellationRefund.fromJson(Map<String, dynamic> json) => CancellationRefund(
-    amount: (json['amount'] as num).toInt(),
-    method: PaymentMethod.fromCode(json['method'] as String),
-  );
+  factory CancellationRefund.fromJson(Map<String, dynamic> json) {
+    final reader = JsonReader.of(json);
+    return CancellationRefund(
+      amount: reader.integer('amount'),
+      method: PaymentMethod.tryFromCode(reader.strOrNull('method')),
+    );
+  }
 
   final int amount;
-  final PaymentMethod method;
+  final PaymentMethod? method;
+
+  String get destination => method == null ? 'original payment method' : method!.label.toLowerCase();
 }
 
 class CancellationReview {
   const CancellationReview({
+    required this.reviewId,
     required this.fee,
     required this.feeReason,
     required this.refund,
     required this.paymentMethod,
+    this.message,
   });
 
   factory CancellationReview.fromJson(Map<String, dynamic> json) {
-    final refund = json['refund'] as Map?;
+    final reader = JsonReader.of(json);
+    final refund = reader.objectOrNull('refund');
     return CancellationReview(
-      fee: (json['fee'] as num).toInt(),
-      feeReason: CancelFeeReason.fromCode(json['feeReason'] as String?),
-      refund: refund == null ? null : CancellationRefund.fromJson(Map<String, dynamic>.from(refund)),
-      paymentMethod: PaymentMethod.fromCode(json['paymentMethod'] as String),
+      reviewId: reader.strOrNull('reviewId'),
+      fee: reader.integer('fee'),
+      feeReason: CancelFeeReason.fromCode(reader.strOrNull('feeReason')),
+      refund: refund == null ? null : CancellationRefund.fromJson(refund.raw),
+      paymentMethod: PaymentMethod.tryFromCode(reader.strOrNull('paymentMethod')),
+      message: reader.strOrNull('message'),
     );
   }
 
+  final String? reviewId;
   final int fee;
   final CancelFeeReason feeReason;
   final CancellationRefund? refund;
-  final PaymentMethod paymentMethod;
+  final PaymentMethod? paymentMethod;
+  final String? message;
 
   bool get hasFee => fee > 0;
+
+  String notice(String amount) => message ?? feeReason.notice(amount);
 }
 
 class CancelOutcome {
   const CancelOutcome({required this.tripId, required this.feeCharged, required this.message});
 
-  factory CancelOutcome.fromJson(Map<String, dynamic> json) => CancelOutcome(
-    tripId: json['tripId'] as String,
-    feeCharged: (json['feeCharged'] as num).toInt(),
-    message: json['message'] as String,
-  );
+  factory CancelOutcome.fromJson(Map<String, dynamic> json) {
+    final reader = JsonReader.of(json);
+    return CancelOutcome(
+      tripId: reader.str('tripId'),
+      feeCharged: reader.intOr('feeCharged', 0),
+      message: reader.strOr('message', 'Your ride is cancelled.'),
+    );
+  }
 
   final String tripId;
   final int feeCharged;
@@ -118,6 +135,26 @@ enum CancelFailure {
     'Check your connection and give it another go. Your ride is still on.',
     primaryLabel: 'Try again',
     secondaryLabel: 'Not now',
+  ),
+  unknown(
+    'unknown',
+    'Something went wrong',
+    'Something went wrong on our side. Try again in a moment. Your ride is still on.',
+    primaryLabel: 'Try again',
+    secondaryLabel: 'Not now',
+  ),
+  outcomeUnknown(
+    'outcome_unknown',
+    'We’re still checking',
+    'We haven’t confirmed whether your ride was cancelled yet. Check again in a moment.',
+    primaryLabel: 'Check again',
+    secondaryLabel: 'Back to my trip',
+  ),
+  feeChanged(
+    'fee_changed',
+    'The fee changed',
+    'Your driver’s progress changed the cancellation fee. Check the new fee before you cancel.',
+    primaryLabel: 'Review the fee',
   ),
   tripNotCancellable(
     'trip_not_cancellable',
@@ -144,8 +181,18 @@ enum CancelFailure {
 
   bool get isStale => this == tripNotCancellable || this == alreadyCancelled;
 
-  static CancelFailure fromCode(String? code) =>
-      values.firstWhere((failure) => failure.code == code, orElse: () => connection);
+  bool get isFeeChange => this == feeChanged;
+
+  static CancelFailure fromCode(String? code) => enumByCode(values, code, (failure) => failure.code, unknown);
+
+  static CancelFailure of(Object error, {required CancelFailure fallback}) {
+    if (error is! ApiException) return unknown;
+    if (error.kind == ApiFailureKind.rejected) return fromCode(error.code);
+    return switch (ProblemKind.of(error)) {
+      ProblemOffline() => fallback,
+      _ => unknown,
+    };
+  }
 }
 
 sealed class CancelState {
@@ -173,12 +220,15 @@ final class CancelLoadingReview extends CancelState {
 }
 
 final class CancelReviewing extends CancelState {
-  const CancelReviewing(this.reason, this.note, this.review, {this.isSubmitting = false});
+  const CancelReviewing(this.reason, this.note, this.review, {this.isSubmitting = false, this.feeWas});
 
   final CancelReason reason;
   final String note;
   final CancellationReview review;
   final bool isSubmitting;
+  final int? feeWas;
+
+  bool get hasFeeChanged => feeWas != null && feeWas != review.fee;
 
   CancelReviewing submitting() => CancelReviewing(reason, note, review, isSubmitting: true);
 }
@@ -191,9 +241,12 @@ final class CancelFailed extends CancelState {
 }
 
 final class CancelSettled extends CancelState {
-  const CancelSettled(this.failure);
+  const CancelSettled(this.failure, {this.message});
 
   final CancelFailure failure;
+  final String? message;
+
+  bool get isCancelled => failure == CancelFailure.alreadyCancelled;
 }
 
 final class CancelDone extends CancelState {

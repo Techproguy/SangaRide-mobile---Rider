@@ -1,5 +1,6 @@
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:sanga_ride/core/extensions/lat_lng.dart';
+import 'package:sanga_ride_core/sanga_ride_core.dart';
 
 enum DeliveryStage {
   toPickup('to_pickup'),
@@ -12,7 +13,8 @@ enum DeliveryStage {
   delivered('delivered'),
   refused('refused'),
   returning('returning'),
-  returned('returned');
+  returned('returned'),
+  unknown('unknown');
 
   const DeliveryStage(this.code);
 
@@ -20,16 +22,13 @@ enum DeliveryStage {
 
   bool get canCancel => this == toPickup || this == atPickup;
 
-  bool get isPastPickup => index >= pickedUp.index && this != refused;
+  bool get isPastPickup => this != unknown && index >= pickedUp.index && this != refused;
 
   bool get isReturn => this == returning || this == returned;
 
   bool get isEnded => this == delivered || this == refused || this == returned;
 
-  static DeliveryStage fromCode(String code) => values.firstWhere(
-    (stage) => stage.code == code,
-    orElse: () => throw FormatException('Unknown delivery stage: $code'),
-  );
+  static DeliveryStage fromCode(String? code) => enumByCode(values, code, (stage) => stage.code, unknown);
 }
 
 enum DeliveryEventType {
@@ -77,10 +76,10 @@ class DeliveryEvent {
   const DeliveryEvent({required this.type, required this.at});
 
   static DeliveryEvent? tryParse(Map<String, dynamic> json) {
-    final type = DeliveryEventType.fromCode(json['type'] as String?);
+    final reader = JsonReader.of(json);
+    final type = DeliveryEventType.fromCode(reader.strOrNull('type'));
     if (type == null) return null;
-    final at = json['at'] as String?;
-    return DeliveryEvent(type: type, at: at == null ? null : DateTime.parse(at).toLocal());
+    return DeliveryEvent(type: type, at: reader.timeOrNull('at')?.toLocal());
   }
 
   final DeliveryEventType type;
@@ -144,15 +143,18 @@ class DeliveryItem {
     required this.declaredValue,
   });
 
-  factory DeliveryItem.fromJson(Map<String, dynamic> json) => DeliveryItem(
-    name: json['name'] as String,
-    description: json['description'] as String?,
-    sizeLabel: json['sizeLabel'] as String? ?? '',
-    weightLabel: json['weightLabel'] as String?,
-    packageType: DeliveryPackageType.fromCode(json['packageType'] as String?),
-    photoUrl: json['photoUrl'] as String?,
-    declaredValue: (json['declaredValue'] as num?)?.toInt(),
-  );
+  factory DeliveryItem.fromJson(Map<String, dynamic> json) {
+    final reader = JsonReader.of(json);
+    return DeliveryItem(
+      name: reader.str('name'),
+      description: reader.strOrNull('description'),
+      sizeLabel: reader.strOr('sizeLabel', ''),
+      weightLabel: reader.strOrNull('weightLabel'),
+      packageType: DeliveryPackageType.fromCode(reader.strOrNull('packageType')),
+      photoUrl: reader.strOrNull('photoUrl'),
+      declaredValue: reader.intOrNull('declaredValue'),
+    );
+  }
 
   final String name;
   final String? description;
@@ -168,8 +170,10 @@ class DeliveryItem {
 class DeliveryRecipient {
   const DeliveryRecipient({required this.name, required this.phone});
 
-  factory DeliveryRecipient.fromJson(Map<String, dynamic> json) =>
-      DeliveryRecipient(name: json['name'] as String, phone: json['phone'] as String? ?? '');
+  factory DeliveryRecipient.fromJson(Map<String, dynamic> json) {
+    final reader = JsonReader.of(json);
+    return DeliveryRecipient(name: reader.str('name'), phone: reader.strOr('phone', ''));
+  }
 
   final String name;
   final String phone;
@@ -180,8 +184,10 @@ class DeliveryRecipient {
 class PickupProof {
   const PickupProof({required this.photoUrl, required this.at});
 
-  factory PickupProof.fromJson(Map<String, dynamic> json) =>
-      PickupProof(photoUrl: json['photoUrl'] as String?, at: DateTime.parse(json['at'] as String).toLocal());
+  factory PickupProof.fromJson(Map<String, dynamic> json) {
+    final reader = JsonReader.of(json);
+    return PickupProof(photoUrl: reader.strOrNull('photoUrl'), at: reader.time('at').toLocal());
+  }
 
   final String? photoUrl;
   final DateTime at;
@@ -190,8 +196,10 @@ class PickupProof {
 class SenderConfirmation {
   const SenderConfirmation({required this.photoUrl, required this.at});
 
-  factory SenderConfirmation.fromJson(Map<String, dynamic> json) =>
-      SenderConfirmation(photoUrl: json['photoUrl'] as String?, at: DateTime.parse(json['at'] as String).toLocal());
+  factory SenderConfirmation.fromJson(Map<String, dynamic> json) {
+    final reader = JsonReader.of(json);
+    return SenderConfirmation(photoUrl: reader.strOrNull('photoUrl'), at: reader.time('at').toLocal());
+  }
 
   final String? photoUrl;
   final DateTime at;
@@ -205,12 +213,15 @@ class DeliveryProof {
     required this.recipientConfirmed,
   });
 
-  factory DeliveryProof.fromJson(Map<String, dynamic> json) => DeliveryProof(
-    photoUrl: json['photoUrl'] as String?,
-    at: DateTime.parse(json['at'] as String).toLocal(),
-    position: LatLng((json['lat'] as num).toDouble(), (json['lng'] as num).toDouble()),
-    recipientConfirmed: json['recipientConfirmed'] as bool? ?? false,
-  );
+  factory DeliveryProof.fromJson(Map<String, dynamic> json) {
+    final reader = JsonReader.of(json);
+    return DeliveryProof(
+      photoUrl: reader.strOrNull('photoUrl'),
+      at: reader.time('at').toLocal(),
+      position: LatLng(reader.number('lat').toDouble(), reader.number('lng').toDouble()),
+      recipientConfirmed: reader.boolOr('recipientConfirmed', false),
+    );
+  }
 
   static const double verifiedRadiusMeters = 150;
 
@@ -250,12 +261,15 @@ enum DeliveryRefusalReason {
 class DeliveryRefusal {
   const DeliveryRefusal({required this.reason, required this.note, required this.message, required this.at});
 
-  factory DeliveryRefusal.fromJson(Map<String, dynamic> json) => DeliveryRefusal(
-    reason: DeliveryRefusalReason.fromCode(json['reason'] as String?),
-    note: json['note'] as String?,
-    message: json['message'] as String?,
-    at: DateTime.parse(json['at'] as String).toLocal(),
-  );
+  factory DeliveryRefusal.fromJson(Map<String, dynamic> json) {
+    final reader = JsonReader.of(json);
+    return DeliveryRefusal(
+      reason: DeliveryRefusalReason.fromCode(reader.strOrNull('reason')),
+      note: reader.strOrNull('note'),
+      message: reader.strOrNull('message'),
+      at: reader.timeOrNull('at')?.toLocal() ?? DateTime.now(),
+    );
+  }
 
   final DeliveryRefusalReason reason;
   final String? note;
@@ -275,30 +289,34 @@ class TripDelivery {
     required this.deliveryProof,
     required this.refusal,
     required this.events,
+    this.openIssueId,
   });
 
   factory TripDelivery.fromJson(Map<String, dynamic> json) {
-    final pickupProof = json['pickupProof'] as Map?;
-    final senderConfirmation = json['senderConfirmation'] as Map?;
-    final deliveryProof = json['deliveryProof'] as Map?;
-    final refusal = json['refusal'] as Map?;
+    final reader = JsonReader.of(json);
     return TripDelivery(
-      tier: json['tier'] as String,
-      kind: DeliveryKind.fromCode(json['kind'] as String?),
-      item: DeliveryItem.fromJson(Map<String, dynamic>.from(json['item'] as Map)),
-      recipient: DeliveryRecipient.fromJson(Map<String, dynamic>.from(json['recipient'] as Map)),
-      stage: DeliveryStage.fromCode(json['stage'] as String),
-      pickupProof: pickupProof == null ? null : PickupProof.fromJson(Map<String, dynamic>.from(pickupProof)),
-      senderConfirmation: senderConfirmation == null
-          ? null
-          : SenderConfirmation.fromJson(Map<String, dynamic>.from(senderConfirmation)),
-      deliveryProof: deliveryProof == null ? null : DeliveryProof.fromJson(Map<String, dynamic>.from(deliveryProof)),
-      refusal: refusal == null ? null : DeliveryRefusal.fromJson(Map<String, dynamic>.from(refusal)),
-      events: [
-        for (final event in json['events'] as List? ?? const [])
-          ?DeliveryEvent.tryParse(Map<String, dynamic>.from(event as Map)),
-      ],
+      tier: reader.strOr('tier', 'standard'),
+      kind: DeliveryKind.fromCode(reader.strOrNull('kind')),
+      item: DeliveryItem.fromJson(reader.object('item').raw),
+      recipient: DeliveryRecipient.fromJson(reader.object('recipient').raw),
+      stage: DeliveryStage.fromCode(reader.strOrNull('stage')),
+      pickupProof: _optional(reader, 'pickupProof', PickupProof.fromJson),
+      senderConfirmation: _optional(reader, 'senderConfirmation', SenderConfirmation.fromJson),
+      deliveryProof: _optional(reader, 'deliveryProof', DeliveryProof.fromJson),
+      refusal: _optional(reader, 'refusal', DeliveryRefusal.fromJson),
+      events: reader.listOf('events', (item) => DeliveryEvent.tryParse(item.raw)!),
+      openIssueId: reader.strOrNull('openIssueId'),
     );
+  }
+
+  static T? _optional<T>(JsonReader reader, String key, T Function(Map<String, dynamic> json) parse) {
+    final object = reader.objectOrNull(key);
+    if (object == null) return null;
+    try {
+      return parse(object.raw);
+    } catch (_) {
+      return null;
+    }
   }
 
   final String tier;
@@ -311,6 +329,7 @@ class TripDelivery {
   final DeliveryProof? deliveryProof;
   final DeliveryRefusal? refusal;
   final List<DeliveryEvent> events;
+  final String? openIssueId;
 
   String get tierLabel => DeliveryTier.labelOf(tier);
 

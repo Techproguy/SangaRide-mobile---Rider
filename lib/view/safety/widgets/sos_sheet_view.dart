@@ -75,10 +75,11 @@ class SosSheetView extends StatelessWidget {
   }
 
   Widget _sending() {
-    return const SangaSosSheetContent(
+    return SangaSosSheetContent(
       title: 'Sending your SOS',
-      message: 'Hang tight. We’re getting your alert out.',
-      status: SangaActivityIndicator(size: 28),
+      message: 'Hang tight. We’re getting your alert out. If you can’t wait, call for help now.',
+      status: const SangaActivityIndicator(size: 28),
+      action: _CallEmergencyButton(number: emergencyNumber, onPressed: onCallEmergency),
     );
   }
 
@@ -95,7 +96,7 @@ class SosSheetView extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         spacing: SangaSpacing.xs,
         children: [
-          _CallEmergencyLink(number: emergencyNumber, onPressed: isEnding ? null : onCallEmergency),
+          _CallEmergencyButton(number: emergencyNumber, onPressed: isEnding ? null : onCallEmergency),
           SangaButton.muted(label: 'End SOS', isLoading: isEnding, onPressed: onEnd),
         ],
       ),
@@ -142,7 +143,7 @@ class SosSheetView extends StatelessWidget {
         spacing: SangaSpacing.xs,
         children: [
           SangaButton.primary(label: 'Try again', onPressed: onRetry),
-          _CallEmergencyLink(number: emergencyNumber, onPressed: onCallEmergency),
+          _CallEmergencyButton(number: emergencyNumber, onPressed: onCallEmergency),
           SangaButton.muted(label: 'Close', onPressed: onCloseFailure),
         ],
       ),
@@ -150,18 +151,12 @@ class SosSheetView extends StatelessWidget {
   }
 }
 
-class _CallEmergencyLink extends StatelessWidget {
-  const _CallEmergencyLink({required this.number, required this.onPressed});
+class _CallEmergencyButton extends StatelessWidget {
+  const _CallEmergencyButton({required this.number, required this.onPressed});
 
   final String number;
   final VoidCallback? onPressed;
 
   @override
-  Widget build(BuildContext context) {
-    return TextButton.icon(
-      onPressed: onPressed,
-      icon: const Icon(Icons.phone_rounded, size: 18, color: SangaColors.primary),
-      label: Text('Call $number', style: SangaTextStyles.label.copyWith(color: SangaColors.primary)),
-    );
-  }
+  Widget build(BuildContext context) => SangaButton.outline(label: 'Call $number', onPressed: onPressed);
 }

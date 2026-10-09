@@ -1,9 +1,6 @@
-import 'package:sanga_ride/core/api/api.dart';
 import 'package:sanga_ride/model/models.dart';
+import 'package:sanga_ride_core/sanga_ride_core.dart';
 
-Map<String, dynamic> safetyDataOf(dynamic body) => Map<String, dynamic>.from((body as Map)['data'] as Map);
+Map<String, dynamic> safetyDataOf(dynamic body) => JsonReader.of(JsonReader.of(body).raw['data']).raw;
 
-SafetyProblem safetyProblemOf(Object error) {
-  if (error is ApiException) return SafetyProblem.fromCode(error.code);
-  return SafetyProblem.connection;
-}
+SafetyProblem safetyProblemOf(Object error) => SafetyProblem.of(error);

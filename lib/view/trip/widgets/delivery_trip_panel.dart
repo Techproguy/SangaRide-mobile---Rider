@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride/view/trip/widgets/delivery_package_line.dart';
 import 'package:sanga_ride/view/trip/widgets/delivery_progress_bar.dart';
-import 'package:sanga_ride/view/trip/widgets/trip_contact_tiles.dart';
+import 'package:sanga_ride/view/trip/widgets/trip_action_tiles.dart';
 import 'package:sanga_ride/view/trip/widgets/trip_driver_header.dart';
 import 'package:sanga_ride/view/trip/widgets/trip_eta_line.dart';
 import 'package:sanga_ride/view/trip/widgets/trip_panel_body.dart';
@@ -13,6 +13,7 @@ class DeliveryPanelActions {
     required this.onCall,
     required this.onMessage,
     required this.onSafety,
+    required this.onSos,
     required this.onShare,
     required this.onReportIssue,
     required this.onCancel,
@@ -28,6 +29,7 @@ class DeliveryPanelActions {
   final VoidCallback onCall;
   final VoidCallback onMessage;
   final VoidCallback onSafety;
+  final VoidCallback onSos;
   final VoidCallback onShare;
   final VoidCallback onReportIssue;
   final VoidCallback onCancel;
@@ -89,32 +91,15 @@ class DeliveryTripPanel extends StatelessWidget {
   }
 
   Widget _tiles() {
-    return Wrap(
-      spacing: SangaSpacing.sm,
-      runSpacing: SangaSpacing.sm,
-      children: [
-        TripContactTiles(
-          unreadCount: unreadCount,
-          onCall: actions.onCall,
-          onMessage: actions.onMessage,
-          onShare: phase.index >= DeliveryPhase.onTheWay.index ? actions.onShare : null,
-          onSafety: actions.onSafety,
-        ),
-        if (phase.canReport)
-          SangaActionTile(
-            icon: Icons.report_gmailerrorred_rounded,
-            label: 'Report issue',
-            onPressed: actions.onReportIssue,
-            tone: SangaTone.danger,
-          ),
-        if (trip.canChange)
-          SangaActionTile(
-            icon: Icons.close_rounded,
-            label: 'Cancel',
-            onPressed: actions.onCancel,
-            tone: SangaTone.danger,
-          ),
-      ],
+    return TripActionTiles(
+      unreadCount: unreadCount,
+      onCall: actions.onCall,
+      onMessage: actions.onMessage,
+      onShare: phase.index >= DeliveryPhase.onTheWay.index ? actions.onShare : null,
+      onSafety: actions.onSafety,
+      onSos: actions.onSos,
+      onReportIssue: phase.canReport ? actions.onReportIssue : null,
+      onCancel: trip.canChange ? actions.onCancel : null,
     );
   }
 

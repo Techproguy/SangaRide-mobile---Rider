@@ -37,7 +37,6 @@ class _DeliveryIssueStatusScreenState extends State<DeliveryIssueStatusScreen> {
 
   @override
   void dispose() {
-    _issue.pause();
     super.dispose();
   }
 

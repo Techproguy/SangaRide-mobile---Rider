@@ -2,54 +2,62 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:go_router/go_router.dart';
 import 'package:sanga_ride/controller/rider/safety/sos_controller.dart';
+import 'package:sanga_ride/core/router/safety_routes.dart';
 import 'package:sanga_ride/model/models.dart';
+import 'package:sanga_ride/view/safety/widgets/dial_number.dart';
 import 'package:sanga_ride/view/safety/widgets/sos_sheet_view.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
-Future<void> showSosSheet({
-  required BuildContext context,
-  required int contactCount,
-  required Duration grace,
-  required String emergencyNumber,
-  required VoidCallback onEnd,
-  required VoidCallback onCallEmergency,
-  required VoidCallback onOpenContacts,
-}) {
-  return showSangaSheet<void>(
-    context: context,
-    isDismissible: false,
-    enableDrag: false,
-    padding: const EdgeInsets.fromLTRB(SangaSpacing.xl, SangaSpacing.xxl, SangaSpacing.xl, SangaSpacing.xl),
-    builder: (_) => PopScope(
-      canPop: false,
-      child: _SosSheet(
-        contactCount: contactCount,
-        grace: grace,
-        emergencyNumber: emergencyNumber,
-        onEnd: onEnd,
-        onCallEmergency: onCallEmergency,
-        onOpenContacts: onOpenContacts,
+abstract final class SosLauncher {
+  static bool _isOpen = false;
+
+  static Future<void> start(BuildContext context, {String? tripId}) async {
+    final sos = Get.find<SosController>();
+    if (!sos.isIdle) return present(context);
+    sos.start(tripId: tripId);
+    await present(context);
+  }
+
+  static Future<void> present(BuildContext context) async {
+    if (_isOpen || !context.mounted) return;
+    final sos = Get.find<SosController>();
+    if (sos.isIdle) return;
+    _isOpen = true;
+    await showSangaSheet<void>(
+      context: context,
+      isDismissible: false,
+      enableDrag: false,
+      padding: const EdgeInsets.fromLTRB(SangaSpacing.xl, SangaSpacing.xxl, SangaSpacing.xl, SangaSpacing.xl),
+      builder: (sheet) => PopScope(
+        canPop: false,
+        child: _SosSheet(
+          onEnd: () => unawaited(_confirmEnd(context)),
+          onOpenContacts: () => unawaited(context.push(SafetyRoutes.contacts)),
+        ),
       ),
-    ),
-  );
+    );
+    _isOpen = false;
+  }
+
+  static Future<void> _confirmEnd(BuildContext context) async {
+    final isConfirmed = await showSangaPromptSheet(
+      context: context,
+      icon: Icons.health_and_safety_rounded,
+      title: 'End SOS?',
+      message: 'Only end it if you’re safe. We’ll stop alerting and sharing your location.',
+      actionLabel: 'End SOS',
+      dismissLabel: 'Keep SOS on',
+    );
+    if (isConfirmed) await Get.find<SosController>().end();
+  }
 }
 
 class _SosSheet extends StatefulWidget {
-  const _SosSheet({
-    required this.contactCount,
-    required this.grace,
-    required this.emergencyNumber,
-    required this.onEnd,
-    required this.onCallEmergency,
-    required this.onOpenContacts,
-  });
+  const _SosSheet({required this.onEnd, required this.onOpenContacts});
 
-  final int contactCount;
-  final Duration grace;
-  final String emergencyNumber;
   final VoidCallback onEnd;
-  final VoidCallback onCallEmergency;
   final VoidCallback onOpenContacts;
 
   @override
@@ -83,17 +91,18 @@ class _SosSheetState extends State<_SosSheet> {
     return Obx(() {
       final state = _sos.state;
       if (state is! SosIdle) _shown = state;
+      final number = _sos.emergencyNumber;
       return SosSheetView(
         state: _shown,
-        contactCount: widget.contactCount,
-        grace: widget.grace,
-        emergencyNumber: widget.emergencyNumber,
+        contactCount: _sos.contactCount,
+        grace: _sos.grace,
+        emergencyNumber: number,
         onGraceComplete: () => unawaited(_sos.send()),
         onCancel: _sos.cancel,
         onRetry: () => unawaited(_sos.retry()),
         onCloseFailure: _sos.dismissFailure,
         onEnd: widget.onEnd,
-        onCallEmergency: widget.onCallEmergency,
+        onCallEmergency: () => unawaited(dialNumber(number)),
         onOpenContacts: widget.onOpenContacts,
       );
     });

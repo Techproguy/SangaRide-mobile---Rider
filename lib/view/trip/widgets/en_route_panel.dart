@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:sanga_ride/model/models.dart';
-import 'package:sanga_ride/view/trip/widgets/trip_change_tiles.dart';
-import 'package:sanga_ride/view/trip/widgets/trip_contact_tiles.dart';
+import 'package:sanga_ride/view/trip/widgets/trip_action_tiles.dart';
 import 'package:sanga_ride/view/trip/widgets/trip_driver_header.dart';
 import 'package:sanga_ride/view/trip/widgets/trip_eta_line.dart';
 import 'package:sanga_ride/view/trip/widgets/trip_panel_body.dart';
@@ -15,6 +14,7 @@ class EnRoutePanel extends StatelessWidget {
     required this.onCall,
     required this.onMessage,
     required this.onSafety,
+    required this.onSos,
     required this.onAddStops,
     required this.onCancel,
   });
@@ -24,6 +24,7 @@ class EnRoutePanel extends StatelessWidget {
   final VoidCallback onCall;
   final VoidCallback onMessage;
   final VoidCallback onSafety;
+  final VoidCallback onSos;
   final VoidCallback onAddStops;
   final VoidCallback onCancel;
 
@@ -33,19 +34,16 @@ class EnRoutePanel extends StatelessWidget {
       children: [
         TripDriverHeader(driver: trip.driver),
         const TripPanelDivider(),
-        Row(
-          spacing: SangaSpacing.md,
-          children: [
-            TripContactTiles(unreadCount: unreadCount, onCall: onCall, onMessage: onMessage, onSafety: onSafety),
-            Expanded(
-              child: Align(
-                alignment: Alignment.centerRight,
-                child: TripEtaLine(etaAt: trip.etaAt, distanceRemainingKm: trip.distanceRemainingKm),
-              ),
-            ),
-          ],
+        TripEtaLine(etaAt: trip.etaAt, distanceRemainingKm: trip.distanceRemainingKm),
+        TripActionTiles(
+          unreadCount: unreadCount,
+          onCall: onCall,
+          onMessage: onMessage,
+          onSafety: onSafety,
+          onSos: onSos,
+          onAddStops: trip.canAddStops ? onAddStops : null,
+          onCancel: trip.canChange ? onCancel : null,
         ),
-        TripChangeTiles(trip: trip, onAddStops: onAddStops, onCancel: onCancel),
         const SangaNotice(
           message: 'Your driver is heading to your pickup, please be ready',
           tone: SangaTone.neutral,

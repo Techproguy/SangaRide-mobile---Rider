@@ -10,8 +10,9 @@ import 'package:sanga_ride/view/trip/widgets/call_driver.dart';
 import 'package:sanga_ride/view/trip/widgets/delivery_package_line.dart';
 import 'package:sanga_ride/view/trip/widgets/delivery_progress_bar.dart';
 import 'package:sanga_ride/view/trip/widgets/share_trip.dart';
-import 'package:sanga_ride/view/trip/widgets/trip_contact_tiles.dart';
+import 'package:sanga_ride/view/trip/widgets/trip_action_tiles.dart';
 import 'package:sanga_ride/view/trip/widgets/trip_driver_header.dart';
+import 'package:sanga_ride/view/trip/widgets/trip_page_gate.dart';
 import 'package:sanga_ride/view/trip/widgets/trip_link_chip.dart';
 import 'package:sanga_ride/view/trip/widgets/trip_progress_bar.dart';
 import 'package:sanga_ride/view/trip/widgets/trip_timeline_link.dart';
@@ -26,21 +27,22 @@ class TripDetailsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final controller = Get.find<TripController>();
-    return Obx(() {
-      final trip = controller.trip;
-      return SangaPageLayout(
-        title: trip?.isDelivery == true ? 'Delivery details' : 'Active ride details',
-        children: [
-          if (trip == null)
-            const Padding(
-              padding: EdgeInsets.all(SangaSpacing.xl),
-              child: Center(child: SangaActivityIndicator(size: 40)),
-            )
-          else
-            _Details(trip: trip, unreadCount: controller.unreadCount),
-        ],
-      );
-    });
+    return TripPageGate(
+      tripId: tripId,
+      title: 'Active ride details',
+      child: Obx(() {
+        final trip = controller.trip;
+        return SangaPageLayout(
+          title: trip?.isDelivery == true ? 'Delivery details' : 'Active ride details',
+          children: [
+            if (trip == null)
+              const SangaSkeleton.heights([120, 160, 90])
+            else
+              _Details(trip: trip, unreadCount: controller.unreadCount),
+          ],
+        );
+      }),
+    );
   }
 }
 
@@ -91,7 +93,7 @@ class _Details extends StatelessWidget {
         Padding(
           padding: _cell,
           child: Center(
-            child: TripContactTiles(
+            child: TripActionTiles(
               unreadCount: unreadCount,
               onCall: () => callDriver(context, firstName: trip.driver.firstName),
               onMessage: () => context.push(TripRoutes.chatOf(trip.id)),

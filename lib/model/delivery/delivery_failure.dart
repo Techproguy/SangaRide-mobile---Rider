@@ -1,3 +1,5 @@
+import 'package:sanga_ride_core/sanga_ride_core.dart';
+
 enum DeliveryFailure {
   fileTooLarge('file_too_large', 'That photo is too big', 'Pick a smaller one or snap it again.'),
   unsupportedType('unsupported_type', 'We can’t use that file', 'Choose a JPG or PNG photo instead.'),
@@ -66,6 +68,13 @@ enum DeliveryFailure {
     return reason is String && reason.isNotEmpty ? reason : null;
   }
 
-  static DeliveryFailure fromCode(String? code) =>
-      values.firstWhere((failure) => failure.code == code, orElse: () => unknown);
+  static DeliveryFailure fromCode(String? code) => enumByCode(values, code, (failure) => failure.code, unknown);
+
+  static DeliveryFailure of(Object error) {
+    if (error is ApiException && error.kind == ApiFailureKind.rejected) return fromCode(error.code);
+    return switch (ProblemKind.of(error)) {
+      ProblemOffline() => connection,
+      _ => unknown,
+    };
+  }
 }

@@ -2,12 +2,11 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sanga_ride/controller/rider/trip/delivery_pickup_controller.dart';
 import 'package:sanga_ride/controller/rider/trip/trip_controller.dart';
-import 'package:sanga_ride/core/services/toast_service.dart';
+import 'package:sanga_ride/core/services/permission_center.dart';
 import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride/view/delivery/live/widgets/package_details_card.dart';
 import 'package:sanga_ride/view/delivery/live/widgets/pickup_photo_field.dart';
@@ -26,10 +25,25 @@ class _ConfirmPickupScreenState extends State<ConfirmPickupScreen> {
   final _trip = Get.find<TripController>();
   final _pickup = Get.find<DeliveryPickupController>();
 
+  final _permissions = Get.find<PermissionCenter>();
+
   @override
   void initState() {
     super.initState();
+    unawaited(_trip.open(widget.tripId));
     WidgetsBinding.instance.addPostFrameCallback((_) => _pickup.open(widget.tripId));
+  }
+
+  @override
+  void dispose() {
+    _trip.close(onlyTripId: widget.tripId);
+    super.dispose();
+  }
+
+  Future<void> _takePhoto() async {
+    final access = await _permissions.prime(PermissionKind.camera, context);
+    if (!mounted || access.canAskAgain) return;
+    await _pickup.takePhoto();
   }
 
   Future<void> _confirm() async {
@@ -38,12 +52,12 @@ class _ConfirmPickupScreenState extends State<ConfirmPickupScreen> {
     if (!mounted) return;
     if (isConfirmed) {
       unawaited(HapticFeedback.mediumImpact());
-      Toast.success('Pickup confirmed');
+      SangaToast.show('Pickup confirmed', tone: SangaToastTone.success);
       context.pop();
       return;
     }
     if (_pickup.state case PickupConfirmFailed(:final problem) when problem == DeliveryPickupProblem.movedOn) {
-      Toast.info(problem.message);
+      SangaToast.show(problem.message);
       context.pop();
     }
   }
@@ -87,13 +101,13 @@ class _ConfirmPickupScreenState extends State<ConfirmPickupScreen> {
                   ),
                   PickupPhotoField(
                     state: state,
-                    onTake: _pickup.takePhoto,
+                    onTake: _takePhoto,
                     onRemove: _pickup.removePhoto,
                     onRetryUpload: _pickup.retryUpload,
-                    onOpenSettings: Geolocator.openAppSettings,
+                    onOpenSettings: _permissions.openSettings,
                   ),
                   if (state case PickupConfirmFailed(:final problem))
-                    SangaNotice(message: problem.message, icon: Icons.error_outline_rounded),
+                    SangaNotice(message: problem.message, tone: SangaTone.warning, icon: Icons.error_outline_rounded),
                   const SangaNotice(
                     message: 'Make sure you’re handing your driver the right package before you confirm.',
                     icon: Icons.info_outline_rounded,

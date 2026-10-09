@@ -15,7 +15,7 @@ Future<bool> showCancelConfirmSheet(BuildContext context, CancelCopy copy) async
     context: context,
     padding: _statusPadding,
     builder: (sheet) => SangaStatusContent(
-      status: SangaStatus.failure,
+      status: SangaStatus.caution,
       title: copy.confirmTitle,
       message: 'You can’t undo this.',
       action: SangaButton.danger(label: copy.confirmAction, onPressed: () => Navigator.of(sheet).pop(true)),
@@ -38,10 +38,20 @@ Future<void> showCancelledSheet(BuildContext context, CancelOutcome outcome, Can
 Future<bool> showCancelFailureSheet(BuildContext context, CancelFailure failure) {
   return showSangaStatusSheet(
     context: context,
-    status: SangaStatus.failure,
+    status: failure.isStale || failure == CancelFailure.outcomeUnknown ? SangaStatus.caution : SangaStatus.failure,
     title: failure.title,
     message: failure.message,
     actionLabel: failure.primaryLabel,
     secondaryLabel: failure.secondaryLabel,
+  );
+}
+
+Future<void> showCancelSettledSheet(BuildContext context, CancelSettled settled) {
+  return showSangaStatusSheet(
+    context: context,
+    status: settled.isCancelled ? SangaStatus.success : SangaStatus.caution,
+    title: settled.failure.title,
+    message: settled.message ?? settled.failure.message,
+    actionLabel: settled.isCancelled ? 'Back to home' : 'Got it',
   );
 }

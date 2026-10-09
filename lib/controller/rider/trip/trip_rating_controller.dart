@@ -12,6 +12,7 @@ class TripRatingController extends GetxController {
 
   final Rx<RatingState> _state = Rx<RatingState>(const RatingEditing(DriverRating()));
   String? _tripId;
+  IdempotencyKey? _key;
   int _epoch = 0;
 
   Rx<RatingState> get stateRx => _state;
@@ -27,8 +28,11 @@ class TripRatingController extends GetxController {
   }
 
   void open(String tripId, {bool isDelivery = false}) {
+    final isSame = _tripId == tripId && state.rating.isDelivery == isDelivery;
+    if (isSame && state is! RatingSubmitted) return;
     _epoch++;
     _tripId = tripId;
+    _key = null;
     _state.value = RatingEditing(DriverRating(isDelivery: isDelivery));
   }
 
@@ -54,7 +58,12 @@ class TripRatingController extends GetxController {
     final epoch = ++_epoch;
     _state.value = RatingSubmitting(rating);
     try {
-      await _api.post(AppEndpoints.tripRatingOf(id), data: rating.toJson(), suppressErrorToast: true);
+      await _api.post(
+        AppEndpoints.tripRatingOf(id),
+        data: rating.toJson(),
+        key: _key ??= IdempotencyKey.newFor('trip-rating'),
+        suppressErrorToast: true,
+      );
     } catch (e) {
       log('rating failed: ${e is ApiException ? e.code : e.runtimeType}');
       final isDone = e is ApiException && e.statusCode == 409 && e.code == alreadyRatedCode;

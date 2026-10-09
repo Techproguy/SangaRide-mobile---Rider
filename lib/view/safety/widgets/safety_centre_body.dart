@@ -9,7 +9,6 @@ class SafetyCentreBody extends StatelessWidget {
   const SafetyCentreBody({
     super.key,
     required this.centre,
-    required this.onSos,
     required this.onAddContact,
     required this.onCallContact,
     required this.onRemoveContact,
@@ -20,7 +19,6 @@ class SafetyCentreBody extends StatelessWidget {
   });
 
   final SafetyCentre centre;
-  final VoidCallback onSos;
   final VoidCallback onAddContact;
   final ValueChanged<EmergencyContact> onCallContact;
   final ValueChanged<EmergencyContact> onRemoveContact;
@@ -29,10 +27,6 @@ class SafetyCentreBody extends StatelessWidget {
   final VoidCallback onReport;
   final String? removingContactId;
 
-  String get _sosMessage => centre.contacts.isEmpty
-      ? 'Tap SOS to alert the Sanga safety team'
-      : 'Tap SOS to alert your emergency contacts and the Sanga safety team';
-
   @override
   Widget build(BuildContext context) {
     final trip = centre.trip;
@@ -40,7 +34,6 @@ class SafetyCentreBody extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       spacing: SangaSpacing.md,
       children: [
-        SangaSosCard(title: 'In an emergency?', message: _sosMessage, onSos: onSos),
         EmergencyContactsCard(
           contacts: centre.contacts,
           removingId: removingContactId,

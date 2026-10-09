@@ -1,29 +1,30 @@
 import 'dart:async';
 import 'dart:developer';
 
-import 'package:flutter/widgets.dart';
+import 'package:flutter/foundation.dart' show VoidCallback;
 import 'package:get/get.dart';
+import 'package:sanga_ride/controller/rider/delivery/send_delivery_controller.dart';
+import 'package:sanga_ride/controller/rider/trip/live_problem.dart';
 import 'package:sanga_ride/core/api/api.dart';
 import 'package:sanga_ride/core/api/app_endpoints.dart';
-import 'package:sanga_ride/core/services/toast_service.dart';
+import 'package:sanga_ride/core/api/trip_live_endpoints.dart';
+import 'package:sanga_ride/core/services/session_restore.dart';
+import 'package:sanga_ride/core/services/session_storage.dart';
 import 'package:sanga_ride/model/models.dart';
+import 'package:sanga_ride_core/sanga_ride_core.dart';
+import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 enum TripChatStatus { loading, ready, failed }
 
 class TripController extends GetxController {
   static const Duration pollInterval = Duration(seconds: 3);
-  static const int maxMissedPolls = 3;
   static const Duration noticeDuration = Duration(seconds: 4);
-  static const Duration refreshWait = Duration(milliseconds: 100);
-  static const String genericFailure = 'We couldn’t reach the server. Give it another go.';
-  static const String _shareLinkBase = 'https://sanga.ride/t/';
-
-  static String shareLinkOf(String tripId) => '$_shareLinkBase$tripId';
 
   final _api = Get.find<ApiService>();
 
   final Rx<TripState> _state = Rx<TripState>(const TripLoading());
-  final RxBool _isOffline = false.obs;
+  final Rx<LinkState> _link = Rx<LinkState>(LinkState.live);
+  final Rx<LinkState> _chatLink = Rx<LinkState>(LinkState.live);
   final RxBool isConfirmingDetails = false.obs;
   final RxBool isRefreshingPin = false.obs;
   final RxBool isReporting = false.obs;
@@ -35,28 +36,41 @@ class TripController extends GetxController {
   final Rx<TripChatStatus> chatStatus = Rx<TripChatStatus>(TripChatStatus.loading);
   final RxBool _isChatOpen = false.obs;
 
-  AppLifecycleListener? _lifecycle;
-  Timer? _poller;
-  Timer? _chatPoller;
+  LivePoller? _tripPoller;
+  LivePoller? _chatPoller;
+  VoidCallback? _detachTripLink;
+  VoidCallback? _detachChatLink;
   Timer? _noticeTimer;
   String? _tripId;
+  int _openers = 0;
   int _epoch = 0;
   int _seq = 0;
   int _applied = 0;
-  int _missedPolls = 0;
-  bool _isPolling = false;
-  bool _isChatPolling = false;
-  bool _isForeground = true;
   int _clientCounter = 0;
+  bool _hasSignalledEnd = false;
+  IdempotencyKey? _shareKey;
   final Set<String> _inFlight = {};
+  final Map<String, Mutation<Trip>> _actions = {};
 
   Rx<TripState> get stateRx => _state;
 
   TripState get state => _state.value;
 
-  bool get isOffline => _isOffline.value;
+  Rx<LinkState> get linkRx => _link;
+
+  LinkState get link => _link.value;
+
+  bool get isOffline => link == LinkState.lost;
+
+  bool get isReconnecting => link == LinkState.reconnecting;
+
+  Rx<LinkState> get chatLinkRx => _chatLink;
+
+  bool get isChatStale => _chatLink.value != LinkState.live;
 
   bool get isChatOpen => _isChatOpen.value;
+
+  String? get tripId => _tripId;
 
   TripNotice? get notice => _notice.value;
 
@@ -74,106 +88,126 @@ class TripController extends GetxController {
   }
 
   Future<void> open(String tripId) async {
-    if (_tripId == tripId) return;
-    close();
+    if (_tripId == tripId) {
+      _openers++;
+      return;
+    }
+    _teardown();
     _tripId = tripId;
-    final epoch = ++_epoch;
+    _openers = 1;
+    _epoch++;
     _state.value = const TripLoading();
-    _lifecycle = AppLifecycleListener(onStateChange: _onLifecycle);
-    await _poll();
-    if (epoch == _epoch) _startPolling();
+    _startTripPoller();
   }
 
   void close({String? onlyTripId}) {
-    if (onlyTripId != null && onlyTripId != _tripId) return;
-    _poller?.cancel();
-    _poller = null;
-    _chatPoller?.cancel();
+    if (onlyTripId != null) {
+      if (onlyTripId != _tripId) return;
+      if (--_openers > 0) return;
+    }
+    _teardown();
+  }
+
+  void _teardown() {
+    _detachTripLink?.call();
+    _detachTripLink = null;
+    _detachChatLink?.call();
+    _detachChatLink = null;
+    _tripPoller?.dispose();
+    _tripPoller = null;
+    _chatPoller?.dispose();
     _chatPoller = null;
     _noticeTimer?.cancel();
     _noticeTimer = null;
     _notice.value = null;
-    _lifecycle?.dispose();
-    _lifecycle = null;
+    for (final action in _actions.values) {
+      action.dispose();
+    }
+    _actions.clear();
     _tripId = null;
+    _openers = 0;
     _epoch++;
     _seq = 0;
     _applied = 0;
-    _missedPolls = 0;
-    _isPolling = false;
-    _isChatPolling = false;
-    _isForeground = true;
+    _hasSignalledEnd = false;
+    _shareKey = null;
     _inFlight.clear();
     _state.value = const TripLoading();
-    _isOffline.value = false;
+    _link.value = LinkState.live;
+    _chatLink.value = LinkState.live;
     _isChatOpen.value = false;
+    isConfirmingDetails.value = false;
+    isRefreshingPin.value = false;
+    isReporting.value = false;
+    isCompleting.value = false;
     messages.clear();
     chatStatus.value = TripChatStatus.loading;
   }
 
   Future<void> retryLoad() async {
-    final id = _tripId;
-    if (id == null || state is! TripFailed) return;
+    if (_tripId == null || state is! TripFailed) return;
     _state.value = const TripLoading();
-    await _poll();
-    _startPolling();
-  }
-
-  void _onLifecycle(AppLifecycleState lifecycle) {
-    _isForeground = lifecycle == AppLifecycleState.resumed;
-    if (_tripId == null) return;
-    if (!_isForeground) {
-      _poller?.cancel();
-      _poller = null;
-      _chatPoller?.cancel();
-      _chatPoller = null;
+    final poller = _tripPoller;
+    if (poller == null || !poller.isRunning) {
+      _startTripPoller();
       return;
     }
-    _startPolling(immediate: true);
-    if (isChatOpen) _startChatPolling(immediate: true);
+    await poller.refreshNow();
+  }
+
+  void _startTripPoller() {
+    _detachTripLink?.call();
+    _tripPoller?.dispose();
+    final poller = LivePoller(fetch: _fetchTrip, interval: pollInterval, onParseError: _onParseError);
+    void mirror() => _link.value = poller.link.value;
+    poller.link.addListener(mirror);
+    _detachTripLink = () => poller.link.removeListener(mirror);
+    _tripPoller = poller;
+    poller.start();
+  }
+
+  void _onParseError(Object error, StackTrace stack) {
+    log('trip payload unreadable: $error', name: 'TripController');
+  }
+
+  Future<void> _fetchTrip() async {
+    final id = _tripId;
+    if (id == null) return;
+    final epoch = _epoch;
+    final seq = ++_seq;
+    final isFirstLoad = state is TripLoading || state is TripFailed;
+    try {
+      final response = await _api.get(
+        AppEndpoints.liveTripOf(id),
+        suppressErrorToast: true,
+        profile: isFirstLoad ? RequestProfile.interactive : RequestProfile.background,
+      );
+      if (epoch != _epoch) return;
+      _accept(Trip.fromJson(_dataOf(response.data)), seq);
+    } catch (error) {
+      if (epoch != _epoch) return;
+      if (_isGone(error)) {
+        _onTripGone();
+        return;
+      }
+      if (isFirstLoad) _state.value = TripFailed(TripLoadFailure.of(error));
+      rethrow;
+    }
+  }
+
+  bool _isGone(Object error) => error is ApiException && (error.statusCode == 404 || error.statusCode == 410);
+
+  void _onTripGone() {
+    _tripPoller?.stop();
+    _chatPoller?.stop();
+    _state.value = const TripFailed(TripLoadFailure.notFound);
+    _signalEnded();
   }
 
   bool get _isTerminal => switch (state) {
     TripCompleted() || TripCancelled() || TripRefused() || TripReturned() || TripFailed() => true,
     _ => false,
   };
-
-  void _startPolling({bool immediate = false}) {
-    _poller?.cancel();
-    _poller = null;
-    if (_tripId == null || !_isForeground || _isTerminal) return;
-    _poller = Timer.periodic(pollInterval, (_) => _poll());
-    if (immediate) unawaited(_poll());
-  }
-
-  Future<void> _poll() async {
-    final id = _tripId;
-    if (id == null || _isPolling) return;
-    _isPolling = true;
-    final epoch = _epoch;
-    final seq = ++_seq;
-    try {
-      final response = await _api.get(AppEndpoints.liveTripOf(id), suppressErrorToast: true);
-      if (epoch != _epoch) return;
-      final trip = Trip.fromJson(_dataOf(response.data));
-      _missedPolls = 0;
-      _isOffline.value = false;
-      _accept(trip, seq);
-    } catch (e) {
-      log('trip poll failed: $e');
-      if (epoch != _epoch) return;
-      if (state is TripLoading) {
-        _state.value = TripFailed(_failureOf(e));
-      } else if (++_missedPolls >= maxMissedPolls) {
-        _isOffline.value = true;
-      }
-    } finally {
-      if (epoch == _epoch) _isPolling = false;
-    }
-  }
-
-  TripLoadFailure _failureOf(Object error) =>
-      error is ApiException && error.statusCode == 404 ? TripLoadFailure.notFound : TripLoadFailure.connection;
 
   void _accept(Trip incoming, int seq) {
     if (seq <= _applied) return;
@@ -183,22 +217,28 @@ class TripController extends GetxController {
       return;
     }
     _applied = seq;
+    if (incoming.isDelivery) unawaited(SessionStorage.drafts.remove(SendDeliveryController.draftKey));
     _state.value = TripState.of(incoming);
     if (incoming.status.isTerminal) {
-      _poller?.cancel();
-      _poller = null;
+      _tripPoller?.stop();
+      _chatPoller?.stop();
+      _signalEnded();
     }
+  }
+
+  void _signalEnded() {
+    if (_hasSignalledEnd) return;
+    _hasSignalledEnd = true;
+    unawaited(Get.find<SessionRestore>().refreshQuietly());
   }
 
   void _acceptFresh(Trip incoming) => _accept(incoming, ++_seq);
 
   void applyServerTrip(Trip trip) => _acceptFresh(trip);
 
-  Future<void> pollNow() async {
-    while (_isPolling) {
-      await Future<void>.delayed(refreshWait);
-    }
-    await _poll();
+  Future<Trip?> pollNow() async {
+    await _tripPoller?.refreshNow();
+    return trip;
   }
 
   void announce(TripNotice notice) {
@@ -207,69 +247,168 @@ class TripController extends GetxController {
     _noticeTimer = Timer(noticeDuration, () => _notice.value = null);
   }
 
-  Future<Trip?> loadActive() async {
-    try {
-      final response = await _api.get(AppEndpoints.activeTrip, suppressErrorToast: true);
-      final data = (response.data as Map)['data'];
-      if (data == null) return null;
-      return Trip.fromJson(Map<String, dynamic>.from(data as Map));
-    } catch (e) {
-      log('loadActive failed: $e');
-      return null;
-    }
-  }
+  Future<bool> confirmDetails() => _act(
+    flag: isConfirmingDetails,
+    name: 'confirm-details',
+    signature: '',
+    send: (key) => _post(AppEndpoints.liveTripConfirmDetailsOf, key: key),
+    didHappen: (trip) =>
+        trip.hasEvent(TripEventType.detailsConfirmed) || trip.status.rank > TripStatus.driverArrived.rank,
+  );
 
-  Future<bool> confirmDetails() => _act(isConfirmingDetails, AppEndpoints.liveTripConfirmDetailsOf);
-
-  Future<bool> refreshPin() => _act(isRefreshingPin, AppEndpoints.liveTripPinRefreshOf);
-
-  Future<bool> completeRide() => _act(isCompleting, AppEndpoints.liveTripCompleteOf);
-
-  Future<bool> reportIssue(Iterable<TripIssue> issues) {
-    if (issues.isEmpty) return Future.value(false);
+  Future<bool> refreshPin() {
+    final before = trip?.pin;
     return _act(
-      isReporting,
-      AppEndpoints.liveTripReportOf,
-      data: {
-        'reasons': [for (final issue in issues) issue.code],
-      },
+      flag: isRefreshingPin,
+      name: 'refresh-pin',
+      signature: before ?? '',
+      send: (key) => _post(AppEndpoints.liveTripPinRefreshOf, key: key),
+      didHappen: (trip) => trip.pin != null && trip.pin != before,
     );
   }
 
-  Future<bool> _act(RxBool flag, String Function(String id) endpoint, {Map<String, dynamic>? data}) async {
+  Future<bool> completeRide() => _act(
+    flag: isCompleting,
+    name: 'complete',
+    signature: '',
+    send: (key) => _post(AppEndpoints.liveTripCompleteOf, key: key),
+    didHappen: (trip) => trip.status == TripStatus.completed,
+    onDone: (_) => _signalEnded(),
+  );
+
+  Future<bool> reportIssue(Iterable<TripIssue> issues) {
+    if (issues.isEmpty) return Future.value(false);
+    final reasons = [for (final issue in issues) issue.code]..sort();
+    return _act(
+      flag: isReporting,
+      name: 'report',
+      signature: reasons.join(','),
+      send: (key) => _post(AppEndpoints.liveTripReportOf, key: key, data: {'reasons': reasons}),
+      didHappen: (trip) => trip.status == TripStatus.cancelled,
+    );
+  }
+
+  Future<Trip> _post(
+    String Function(String id) endpoint, {
+    required IdempotencyKey key,
+    Map<String, dynamic>? data,
+  }) async {
+    final id = _tripId;
+    if (id == null) throw const ApiException(kind: ApiFailureKind.rejected, message: 'No trip', isMutation: true);
+    final response = await _api.post(endpoint(id), data: data, key: key, suppressErrorToast: true);
+    return Trip.fromJson(_dataOf(response.data));
+  }
+
+  Future<bool> _act({
+    required RxBool flag,
+    required String name,
+    required String signature,
+    required Future<Trip> Function(IdempotencyKey key) send,
+    required bool Function(Trip trip) didHappen,
+    void Function(Trip trip)? onDone,
+  }) async {
     final id = _tripId;
     if (id == null || flag.value) return false;
-    flag.value = true;
-    final epoch = _epoch;
-    try {
-      final response = await _api.post(endpoint(id), data: data, suppressErrorToast: true);
-      if (epoch != _epoch) return false;
-      _acceptFresh(Trip.fromJson(_dataOf(response.data)));
-      return true;
-    } catch (e) {
-      log('trip action failed: $e');
-      if (epoch == _epoch) {
-        Toast.error(_messageOf(e));
-        unawaited(_poll());
-      }
+    if (LiveProblem.isOffline) {
+      LiveProblem.toastOffline();
       return false;
+    }
+    final epoch = _epoch;
+    final mutationKey = '$name|$signature';
+    final mutation = _actions.putIfAbsent(
+      mutationKey,
+      () => Mutation<Trip>(
+        intent: 'trip-$name',
+        run: send,
+        reconcile: () async {
+          final fresh = await _fetchOnce(id);
+          if (fresh == null) return const ReconciledPending();
+          return didHappen(fresh) ? ReconciledDone(fresh) : const ReconciledNotDone();
+        },
+      ),
+    );
+    flag.value = true;
+    try {
+      final result = await mutation.start();
+      if (epoch != _epoch) return false;
+      return _settleAction(result, mutationKey, onDone);
     } finally {
-      flag.value = false;
+      if (epoch == _epoch) flag.value = false;
+    }
+  }
+
+  bool _settleAction(MutationState<Trip> result, String mutationKey, void Function(Trip trip)? onDone) {
+    switch (result) {
+      case MutationDone<Trip>(:final value):
+        _acceptFresh(value);
+        onDone?.call(value);
+        _discardAction(mutationKey);
+        return true;
+      case MutationRejected<Trip>(:final error):
+        LiveProblem.toast(error);
+        _discardAction(mutationKey);
+        unawaited(pollNow());
+        return false;
+      case MutationFailed<Trip>(:final error):
+        LiveProblem.toast(error);
+        unawaited(pollNow());
+        return false;
+      case MutationUnknown<Trip>():
+        SangaToast.show(LiveProblem.checking, tone: SangaToastTone.warning);
+        unawaited(pollNow());
+        return false;
+      default:
+        return false;
+    }
+  }
+
+  void _discardAction(String mutationKey) => _actions.remove(mutationKey)?.dispose();
+
+  Future<Trip?> _fetchOnce(String id) async {
+    try {
+      final response = await _api.get(
+        AppEndpoints.liveTripOf(id),
+        suppressErrorToast: true,
+        profile: RequestProfile.interactive,
+      );
+      return Trip.fromJson(_dataOf(response.data));
+    } catch (error) {
+      log('trip check failed: $error', name: 'TripController');
+      return null;
     }
   }
 
   Future<String?> startCall() async {
     final id = _tripId;
     if (id == null || isCalling.value) return null;
+    if (LiveProblem.isOffline) return null;
     isCalling.value = true;
     try {
       final response = await _api.post(AppEndpoints.liveTripCallOf(id), suppressErrorToast: true);
-      return _dataOf(response.data)['maskedNumber'] as String?;
-    } catch (e) {
-      log('startCall failed: $e');
+      return JsonReader.of(_dataOf(response.data)).strOrNull('maskedNumber');
+    } catch (error) {
+      log('startCall failed: $error', name: 'TripController');
       return null;
     } finally {
       isCalling.value = false;
+    }
+  }
+
+  Future<String?> createShareLink() async {
+    final id = _tripId;
+    if (id == null) return null;
+    if (LiveProblem.isOffline) {
+      LiveProblem.toastOffline();
+      return null;
+    }
+    _shareKey ??= IdempotencyKey.newFor('trip-share');
+    try {
+      final response = await _api.post(TripLiveEndpoints.tripShareOf(id), key: _shareKey, suppressErrorToast: true);
+      return JsonReader.of(_dataOf(response.data)).str('url');
+    } catch (error) {
+      log('share link failed: $error', name: 'TripController');
+      LiveProblem.toast(error);
+      return null;
     }
   }
 
@@ -277,48 +416,51 @@ class TripController extends GetxController {
     if (_tripId == null) return;
     _isChatOpen.value = true;
     chatStatus.value = messages.isEmpty ? TripChatStatus.loading : TripChatStatus.ready;
-    await _pollChat();
-    _startChatPolling();
+    _startChatPoller();
   }
 
   void closeChat() {
     _isChatOpen.value = false;
-    _chatPoller?.cancel();
+    _detachChatLink?.call();
+    _detachChatLink = null;
+    _chatPoller?.dispose();
     _chatPoller = null;
+    _chatLink.value = LinkState.live;
   }
 
-  void _startChatPolling({bool immediate = false}) {
-    _chatPoller?.cancel();
-    _chatPoller = null;
-    if (_tripId == null || !_isForeground || !isChatOpen) return;
-    _chatPoller = Timer.periodic(pollInterval, (_) => _pollChat());
-    if (immediate) unawaited(_pollChat());
+  void _startChatPoller() {
+    _detachChatLink?.call();
+    _chatPoller?.dispose();
+    final poller = LivePoller(fetch: _fetchChat, interval: pollInterval, onParseError: _onParseError);
+    void mirror() => _chatLink.value = poller.link.value;
+    poller.link.addListener(mirror);
+    _detachChatLink = () => poller.link.removeListener(mirror);
+    _chatPoller = poller;
+    if (_isTerminal) {
+      unawaited(poller.refreshNow().whenComplete(poller.stop));
+    } else {
+      poller.start();
+    }
   }
 
   Future<void> reloadChat() async {
     chatStatus.value = TripChatStatus.loading;
-    await _pollChat();
+    await _chatPoller?.refreshNow();
   }
 
-  Future<void> _pollChat() async {
+  Future<void> _fetchChat() async {
     final id = _tripId;
-    if (id == null || _isChatPolling) return;
-    _isChatPolling = true;
+    if (id == null) return;
     final epoch = _epoch;
     try {
       final response = await _api.get(AppEndpoints.liveTripMessagesOf(id), suppressErrorToast: true);
       if (epoch != _epoch || !isChatOpen) return;
-      final server = [
-        for (final json in _dataOf(response.data)['messages'] as List)
-          TripMessage.fromJson(Map<String, dynamic>.from(json as Map)),
-      ];
+      final server = JsonReader.of(_dataOf(response.data)).listOf('messages', (item) => TripMessage.fromJson(item.raw));
       _mergeServerMessages(server);
       chatStatus.value = TripChatStatus.ready;
-    } catch (e) {
-      log('chat poll failed: $e');
+    } catch (error) {
       if (epoch == _epoch && messages.isEmpty) chatStatus.value = TripChatStatus.failed;
-    } finally {
-      if (epoch == _epoch) _isChatPolling = false;
+      rethrow;
     }
   }
 
@@ -350,17 +492,23 @@ class TripController extends GetxController {
   Future<void> _deliver(String clientId, String body) async {
     final id = _tripId;
     if (id == null || !_inFlight.add(clientId)) return;
+    if (LiveProblem.isOffline) {
+      _inFlight.remove(clientId);
+      _markDelivery(clientId, TripMessageDelivery.failed);
+      return;
+    }
     final epoch = _epoch;
     try {
       final response = await _api.post(
         AppEndpoints.liveTripMessagesOf(id),
         data: {'body': body, 'clientId': clientId},
+        key: IdempotencyKey('chat-$clientId'),
         suppressErrorToast: true,
       );
       if (epoch != _epoch) return;
       _replaceByClientId(clientId, TripMessage.fromJson(_dataOf(response.data)));
-    } catch (e) {
-      log('sendMessage failed: $e');
+    } catch (error) {
+      log('sendMessage failed: $error', name: 'TripController');
       if (epoch == _epoch) _markDelivery(clientId, TripMessageDelivery.failed);
     } finally {
       _inFlight.remove(clientId);
@@ -382,7 +530,5 @@ class TripController extends GetxController {
     if (index >= 0) messages[index] = messages[index].withDelivery(delivery);
   }
 
-  String _messageOf(Object error) => error is ApiException ? error.message : genericFailure;
-
-  Map<String, dynamic> _dataOf(dynamic body) => Map<String, dynamic>.from((body as Map)['data'] as Map);
+  Map<String, dynamic> _dataOf(dynamic body) => JsonReader.of(JsonReader.of(body).raw['data']).raw;
 }

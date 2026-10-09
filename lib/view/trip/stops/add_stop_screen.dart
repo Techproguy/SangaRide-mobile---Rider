@@ -12,6 +12,7 @@ import 'package:sanga_ride/view/trip/stops/stop_drafting_view.dart';
 import 'package:sanga_ride/view/trip/stops/stop_location_confirm.dart';
 import 'package:sanga_ride/view/trip/stops/stop_quote_view.dart';
 import 'package:sanga_ride/view/trip/stops/widgets/stop_sheets.dart';
+import 'package:sanga_ride/view/trip/widgets/trip_page_gate.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 class AddStopScreen extends StatefulWidget {
@@ -52,7 +53,7 @@ class _AddStopScreenState extends State<AddStopScreen> {
         unawaited(showStopUpdatingSheet(context));
       case AddStopFailed():
         _closeSheet();
-        unawaited(_showFailure(next.reason));
+        unawaited(_showFailure(next.reason, next.serverMessage));
       case AddStopApplied():
         context.pop();
       default:
@@ -62,8 +63,8 @@ class _AddStopScreenState extends State<AddStopScreen> {
 
   void _closeSheet() => Navigator.of(context).popUntil((route) => route is! PopupRoute);
 
-  Future<void> _showFailure(AddStopFailure failure) async {
-    final isPrimary = await showStopFailureSheet(context, failure);
+  Future<void> _showFailure(AddStopFailure failure, String? message) async {
+    final isPrimary = await showStopFailureSheet(context, failure, message: message);
     if (!mounted) return;
     if (_add.resolveFailure(isPrimary: isPrimary)) context.pop();
   }
@@ -142,27 +143,23 @@ class _AddStopScreenState extends State<AddStopScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Obx(() {
-      final trip = _trip.trip;
-      final state = _add.state;
-      if (trip == null) {
-        return const SangaPageLayout(
-          title: 'Add stops',
-          children: [
-            Padding(
-              padding: EdgeInsets.all(SangaSpacing.xl),
-              child: Center(child: SangaActivityIndicator(size: 40)),
-            ),
-          ],
+    return TripPageGate(
+      tripId: widget.tripId,
+      title: 'Add stops',
+      child: Obx(() {
+        final trip = _trip.trip;
+        final state = _add.state;
+        if (trip == null) {
+          return const SangaPageLayout(title: 'Add stops', children: [SangaSkeleton.heights([160, 56])]);
+        }
+        return PopScope(
+          canPop: state is AddStopDrafting,
+          onPopInvokedWithResult: (didPop, _) {
+            if (!didPop) _handleBack(state);
+          },
+          child: _body(trip, state),
         );
-      }
-      return PopScope(
-        canPop: state is AddStopDrafting,
-        onPopInvokedWithResult: (didPop, _) {
-          if (!didPop) _handleBack(state);
-        },
-        child: _body(trip, state),
-      );
-    });
+      }),
+    );
   }
 }

@@ -1,3 +1,5 @@
+import 'package:sanga_ride_core/sanga_ride_core.dart';
+
 enum SafetyTeamStatus {
   alerted('alerted'),
   monitoring('monitoring');
@@ -6,8 +8,7 @@ enum SafetyTeamStatus {
 
   final String code;
 
-  static SafetyTeamStatus fromCode(String? code) =>
-      values.firstWhere((status) => status.code == code, orElse: () => alerted);
+  static SafetyTeamStatus fromCode(String? code) => enumByCode(values, code, (status) => status.code, alerted);
 }
 
 enum SosStatus {
@@ -18,7 +19,7 @@ enum SosStatus {
 
   final String code;
 
-  static SosStatus fromCode(String? code) => values.firstWhere((status) => status.code == code, orElse: () => active);
+  static SosStatus fromCode(String? code) => enumByCode(values, code, (status) => status.code, active);
 }
 
 class Sos {
@@ -33,15 +34,15 @@ class Sos {
   });
 
   factory Sos.fromJson(Map<String, dynamic> json) {
-    final serverTime = DateTime.parse(json['serverTime'] as String);
+    final reader = JsonReader.of(json);
     return Sos(
-      id: json['id'] as String,
-      status: SosStatus.fromCode(json['status'] as String?),
-      startedAt: DateTime.parse(json['startedAt'] as String),
-      serverOffset: serverTime.difference(DateTime.now()),
-      liveLocation: json['liveLocation'] as bool? ?? false,
-      contactsNotified: (json['contactsNotified'] as num?)?.toInt() ?? 0,
-      safetyTeam: SafetyTeamStatus.fromCode(json['safetyTeam'] as String?),
+      id: reader.str('id'),
+      status: SosStatus.fromCode(reader.strOrNull('status')),
+      startedAt: reader.time('startedAt'),
+      serverOffset: ServerClock.instance.now().difference(DateTime.now().toUtc()),
+      liveLocation: reader.boolOr('liveLocation', false),
+      contactsNotified: reader.intOr('contactsNotified', 0),
+      safetyTeam: SafetyTeamStatus.fromCode(reader.strOrNull('safetyTeam')),
     );
   }
 

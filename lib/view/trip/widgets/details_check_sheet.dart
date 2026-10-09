@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride/view/trip/widgets/match_check_rows.dart';
-import 'package:sanga_ride/view/trip/widgets/trip_contact_tiles.dart';
+import 'package:sanga_ride/view/trip/widgets/trip_action_tiles.dart';
 import 'package:sanga_ride/view/trip/widgets/trip_driver_header.dart';
 import 'package:sanga_ride/view/trip/widgets/trip_panel_body.dart';
 import 'package:sanga_ride/view/trip/widgets/trip_vehicle_card.dart';
@@ -39,7 +39,7 @@ class DetailsCheckSheet extends StatelessWidget {
           TripVehicleCard(trip: trip),
           const TripPanelDivider(),
           Center(
-            child: TripContactTiles(unreadCount: unreadCount, onCall: onCall, onMessage: onMessage),
+            child: TripActionTiles(unreadCount: unreadCount, onCall: onCall, onMessage: onMessage),
           ),
           const TripPanelDivider(),
           const MatchCheckRows(),

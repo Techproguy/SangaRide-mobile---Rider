@@ -26,59 +26,14 @@ class WrapUpAsyncBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (isLoading) return _Skeleton(heights: skeletonHeights);
+    if (isLoading) return SangaSkeleton.heights(skeletonHeights);
     final failure = this.failure;
-    if (failure != null) return _Failure(failure: failure);
+    if (failure != null) {
+      return SangaFailureMessage(title: failure.title, message: failure.message, onRetry: failure.onRetry);
+    }
     return Builder(builder: builder)
         .animate()
         .fadeIn(duration: SangaMotion.quick, curve: SangaMotion.fadeCurve)
         .moveY(begin: SangaSpacing.sm, end: 0, duration: SangaMotion.morph, curve: SangaMotion.springBlock);
-  }
-}
-
-class _Skeleton extends StatelessWidget {
-  const _Skeleton({required this.heights});
-
-  final List<double> heights;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      spacing: SangaSpacing.md,
-      children: [
-        for (final height in heights)
-          Container(
-            height: height,
-            decoration: const BoxDecoration(color: SangaColors.cardMuted, borderRadius: SangaRadii.field),
-          ),
-      ],
-    );
-  }
-}
-
-class _Failure extends StatelessWidget {
-  const _Failure({required this.failure});
-
-  final WrapUpFailure failure;
-
-  @override
-  Widget build(BuildContext context) {
-    final onRetry = failure.onRetry;
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: SangaSpacing.xxl),
-      child: Column(
-        spacing: SangaSpacing.md,
-        children: [
-          Column(
-            spacing: SangaSpacing.xs,
-            children: [
-              Text(failure.title, textAlign: TextAlign.center, style: SangaTextStyles.cardTitle),
-              Text(failure.message, textAlign: TextAlign.center, style: SangaTextStyles.body),
-            ],
-          ),
-          if (onRetry != null) SangaButton.outline(label: 'Try again', onPressed: onRetry),
-        ],
-      ),
-    );
   }
 }

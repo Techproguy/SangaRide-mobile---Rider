@@ -1,3 +1,5 @@
+import 'package:sanga_ride_core/sanga_ride_core.dart';
+
 enum DeliveryIssueReason {
   driverNotMoving('driver_not_moving', 'Driver not moving', 'Driver has stopped for too long'),
   cannotReachDriver('cannot_reach_driver', 'Cannot reach driver', 'Driver is not responding'),
@@ -39,7 +41,8 @@ enum DeliveryIssueStatus {
   reported('reported'),
   investigating('investigating'),
   actionNeeded('action_needed'),
-  resolved('resolved');
+  resolved('resolved'),
+  unknown('unknown');
 
   const DeliveryIssueStatus(this.code);
 
@@ -47,10 +50,7 @@ enum DeliveryIssueStatus {
 
   bool get isOpen => this != resolved;
 
-  static DeliveryIssueStatus fromCode(String code) => values.firstWhere(
-    (status) => status.code == code,
-    orElse: () => throw FormatException('Unknown issue status: $code'),
-  );
+  static DeliveryIssueStatus fromCode(String? code) => enumByCode(values, code, (status) => status.code, unknown);
 }
 
 enum DeliveryIssueEventType {
@@ -76,14 +76,10 @@ class DeliveryIssueEvent {
   const DeliveryIssueEvent({required this.type, required this.at, required this.detail});
 
   static DeliveryIssueEvent? tryParse(Map<String, dynamic> json) {
-    final type = DeliveryIssueEventType.fromCode(json['type'] as String?);
+    final reader = JsonReader.of(json);
+    final type = DeliveryIssueEventType.fromCode(reader.strOrNull('type'));
     if (type == null) return null;
-    final at = json['at'] as String?;
-    return DeliveryIssueEvent(
-      type: type,
-      at: at == null ? null : DateTime.parse(at).toLocal(),
-      detail: json['detail'] as String?,
-    );
+    return DeliveryIssueEvent(type: type, at: reader.timeOrNull('at')?.toLocal(), detail: reader.strOrNull('detail'));
   }
 
   final DeliveryIssueEventType type;
@@ -94,11 +90,10 @@ class DeliveryIssueEvent {
 class DeliveryResolutionOption {
   const DeliveryResolutionOption({required this.id, required this.label, required this.blurb});
 
-  factory DeliveryResolutionOption.fromJson(Map<String, dynamic> json) => DeliveryResolutionOption(
-    id: json['id'] as String,
-    label: json['label'] as String,
-    blurb: json['blurb'] as String? ?? '',
-  );
+  factory DeliveryResolutionOption.fromJson(Map<String, dynamic> json) {
+    final reader = JsonReader.of(json);
+    return DeliveryResolutionOption(id: reader.str('id'), label: reader.str('label'), blurb: reader.strOr('blurb', ''));
+  }
 
   final String id;
   final String label;
@@ -115,19 +110,13 @@ class DeliveryIssue {
   });
 
   factory DeliveryIssue.fromJson(Map<String, dynamic> json) {
-    final options = json['resolutionOptions'] as List?;
+    final reader = JsonReader.of(json);
     return DeliveryIssue(
-      id: json['id'] as String,
-      reference: json['reference'] as String,
-      status: DeliveryIssueStatus.fromCode(json['status'] as String),
-      events: [
-        for (final event in json['events'] as List? ?? const [])
-          ?DeliveryIssueEvent.tryParse(Map<String, dynamic>.from(event as Map)),
-      ],
-      options: [
-        for (final option in options ?? const [])
-          DeliveryResolutionOption.fromJson(Map<String, dynamic>.from(option as Map)),
-      ],
+      id: reader.str('id'),
+      reference: reader.strOr('reference', ''),
+      status: DeliveryIssueStatus.fromCode(reader.strOrNull('status')),
+      events: reader.listOf('events', (event) => DeliveryIssueEvent.tryParse(event.raw)!),
+      options: reader.listOf('resolutionOptions', (option) => DeliveryResolutionOption.fromJson(option.raw)),
     );
   }
 
@@ -163,6 +152,12 @@ enum DeliveryIssueProblem {
     'We couldn’t reach the server',
     'Check your connection and give it another go.',
     canRetry: true,
+  ),
+  unknown(
+    'unknown',
+    'Something went wrong',
+    'Something went wrong on our side. Try again in a moment.',
+    canRetry: true,
   );
 
   const DeliveryIssueProblem(this.code, this.title, this.message, {required this.canRetry});
@@ -172,8 +167,15 @@ enum DeliveryIssueProblem {
   final String message;
   final bool canRetry;
 
-  static DeliveryIssueProblem fromCode(String? code) =>
-      values.firstWhere((problem) => problem.code == code, orElse: () => connection);
+  static DeliveryIssueProblem fromCode(String? code) => enumByCode(values, code, (problem) => problem.code, unknown);
+
+  static DeliveryIssueProblem of(Object error) {
+    if (error is ApiException && error.kind == ApiFailureKind.rejected) return fromCode(error.code);
+    return switch (ProblemKind.of(error)) {
+      ProblemOffline() => connection,
+      _ => unknown,
+    };
+  }
 }
 
 sealed class DeliveryIssueState {

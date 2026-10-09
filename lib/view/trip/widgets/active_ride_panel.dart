@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:sanga_ride/model/models.dart';
-import 'package:sanga_ride/view/trip/widgets/trip_change_tiles.dart';
+import 'package:sanga_ride/view/trip/widgets/trip_action_tiles.dart';
 import 'package:sanga_ride/view/trip/widgets/trip_driver_header.dart';
 import 'package:sanga_ride/view/trip/widgets/trip_panel_body.dart';
 import 'package:sanga_ride/view/trip/widgets/trip_progress_bar.dart';
@@ -15,6 +15,7 @@ class ActiveRidePanel extends StatelessWidget {
     required this.onMessage,
     required this.onShare,
     required this.onSafety,
+    required this.onSos,
     required this.onAddStops,
     required this.onCancel,
     required this.action,
@@ -26,6 +27,7 @@ class ActiveRidePanel extends StatelessWidget {
   final VoidCallback onMessage;
   final VoidCallback onShare;
   final VoidCallback onSafety;
+  final VoidCallback onSos;
   final VoidCallback onAddStops;
   final VoidCallback onCancel;
   final Widget action;
@@ -54,15 +56,13 @@ class ActiveRidePanel extends StatelessWidget {
         const TripPanelDivider(),
         TripProgressBar(status: trip.status, nextStop: trip.nextStopNumber),
         const TripPanelDivider(),
-        TripChangeTiles(
-          trip: trip,
-          onAddStops: onAddStops,
-          onCancel: onCancel,
+        TripActionTiles(
+          onShare: onShare,
+          onSafety: onSafety,
+          onSos: onSos,
+          onAddStops: trip.canAddStops ? onAddStops : null,
+          onCancel: trip.canChange ? onCancel : null,
           alignment: MainAxisAlignment.center,
-          leading: [
-            SangaActionTile(icon: Icons.ios_share_rounded, label: 'Share', onPressed: onShare),
-            SangaActionTile(icon: Icons.shield_rounded, label: 'Safety', onPressed: onSafety, tone: SangaTone.danger),
-          ],
         ),
         action,
       ],

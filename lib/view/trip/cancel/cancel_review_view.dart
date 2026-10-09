@@ -17,6 +17,7 @@ class CancelReviewView extends StatelessWidget {
     required this.onCancel,
     required this.onKeep,
     required this.onBack,
+    this.feeWas,
   });
 
   final CancelCopy copy;
@@ -24,6 +25,7 @@ class CancelReviewView extends StatelessWidget {
   final CancelReason reason;
   final CancellationReview review;
   final bool isSubmitting;
+  final int? feeWas;
   final VoidCallback onCancel;
   final VoidCallback onKeep;
   final VoidCallback onBack;
@@ -76,13 +78,18 @@ class CancelReviewView extends StatelessWidget {
                 ),
               ],
             ),
+            if (feeWas != null && feeWas != review.fee)
+              SangaNotice(
+                message: 'The fee changed from ${SangaMoney.naira(feeWas!)} to ${SangaMoney.naira(review.fee)}. Take a look before you cancel.',
+                tone: SangaTone.warning,
+              ),
             if (reason.isSafety)
               const SangaNotice(
                 message: 'If you feel unsafe right now, get help first',
                 tone: SangaTone.neutral,
                 icon: Icons.shield_outlined,
               ),
-            if (review.hasFee) SangaNotice(message: review.feeReason.notice(SangaMoney.naira(review.fee))),
+            if (review.hasFee) SangaNotice(message: review.notice(SangaMoney.naira(review.fee))),
           ],
         ),
       ],

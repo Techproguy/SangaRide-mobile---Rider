@@ -20,7 +20,7 @@ class PaymentMethodList extends StatelessWidget {
   });
 
   final List<PaymentMethod> methods;
-  final PaymentMethod selected;
+  final PaymentMethod? selected;
   final PaymentMethod? lastMethod;
   final PaymentGroup? group;
   final WalletPayOption walletOption;
@@ -34,6 +34,7 @@ class PaymentMethodList extends StatelessWidget {
     return switch (group.kind) {
       GroupKind.family => 'Family wallet',
       GroupKind.business => 'Business wallet',
+      null => 'Group wallet',
     };
   }
 

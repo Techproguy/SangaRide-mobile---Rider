@@ -1,15 +1,24 @@
 import 'package:sanga_ride/model/delivery/delivery_failure.dart';
 import 'package:sanga_ride/model/trip/server_time.dart';
+import 'package:sanga_ride_core/sanga_ride_core.dart';
 
 class QuoteTier {
   const QuoteTier({required this.id, required this.fare, required this.etaMinutes, required this.isRecommended});
 
-  factory QuoteTier.fromJson(Map<String, dynamic> json) => QuoteTier(
-    id: json['id'] as String,
-    fare: (json['fare'] as num).toInt(),
-    etaMinutes: [for (final minutes in json['etaMinutes'] as List) (minutes as num).toInt()],
-    isRecommended: json['recommended'] as bool? ?? false,
-  );
+  factory QuoteTier.fromJson(Map<String, dynamic> json) {
+    final reader = JsonReader.of(json);
+    final etas = reader.raw['etaMinutes'];
+    return QuoteTier(
+      id: reader.str('id'),
+      fare: reader.integer('fare'),
+      etaMinutes: [
+        if (etas is List)
+          for (final minutes in etas)
+            if (minutes is num) minutes.round(),
+      ],
+      isRecommended: reader.boolOr('recommended', false),
+    );
+  }
 
   final String id;
   final int fare;
@@ -26,12 +35,12 @@ class DeliveryQuote {
   });
 
   factory DeliveryQuote.fromJson(Map<String, dynamic> json) {
-    final serverTime = DateTime.parse(json['serverTime'] as String);
+    final reader = JsonReader.of(json);
     return DeliveryQuote(
-      quoteId: json['quoteId'] as String,
-      expiresAt: deadlineAfter(serverTime, json['expiresAt'] as String),
-      tiers: [for (final tier in json['tiers'] as List) QuoteTier.fromJson(Map<String, dynamic>.from(tier as Map))],
-      recommendedTier: json['recommendedTier'] as String?,
+      quoteId: reader.str('quoteId'),
+      expiresAt: deviceDeadlineOf(reader.str('expiresAt')),
+      tiers: reader.listOf('tiers', (tier) => QuoteTier.fromJson(tier.raw)),
+      recommendedTier: reader.strOrNull('recommendedTier'),
     );
   }
 

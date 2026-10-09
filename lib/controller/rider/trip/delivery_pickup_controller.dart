@@ -1,12 +1,16 @@
+import 'dart:async';
 import 'dart:developer';
 import 'dart:io';
 
 import 'package:get/get.dart';
+import 'package:sanga_ride/controller/rider/trip/live_problem.dart';
 import 'package:sanga_ride/controller/rider/trip/trip_controller.dart';
 import 'package:sanga_ride/core/api/api.dart';
 import 'package:sanga_ride/core/api/delivery_live_endpoints.dart';
+import 'package:sanga_ride/core/services/image_compression_service.dart';
 import 'package:sanga_ride/core/services/package_photo_service.dart';
 import 'package:sanga_ride/model/models.dart';
+import 'package:sanga_ride_core/sanga_ride_core.dart';
 
 class DeliveryPickupController extends GetxController {
   static const String movedOnCode = 'wrong_stage';
@@ -15,6 +19,8 @@ class DeliveryPickupController extends GetxController {
   final _trip = Get.find<TripController>();
 
   final Rx<DeliveryPickupState> _state = Rx<DeliveryPickupState>(const PickupEmpty());
+  Mutation<Trip>? _mutation;
+  String? _mutationSignature;
   String? _tripId;
   int _epoch = 0;
 
@@ -25,18 +31,27 @@ class DeliveryPickupController extends GetxController {
   @override
   void onClose() {
     _epoch++;
+    _releaseMutation();
     super.onClose();
+  }
+
+  void _releaseMutation() {
+    _mutation?.dispose();
+    _mutation = null;
+    _mutationSignature = null;
   }
 
   void open(String tripId) {
     if (_tripId == tripId) return;
     _epoch++;
     _tripId = tripId;
+    _releaseMutation();
     _state.value = const PickupEmpty();
   }
 
   Future<void> takePhoto() async {
-    if (state.isBusy || state is PickupConfirmed) return;
+    if (state.isBusy && state is! PickupUploading) return;
+    if (state is PickupConfirmed || state is PickupConfirming) return;
     final epoch = ++_epoch;
     final previous = state;
     try {
@@ -51,17 +66,22 @@ class DeliveryPickupController extends GetxController {
         _state.value = previous is PickupPreparing ? const PickupEmpty() : previous;
         return;
       }
+      await _discardPhotoOf(previous);
       await _upload(path, epoch);
     } on PhotoException catch (e) {
       if (epoch == _epoch) _state.value = PickupPhotoFailed(DeliveryPickupProblem.fromCode(e.failure.code));
     }
   }
 
-  void removePhoto() {
-    if (state.isBusy || state is PickupConfirmed) return;
+  Future<void> removePhoto() async {
+    if (state is PickupConfirmed || state is PickupConfirming || state is PickupPreparing) return;
     _epoch++;
+    final previous = state;
     _state.value = const PickupEmpty();
+    await _discardPhotoOf(previous);
   }
+
+  Future<void> _discardPhotoOf(DeliveryPickupState previous) => ImageCompressionService.discard(previous.photoPath);
 
   Future<void> retryUpload() async {
     final path = state.photoPath;
@@ -72,22 +92,23 @@ class DeliveryPickupController extends GetxController {
   Future<void> _upload(String path, int epoch) async {
     _state.value = PickupUploading(path, progress: 0);
     try {
-      final response = await _api.uploadFile(
+      final ref = await _api.upload(
         DeliveryLiveEndpoints.uploads,
         file: File(path),
-        fields: {'purpose': DeliveryLiveEndpoints.pickupProofPurpose},
+        purpose: DeliveryLiveEndpoints.pickupProofPurpose,
         suppressErrorToast: true,
-        onSendProgress: (sent, total) {
+        onProgress: (sent, total) {
           if (epoch == _epoch && total > 0) _state.value = PickupUploading(path, progress: sent / total);
         },
       );
       if (epoch != _epoch) return;
-      final data = Map<String, dynamic>.from((response.data as Map)['data'] as Map);
-      _state.value = PickupReady(path, photoId: data['id'] as String);
+      _state.value = PickupReady(path, photoId: ref.id);
     } catch (e) {
       log('pickup photo upload failed: ${e is ApiException ? e.code : e.runtimeType}');
       if (epoch != _epoch) return;
-      final problem = e is ApiException ? DeliveryPickupProblem.fromCode(e.code) : DeliveryPickupProblem.uploadFailed;
+      final problem = e is ApiException && e.kind == ApiFailureKind.rejected
+          ? DeliveryPickupProblem.fromCode(e.code)
+          : DeliveryPickupProblem.uploadFailed;
       _state.value = PickupPhotoFailed(
         problem.isPhotoProblem ? problem : DeliveryPickupProblem.uploadFailed,
         path: path,
@@ -99,32 +120,85 @@ class DeliveryPickupController extends GetxController {
     final id = _tripId;
     final current = state;
     if (id == null || !current.canConfirm) return false;
-    final photoId = switch (current) {
-      PickupReady(:final photoId) => photoId,
-      PickupConfirmFailed(:final photoId) => photoId,
-      _ => null,
-    };
+    if (LiveProblem.isOffline) {
+      _state.value = PickupConfirmFailed(
+        DeliveryPickupProblem.connection,
+        path: current.photoPath,
+        photoId: _photoIdOf(current),
+      );
+      return false;
+    }
+    final photoId = _photoIdOf(current);
     final path = current.photoPath;
     final epoch = ++_epoch;
     _state.value = PickupConfirming(path, photoId: photoId);
-    try {
-      final response = await _api.post(
-        DeliveryLiveEndpoints.pickupConfirmationOf(id),
-        data: {'photoId': photoId},
-        suppressErrorToast: true,
-      );
-      if (epoch != _epoch) return false;
-      final data = Map<String, dynamic>.from((response.data as Map)['data'] as Map);
-      _trip.applyServerTrip(Trip.fromJson(data));
-      _state.value = PickupConfirmed(path);
-      return true;
-    } catch (e) {
-      log('pickup confirmation failed: ${e is ApiException ? e.code : e.runtimeType}');
-      if (epoch != _epoch) return false;
-      final isMovedOn = e is ApiException && e.code == movedOnCode;
-      final problem = isMovedOn ? DeliveryPickupProblem.movedOn : DeliveryPickupProblem.connection;
-      _state.value = PickupConfirmFailed(problem, path: path, photoId: photoId);
+    final mutation = _mutationFor(id, photoId);
+    final result = await mutation.start();
+    if (epoch != _epoch) return false;
+    switch (result) {
+      case MutationDone<Trip>(:final value):
+        _releaseMutation();
+        _trip.applyServerTrip(value);
+        _state.value = PickupConfirmed(path);
+        unawaited(ImageCompressionService.discard(path));
+        return true;
+      case MutationRejected<Trip>(:final error):
+        _releaseMutation();
+        return _onRejected(error, path, photoId);
+      case MutationFailed<Trip>(:final error):
+        _state.value = PickupConfirmFailed(DeliveryPickupProblem.of(error), path: path, photoId: photoId);
+      case MutationUnknown<Trip>():
+        _state.value = PickupConfirmFailed(DeliveryPickupProblem.unknown, path: path, photoId: photoId);
+      default:
+        break;
+    }
+    return false;
+  }
+
+  String? _photoIdOf(DeliveryPickupState current) => switch (current) {
+    PickupReady(:final photoId) => photoId,
+    PickupConfirmFailed(:final photoId) => photoId,
+    _ => null,
+  };
+
+  Future<bool> _onRejected(ApiException error, String? path, String? photoId) async {
+    if (error.code == movedOnCode) {
+      final trip = await _trip.pollNow();
+      final hasMovedOn = trip?.delivery?.stage.isPastPickup ?? false;
+      if (hasMovedOn) {
+        _state.value = PickupConfirmed(path);
+        return true;
+      }
+      _state.value = PickupConfirmFailed(DeliveryPickupProblem.movedOn, path: path, photoId: photoId);
       return false;
     }
+    _state.value = PickupConfirmFailed(DeliveryPickupProblem.of(error), path: path, photoId: photoId);
+    return false;
+  }
+
+  Mutation<Trip> _mutationFor(String id, String? photoId) {
+    final signature = '$id|$photoId';
+    final existing = _mutation;
+    if (existing != null && _mutationSignature == signature) return existing;
+    existing?.dispose();
+    _mutationSignature = signature;
+    return _mutation = Mutation<Trip>(
+      intent: 'delivery-pickup',
+      run: (key) async {
+        final response = await _api.post(
+          DeliveryLiveEndpoints.pickupConfirmationOf(id),
+          data: {'photoId': photoId},
+          key: key,
+          suppressErrorToast: true,
+        );
+        return Trip.fromJson(JsonReader.of(JsonReader.of(response.data).raw['data']).raw);
+      },
+      reconcile: () async {
+        final trip = await _trip.pollNow();
+        if (trip == null) return const ReconciledPending();
+        final isDone = trip.delivery?.stage.isPastPickup ?? false;
+        return isDone ? ReconciledDone(trip) : const ReconciledNotDone();
+      },
+    );
   }
 }

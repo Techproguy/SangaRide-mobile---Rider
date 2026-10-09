@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
 import 'package:sanga_ride/controller/rider/delivery/send_delivery_controller.dart';
 import 'package:sanga_ride/core/router/delivery_routes.dart';
+import 'package:sanga_ride/core/services/permission_center.dart';
 import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride/view/delivery/send/widgets/package_photo_actions.dart';
 import 'package:sanga_ride/view/delivery/send/widgets/package_photo_circle.dart';
@@ -44,7 +44,7 @@ class DeliveryPhotoScreen extends StatelessWidget {
                 onRetake: () => _pick(context, delivery),
                 onRemove: delivery.removePhoto,
                 onRetry: delivery.retryUpload,
-                onOpenSettings: Geolocator.openAppSettings,
+                onOpenSettings: Get.find<PermissionCenter>().openSettings,
               ),
             ],
           );
@@ -68,6 +68,11 @@ class DeliveryPhotoScreen extends StatelessWidget {
   Future<void> _pick(BuildContext context, SendDeliveryController delivery) async {
     if (delivery.photo.isBusy) return;
     final source = await showPhotoSourceSheet(context);
-    if (source != null) await delivery.pickPhoto(source);
+    if (source == null || !context.mounted) return;
+    if (source == PhotoSource.camera) {
+      final access = await Get.find<PermissionCenter>().prime(PermissionKind.camera, context);
+      if (access.canAskAgain) return;
+    }
+    await delivery.pickPhoto(source);
   }
 }

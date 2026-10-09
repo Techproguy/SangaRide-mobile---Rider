@@ -1,4 +1,6 @@
 import 'package:sanga_ride/model/groups/group_kind.dart';
+import 'package:sanga_ride/model/trip/server_time.dart';
+import 'package:sanga_ride_core/sanga_ride_core.dart';
 
 enum PaymentMethod {
   cash('cash', 'Cash', 'Hand it to your driver', 'Payment confirmed', 'Your driver confirmed your cash payment.'),
@@ -38,26 +40,59 @@ enum PaymentMethod {
     }
     return null;
   }
-
-  static PaymentMethod fromCode(String code) =>
-      tryFromCode(code) ?? (throw FormatException('Unknown payment method: $code'));
 }
 
 enum PaymentStatus {
   pending('pending'),
   awaitingDriver('awaiting_driver'),
+  processing('processing'),
+  requiresAction('requires_action'),
   succeeded('succeeded'),
   declined('declined'),
-  failed('failed');
+  failed('failed'),
+  unknown('unknown');
 
   const PaymentStatus(this.code);
 
   final String code;
 
-  static PaymentStatus fromCode(String code) => values.firstWhere(
-    (status) => status.code == code,
-    orElse: () => throw FormatException('Unknown payment status: $code'),
-  );
+  bool get isTerminal => this == succeeded || this == declined || this == failed;
+
+  static PaymentStatus fromCode(String? code) => enumByCode(values, code, (status) => status.code, unknown);
+}
+
+enum PaymentActionType {
+  otp('otp');
+
+  const PaymentActionType(this.code);
+
+  final String code;
+
+  static PaymentActionType? tryFromCode(String? code) {
+    for (final type in values) {
+      if (type.code == code) return type;
+    }
+    return null;
+  }
+}
+
+class PaymentAction {
+  const PaymentAction({required this.type, required this.message, required this.codeLength});
+
+  static const int defaultCodeLength = 4;
+
+  final PaymentActionType? type;
+  final String message;
+  final int codeLength;
+
+  static PaymentAction? tryFromJson(JsonReader? reader) {
+    if (reader == null) return null;
+    return PaymentAction(
+      type: PaymentActionType.tryFromCode(reader.strOrNull('type')),
+      message: reader.strOr('message', ''),
+      codeLength: reader.intOr('codeLength', defaultCodeLength),
+    );
+  }
 }
 
 enum PaymentDeclineReason {
@@ -88,14 +123,17 @@ enum PaymentDeclineReason {
 class PaymentGroup {
   const PaymentGroup({required this.id, required this.kind, required this.name});
 
-  factory PaymentGroup.fromJson(Map<String, dynamic> json) => PaymentGroup(
-    id: json['id'] as String,
-    kind: GroupKind.fromCode(json['kind'] as String?),
-    name: json['name'] as String,
-  );
+  factory PaymentGroup.fromJson(Map<String, dynamic> json) {
+    final reader = JsonReader.of(json);
+    return PaymentGroup(
+      id: reader.str('id'),
+      kind: GroupKind.tryFromCode(reader.strOrNull('kind')),
+      name: reader.strOr('name', ''),
+    );
+  }
 
   final String id;
-  final GroupKind kind;
+  final GroupKind? kind;
   final String name;
 }
 
@@ -110,24 +148,38 @@ class TripPayment {
     this.paidAt,
     this.lastMethod,
     this.declineReason,
+    this.declineMessage,
     this.group,
+    this.action,
+    this.cashWaitExpiresAt,
   });
 
   factory TripPayment.fromJson(Map<String, dynamic> json) {
-    final paidAt = json['paidAt'] as String?;
-    final declineCode = json['declineCode'] as String?;
+    final reader = JsonReader.of(json);
+    final group = reader.objectOrNull('group');
     return TripPayment(
-      tripId: json['tripId'] as String,
-      amount: (json['amount'] as num).toInt(),
-      status: PaymentStatus.fromCode(json['status'] as String),
-      allowedMethods: [for (final code in json['allowedMethods'] as List) ?PaymentMethod.tryFromCode(code as String)],
-      method: PaymentMethod.tryFromCode(json['method'] as String?),
-      last4: json['last4'] as String?,
-      paidAt: paidAt == null ? null : DateTime.parse(paidAt).toLocal(),
-      lastMethod: PaymentMethod.tryFromCode(json['lastMethod'] as String?),
-      declineReason: declineCode == null ? null : PaymentDeclineReason.fromCode(declineCode),
-      group: json['group'] == null ? null : PaymentGroup.fromJson(Map<String, dynamic>.from(json['group'] as Map)),
+      tripId: reader.str('tripId'),
+      amount: reader.integer('amount'),
+      status: PaymentStatus.fromCode(reader.strOrNull('status')),
+      allowedMethods: [for (final code in reader.strings('allowedMethods')) ?PaymentMethod.tryFromCode(code)],
+      method: PaymentMethod.tryFromCode(reader.strOrNull('method')),
+      last4: reader.strOrNull('last4'),
+      paidAt: reader.timeOrNull('paidAt')?.toLocal(),
+      lastMethod: PaymentMethod.tryFromCode(reader.strOrNull('lastMethod')),
+      declineReason: reader.has('declineCode') ? PaymentDeclineReason.fromCode(reader.strOrNull('declineCode')) : null,
+      declineMessage: reader.strOrNull('declineMessage'),
+      group: group == null ? null : _groupOf(group),
+      action: PaymentAction.tryFromJson(reader.objectOrNull('action')),
+      cashWaitExpiresAt: deviceDeadlineOrNull(reader.strOrNull('cashWaitExpiresAt')),
     );
+  }
+
+  static PaymentGroup? _groupOf(JsonReader reader) {
+    try {
+      return PaymentGroup.fromJson(reader.raw);
+    } catch (_) {
+      return null;
+    }
   }
 
   final String tripId;
@@ -139,7 +191,10 @@ class TripPayment {
   final DateTime? paidAt;
   final PaymentMethod? lastMethod;
   final PaymentDeclineReason? declineReason;
+  final String? declineMessage;
   final PaymentGroup? group;
+  final PaymentAction? action;
+  final DateTime? cashWaitExpiresAt;
 
   PaymentMethod? get preferredMethod {
     if (lastMethod != null && allowedMethods.contains(lastMethod)) return lastMethod;

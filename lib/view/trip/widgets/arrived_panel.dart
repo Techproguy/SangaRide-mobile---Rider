@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:sanga_ride/model/models.dart';
-import 'package:sanga_ride/view/trip/widgets/trip_change_tiles.dart';
-import 'package:sanga_ride/view/trip/widgets/trip_contact_tiles.dart';
+import 'package:sanga_ride/view/trip/widgets/trip_action_tiles.dart';
 import 'package:sanga_ride/view/trip/widgets/trip_driver_header.dart';
 import 'package:sanga_ride/view/trip/widgets/trip_panel_body.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
@@ -14,6 +13,7 @@ class ArrivedPanel extends StatelessWidget {
     required this.onCall,
     required this.onMessage,
     required this.onSafety,
+    required this.onSos,
     required this.onAddStops,
     required this.onCancel,
     required this.onConfirmDetails,
@@ -24,6 +24,7 @@ class ArrivedPanel extends StatelessWidget {
   final VoidCallback onCall;
   final VoidCallback onMessage;
   final VoidCallback onSafety;
+  final VoidCallback onSos;
   final VoidCallback onAddStops;
   final VoidCallback onCancel;
   final VoidCallback onConfirmDetails;
@@ -35,13 +36,14 @@ class ArrivedPanel extends StatelessWidget {
         TripDriverHeader(driver: trip.driver),
         const TripPanelDivider(),
         Text('Your driver is at the pickup', style: SangaTextStyles.cardTitle.copyWith(color: SangaColors.success)),
-        TripChangeTiles(
-          trip: trip,
-          onAddStops: onAddStops,
-          onCancel: onCancel,
-          leading: [
-            TripContactTiles(unreadCount: unreadCount, onCall: onCall, onMessage: onMessage, onSafety: onSafety),
-          ],
+        TripActionTiles(
+          unreadCount: unreadCount,
+          onCall: onCall,
+          onMessage: onMessage,
+          onSafety: onSafety,
+          onSos: onSos,
+          onAddStops: trip.canAddStops ? onAddStops : null,
+          onCancel: trip.canChange ? onCancel : null,
         ),
         SangaButton.primary(label: 'Confirm details', onPressed: onConfirmDetails),
       ],

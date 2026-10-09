@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:sanga_ride/controller/rider/trip/trip_controller.dart';
@@ -24,12 +22,16 @@ class _TripChatScreenState extends State<TripChatScreen> {
   @override
   void initState() {
     super.initState();
-    unawaited(_trip.openChat());
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await _trip.open(widget.tripId);
+      if (mounted) await _trip.openChat();
+    });
   }
 
   @override
   void dispose() {
     _trip.closeChat();
+    _trip.close(onlyTripId: widget.tripId);
     _composer.dispose();
     super.dispose();
   }
@@ -39,29 +41,19 @@ class _TripChatScreenState extends State<TripChatScreen> {
     final messages = _trip.messages;
     if (messages.isNotEmpty) return ChatMessageList(messages: [...messages], onRetry: _trip.retryMessage);
     return switch (status) {
-      TripChatStatus.loading => const Center(child: SangaActivityIndicator(size: 40)),
+      TripChatStatus.loading => const Padding(padding: EdgeInsets.all(SangaSpacing.gutter), child: SangaSkeleton.heights([48, 48, 48])),
       TripChatStatus.failed => Center(
-        child: Padding(
-          padding: const EdgeInsets.all(SangaSpacing.xl),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            spacing: SangaSpacing.md,
-            children: [
-              Text('We couldn’t load your chat', style: SangaTextStyles.statusTitle, textAlign: TextAlign.center),
-              Text('Check your connection and give it another go.', style: SangaTextStyles.statusMessage),
-              SangaButton.primary(label: 'Try again', size: SangaButtonSize.compact, onPressed: _trip.reloadChat),
-            ],
-          ),
+        child: SangaFailureMessage(
+          title: 'We couldn’t load your chat',
+          message: 'Check your connection and give it another go.',
+          onRetry: _trip.reloadChat,
         ),
       ),
       TripChatStatus.ready => Center(
-        child: Padding(
-          padding: const EdgeInsets.all(SangaSpacing.xl),
-          child: Text(
-            'No messages yet. Say hi to $firstName.',
-            textAlign: TextAlign.center,
-            style: SangaTextStyles.statusMessage,
-          ),
+        child: SangaEmptyMessage(
+          icon: Icons.chat_bubble_outline_rounded,
+          title: 'No messages yet',
+          message: 'Say hi to $firstName.',
         ),
       ),
     };
@@ -100,6 +92,17 @@ class _TripChatScreenState extends State<TripChatScreen> {
                   ),
                 );
               }),
+              Obx(
+                () => _trip.isChatStale && _trip.messages.isNotEmpty
+                    ? Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: SangaSpacing.gutter),
+                        child: SangaStaleNotice(
+                          message: 'Can’t refresh right now. Showing what we have.',
+                          onRetry: _trip.reloadChat,
+                        ),
+                      )
+                    : const SizedBox.shrink(),
+              ),
               Expanded(child: Obx(() => _body(_trip.trip?.driver.firstName ?? 'your driver'))),
               Padding(
                 padding: const EdgeInsets.only(bottom: SangaSpacing.xs),

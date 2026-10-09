@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:sanga_ride/core/api/api.dart';
 import 'package:sanga_ride/core/api/app_endpoints.dart';
 import 'package:sanga_ride/model/trip/wrapup/wrapup.dart';
+import 'package:sanga_ride_core/sanga_ride_core.dart';
 
 class TripReceiptController extends GetxController {
   final _api = Get.find<ApiService>();
@@ -28,9 +29,9 @@ class TripReceiptController extends GetxController {
   }
 
   Future<void> open(String tripId) async {
-    if (_tripId == tripId && state is ReceiptLoaded) return;
+    final isRefresh = _tripId == tripId && state is ReceiptLoaded;
     _tripId = tripId;
-    await _load();
+    await _load(isQuiet: isRefresh);
   }
 
   Future<void> reload() async {
@@ -38,19 +39,23 @@ class TripReceiptController extends GetxController {
     await _load();
   }
 
-  Future<void> _load() async {
+  Future<void> _load({bool isQuiet = false}) async {
     final id = _tripId;
     if (id == null) return;
     final epoch = ++_epoch;
-    _state.value = const ReceiptLoading();
+    if (!isQuiet) _state.value = const ReceiptLoading();
     try {
-      final response = await _api.get(AppEndpoints.tripReceiptOf(id), suppressErrorToast: true);
+      final response = await _api.get(
+        AppEndpoints.tripReceiptOf(id),
+        suppressErrorToast: true,
+        profile: RequestProfile.interactive,
+      );
       if (epoch != _epoch) return;
-      final data = Map<String, dynamic>.from((response.data as Map)['data'] as Map);
-      _state.value = ReceiptLoaded(TripReceipt.fromJson(data));
+      _state.value = ReceiptLoaded(TripReceipt.fromJson(JsonReader.of(JsonReader.of(response.data).raw['data']).raw));
     } catch (e) {
       log('receipt load failed: ${e is ApiException ? e.code : e.runtimeType}');
-      if (epoch == _epoch) _state.value = ReceiptFailed(ReceiptFailure.fromCode(e is ApiException ? e.code : null));
+      if (epoch != _epoch || isQuiet) return;
+      _state.value = ReceiptFailed(ReceiptFailure.of(e));
     }
   }
 }

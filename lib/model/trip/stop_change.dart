@@ -1,12 +1,15 @@
 import 'package:sanga_ride/model/location/place.dart';
 import 'package:sanga_ride/model/trip/server_time.dart';
 import 'package:sanga_ride/model/trip/trip.dart';
+import 'package:sanga_ride_core/sanga_ride_core.dart';
 
 class QuoteLine {
   const QuoteLine({required this.key, required this.label, required this.amount});
 
-  factory QuoteLine.fromJson(Map<String, dynamic> json) =>
-      QuoteLine(key: json['key'] as String, label: json['label'] as String, amount: (json['amount'] as num).toInt());
+  factory QuoteLine.fromJson(Map<String, dynamic> json) {
+    final reader = JsonReader.of(json);
+    return QuoteLine(key: reader.str('key'), label: reader.str('label'), amount: reader.integer('amount'));
+  }
 
   final String key;
   final String label;
@@ -23,13 +26,13 @@ class StopQuote {
   });
 
   factory StopQuote.fromJson(Map<String, dynamic> json) {
-    final serverTime = DateTime.parse(json['serverTime'] as String);
+    final reader = JsonReader.of(json);
     return StopQuote(
-      id: json['quoteId'] as String,
-      expiresAt: deadlineAfter(serverTime, json['expiresAt'] as String),
-      lines: [for (final line in json['lines'] as List) QuoteLine.fromJson(Map<String, dynamic>.from(line as Map))],
-      total: (json['total'] as num).toInt(),
-      currentTotal: (json['currentTotal'] as num).toInt(),
+      id: reader.str('quoteId'),
+      expiresAt: deviceDeadlineOf(reader.str('expiresAt')),
+      lines: reader.listOf('lines', (line) => QuoteLine.fromJson(line.raw)),
+      total: reader.integer('total'),
+      currentTotal: reader.integer('currentTotal'),
     );
   }
 
@@ -42,6 +45,11 @@ class StopQuote {
   int get difference => total - currentTotal;
 
   bool get isExpired => !DateTime.now().isBefore(expiresAt);
+
+  Duration get remaining {
+    final left = expiresAt.difference(DateTime.now());
+    return left.isNegative ? Duration.zero : left;
+  }
 }
 
 enum StopResolution { retry, restart, leave }
@@ -86,6 +94,14 @@ enum AddStopFailure {
     StopResolution.retry,
     'Try again',
     'Not now',
+  ),
+  unknown(
+    'unknown',
+    'Something went wrong',
+    'Something went wrong on our side. Try again in a moment. Your trip stays as it is.',
+    StopResolution.retry,
+    'Try again',
+    'Not now',
   );
 
   const AddStopFailure(this.code, this.title, this.message, this.resolution, this.primaryLabel, this.secondaryLabel);
@@ -97,8 +113,17 @@ enum AddStopFailure {
   final String primaryLabel;
   final String? secondaryLabel;
 
-  static AddStopFailure fromCode(String? code) =>
-      values.firstWhere((failure) => failure.code == code, orElse: () => connection);
+  bool get isRuleBlock => this == tooManyStops || this == duplicateStop;
+
+  static AddStopFailure fromCode(String? code) => enumByCode(values, code, (failure) => failure.code, unknown);
+
+  static AddStopFailure of(Object error) {
+    if (error is ApiException && error.kind == ApiFailureKind.rejected) return fromCode(error.code);
+    return switch (ProblemKind.of(error)) {
+      ProblemOffline() => connection,
+      _ => unknown,
+    };
+  }
 }
 
 sealed class AddStopState {
@@ -136,11 +161,14 @@ final class AddStopReviewing extends AddStopState {
 }
 
 final class AddStopFailed extends AddStopState {
-  const AddStopFailed(this.reason, this.added, {this.quote});
+  const AddStopFailed(this.reason, this.added, {this.quote, this.serverMessage});
 
   final AddStopFailure reason;
   final List<Place> added;
   final StopQuote? quote;
+  final String? serverMessage;
+
+  String get message => serverMessage ?? reason.message;
 }
 
 final class AddStopApplied extends AddStopState {

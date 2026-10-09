@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:developer';
 import 'dart:io';
 
@@ -7,11 +8,17 @@ import 'package:sanga_ride/core/api/api.dart';
 import 'package:sanga_ride/core/api/delivery_endpoints.dart';
 import 'package:sanga_ride/core/services/image_compression_service.dart';
 import 'package:sanga_ride/core/services/package_photo_service.dart';
+import 'package:sanga_ride/core/services/session_storage.dart';
 import 'package:sanga_ride/model/models.dart';
+import 'package:sanga_ride_core/sanga_ride_core.dart';
 
 enum SubmitCheck { ready, priceRefreshed, priceUnavailable, incomplete }
 
 class SendDeliveryController extends GetxController {
+  static const String draftKey = 'delivery_draft';
+  static const Duration draftLifetime = Duration(hours: 12);
+  static const Duration persistDelay = Duration(milliseconds: 400);
+
   final _api = Get.find<ApiService>();
   final _ride = Get.find<RideRequestController>();
 
@@ -20,6 +27,7 @@ class SendDeliveryController extends GetxController {
   final Rx<PackagePhotoState> _photo = Rx<PackagePhotoState>(const PhotoNone());
   final Rx<DeliveryQuoteState> _quote = Rx<DeliveryQuoteState>(const QuoteIdle());
   final Rxn<DeliveryFailure> _recipientFailure = Rxn<DeliveryFailure>();
+  Timer? _persistTimer;
   int _photoEpoch = 0;
   int _quoteEpoch = 0;
   String? _quoteSignature;
@@ -65,6 +73,7 @@ class SendDeliveryController extends GetxController {
 
   @override
   void onClose() {
+    _persistTimer?.cancel();
     ImageCompressionService.discard(photo.localPath);
     super.onClose();
   }
@@ -79,13 +88,77 @@ class SendDeliveryController extends GetxController {
     _recipientFailure.value = null;
     _quoteSignature = null;
     _lastRecommendedTier = null;
+    _restoreSavedDraft();
+  }
+
+  void _restoreSavedDraft() {
+    final saved = SessionStorage.drafts.read(draftKey);
+    if (saved == null) return;
+    final reader = JsonReader.of(saved);
+    final savedAt = reader.timeOrNull('savedAt');
+    if (savedAt == null || DateTime.now().difference(savedAt) > draftLifetime) {
+      unawaited(SessionStorage.drafts.remove(draftKey));
+      return;
+    }
+    final recipient = reader.objectOrNull('recipient');
+    _draft.value = DeliveryDraft(
+      kindId: reader.strOrNull('kindId'),
+      name: reader.strOr('name', ''),
+      description: reader.strOr('description', ''),
+      sizeId: reader.strOrNull('sizeId'),
+      packageTypeId: reader.strOrNull('packageTypeId'),
+      declaredValue: reader.intOrNull('declaredValue'),
+      recipient: recipient == null
+          ? null
+          : BookingRecipient(
+              name: recipient.strOr('name', ''),
+              phone: recipient.strOr('phone', ''),
+              email: recipient.strOrNull('email'),
+              gender: PassengerGender.fromCode(recipient.strOrNull('gender')),
+            ),
+    );
+    final photo = reader.objectOrNull('photo');
+    final path = photo?.strOrNull('path');
+    if (photo != null && path != null && File(path).existsSync()) {
+      _photo.value = PhotoUploaded(path: path, id: photo.strOr('id', ''), url: photo.strOr('url', ''));
+    }
+  }
+
+  void _persist() {
+    _persistTimer?.cancel();
+    _persistTimer = Timer(persistDelay, _writeDraft);
+  }
+
+  Future<void> _writeDraft() async {
+    final current = draft;
+    final uploaded = photo;
+    final isEmpty = current.kindId == null && current.name.isEmpty && current.recipient == null;
+    if (isEmpty) {
+      await SessionStorage.drafts.remove(draftKey);
+      return;
+    }
+    await SessionStorage.drafts.write(draftKey, {
+      'savedAt': DateTime.now().toUtc().toIso8601String(),
+      'kindId': current.kindId,
+      'name': current.name,
+      'description': current.description,
+      'sizeId': current.sizeId,
+      'packageTypeId': current.packageTypeId,
+      'declaredValue': current.declaredValue,
+      'recipient': current.recipient?.toJson(),
+      'photo': uploaded is PhotoUploaded ? {'path': uploaded.path, 'id': uploaded.id, 'url': uploaded.url} : null,
+    });
   }
 
   Future<void> loadCatalog() async {
     if (catalogState is DeliveryCatalogReady) return;
     _catalog.value = const DeliveryCatalogLoading();
     try {
-      final response = await _api.get(DeliveryEndpoints.catalog, suppressErrorToast: true);
+      final response = await _api.get(
+        DeliveryEndpoints.catalog,
+        suppressErrorToast: true,
+        profile: RequestProfile.interactive,
+      );
       _catalog.value = DeliveryCatalogReady(DeliveryCatalog.fromJson(_dataOf(response.data)));
     } catch (e) {
       log('loadCatalog failed: $e');
@@ -96,17 +169,33 @@ class SendDeliveryController extends GetxController {
   void selectKind(String id) {
     if (draft.kindId == id) return;
     _draft.value = draft.copyWith(kindId: id);
+    _persist();
   }
 
-  void setName(String value) => _draft.value = draft.copyWith(name: value);
+  void setName(String value) {
+    _draft.value = draft.copyWith(name: value);
+    _persist();
+  }
 
-  void setDescription(String value) => _draft.value = draft.copyWith(description: value);
+  void setDescription(String value) {
+    _draft.value = draft.copyWith(description: value);
+    _persist();
+  }
 
-  void selectSize(String id) => _draft.value = draft.copyWith(sizeId: id);
+  void selectSize(String id) {
+    _draft.value = draft.copyWith(sizeId: id);
+    _persist();
+  }
 
-  void selectPackageType(String id) => _draft.value = draft.copyWith(packageTypeId: id);
+  void selectPackageType(String id) {
+    _draft.value = draft.copyWith(packageTypeId: id);
+    _persist();
+  }
 
-  void setDeclaredValue(int? value) => _draft.value = draft.copyWith(declaredValue: () => value);
+  void setDeclaredValue(int? value) {
+    _draft.value = draft.copyWith(declaredValue: () => value);
+    _persist();
+  }
 
   void selectTier(String id) {
     if (quote?.tierOf(id) == null) return;
@@ -116,6 +205,7 @@ class SendDeliveryController extends GetxController {
   void setRecipient(BookingRecipient recipient) {
     _draft.value = draft.copyWith(recipient: recipient);
     _recipientFailure.value = null;
+    _persist();
   }
 
   void flagRecipientPhone(DeliveryFailure failure) => _recipientFailure.value = failure;
@@ -159,29 +249,27 @@ class SendDeliveryController extends GetxController {
     final path = photo.localPath;
     _photo.value = const PhotoNone();
     await ImageCompressionService.discard(path);
+    _persist();
   }
 
   Future<void> _upload(String path, int epoch) async {
     _photo.value = PhotoUploading(path: path, progress: 0);
     try {
-      final response = await _api.uploadFile(
+      final ref = await _api.upload(
         DeliveryEndpoints.uploads,
         file: File(path),
-        fields: {'purpose': DeliveryRules.packagePhotoPurpose},
+        purpose: DeliveryRules.packagePhotoPurpose,
         suppressErrorToast: true,
-        onSendProgress: (sent, total) {
+        onProgress: (sent, total) {
           if (epoch == _photoEpoch && total > 0) _photo.value = PhotoUploading(path: path, progress: sent / total);
         },
       );
       if (epoch != _photoEpoch) return;
-      final data = _dataOf(response.data);
-      _photo.value = PhotoUploaded(path: path, id: data['id'] as String, url: data['url'] as String);
-    } on ApiException catch (e) {
-      log('upload failed: $e');
-      if (epoch == _photoEpoch) _photo.value = PhotoFailed(failure: DeliveryFailure.fromCode(e.code), path: path);
+      _photo.value = PhotoUploaded(path: path, id: ref.id, url: ref.url);
+      _persist();
     } catch (e) {
       log('upload failed: $e');
-      if (epoch == _photoEpoch) _photo.value = PhotoFailed(failure: DeliveryFailure.connection, path: path);
+      if (epoch == _photoEpoch) _photo.value = PhotoFailed(failure: DeliveryFailure.of(e), path: path);
     }
   }
 
@@ -202,12 +290,9 @@ class SendDeliveryController extends GetxController {
       final quote = DeliveryQuote.fromJson(_dataOf(response.data));
       _chooseTier(quote);
       _quote.value = QuoteReady(quote, signature: signature);
-    } on ApiException catch (e) {
-      log('quote failed: $e');
-      if (epoch == _quoteEpoch) _quote.value = QuoteFailed(DeliveryFailure.fromCode(e.code));
     } catch (e) {
       log('quote failed: $e');
-      if (epoch == _quoteEpoch) _quote.value = const QuoteFailed(DeliveryFailure.connection);
+      if (epoch == _quoteEpoch) _quote.value = QuoteFailed(DeliveryFailure.of(e));
     }
   }
 
@@ -283,5 +368,5 @@ class SendDeliveryController extends GetxController {
     'declaredValue': draft.declaredValue,
   };
 
-  Map<String, dynamic> _dataOf(dynamic body) => Map<String, dynamic>.from((body as Map)['data'] as Map);
+  Map<String, dynamic> _dataOf(dynamic body) => JsonReader.of(JsonReader.of(body).raw['data']).raw;
 }

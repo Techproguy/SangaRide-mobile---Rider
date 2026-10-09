@@ -7,13 +7,13 @@ import 'package:sanga_ride/controller/rider/trip/trip_payment_controller.dart';
 import 'package:sanga_ride/controller/rider/wallet_controller.dart';
 import 'package:sanga_ride/core/router/trip_wrapup_routes.dart';
 import 'package:sanga_ride/core/router/wallet_routes.dart';
-import 'package:sanga_ride/core/services/toast_service.dart';
 import 'package:sanga_ride/model/trip/wrapup/wrapup.dart';
 import 'package:sanga_ride/model/wallet/wallet.dart';
+import 'package:sanga_ride/view/trip/wrapup/widgets/payment_flow_sheets.dart';
 import 'package:sanga_ride/view/trip/wrapup/widgets/payment_method_list.dart';
+import 'package:sanga_ride/view/trip/wrapup/widgets/wrapup_async_body.dart';
 import 'package:sanga_ride/view/widgets/feedback/payment_sheets.dart';
 import 'package:sanga_ride/view/widgets/layout/amount_tile.dart';
-import 'package:sanga_ride/view/trip/wrapup/widgets/wrapup_async_body.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 class PayScreen extends StatefulWidget {
@@ -29,6 +29,9 @@ class _PayScreenState extends State<PayScreen> {
   final _payment = Get.find<TripPaymentController>();
   final _wallet = Get.find<WalletController>();
   final _waitingSheet = PaymentSheetSlot();
+  final _checkingSheet = PaymentSheetSlot();
+  final _challengeSheet = PaymentSheetSlot();
+  final _unconfirmedSheet = PaymentSheetSlot();
   late final Worker _stateWorker;
   bool _isFinishing = false;
 
@@ -45,43 +48,88 @@ class _PayScreenState extends State<PayScreen> {
     super.dispose();
   }
 
-  bool get _ownsState => _waitingSheet.isOpen || (ModalRoute.of(context)?.isCurrent ?? false);
+  bool get _ownsState =>
+      _waitingSheet.isOpen ||
+      _checkingSheet.isOpen ||
+      _challengeSheet.isOpen ||
+      _unconfirmedSheet.isOpen ||
+      (ModalRoute.of(context)?.isCurrent ?? false);
+
+  void _closeSheets() {
+    _waitingSheet.close(context);
+    _checkingSheet.close(context);
+    _challengeSheet.close(context);
+    _unconfirmedSheet.close(context);
+  }
 
   void _onState(PaymentState state) {
     if (!mounted || !_ownsState) return;
     switch (state) {
-      case PaymentAwaitingDriver(:final payment):
-        _showWaiting(payment.amount);
+      case PaymentAwaitingDriver():
+        _closeSheetsExcept(_waitingSheet);
+        _showWaiting();
+      case PaymentProcessing() || PaymentChecking():
+        _closeSheetsExcept(_checkingSheet);
+        _showChecking(state is PaymentChecking);
+      case PaymentChallenge():
+        _closeSheetsExcept(_challengeSheet);
+        _showChallenge();
+      case PaymentUnconfirmed():
+        _closeSheetsExcept(_unconfirmedSheet);
+        _showUnconfirmed();
       case PaymentPaid(:final payment):
-        _waitingSheet.close(context);
+        _closeSheets();
         _celebrate(payment);
-      case PaymentDeclined(:final reason):
-        _waitingSheet.close(context);
-        _reject(reason.message);
-      case PaymentFailed():
-        _waitingSheet.close(context);
-        _reject(PaymentFailed.message);
-      case PaymentLoading() || PaymentUnavailable() || PaymentChoosing() || PaymentCardEntry() || PaymentProcessing():
-        _waitingSheet.close(context);
+      case PaymentDeclined(:final reason, :final payment):
+        _closeSheets();
+        _reject(payment.declineMessage ?? reason.message);
+      case PaymentLoading() || PaymentUnavailable() || PaymentChoosing() || PaymentCardEntry():
+        _closeSheets();
     }
   }
 
-  Future<void> _showWaiting(int amount) async {
-    final cancelled = await _waitingSheet.show(
-      () => showPaymentPendingSheet(
-        context: context,
-        title: 'Waiting for your driver to confirm',
-        message: 'Hand ${SangaMoney.naira(amount)} to your driver in cash. We’ll let you know once they confirm.',
-        cancelLabel: 'Pick another way',
-      ),
-    );
+  void _closeSheetsExcept(PaymentSheetSlot keep) {
+    for (final slot in [_waitingSheet, _checkingSheet, _challengeSheet, _unconfirmedSheet]) {
+      if (!identical(slot, keep)) slot.close(context);
+    }
+  }
+
+  Future<void> _showWaiting() async {
+    final cancelled = await _waitingSheet.show(() => showCashWaitingSheet(context: context, controller: _payment));
     if (cancelled != true || !mounted) return;
     await _payment.cancelCash();
-    if (mounted && _payment.state is PaymentAwaitingDriver) await _showWaiting(amount);
+  }
+
+  Future<void> _showChecking(bool isChecking) async {
+    final left = await _checkingSheet.show(
+      () => showPaymentPendingSheet(
+        context: context,
+        title: isChecking ? 'Checking your payment' : 'Payment in progress',
+        message: isChecking
+            ? 'Hang tight while we confirm it with your bank.'
+            : 'Hang tight, this only takes a moment.',
+        offersEscape: true,
+      ),
+    );
+    if (left == false && mounted) context.go(TripWrapUpRoutes.completeOf(widget.tripId));
+  }
+
+  Future<void> _showChallenge() async {
+    await _challengeSheet.show(() => showPaymentOtpSheet(context: context, controller: _payment));
+  }
+
+  Future<void> _showUnconfirmed() async {
+    final again = await _unconfirmedSheet.show(() => showPaymentUnconfirmedSheet(context: context));
+    if (!mounted || again == null) return;
+    if (again) {
+      await _payment.checkAgain();
+    } else {
+      context.go(TripWrapUpRoutes.completeOf(widget.tripId));
+    }
   }
 
   void _reject(String message) {
-    Toast.error(message);
+    SangaToast.show(message, tone: SangaToastTone.error);
     _payment.backToChoosing();
   }
 
@@ -134,27 +182,37 @@ class _PayScreenState extends State<PayScreen> {
     if (mounted) _payment.select(PaymentMethod.wallet);
   }
 
+  String _continueLabel(PaymentState state) {
+    if (state is! PaymentChoosing || state.selected != PaymentMethod.groupWallet) return 'Continue';
+    final name = state.payment.group?.name;
+    return name == null || name.isEmpty ? 'Charge the group wallet' : 'Charge $name';
+  }
+
   @override
   Widget build(BuildContext context) {
     return Obx(() {
       final state = _payment.state;
       final walletState = _wallet.state;
       return PopScope(
-        canPop: state is! PaymentProcessing && state is! PaymentAwaitingDriver,
+        canPop: state is! PaymentProcessing && state is! PaymentChecking && state is! PaymentAwaitingDriver,
         child: SangaPageLayout(
           title: 'Make payment',
           footer: SangaButton.primary(
-            label: 'Continue',
-            isLoading: state is PaymentProcessing,
-            onPressed: state is PaymentChoosing ? _continue : null,
+            label: _continueLabel(state),
+            isLoading: state is PaymentProcessing || state is PaymentChecking,
+            onPressed: state is PaymentChoosing && state.selected != null ? _continue : null,
           ),
           children: [
             WrapUpAsyncBody(
               isLoading: state is PaymentLoading,
               failure: state is PaymentUnavailable
                   ? WrapUpFailure(
-                      title: 'We couldn’t load your payment',
-                      message: 'Check your connection and try again.',
+                      title: state.problem == PaymentProblem.connection
+                          ? 'We couldn’t load your payment'
+                          : state.problem.title,
+                      message: state.problem == PaymentProblem.connection
+                          ? 'Check your connection and try again.'
+                          : state.problem.message,
                       onRetry: _payment.reload,
                     )
                   : null,
@@ -194,10 +252,12 @@ class _PayBody extends StatelessWidget {
     if (current is! PaymentLoaded) return const SizedBox.shrink();
     final payment = current.payment;
     final walletOption = WalletPayOption.from(walletState, payment.amount);
+    final notice = current is PaymentChoosing ? current.notice : null;
     return Column(
       spacing: SangaSpacing.lg,
       children: [
         AmountTile(label: 'Amount to pay', amount: payment.amount),
+        if (notice != null) SangaNotice(message: notice.message, tone: SangaTone.warning),
         PaymentMethodList(
           methods: payment.allowedMethods,
           selected: _selectedOf(current),
@@ -212,11 +272,12 @@ class _PayBody extends StatelessWidget {
     );
   }
 
-  PaymentMethod _selectedOf(PaymentLoaded state) => switch (state) {
+  PaymentMethod? _selectedOf(PaymentLoaded state) => switch (state) {
     PaymentChoosing(:final selected) => selected,
     PaymentProcessing(:final method) => method,
-    PaymentFailed(:final method) => method,
-    PaymentCardEntry() || PaymentDeclined() => PaymentMethod.card,
+    PaymentChecking(:final method) => method,
+    PaymentUnconfirmed(:final method) => method,
+    PaymentCardEntry() || PaymentDeclined() || PaymentChallenge() => PaymentMethod.card,
     PaymentAwaitingDriver() => PaymentMethod.cash,
     PaymentPaid(:final payment) => payment.method ?? PaymentMethod.cash,
   };

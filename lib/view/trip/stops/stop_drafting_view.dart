@@ -33,10 +33,10 @@ class StopDraftingView extends StatelessWidget {
           children: [
             StopsRouteCard(entries: StopsRouteEntry.of(trip, added, onRemove: onRemove)),
             if (slotsLeft > 0 && added.isEmpty)
-              SangaLocationRow(
+              SangaRouteField.display(
                 kind: SangaStopKind.stop,
-                title: 'Choose a stop',
-                subtitle: 'Search for where you’d like to stop',
+                label: 'Search for where you’d like to stop',
+                value: 'Choose a stop',
                 isPlaceholder: true,
                 onTap: onChoose,
               )
