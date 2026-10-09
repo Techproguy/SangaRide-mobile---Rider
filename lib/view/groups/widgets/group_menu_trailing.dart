@@ -23,7 +23,7 @@ class _GroupMenuTrailingState extends State<GroupMenuTrailing> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => unawaited(_groups.open()));
+    WidgetsBinding.instance.addPostFrameCallback((_) => unawaited(_groups.openIfStale()));
   }
 
   Widget _invites(int count) {

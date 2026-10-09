@@ -1,25 +1,25 @@
 import 'dart:async';
-import 'dart:developer';
 
-import 'package:dio/dio.dart' show Options;
 import 'package:get/get.dart';
+import 'package:sanga_ride/controller/rider/groups/group_mutations.dart';
 import 'package:sanga_ride/controller/rider/groups/groups_controller.dart';
 import 'package:sanga_ride/controller/shared/user_controller.dart';
 import 'package:sanga_ride/core/api/api.dart';
 import 'package:sanga_ride/core/api/group_endpoints.dart';
 import 'package:sanga_ride/model/groups/group_models.dart';
+import 'package:sanga_ride_core/sanga_ride_core.dart';
 
 class GroupController extends GetxController {
   GroupController(this.groupId);
 
-  static final Options _noAutoRetry = Options(extra: {'retries': 3});
-
   final String groupId;
   final _api = Get.find<ApiService>();
+  final _mutations = GroupMutations();
 
   final Rx<GroupDetailState> _state = Rx<GroupDetailState>(const GroupDetailLoading());
   final Rx<ApprovalsState> _approvals = Rx<ApprovalsState>(const ApprovalsLoading());
   final RxBool _isBusy = false.obs;
+  StreamSubscription<void>? _resumeSubscription;
   int _epoch = 0;
   int _approvalsEpoch = 0;
 
@@ -55,7 +55,17 @@ class GroupController extends GetxController {
   }
 
   @override
+  void onInit() {
+    super.onInit();
+    _resumeSubscription = AppLifecycle.instance.onResume.listen((_) {
+      if (state is GroupDetailLoaded) unawaited(reloadQuietly());
+    });
+  }
+
+  @override
   void onClose() {
+    _resumeSubscription?.cancel();
+    _mutations.dispose();
     _epoch++;
     _approvalsEpoch++;
     super.onClose();
@@ -78,31 +88,59 @@ class GroupController extends GetxController {
       if (epoch != _epoch) return;
       final loaded = GroupDetail.fromJson(_dataOf(response.data));
       _state.value = GroupDetailLoaded(loaded);
-      if (loaded.canManage) unawaited(loadApprovals());
-    } catch (e) {
-      log('group load failed: ${_describe(e)}');
-      if (epoch != _epoch || state is GroupDetailLoaded) return;
-      _state.value = GroupDetailFailed(GroupFailure.fromCode(e is ApiException ? e.code : null));
+      if (loaded.canManage) {
+        unawaited(loadApprovals());
+      } else {
+        _approvals.value = const ApprovalsUnavailable();
+      }
+    } on Object catch (error) {
+      if (epoch != _epoch) return;
+      final failure = GroupFailure.of(error);
+      final current = state;
+      if (failure.isGone) {
+        _state.value = GroupDetailFailed(GroupFailure.groupNotFound);
+        _approvals.value = const ApprovalsUnavailable();
+        unawaited(Get.find<GroupsController>().reloadQuietly());
+      } else if (current is GroupDetailLoaded) {
+        _state.value = GroupDetailLoaded(current.detail, isStale: true);
+      } else {
+        _state.value = GroupDetailFailed(failure);
+      }
     }
   }
 
-  Future<GroupFailure?> updateMember(String memberId, MemberPatch patch) async {
+  Future<GroupFailure?> updateMember(String memberId, MemberPatch patch, {GroupMember? base}) async {
     final current = detail;
-    if (current == null || isBusy) return GroupFailure.connection;
+    final member = current?.memberOf(memberId);
+    if (current == null || member == null) return GroupFailure.memberNotFound;
+    final changes = patch.changesAgainst(base ?? member);
+    if (changes.isEmpty) return null;
+    if (isBusy) return GroupFailure.connection;
     _isBusy.value = true;
     try {
-      final response = await _api.patch(
-        GroupEndpoints.memberOf(groupId, memberId),
-        data: patch.toJson(),
-        options: Options(extra: {'suppressErrorToast': true}),
+      final result = await _mutations.run<GroupMember>(
+        signature: 'member:$memberId:${changes.toString()}',
+        intent: 'member-update',
+        send: (key) async {
+          final response = await _api.patch(
+            GroupEndpoints.memberOf(groupId, memberId),
+            data: changes,
+            key: key,
+            suppressErrorToast: true,
+          );
+          return GroupMember.fromJson(_dataOf(response.data));
+        },
+        reconcile: () async {
+          await reloadQuietly();
+          final reloaded = detail?.memberOf(memberId);
+          final applied = reloaded != null && patch.changesAgainst(reloaded).isEmpty;
+          return applied ? ReconciledDone<GroupMember>(reloaded) : const ReconciledNotDone<GroupMember>();
+        },
       );
-      final updated = GroupMember.fromJson(_dataOf(response.data));
+      final updated = result.value;
       final latest = detail;
-      if (latest != null) _state.value = GroupDetailLoaded(latest.withMember(updated));
-      return null;
-    } catch (e) {
-      log('member update failed: ${_describe(e)}');
-      return _failureOf(e);
+      if (updated != null && latest != null) _state.value = GroupDetailLoaded(latest.withMember(updated));
+      return _afterFailure(result.failure, memberId: memberId);
     } finally {
       _isBusy.value = false;
     }
@@ -112,17 +150,23 @@ class GroupController extends GetxController {
     if (isBusy) return GroupFailure.connection;
     _isBusy.value = true;
     try {
-      await _api.delete(
-        GroupEndpoints.memberOf(groupId, memberId),
-        options: Options(extra: {'suppressErrorToast': true}),
+      final result = await _mutations.run<void>(
+        signature: 'remove:$memberId',
+        intent: 'member-remove',
+        send: (key) async {
+          await _api.delete(GroupEndpoints.memberOf(groupId, memberId), key: key, suppressErrorToast: true);
+        },
+        reconcile: () async {
+          await reloadQuietly();
+          final stillThere = detail?.memberOf(memberId) != null;
+          return stillThere ? const ReconciledNotDone<void>() : const ReconciledDone<void>(null);
+        },
       );
-      final latest = detail;
-      if (latest != null) _state.value = GroupDetailLoaded(latest.withoutMember(memberId));
-      unawaited(Get.find<GroupsController>().reloadQuietly());
-      return null;
-    } catch (e) {
-      log('member removal failed: ${_describe(e)}');
-      return _failureOf(e);
+      if (result.isDone) {
+        _dropMember(memberId);
+        unawaited(Get.find<GroupsController>().reloadQuietly());
+      }
+      return _afterFailure(result.failure, memberId: memberId);
     } finally {
       _isBusy.value = false;
     }
@@ -132,15 +176,31 @@ class GroupController extends GetxController {
     if (isBusy) return const GroupRejected(GroupFailure.connection);
     _isBusy.value = true;
     try {
-      final response = await _api.post(
-        GroupEndpoints.invitesOf(groupId),
-        data: {'phone': phone, 'relation': relation, 'role': role.code},
-        options: _noAutoRetry,
-        suppressErrorToast: true,
+      final result = await _mutations.run<GroupMember>(
+        signature: 'invite:$phone',
+        intent: 'group-invite',
+        send: (key) async {
+          final response = await _api.post(
+            GroupEndpoints.invitesOf(groupId),
+            data: {'phone': phone, 'relation': relation, 'role': role.code},
+            key: key,
+            suppressErrorToast: true,
+          );
+          return GroupMember.fromJson(_dataOf(response.data));
+        },
+        reconcile: () async {
+          await reloadQuietly();
+          final invited = detail?.members
+              .where(
+                (member) => member.phone.replaceAll(RegExp(r'\D'), '').endsWith(phone.replaceAll(RegExp(r'\D'), '')),
+              )
+              .firstOrNull;
+          return invited == null ? const ReconciledNotDone<GroupMember>() : ReconciledDone<GroupMember>(invited);
+        },
       );
-      final member = GroupMember.fromJson(_dataOf(response.data));
+      final member = result.value;
       final latest = detail;
-      if (latest != null) {
+      if (member != null && latest != null && latest.memberOf(member.id) == null) {
         _state.value = GroupDetailLoaded(
           GroupDetail(
             id: latest.id,
@@ -148,17 +208,14 @@ class GroupController extends GetxController {
             name: latest.name,
             role: latest.role,
             inviteCode: latest.inviteCode,
-            wallet: latest.wallet,
             members: [...latest.members, member],
             recentRides: latest.recentRides,
             company: latest.company,
           ),
         );
       }
-      return const GroupDone();
-    } catch (e) {
-      log('invite failed: ${_describe(e)}');
-      return GroupRejected(_failureOf(e));
+      final failure = result.failure;
+      return failure == null ? const GroupDone() : GroupRejected(failure);
     } finally {
       _isBusy.value = false;
     }
@@ -168,12 +225,21 @@ class GroupController extends GetxController {
     if (isBusy) return GroupFailure.connection;
     _isBusy.value = true;
     try {
-      await _api.post(GroupEndpoints.leaveOf(groupId), options: _noAutoRetry, suppressErrorToast: true);
-      unawaited(Get.find<GroupsController>().reloadQuietly());
-      return null;
-    } catch (e) {
-      log('leave failed: ${_describe(e)}');
-      return _failureOf(e);
+      final result = await _mutations.run<void>(
+        signature: 'leave',
+        intent: 'group-leave',
+        send: (key) async {
+          await _api.post(GroupEndpoints.leaveOf(groupId), key: key, suppressErrorToast: true);
+        },
+        reconcile: () async {
+          final response = await _api.get(GroupEndpoints.groups, suppressErrorToast: true);
+          final overview = GroupsOverview.fromJson(_dataOf(response.data));
+          final stillIn = overview.groups.any((group) => group.id == groupId);
+          return stillIn ? const ReconciledNotDone<void>() : const ReconciledDone<void>(null);
+        },
+      );
+      if (result.isDone) unawaited(Get.find<GroupsController>().reloadQuietly());
+      return result.failure;
     } finally {
       _isBusy.value = false;
     }
@@ -184,13 +250,25 @@ class GroupController extends GetxController {
     try {
       final response = await _api.get(GroupEndpoints.approvalsOf(groupId), suppressErrorToast: true);
       if (epoch != _approvalsEpoch) return;
-      _approvals.value = ApprovalsLoaded([
-        for (final json in _dataOf(response.data)['approvals'] as List)
-          GroupApproval.fromJson(Map<String, dynamic>.from(json as Map)),
-      ]);
-    } catch (e) {
-      log('approvals load failed: ${_describe(e)}');
-      if (epoch == _approvalsEpoch && approvalsState is! ApprovalsLoaded) _approvals.value = const ApprovalsFailed();
+      final deciding = switch (approvalsState) {
+        ApprovalsLoaded(:final deciding) => deciding,
+        _ => null,
+      };
+      _approvals.value = ApprovalsLoaded(
+        JsonReader(_dataOf(response.data)).listOf('approvals', GroupApproval.fromReader),
+        deciding: deciding,
+      );
+    } on Object catch (error) {
+      if (epoch != _approvalsEpoch) return;
+      final failure = GroupFailure.of(error);
+      final current = approvalsState;
+      if (failure.isGone) {
+        _approvals.value = const ApprovalsUnavailable();
+      } else if (current is ApprovalsLoaded) {
+        _approvals.value = ApprovalsLoaded(current.approvals, deciding: current.deciding, isStale: true);
+      } else {
+        _approvals.value = ApprovalsFailed(failure);
+      }
     }
   }
 
@@ -203,23 +281,44 @@ class GroupController extends GetxController {
     final current = approvalsState;
     if (current is! ApprovalsLoaded || current.deciding != null) return GroupFailure.connection;
     _approvals.value = ApprovalsLoaded(current.approvals, deciding: approval.id);
-    try {
-      final endpoint = approve
-          ? GroupEndpoints.approvalApproveOf(groupId, approval.id)
-          : GroupEndpoints.approvalDeclineOf(groupId, approval.id);
-      await _api.post(endpoint, options: _noAutoRetry, suppressErrorToast: true);
+    final action = approve ? 'approve' : 'decline';
+    final result = await _mutations.run<void>(
+      signature: 'approval:${approval.id}:$action',
+      intent: 'approval-$action',
+      send: (key) async {
+        final endpoint = approve
+            ? GroupEndpoints.approvalApproveOf(groupId, approval.id)
+            : GroupEndpoints.approvalDeclineOf(groupId, approval.id);
+        await _api.post(endpoint, key: key, suppressErrorToast: true);
+      },
+      reconcile: () async {
+        final response = await _api.get(GroupEndpoints.approvalsOf(groupId), suppressErrorToast: true);
+        final open = JsonReader(_dataOf(response.data)).listOf('approvals', GroupApproval.fromReader);
+        final stillOpen = open.any((item) => item.id == approval.id);
+        return stillOpen ? const ReconciledNotDone<void>() : const ReconciledDone<void>(null);
+      },
+    );
+    final failure = result.failure;
+    if (failure == null || failure.closesApproval) {
       _removeApproval(approval.id);
-      return null;
-    } catch (e) {
-      log('approval decision failed: ${_describe(e)}');
-      final failure = _failureOf(e);
-      if (failure == GroupFailure.approvalNotFound) {
-        _removeApproval(approval.id);
-      } else {
-        _approvals.value = ApprovalsLoaded(current.approvals);
-      }
-      return failure;
+    } else {
+      final latest = approvalsState;
+      if (latest is ApprovalsLoaded) _approvals.value = ApprovalsLoaded(latest.approvals);
+      if (failure == GroupFailure.unconfirmed) unawaited(loadApprovals());
     }
+    return failure;
+  }
+
+  GroupFailure? _afterFailure(GroupFailure? failure, {required String memberId}) {
+    if (failure == GroupFailure.memberNotFound) _dropMember(memberId);
+    if (failure == GroupFailure.unconfirmed) unawaited(reloadQuietly());
+    if (failure != null && failure.isGone) unawaited(reloadQuietly());
+    return failure;
+  }
+
+  void _dropMember(String memberId) {
+    final latest = detail;
+    if (latest != null) _state.value = GroupDetailLoaded(latest.withoutMember(memberId));
   }
 
   void _removeApproval(String id) {
@@ -231,9 +330,5 @@ class GroupController extends GetxController {
     ]);
   }
 
-  GroupFailure _failureOf(Object error) => GroupFailure.fromCode(error is ApiException ? error.code : null);
-
-  String _describe(Object error) => error is ApiException ? '${error.code}' : '${error.runtimeType}';
-
-  Map<String, dynamic> _dataOf(dynamic body) => Map<String, dynamic>.from((body as Map)['data'] as Map);
+  Map<String, dynamic> _dataOf(dynamic body) => JsonReader.of(JsonReader.of(body).raw['data']).raw;
 }

@@ -1,3 +1,5 @@
+import 'package:sanga_ride_core/sanga_ride_core.dart';
+
 enum GroupKind {
   family('family'),
   business('business');
@@ -6,8 +8,7 @@ enum GroupKind {
 
   final String code;
 
-  static GroupKind fromCode(String? code) =>
-      values.firstWhere((kind) => kind.code == code, orElse: () => throw FormatException('Unknown group kind: $code'));
+  static GroupKind fromCode(String? code) => tryFromCode(code) ?? (throw JsonFormatError('Unknown group kind', code));
 
   static GroupKind? tryFromCode(String? code) => values.where((kind) => kind.code == code).firstOrNull;
 }
@@ -24,7 +25,7 @@ enum GroupRole {
 
   bool get canManage => this != member;
 
-  static GroupRole fromCode(String? code) => values.where((role) => role.code == code).firstOrNull ?? GroupRole.member;
+  static GroupRole fromCode(String? code) => enumByCode(values, code, (role) => role.code, GroupRole.member);
 }
 
 enum MemberStatus {
@@ -35,8 +36,7 @@ enum MemberStatus {
 
   final String code;
 
-  static MemberStatus fromCode(String? code) =>
-      values.where((status) => status.code == code).firstOrNull ?? MemberStatus.active;
+  static MemberStatus fromCode(String? code) => enumByCode(values, code, (status) => status.code, MemberStatus.active);
 }
 
 enum OverLimitAction {
@@ -49,7 +49,7 @@ enum OverLimitAction {
   final String code;
 
   static OverLimitAction fromCode(String? code) =>
-      values.where((action) => action.code == code).firstOrNull ?? OverLimitAction.block;
+      enumByCode(values, code, (action) => action.code, OverLimitAction.block);
 }
 
 enum CreatorRole {

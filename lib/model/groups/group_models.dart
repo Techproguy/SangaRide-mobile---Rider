@@ -1,6 +1,7 @@
 import 'package:sanga_ride/model/groups/group_kind.dart';
 import 'package:sanga_ride/model/groups/group_member.dart';
 import 'package:sanga_ride/model/history/history_item.dart';
+import 'package:sanga_ride_core/sanga_ride_core.dart';
 
 export 'package:sanga_ride/model/groups/group_kind.dart';
 export 'package:sanga_ride/model/groups/group_member.dart';
@@ -16,14 +17,14 @@ class GroupSummary {
     required this.photoUrl,
   });
 
-  factory GroupSummary.fromJson(Map<String, dynamic> json) => GroupSummary(
-    id: json['id'] as String,
-    kind: GroupKind.fromCode(json['kind'] as String?),
-    name: json['name'] as String,
-    role: GroupRole.fromCode(json['role'] as String?),
-    membersCount: (json['membersCount'] as num).toInt(),
-    walletBalance: (json['walletBalance'] as num).toInt(),
-    photoUrl: json['photoUrl'] as String?,
+  factory GroupSummary.fromReader(JsonReader reader) => GroupSummary(
+    id: reader.str('id'),
+    kind: GroupKind.fromCode(reader.strOrNull('kind')),
+    name: reader.strOr('name', ''),
+    role: GroupRole.fromCode(reader.strOrNull('role')),
+    membersCount: reader.intOr('membersCount', 0),
+    walletBalance: reader.intOr('walletBalance', 0),
+    photoUrl: reader.strOrNull('photoUrl'),
   );
 
   final String id;
@@ -44,12 +45,12 @@ class GroupInvite {
     required this.expiresAt,
   });
 
-  factory GroupInvite.fromJson(Map<String, dynamic> json) => GroupInvite(
-    id: json['id'] as String,
-    groupName: json['groupName'] as String,
-    kind: GroupKind.fromCode(json['kind'] as String?),
-    invitedBy: json['invitedBy'] as String,
-    expiresAt: DateTime.parse(json['expiresAt'] as String).toLocal(),
+  factory GroupInvite.fromReader(JsonReader reader) => GroupInvite(
+    id: reader.str('id'),
+    groupName: reader.strOr('groupName', ''),
+    kind: GroupKind.fromCode(reader.strOrNull('kind')),
+    invitedBy: reader.strOr('invitedBy', ''),
+    expiresAt: reader.time('expiresAt').toLocal(),
   );
 
   final String id;
@@ -62,14 +63,13 @@ class GroupInvite {
 class GroupsOverview {
   const GroupsOverview({required this.groups, required this.invites});
 
-  factory GroupsOverview.fromJson(Map<String, dynamic> json) => GroupsOverview(
-    groups: [
-      for (final group in json['groups'] as List) GroupSummary.fromJson(Map<String, dynamic>.from(group as Map)),
-    ],
-    invites: [
-      for (final invite in json['invites'] as List) GroupInvite.fromJson(Map<String, dynamic>.from(invite as Map)),
-    ],
-  );
+  factory GroupsOverview.fromJson(Map<String, dynamic> json) {
+    final reader = JsonReader(json);
+    return GroupsOverview(
+      groups: reader.listOf('groups', GroupSummary.fromReader),
+      invites: reader.listOf('invites', GroupInvite.fromReader),
+    );
+  }
 
   final List<GroupSummary> groups;
   final List<GroupInvite> invites;
@@ -82,21 +82,13 @@ class GroupsOverview {
   ];
 }
 
-class GroupWallet {
-  const GroupWallet({required this.balance, required this.monthSpent});
-
-  factory GroupWallet.fromJson(Map<String, dynamic> json) =>
-      GroupWallet(balance: (json['balance'] as num).toInt(), monthSpent: (json['monthSpent'] as num).toInt());
-
-  final int balance;
-  final int monthSpent;
-}
-
 class GroupCompany {
   const GroupCompany({required this.rcNumber, required this.address});
 
-  factory GroupCompany.fromJson(Map<String, dynamic> json) =>
-      GroupCompany(rcNumber: json['rcNumber'] as String?, address: json['address'] as String?);
+  factory GroupCompany.fromJson(Map<String, dynamic> json) {
+    final reader = JsonReader(json);
+    return GroupCompany(rcNumber: reader.strOrNull('rcNumber'), address: reader.strOrNull('address'));
+  }
 
   final String? rcNumber;
   final String? address;
@@ -113,29 +105,23 @@ class GroupDetail {
     required this.name,
     required this.role,
     required this.inviteCode,
-    required this.wallet,
     required this.members,
     required this.recentRides,
     required this.company,
   });
 
   factory GroupDetail.fromJson(Map<String, dynamic> json) {
-    final company = json['company'];
+    final reader = JsonReader(json);
+    final company = reader.objectOrNull('company');
     return GroupDetail(
-      id: json['id'] as String,
-      kind: GroupKind.fromCode(json['kind'] as String?),
-      name: json['name'] as String,
-      role: GroupRole.fromCode(json['role'] as String?),
-      inviteCode: json['inviteCode'] as String,
-      wallet: GroupWallet.fromJson(Map<String, dynamic>.from(json['wallet'] as Map)),
-      members: [
-        for (final member in json['members'] as List) GroupMember.fromJson(Map<String, dynamic>.from(member as Map)),
-      ],
-      recentRides: [
-        for (final ride in (json['recentRides'] as List? ?? const []))
-          HistoryItem.fromJson(Map<String, dynamic>.from(ride as Map)),
-      ],
-      company: company == null ? null : GroupCompany.fromJson(Map<String, dynamic>.from(company as Map)),
+      id: reader.str('id'),
+      kind: GroupKind.fromCode(reader.strOrNull('kind')),
+      name: reader.strOr('name', ''),
+      role: GroupRole.fromCode(reader.strOrNull('role')),
+      inviteCode: reader.strOr('inviteCode', ''),
+      members: reader.listOf('members', (member) => GroupMember.fromJson(member.raw)),
+      recentRides: reader.listOf('recentRides', (ride) => HistoryItem.fromJson(ride.raw)),
+      company: company == null ? null : GroupCompany.fromJson(company.raw),
     );
   }
 
@@ -144,7 +130,6 @@ class GroupDetail {
   final String name;
   final GroupRole role;
   final String inviteCode;
-  final GroupWallet wallet;
   final List<GroupMember> members;
   final List<HistoryItem> recentRides;
   final GroupCompany? company;
@@ -161,7 +146,6 @@ class GroupDetail {
     name: name,
     role: role,
     inviteCode: inviteCode,
-    wallet: wallet,
     members: [for (final member in members) member.id == updated.id ? updated : member],
     recentRides: recentRides,
     company: company,
@@ -173,7 +157,6 @@ class GroupDetail {
     name: name,
     role: role,
     inviteCode: inviteCode,
-    wallet: wallet,
     members: [
       for (final member in members)
         if (member.id != memberId) member,
@@ -202,14 +185,16 @@ enum ApprovalStatus {
   final String code;
 
   static ApprovalStatus fromCode(String? code) =>
-      values.where((status) => status.code == code).firstOrNull ?? ApprovalStatus.pending;
+      enumByCode(values, code, (status) => status.code, ApprovalStatus.pending);
 }
 
 class RideApproval {
   const RideApproval({required this.id, required this.status});
 
-  factory RideApproval.fromJson(Map<String, dynamic> json) =>
-      RideApproval(id: json['id'] as String, status: ApprovalStatus.fromCode(json['status'] as String?));
+  factory RideApproval.fromJson(Map<String, dynamic> json) {
+    final reader = JsonReader(json);
+    return RideApproval(id: reader.str('id'), status: ApprovalStatus.fromCode(reader.strOrNull('status')));
+  }
 
   final String id;
   final ApprovalStatus status;
@@ -225,17 +210,19 @@ class GroupApproval {
     required this.dropoff,
     required this.purpose,
     required this.requestedAt,
+    this.expiresAt,
   });
 
-  factory GroupApproval.fromJson(Map<String, dynamic> json) => GroupApproval(
-    id: json['id'] as String,
-    memberId: json['memberId'] as String,
-    memberName: json['memberName'] as String,
-    fare: (json['fare'] as num).toInt(),
-    pickup: (json['pickup'] as Map)['name'] as String,
-    dropoff: (json['dropoff'] as Map)['name'] as String,
-    purpose: json['purpose'] as String?,
-    requestedAt: DateTime.parse(json['requestedAt'] as String).toLocal(),
+  factory GroupApproval.fromReader(JsonReader reader) => GroupApproval(
+    id: reader.str('id'),
+    memberId: reader.strOr('memberId', ''),
+    memberName: reader.strOr('memberName', 'Someone'),
+    fare: reader.intOr('fare', 0),
+    pickup: reader.object('pickup').strOr('name', ''),
+    dropoff: reader.object('dropoff').strOr('name', ''),
+    purpose: reader.strOrNull('purpose'),
+    requestedAt: reader.time('requestedAt').toLocal(),
+    expiresAt: reader.timeOrNull('expiresAt'),
   );
 
   final String id;
@@ -246,6 +233,7 @@ class GroupApproval {
   final String dropoff;
   final String? purpose;
   final DateTime requestedAt;
+  final DateTime? expiresAt;
 
   String get firstName => memberName.trim().split(RegExp(r'\s+')).first;
 }
@@ -253,7 +241,7 @@ class GroupApproval {
 class PendingApproval {
   const PendingApproval(this.id);
 
-  factory PendingApproval.fromData(Map<String, dynamic> data) => PendingApproval(data['approvalId'] as String);
+  factory PendingApproval.fromData(Map<String, dynamic> data) => PendingApproval(JsonReader(data).str('approvalId'));
 
   final String id;
 }
@@ -274,7 +262,17 @@ enum GroupFailure {
   groupNotFound('group_not_found', 'We can’t find that group', 'It may have been removed. Head back and try again.'),
   inviteNotFound('invite_not_found', 'That invite is gone', 'It may have expired or been taken back.'),
   approvalNotFound('approval_not_found', 'Already handled', 'Someone already answered that request.'),
-  connection('connection', 'We couldn’t reach the server', 'Check your connection and give it another go.');
+  approvalAlreadyDecided('approval_already_decided', 'Already handled', 'Someone already answered that request.'),
+  approvalExpired('approval_expired', 'That request ran out of time', 'Nobody answered in time, so it has closed.'),
+  rideCancelled('ride_cancelled', 'The ride was cancelled', 'The rider cancelled before anyone answered.'),
+  memberNotFound('member_not_found', 'They’re no longer here', 'That person has already left or been removed.'),
+  connection('connection', 'We couldn’t reach the server', 'Check your connection and give it another go.'),
+  unknown('unknown', 'Something went wrong on our side', 'Try again in a moment.'),
+  unconfirmed(
+    'unconfirmed',
+    'We’re not sure that went through',
+    'We refreshed the list so you can see what happened before you try again.',
+  );
 
   const GroupFailure(this.code, this.title, this.message);
 
@@ -284,8 +282,19 @@ enum GroupFailure {
 
   bool get isNotFound => this == groupNotFound;
 
+  bool get closesApproval =>
+      this == approvalNotFound || this == approvalAlreadyDecided || this == approvalExpired || this == rideCancelled;
+
+  bool get isGone => this == groupNotFound || this == notAllowed;
+
   static GroupFailure fromCode(String? code) =>
-      values.where((failure) => failure.code == code).firstOrNull ?? GroupFailure.connection;
+      enumByCode(values, code, (failure) => failure.code, GroupFailure.unknown);
+
+  static GroupFailure of(Object error) => switch (ProblemKind.of(error)) {
+    ProblemOffline() => connection,
+    ProblemRejected(:final code) => fromCode(code),
+    _ => unknown,
+  };
 }
 
 enum GroupRideBlock {
@@ -344,13 +353,16 @@ final class GroupsLoading extends GroupsState {
 }
 
 final class GroupsFailed extends GroupsState {
-  const GroupsFailed();
+  const GroupsFailed(this.failure);
+
+  final GroupFailure failure;
 }
 
 final class GroupsLoaded extends GroupsState {
-  const GroupsLoaded(this.overview);
+  const GroupsLoaded(this.overview, {this.isStale = false});
 
   final GroupsOverview overview;
+  final bool isStale;
 }
 
 sealed class GroupDetailState {
@@ -368,9 +380,10 @@ final class GroupDetailFailed extends GroupDetailState {
 }
 
 final class GroupDetailLoaded extends GroupDetailState {
-  const GroupDetailLoaded(this.detail);
+  const GroupDetailLoaded(this.detail, {this.isStale = false});
 
   final GroupDetail detail;
+  final bool isStale;
 }
 
 sealed class ApprovalsState {
@@ -382,14 +395,21 @@ final class ApprovalsLoading extends ApprovalsState {
 }
 
 final class ApprovalsFailed extends ApprovalsState {
-  const ApprovalsFailed();
+  const ApprovalsFailed(this.failure);
+
+  final GroupFailure failure;
+}
+
+final class ApprovalsUnavailable extends ApprovalsState {
+  const ApprovalsUnavailable();
 }
 
 final class ApprovalsLoaded extends ApprovalsState {
-  const ApprovalsLoaded(this.approvals, {this.deciding});
+  const ApprovalsLoaded(this.approvals, {this.deciding, this.isStale = false});
 
   final List<GroupApproval> approvals;
   final String? deciding;
+  final bool isStale;
 }
 
 sealed class GroupOutcome {

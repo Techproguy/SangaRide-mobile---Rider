@@ -12,7 +12,11 @@ class MockApproval {
     this.purpose,
     this.decideAt,
     this.declineAutomatically = false,
-  });
+    this.cancelAt,
+    DateTime? expiresAt,
+  }) : expiresAt = expiresAt ?? requestedAt.add(lifetime);
+
+  static const Duration lifetime = Duration(minutes: 30);
 
   final String id;
   final String memberId;
@@ -24,9 +28,21 @@ class MockApproval {
   final String? purpose;
   final DateTime? decideAt;
   final bool declineAutomatically;
+  final DateTime? cancelAt;
+  final DateTime expiresAt;
   String status = 'pending';
 
   bool get isOpen => status == 'pending';
+
+  void sync(DateTime now) {
+    if (status != 'pending') return;
+    final cancel = cancelAt;
+    if (cancel != null && !now.isBefore(cancel)) {
+      status = 'cancelled';
+    } else if (!now.isBefore(expiresAt)) {
+      status = 'expired';
+    }
+  }
 
   Map<String, dynamic> toJson() => {
     'id': id,
@@ -37,6 +53,7 @@ class MockApproval {
     'dropoff': {'name': dropoff['name'], 'address': dropoff['address'] ?? dropoff['name']},
     'purpose': purpose,
     'requestedAt': requestedAt.toUtc().toIso8601String(),
+    'expiresAt': expiresAt.toUtc().toIso8601String(),
     'status': status,
   };
 }
@@ -237,6 +254,18 @@ abstract final class MockGroupsSeed {
         pickup: _places['home']!,
         dropoff: _places['maryland']!,
         requestedAt: DateTime.now().subtract(const Duration(minutes: 12)),
+      ),
+    );
+    group.approvals.add(
+      MockApproval(
+        id: 'apr_seed_2',
+        memberId: 'mem_tife',
+        memberName: 'Tife Johnson',
+        fare: 4800,
+        pickup: _places['maryland']!,
+        dropoff: _places['home']!,
+        requestedAt: DateTime.now().subtract(const Duration(minutes: 2)),
+        cancelAt: DateTime.now().add(const Duration(seconds: 40)),
       ),
     );
     return group;

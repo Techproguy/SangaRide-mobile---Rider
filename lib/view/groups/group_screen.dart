@@ -6,7 +6,6 @@ import 'package:go_router/go_router.dart';
 import 'package:sanga_ride/controller/rider/groups/group_bindings.dart';
 import 'package:sanga_ride/controller/rider/groups/group_controller.dart';
 import 'package:sanga_ride/core/router/group_routes.dart';
-import 'package:sanga_ride/core/services/toast_service.dart';
 import 'package:sanga_ride/model/groups/group_models.dart';
 import 'package:sanga_ride/model/wallet/wallet.dart';
 import 'package:sanga_ride/view/groups/group_copy.dart';
@@ -73,20 +72,26 @@ class _GroupScreenState extends State<GroupScreen> with SingleTickerProviderStat
   }
 
   Future<void> _leave(GroupDetail detail) async {
-    final confirmed = await showSangaPromptSheet(
+    final confirmed = await showSangaStatusSheet(
       context: context,
+      status: SangaStatus.caution,
       icon: Icons.door_back_door_outlined,
       title: GroupCopy.leaveTitle(detail.kind),
       message: GroupCopy.leaveMessage(detail.name),
       actionLabel: 'Leave',
-      dismissLabel: 'Stay',
+      secondaryLabel: 'Stay',
+      isDestructive: true,
     );
     if (!confirmed || !mounted) return;
     final failure = await _group.leave();
     if (!mounted) return;
-    if (failure != null) return Toast.error('${failure.title}. ${failure.message}');
-    Toast.success('You left ${detail.name}');
+    if (failure != null) {
+      SangaToast.show('${failure.title}. ${failure.message}', tone: SangaToastTone.error);
+      return;
+    }
+    SangaToast.show('You left ${detail.name}', tone: SangaToastTone.success);
     context.pop();
+    WidgetsBinding.instance.addPostFrameCallback((_) => GroupControllers.release(detail.id));
   }
 
   Widget _tab(GroupTab tab, GroupDetail detail) => switch (tab) {
@@ -109,6 +114,7 @@ class _GroupScreenState extends State<GroupScreen> with SingleTickerProviderStat
       child: Column(
         spacing: SangaSpacing.sm,
         children: [
+          if (_group.state case GroupDetailLoaded(isStale: true)) SangaStaleNotice(onRetry: _group.reloadQuietly),
           GroupHeaderCard(detail: detail),
           Obx(() {
             final state = _group.approvalsState;
@@ -130,11 +136,12 @@ class _GroupScreenState extends State<GroupScreen> with SingleTickerProviderStat
     GroupDetailFailed(:final failure) => SangaRefreshList.children(
       onRefresh: _group.reload,
       children: [
-        SangaInlineMessage(
+        SangaFailureMessage(
           title: failure.title,
           message: failure.message,
-          actionLabel: failure.isNotFound ? 'Back' : 'Try again',
-          onAction: failure.isNotFound ? context.pop : _group.reload,
+          icon: failure.isNotFound ? Icons.search_off_rounded : Icons.cloud_off_rounded,
+          retryLabel: failure.isNotFound ? 'Back' : 'Try again',
+          onRetry: failure.isNotFound ? context.pop : _group.reload,
         ),
       ],
     ),

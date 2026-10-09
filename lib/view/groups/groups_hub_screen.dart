@@ -5,7 +5,6 @@ import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sanga_ride/controller/rider/groups/groups_controller.dart';
 import 'package:sanga_ride/core/router/group_routes.dart';
-import 'package:sanga_ride/core/services/toast_service.dart';
 import 'package:sanga_ride/model/groups/group_models.dart';
 import 'package:sanga_ride/view/groups/group_copy.dart';
 import 'package:sanga_ride/view/groups/widgets/group_invite_card.dart';
@@ -26,24 +25,16 @@ class GroupsHubScreen extends StatefulWidget {
 
 class _GroupsHubScreenState extends State<GroupsHubScreen> {
   final _groups = Get.find<GroupsController>();
-  late final Worker _stateWorker;
   bool _hasLeft = false;
 
   @override
   void initState() {
     super.initState();
-    _stateWorker = ever(_groups.stateRx, (_) => _openOwnGroup());
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       _openOwnGroup();
       await _groups.open();
       if (mounted) _openOwnGroup();
     });
-  }
-
-  @override
-  void dispose() {
-    _stateWorker.dispose();
-    super.dispose();
   }
 
   void _openOwnGroup() {
@@ -70,9 +61,9 @@ class _GroupsHubScreenState extends State<GroupsHubScreen> {
       case GroupDone(:final groupId) when accept && groupId != null:
         _openGroup(groupId);
       case GroupDone():
-        Toast.info('Invite declined');
+        SangaToast.show('Invite declined');
       case GroupRejected(:final failure):
-        Toast.error(failure.message);
+        SangaToast.show(failure.message, tone: SangaToastTone.error);
     }
   }
 
@@ -88,11 +79,10 @@ class _GroupsHubScreenState extends State<GroupsHubScreen> {
       const SangaSkeleton.heights([96, 96, 96]),
     ],
     _HubStage.failed => [
-      SangaInlineMessage(
+      SangaFailureMessage(
         title: 'We couldn’t load this',
-        message: 'Check your connection and give it another go.',
-        actionLabel: 'Try again',
-        onAction: _groups.reload,
+        message: state is GroupsFailed ? state.failure.message : GroupFailure.connection.message,
+        onRetry: _groups.reload,
       ),
     ],
     _HubStage.start => [_start((state as GroupsLoaded).overview)],

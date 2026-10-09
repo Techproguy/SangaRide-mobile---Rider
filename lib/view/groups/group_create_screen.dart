@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sanga_ride/controller/rider/groups/groups_controller.dart';
-import 'package:sanga_ride/core/services/toast_service.dart';
 import 'package:sanga_ride/model/groups/group_models.dart';
 import 'package:sanga_ride/view/groups/group_copy.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
@@ -56,7 +55,7 @@ class _GroupCreateScreenState extends State<GroupCreateScreen> {
       case GroupRejected(:final failure) when failure == GroupFailure.nameRequired:
         setState(() => _nameError = failure.message);
       case GroupRejected(:final failure):
-        Toast.error('${failure.title}. ${failure.message}');
+        SangaToast.show('${failure.title}. ${failure.message}', tone: SangaToastTone.error);
     }
   }
 

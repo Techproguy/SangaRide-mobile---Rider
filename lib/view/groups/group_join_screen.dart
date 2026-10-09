@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sanga_ride/controller/rider/groups/groups_controller.dart';
-import 'package:sanga_ride/core/services/toast_service.dart';
 import 'package:sanga_ride/model/groups/group_models.dart';
 import 'package:sanga_ride/view/groups/group_copy.dart';
 import 'package:sanga_ride/view/groups/widgets/invite_code_format.dart';
@@ -35,8 +34,11 @@ class _GroupJoinScreenState extends State<GroupJoinScreen> {
     switch (outcome) {
       case GroupDone(:final groupId):
         context.pop(groupId);
-      case GroupRejected(:final failure) when failure == GroupFailure.connection:
-        Toast.error('${failure.title}. ${failure.message}');
+      case GroupRejected(:final failure)
+          when failure == GroupFailure.connection ||
+              failure == GroupFailure.unknown ||
+              failure == GroupFailure.unconfirmed:
+        SangaToast.show('${failure.title}. ${failure.message}', tone: SangaToastTone.error);
       case GroupRejected(:final failure):
         setState(() => _failure = failure);
     }

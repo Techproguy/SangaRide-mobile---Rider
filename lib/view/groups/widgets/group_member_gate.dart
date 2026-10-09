@@ -37,11 +37,12 @@ class _GroupGateState extends State<GroupGate> {
       return switch (state) {
         GroupDetailLoading() => _page(const SangaSkeleton.heights([72, 56, 56, 56])),
         GroupDetailFailed(:final failure) => _page(
-          SangaInlineMessage(
+          SangaFailureMessage(
             title: failure.title,
             message: failure.message,
-            actionLabel: failure.isNotFound ? 'Back' : 'Try again',
-            onAction: failure.isNotFound ? context.pop : _group.reload,
+            icon: failure.isNotFound ? Icons.search_off_rounded : Icons.cloud_off_rounded,
+            retryLabel: failure.isNotFound ? 'Back' : 'Try again',
+            onRetry: failure.isNotFound ? context.pop : _group.reload,
           ),
         ),
         GroupDetailLoaded(:final detail) => widget.builder(context, _group, detail),
@@ -75,7 +76,8 @@ class GroupMemberGate extends StatelessWidget {
           return SangaPageLayout(
             title: title,
             children: [
-              SangaInlineMessage(
+              SangaEmptyMessage(
+                icon: Icons.person_off_outlined,
                 title: 'They’re not in the group any more',
                 message: 'Head back to see who’s in.',
                 actionLabel: 'Back',

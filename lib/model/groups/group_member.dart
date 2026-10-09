@@ -1,14 +1,21 @@
 import 'package:sanga_ride/model/groups/group_kind.dart';
+
+import 'dart:convert';
+
 import 'package:sanga_ride/model/location/place.dart';
+import 'package:sanga_ride_core/sanga_ride_core.dart';
 
 class MemberPermissions {
   const MemberPermissions({required this.bookRides, required this.bookForOthers, required this.useGroupWallet});
 
-  factory MemberPermissions.fromJson(Map<String, dynamic> json) => MemberPermissions(
-    bookRides: json['bookRides'] as bool? ?? true,
-    bookForOthers: json['bookForOthers'] as bool? ?? false,
-    useGroupWallet: json['useGroupWallet'] as bool? ?? true,
-  );
+  factory MemberPermissions.fromJson(Map<String, dynamic> json) {
+    final reader = JsonReader(json);
+    return MemberPermissions(
+      bookRides: reader.boolOr('bookRides', true),
+      bookForOthers: reader.boolOr('bookForOthers', false),
+      useGroupWallet: reader.boolOr('useGroupWallet', true),
+    );
+  }
 
   final bool bookRides;
   final bool bookForOthers;
@@ -30,12 +37,15 @@ class MemberPermissions {
 class MemberAlerts {
   const MemberAlerts({required this.tripStarted, required this.tripEnded, required this.sos, required this.overLimit});
 
-  factory MemberAlerts.fromJson(Map<String, dynamic> json) => MemberAlerts(
-    tripStarted: json['tripStarted'] as bool? ?? true,
-    tripEnded: json['tripEnded'] as bool? ?? true,
-    sos: json['sos'] as bool? ?? true,
-    overLimit: json['overLimit'] as bool? ?? true,
-  );
+  factory MemberAlerts.fromJson(Map<String, dynamic> json) {
+    final reader = JsonReader(json);
+    return MemberAlerts(
+      tripStarted: reader.boolOr('tripStarted', true),
+      tripEnded: reader.boolOr('tripEnded', true),
+      sos: reader.boolOr('sos', true),
+      overLimit: reader.boolOr('overLimit', true),
+    );
+  }
 
   final bool tripStarted;
   final bool tripEnded;
@@ -60,8 +70,12 @@ class MemberAlerts {
 class TimeWindow {
   const TimeWindow({required this.from, required this.to});
 
-  factory TimeWindow.fromJson(Map<String, dynamic> json) =>
-      TimeWindow(from: json['from'] as String, to: json['to'] as String);
+  static TimeWindow? tryFromReader(JsonReader? reader) {
+    final from = reader?.strOrNull('from');
+    final to = reader?.strOrNull('to');
+    if (from == null || to == null) return null;
+    return TimeWindow(from: from, to: to);
+  }
 
   static String encode(int hour, int minute) =>
       '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}';
@@ -80,10 +94,10 @@ class TimeWindow {
 class ApprovedPlace {
   const ApprovedPlace({required this.id, required this.label, required this.place});
 
-  factory ApprovedPlace.fromJson(Map<String, dynamic> json) => ApprovedPlace(
-    id: json['id'] as String,
-    label: json['label'] as String,
-    place: Place.fromJson(Map<String, dynamic>.from(json['place'] as Map)),
+  factory ApprovedPlace.fromReader(JsonReader reader) => ApprovedPlace(
+    id: reader.str('id'),
+    label: reader.strOr('label', ''),
+    place: Place.fromJson(reader.object('place').raw),
   );
 
   final String id;
@@ -104,18 +118,14 @@ class MemberLimits {
   });
 
   factory MemberLimits.fromJson(Map<String, dynamic> json) {
-    final window = json['timeWindow'];
-    final types = json['rideTypes'];
+    final reader = JsonReader(json);
     return MemberLimits(
-      monthlySpend: (json['monthlySpend'] as num?)?.toInt(),
-      overLimit: OverLimitAction.fromCode(json['overLimit'] as String?),
-      ridesPerDay: (json['ridesPerDay'] as num?)?.toInt(),
-      timeWindow: window == null ? null : TimeWindow.fromJson(Map<String, dynamic>.from(window as Map)),
-      rideTypes: types == null ? null : [for (final type in types as List) type as String],
-      approvedPlaces: [
-        for (final place in (json['approvedPlaces'] as List? ?? const []))
-          ApprovedPlace.fromJson(Map<String, dynamic>.from(place as Map)),
-      ],
+      monthlySpend: reader.intOrNull('monthlySpend'),
+      overLimit: OverLimitAction.fromCode(reader.strOrNull('overLimit')),
+      ridesPerDay: reader.intOrNull('ridesPerDay'),
+      timeWindow: TimeWindow.tryFromReader(reader.objectOrNull('timeWindow')),
+      rideTypes: reader.raw['rideTypes'] is List ? reader.strings('rideTypes') : null,
+      approvedPlaces: reader.listOf('approvedPlaces', ApprovedPlace.fromReader),
     );
   }
 
@@ -167,19 +177,22 @@ class GroupMember {
     required this.monthSpent,
   });
 
-  factory GroupMember.fromJson(Map<String, dynamic> json) => GroupMember(
-    id: json['id'] as String,
-    name: json['name'] as String,
-    phone: json['phone'] as String,
-    photoUrl: json['photoUrl'] as String?,
-    relation: json['relation'] as String,
-    role: GroupRole.fromCode(json['role'] as String?),
-    status: MemberStatus.fromCode(json['status'] as String?),
-    permissions: MemberPermissions.fromJson(Map<String, dynamic>.from(json['permissions'] as Map)),
-    limits: MemberLimits.fromJson(Map<String, dynamic>.from(json['limits'] as Map)),
-    alerts: MemberAlerts.fromJson(Map<String, dynamic>.from(json['alerts'] as Map)),
-    monthSpent: (json['monthSpent'] as num?)?.toInt() ?? 0,
-  );
+  factory GroupMember.fromJson(Map<String, dynamic> json) {
+    final reader = JsonReader(json);
+    return GroupMember(
+      id: reader.str('id'),
+      name: reader.strOr('name', ''),
+      phone: reader.strOr('phone', ''),
+      photoUrl: reader.strOrNull('photoUrl'),
+      relation: reader.strOr('relation', 'Member'),
+      role: GroupRole.fromCode(reader.strOrNull('role')),
+      status: MemberStatus.fromCode(reader.strOrNull('status')),
+      permissions: MemberPermissions.fromJson(reader.objectOrNull('permissions')?.raw ?? const {}),
+      limits: MemberLimits.fromJson(reader.objectOrNull('limits')?.raw ?? const {}),
+      alerts: MemberAlerts.fromJson(reader.objectOrNull('alerts')?.raw ?? const {}),
+      monthSpent: reader.intOr('monthSpent', 0),
+    );
+  }
 
   final String id;
   final String name;
@@ -209,11 +222,21 @@ class MemberPatch {
   final MemberLimits? limits;
   final MemberAlerts? alerts;
 
-  Map<String, dynamic> toJson() => {
-    'role': ?role?.code,
-    'relation': ?relation,
-    'permissions': ?permissions?.toJson(),
-    'limits': ?limits?.toJson(),
-    'alerts': ?alerts?.toJson(),
-  };
+  Map<String, dynamic> changesAgainst(GroupMember member) {
+    return {
+      if (role != null && role != member.role) 'role': role!.code,
+      if (relation != null && relation != member.relation) 'relation': relation,
+      if (permissions != null) ..._section('permissions', permissions!.toJson(), member.permissions.toJson()),
+      if (limits != null) ..._section('limits', limits!.toJson(), member.limits.toJson()),
+      if (alerts != null) ..._section('alerts', alerts!.toJson(), member.alerts.toJson()),
+    };
+  }
+
+  static Map<String, dynamic> _section(String key, Map<String, dynamic> wanted, Map<String, dynamic> current) {
+    final changed = {
+      for (final entry in wanted.entries)
+        if (jsonEncode(entry.value) != jsonEncode(current[entry.key])) entry.key: entry.value,
+    };
+    return changed.isEmpty ? const {} : {key: changed};
+  }
 }

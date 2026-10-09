@@ -353,6 +353,10 @@ abstract final class MockGroups {
 
   static Object? _approvals(MockRequest request) {
     final group = _requireManaged(request);
+    final now = DateTime.now();
+    for (final approval in group.approvals) {
+      approval.sync(now);
+    }
     return {
       'approvals': [
         for (final approval in group.approvals)
@@ -364,10 +368,17 @@ abstract final class MockGroups {
 
   static Object? _decide(MockRequest request, {required bool approve}) {
     final group = _requireManaged(request);
-    final approval = group.approvals
-        .where((approval) => approval.id == request.params['approvalId'] && approval.isOpen)
-        .firstOrNull;
-    if (approval == null) throw const MockFailure(404, 'Someone already answered that.', code: 'approval_not_found');
+    final approval = group.approvals.where((approval) => approval.id == request.params['approvalId']).firstOrNull;
+    if (approval == null) throw const MockFailure(404, 'We can’t find that request.', code: 'approval_not_found');
+    approval.sync(DateTime.now());
+    switch (approval.status) {
+      case 'expired':
+        throw const MockFailure(409, 'That request ran out of time.', code: 'approval_expired');
+      case 'cancelled':
+        throw const MockFailure(409, 'The rider cancelled that ride.', code: 'ride_cancelled');
+      case 'approved' || 'declined':
+        throw const MockFailure(409, 'Someone already answered that.', code: 'approval_already_decided');
+    }
     approval.status = approve ? 'approved' : 'declined';
     return {'id': approval.id, 'status': approval.status};
   }

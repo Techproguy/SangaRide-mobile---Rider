@@ -20,7 +20,7 @@ class _WalletMenuBalanceState extends State<WalletMenuBalance> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => unawaited(_wallet.open()));
+    WidgetsBinding.instance.addPostFrameCallback((_) => unawaited(_wallet.openIfStale()));
   }
 
   @override

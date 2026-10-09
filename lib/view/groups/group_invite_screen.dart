@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sanga_ride/controller/rider/groups/group_controller.dart';
-import 'package:sanga_ride/core/services/toast_service.dart';
 import 'package:sanga_ride/model/groups/group_models.dart';
 import 'package:sanga_ride/view/groups/group_copy.dart';
 import 'package:sanga_ride/view/groups/widgets/group_member_gate.dart';
@@ -60,13 +59,13 @@ class _InviteFormState extends State<_InviteForm> {
     if (!mounted) return;
     switch (outcome) {
       case GroupDone():
-        Toast.success('Invite sent to ${SangaPhoneNumber.masked(_phone.text)}');
+        SangaToast.show('Invite sent to ${SangaPhoneNumber.masked(_phone.text)}', tone: SangaToastTone.success);
         context.pop();
       case GroupRejected(:final failure)
           when failure == GroupFailure.invalidPhone || failure == GroupFailure.phoneInGroup:
         setState(() => _phoneError = '${failure.title}. ${failure.message}');
       case GroupRejected(:final failure):
-        Toast.error('${failure.title}. ${failure.message}');
+        SangaToast.show('${failure.title}. ${failure.message}', tone: SangaToastTone.error);
     }
   }
 
@@ -125,7 +124,7 @@ class _InviteFormState extends State<_InviteForm> {
               onCopied: () {
                 Clipboard.setData(ClipboardData(text: detail.inviteCode));
                 HapticFeedback.selectionClick();
-                Toast.success('Code copied');
+                SangaToast.show('Code copied', tone: SangaToastTone.success);
               },
             ),
           ],

@@ -26,6 +26,7 @@ class AccountController extends GetxController {
   String? _uploadedPhotoId;
   IdempotencyKey? _photoLinkKey;
   Mutation<DateTime?>? _deletion;
+  DateTime? _loadedAt;
   int _loadEpoch = 0;
 
   AccountState get state => _state.value;
@@ -42,12 +43,22 @@ class AccountController extends GetxController {
     super.onClose();
   }
 
+  Future<void> loadIfStale() async {
+    final loadedAt = _loadedAt;
+    final isFresh =
+        _state.value is AccountLoaded &&
+        loadedAt != null &&
+        DateTime.now().difference(loadedAt) < const Duration(seconds: 20);
+    if (!isFresh) await load();
+  }
+
   Future<void> load() async {
     final epoch = ++_loadEpoch;
     if (_state.value is! AccountLoaded) _state.value = const AccountLoading();
     try {
       final response = await _api.get(AccountEndpoints.me, options: quietOptions);
       if (epoch != _loadEpoch) return;
+      _loadedAt = DateTime.now();
       await apply(dataOf(response));
     } on Object catch (error) {
       if (epoch == _loadEpoch && _state.value is! AccountLoaded) _state.value = AccountFailed(AccountProblem.of(error));

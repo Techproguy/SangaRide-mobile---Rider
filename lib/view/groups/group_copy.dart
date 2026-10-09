@@ -232,4 +232,10 @@ abstract final class GroupCopy {
 
   static String approvalLine(GroupApproval approval) =>
       '${approval.firstName} wants a ${WalletFormat.money(approval.fare)} ride that goes past their limit.';
+
+  static String approvalExpiry(Duration remaining) {
+    final minutes = remaining.inMinutes;
+    if (minutes >= 1) return 'Closes in $minutes min';
+    return 'Closes in ${remaining.inSeconds} sec';
+  }
 }

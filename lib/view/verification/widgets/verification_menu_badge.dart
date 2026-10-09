@@ -21,7 +21,7 @@ class _VerificationMenuBadgeState extends State<VerificationMenuBadge> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) unawaited(_controller.load());
+      if (mounted) unawaited(_controller.loadIfStale());
     });
   }
 

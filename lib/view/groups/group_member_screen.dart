@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sanga_ride/controller/rider/groups/group_controller.dart';
 import 'package:sanga_ride/core/router/group_routes.dart';
-import 'package:sanga_ride/core/services/toast_service.dart';
 import 'package:sanga_ride/model/groups/group_models.dart';
 import 'package:sanga_ride/view/groups/group_copy.dart';
 import 'package:sanga_ride/view/groups/widgets/group_member_gate.dart';
@@ -131,24 +130,38 @@ class _MemberMenu extends StatelessWidget {
       MemberPatch(role: promote ? GroupRole.admin : GroupRole.member),
     );
     if (!context.mounted) return;
-    if (failure != null) return Toast.error('${failure.title}. ${failure.message}');
-    Toast.success(promote ? '${member.firstName} is now an admin' : '${member.firstName} is now a member');
+    if (failure != null) {
+      SangaToast.show('${failure.title}. ${failure.message}', tone: SangaToastTone.error);
+      return;
+    }
+    SangaToast.show(
+      promote ? '${member.firstName} is now an admin' : '${member.firstName} is now a member',
+      tone: SangaToastTone.success,
+    );
   }
 
   Future<void> _remove(BuildContext context) async {
-    final confirmed = await showSangaPromptSheet(
+    final confirmed = await showSangaStatusSheet(
       context: context,
+      status: SangaStatus.caution,
       icon: Icons.person_remove_outlined,
       title: GroupCopy.removePrompt(member),
       message: GroupCopy.removeMessage(member, detail.name),
       actionLabel: GroupCopy.removeAction(member),
-      dismissLabel: 'Keep',
+      secondaryLabel: 'Keep',
+      isDestructive: true,
     );
     if (!confirmed || !context.mounted) return;
     final failure = await group.removeMember(member.id);
     if (!context.mounted) return;
-    if (failure != null) return Toast.error('${failure.title}. ${failure.message}');
-    Toast.success(member.isInvited ? 'Invite cancelled' : '${member.firstName} was removed');
+    if (failure != null && failure != GroupFailure.memberNotFound) {
+      SangaToast.show('${failure.title}. ${failure.message}', tone: SangaToastTone.error);
+      return;
+    }
+    SangaToast.show(
+      member.isInvited ? 'Invite cancelled' : '${member.firstName} was removed',
+      tone: SangaToastTone.success,
+    );
     context.pop();
   }
 
