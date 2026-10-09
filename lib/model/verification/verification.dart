@@ -9,7 +9,7 @@ enum VerificationItemKind {
   final String code;
 
   static VerificationItemKind fromCode(Object? code) =>
-      enumByCode(values, '$code', (kind) => kind.code, VerificationItemKind.document);
+      codedEnum(values, (kind) => kind.code, code, orElse: VerificationItemKind.document);
 }
 
 enum ItemStatus {
@@ -26,7 +26,8 @@ enum ItemStatus {
 
   bool get needsAction => this == missing || this == rejected || this == expired;
 
-  static ItemStatus fromCode(Object? code) => enumByCode(values, '$code', (status) => status.code, ItemStatus.missing);
+  static ItemStatus fromCode(Object? code) =>
+      codedEnum(values, (status) => status.code, code, orElse: ItemStatus.missing);
 }
 
 class ItemReason {
@@ -135,6 +136,4 @@ class Verification {
 
   bool get isReadyToSubmit =>
       status != VerificationStatus.pending && status != VerificationStatus.verified && actionItems.isEmpty;
-
-  VerificationItem? itemById(String id) => items.where((item) => item.id == id).firstOrNull;
 }

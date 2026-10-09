@@ -1,7 +1,9 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:sanga_ride/core/copy/common_copy.dart';
 import 'package:sanga_ride/model/models.dart';
+import 'package:sanga_ride/view/verification/verification_copy.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 class DocumentSlot extends StatelessWidget {
@@ -61,7 +63,7 @@ class DocumentSlot extends StatelessWidget {
         children: [
           _thumb(uploading.path),
           Expanded(
-            child: SangaUploadProgress(progress: uploading.progress, label: 'Uploading $label'),
+            child: SangaUploadProgress(progress: uploading.progress, label: VerificationCopy.uploading(label)),
           ),
         ],
       ),
@@ -80,17 +82,17 @@ class DocumentSlot extends StatelessWidget {
               spacing: SangaSpacing.xxs,
               children: [
                 Text(label, style: SangaTextStyles.cardTitle),
-                const SangaTag.success(label: 'Uploaded'),
+                const SangaTag.success(label: VerificationCopy.uploaded),
               ],
             ),
           ),
           IconButton(
-            tooltip: 'Replace $label',
+            tooltip: VerificationCopy.replace(label),
             onPressed: onPick,
             icon: const Icon(Icons.autorenew_rounded, color: SangaColors.primary),
           ),
           Tooltip(
-            message: 'Remove $label',
+            message: VerificationCopy.remove(label),
             child: SangaCircleButton.close(onPressed: onRemove),
           ),
         ],
@@ -107,11 +109,11 @@ class DocumentSlot extends StatelessWidget {
       children: [
         SangaNotice(message: problem.message),
         if (problem.opensSettings)
-          SangaButton.primary(label: 'Open Settings', size: SangaButtonSize.compact, onPressed: onOpenSettings)
+          SangaButton.primary(label: CommonCopy.openSettings, size: SangaButtonSize.compact, onPressed: onOpenSettings)
         else if (failed.failure.isRetriable && path != null)
-          SangaButton.primary(label: 'Try again', size: SangaButtonSize.compact, onPressed: onRetry),
+          SangaButton.primary(label: VerificationCopy.tryAgain, size: SangaButtonSize.compact, onPressed: onRetry),
         SangaButton.outline(
-          label: path == null ? 'Choose a photo' : 'Choose another',
+          label: path == null ? VerificationCopy.choosePhoto : VerificationCopy.chooseAnother,
           size: SangaButtonSize.compact,
           onPressed: onPick,
         ),

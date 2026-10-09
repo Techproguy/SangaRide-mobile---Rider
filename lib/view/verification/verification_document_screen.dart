@@ -50,7 +50,7 @@ class _VerificationDocumentScreenState extends State<VerificationDocumentScreen>
 
   Future<void> _pick(DocumentSide side) async {
     if (_controller.draft.sideOf(side).isBusy) return;
-    final source = await showPhotoSourceSheet(context, title: 'Add your ID');
+    final source = await showPhotoSourceSheet(context, title: VerificationCopy.addYourId);
     if (source == null || !mounted) return;
     if (source == PhotoSource.camera) await _permissions.prime(PermissionKind.camera, context);
     if (mounted) await _controller.pickPhoto(side, source);
@@ -66,16 +66,15 @@ class _VerificationDocumentScreenState extends State<VerificationDocumentScreen>
     final isSent = await _controller.submitDocument();
     if (!mounted) return;
     if (!isSent) {
-      if (_controller.draft.missing.contains('selfie')) await _takeSelfie();
+      if (_controller.draft.missing.contains(VerificationItemKind.selfie.code)) await _takeSelfie();
       return;
     }
     await showSangaStatusSheet(
       context: context,
       status: SangaStatus.pending,
-      title: 'Verification under review',
-      message:
-          'This usually takes up to ${VerificationCopy.hoursLabel(_controller.state.verificationOrNull?.estimatedReviewHours ?? 24)}. We’ll let you know in your notifications.',
-      actionLabel: 'Done',
+      title: VerificationCopy.underReviewTitle,
+      message: VerificationCopy.underReviewMessage(_controller.state.verificationOrNull?.estimatedReviewHours ?? 24),
+      actionLabel: VerificationCopy.done,
     );
     if (mounted) context.pop();
   }
@@ -94,7 +93,7 @@ class _VerificationDocumentScreenState extends State<VerificationDocumentScreen>
   Widget _problem(DocumentDraft draft) {
     final problem = draft.problem;
     if (problem == null) return const SizedBox.shrink();
-    final isSelfieMissing = draft.missing.contains('selfie');
+    final isSelfieMissing = draft.missing.contains(VerificationItemKind.selfie.code);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       spacing: SangaSpacing.sm,
@@ -103,13 +102,13 @@ class _VerificationDocumentScreenState extends State<VerificationDocumentScreen>
           const SangaNotice(
             tone: SangaTone.neutral,
             icon: Icons.photo_camera_front_outlined,
-            message: 'Your ID is saved. Take your selfie and we’ll send it all off.',
+            message: VerificationCopy.idSavedTakeSelfie,
           )
         else
           SangaNotice(message: problem.message),
         if (isSelfieMissing)
           SangaButton.outline(
-            label: 'Take your selfie',
+            label: VerificationCopy.takeYourSelfie,
             size: SangaButtonSize.compact,
             onPressed: () => unawaited(_takeSelfie()),
           ),
@@ -121,7 +120,7 @@ class _VerificationDocumentScreenState extends State<VerificationDocumentScreen>
     final type = draft.type;
     return [
       SangaSelectField<IdDocumentType>(
-        label: 'Document type',
+        label: VerificationCopy.documentType,
         isRequired: true,
         value: type,
         options: [for (final option in _controller.documentTypes) SangaSelectOption(option, option.label)],
@@ -129,7 +128,7 @@ class _VerificationDocumentScreenState extends State<VerificationDocumentScreen>
       ),
       const SizedBox(height: SangaSpacing.md),
       if (type == null)
-        Text('Pick the ID you want to use and we’ll show you what to upload.', style: SangaTextStyles.body)
+        Text(VerificationCopy.pickIdLead, style: SangaTextStyles.body)
       else
         Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -137,7 +136,7 @@ class _VerificationDocumentScreenState extends State<VerificationDocumentScreen>
           children: [
             Text(type.hint, style: SangaTextStyles.body),
             _slot(draft, DocumentSide.front, type.frontLabel),
-            if (type.hasBack) _slot(draft, DocumentSide.back, 'Back of ID'),
+            if (type.hasBack) _slot(draft, DocumentSide.back, VerificationCopy.backOfId),
             if (_controller.documentItem?.uploadRules case final rules?)
               Text(rules.summary, style: SangaTextStyles.caption),
           ],
@@ -146,7 +145,7 @@ class _VerificationDocumentScreenState extends State<VerificationDocumentScreen>
       const SangaNotice(
         tone: SangaTone.neutral,
         icon: Icons.lock_outline_rounded,
-        message: 'Your information is secure and only used for verification.',
+        message: VerificationCopy.informationSecure,
       ),
       const SizedBox(height: SangaSpacing.md),
       _problem(draft),
@@ -158,14 +157,14 @@ class _VerificationDocumentScreenState extends State<VerificationDocumentScreen>
     return Obx(() {
       final draft = _controller.draft;
       return SangaPageLayout(
-        title: 'Document verification',
+        title: VerificationCopy.documentVerification,
         footer: SangaButton.primary(
-          label: 'Submit for review',
+          label: VerificationCopy.submitForReview,
           isLoading: draft.isSubmitting,
           onPressed: draft.isReady ? _submit : null,
         ),
         children: [
-          Text('Upload a valid ID', style: SangaTextStyles.body),
+          Text(VerificationCopy.uploadValidId, style: SangaTextStyles.body),
           const SizedBox(height: SangaSpacing.lg),
           ..._children(draft),
         ],

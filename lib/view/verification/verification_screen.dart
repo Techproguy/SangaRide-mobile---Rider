@@ -54,9 +54,9 @@ class _VerificationScreenState extends State<VerificationScreen> {
     return showSangaStatusSheet(
       context: context,
       status: SangaStatus.success,
-      title: 'You’re verified',
-      message: 'Thanks for waiting. Your account is all set.',
-      actionLabel: 'Done',
+      title: VerificationCopy.verifiedTitle,
+      message: VerificationCopy.verifiedMessage,
+      actionLabel: VerificationCopy.done,
     );
   }
 
@@ -65,10 +65,10 @@ class _VerificationScreenState extends State<VerificationScreen> {
     final isRetry = await showSangaStatusSheet(
       context: context,
       status: SangaStatus.caution,
-      title: 'Verification needs another go',
-      message: reason ?? 'We couldn’t verify everything. Have a look and try again.',
-      actionLabel: 'Try again',
-      secondaryLabel: 'Not now',
+      title: VerificationCopy.anotherGoTitle,
+      message: reason ?? VerificationCopy.anotherGoMessage,
+      actionLabel: VerificationCopy.tryAgain,
+      secondaryLabel: VerificationCopy.notNow,
     );
     if (isRetry && mounted) _continue(verification);
   }
@@ -121,12 +121,12 @@ class _VerificationScreenState extends State<VerificationScreen> {
         spacing: SangaSpacing.xs,
         children: [
           SangaButton.primary(
-            label: isDone ? 'Done' : VerificationCopy.primaryLabelOf(verification),
+            label: isDone ? VerificationCopy.done : VerificationCopy.primaryLabelOf(verification),
             isLoading: isSubmitting,
             onPressed: isDone ? () => context.pop() : () => _continue(verification),
           ),
           if (verification.status == VerificationStatus.pending)
-            SangaTextLink(label: 'Need help? Talk to support', onPressed: () => context.push(SupportRoutes.home)),
+            SangaTextLink(label: VerificationCopy.talkToSupport, onPressed: () => context.push(SupportRoutes.home)),
         ],
       );
     });
@@ -142,7 +142,7 @@ class _VerificationScreenState extends State<VerificationScreen> {
           status: verification.status,
           copy: VerificationCopy.heroOf(verification),
           submittedLine: verification.status == VerificationStatus.pending && submittedAt != null
-              ? 'Sent ${TimeFormat.ago(submittedAt).toLowerCase()}. We’ll let you know in your notifications.'
+              ? VerificationCopy.sentLine(TimeFormat.ago(submittedAt).toLowerCase())
               : null,
         ),
         _items(verification),
@@ -156,7 +156,7 @@ class _VerificationScreenState extends State<VerificationScreen> {
       final state = _controller.state;
       final verification = state.verificationOrNull;
       return SangaPageLayout(
-        title: 'Verification centre',
+        title: VerificationCopy.centreTitle,
         footer: verification == null ? null : _footer(verification),
         children: [
           switch (state) {

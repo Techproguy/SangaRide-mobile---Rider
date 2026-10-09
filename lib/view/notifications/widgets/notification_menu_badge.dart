@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:sanga_ride/controller/rider/account/notifications_controller.dart';
 import 'package:sanga_ride/view/account/account_copy.dart';
+import 'package:sanga_ride/view/notifications/notification_copy.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 class NotificationMenuBadge extends StatelessWidget {
@@ -18,7 +19,7 @@ class NotificationMenuBadge extends StatelessWidget {
         children: [
           if (count > 0)
             Semantics(
-              label: '$count unread',
+              label: NotificationCopy.unread(count),
               excludeSemantics: true,
               child: Container(
                 constraints: const BoxConstraints(minWidth: 22),

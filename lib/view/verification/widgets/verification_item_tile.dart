@@ -12,11 +12,11 @@ class VerificationItemTile extends StatelessWidget {
   bool get _isProblem => item.status == ItemStatus.rejected || item.status == ItemStatus.expired;
 
   Widget? get _trailing => switch (item.status) {
-    ItemStatus.verified => const SangaTag.success(label: 'Verified'),
-    ItemStatus.pending => const SangaTag.scheduled(label: 'In review', icon: Icons.hourglass_top_rounded),
-    ItemStatus.rejected => const SangaTag.urgent(label: 'Try again', icon: Icons.error_outline_rounded),
-    ItemStatus.expired => const SangaTag.urgent(label: 'Expired', icon: Icons.error_outline_rounded),
-    ItemStatus.expiring => const SangaTag.warning(label: 'Expiring soon'),
+    ItemStatus.verified => const SangaTag.success(label: VerificationCopy.tagVerified),
+    ItemStatus.pending => const SangaTag.scheduled(label: VerificationCopy.tagInReview, icon: Icons.hourglass_top_rounded),
+    ItemStatus.rejected => const SangaTag.urgent(label: VerificationCopy.tryAgain, icon: Icons.error_outline_rounded),
+    ItemStatus.expired => const SangaTag.urgent(label: VerificationCopy.tagExpired, icon: Icons.error_outline_rounded),
+    ItemStatus.expiring => const SangaTag.warning(label: VerificationCopy.tagExpiringSoon),
     ItemStatus.missing => onTap == null ? null : SangaListRow.chevron,
   };
 

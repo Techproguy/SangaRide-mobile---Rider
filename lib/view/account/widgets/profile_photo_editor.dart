@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sanga_ride/view/account/account_copy.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 class ProfilePhotoEditor extends StatelessWidget {
@@ -46,7 +47,7 @@ class ProfilePhotoEditor extends StatelessWidget {
             alignment: Alignment.bottomRight,
             child: Semantics(
               button: true,
-              label: 'Change photo',
+              label: AccountCopy.changePhoto,
               child: SizedBox.square(
                 dimension: _badge,
                 child: Material(

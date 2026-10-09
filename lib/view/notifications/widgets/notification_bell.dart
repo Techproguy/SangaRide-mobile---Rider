@@ -7,6 +7,7 @@ import 'package:sanga_ride/controller/rider/account/notifications_controller.dar
 import 'package:sanga_ride/core/router/notification_routes.dart';
 import 'package:sanga_ride/core/services/permission_center.dart';
 import 'package:sanga_ride/view/account/account_copy.dart';
+import 'package:sanga_ride/view/notifications/notification_copy.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 class NotificationBell extends StatelessWidget {
@@ -23,7 +24,7 @@ class NotificationBell extends StatelessWidget {
     return Obx(() {
       final count = controller.unreadCount;
       return SangaMapButton(
-        tooltip: count == 0 ? 'Notifications' : 'Notifications, $count unread',
+        tooltip: NotificationCopy.bellTooltip(count),
         onPressed: () => _open(context),
         icon: Badge(
           isLabelVisible: count > 0,

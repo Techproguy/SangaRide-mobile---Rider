@@ -14,7 +14,7 @@ enum NotificationRoute {
   final String code;
 
   static NotificationRoute fromCode(Object? code) =>
-      enumByCode(values, '$code', (route) => route.code, NotificationRoute.none);
+      codedEnum(values, (route) => route.code, code, orElse: NotificationRoute.none);
 }
 
 enum NotificationKind {
@@ -32,7 +32,7 @@ enum NotificationKind {
   final String code;
 
   static NotificationKind fromCode(Object? code) =>
-      enumByCode(values, '$code', (kind) => kind.code, NotificationKind.general);
+      codedEnum(values, (kind) => kind.code, code, orElse: NotificationKind.general);
 }
 
 class NotificationAction {

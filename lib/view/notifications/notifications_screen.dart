@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sanga_ride/controller/rider/account/notifications_controller.dart';
+import 'package:sanga_ride/core/copy/common_copy.dart';
 import 'package:sanga_ride/core/services/permission_center.dart';
 import 'package:sanga_ride/core/services/session_restore.dart';
 import 'package:sanga_ride/model/models.dart';
+import 'package:sanga_ride/view/notifications/notification_copy.dart';
 import 'package:sanga_ride/view/notifications/notification_routing.dart';
 import 'package:sanga_ride/view/notifications/widgets/notification_row.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
@@ -63,10 +65,10 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             const SangaNotice(
               tone: SangaTone.warning,
               icon: Icons.notifications_off_outlined,
-              message: 'Notifications are off, so updates only show up here. Turn them on in Settings.',
+              message: NotificationCopy.permissionOff,
             ),
             SangaButton.outline(
-              label: 'Open Settings',
+              label: CommonCopy.openSettings,
               size: SangaButtonSize.compact,
               onPressed: permissions.openSettings,
             ),
@@ -78,12 +80,12 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
   Widget _header() {
     return SangaPageHeader(
-      title: 'Notifications',
+      title: NotificationCopy.title,
       trailing: Obx(
         () => _controller.unreadCount == 0
             ? const SizedBox.shrink()
             : IconButton(
-                tooltip: 'Mark all as read',
+                tooltip: NotificationCopy.markAllRead,
                 padding: EdgeInsets.zero,
                 onPressed: _controller.markAllRead,
                 icon: const Icon(Icons.done_all_rounded, color: SangaColors.primary),
@@ -99,8 +101,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         children: const [
           SangaEmptyMessage(
             icon: Icons.notifications_none_rounded,
-            title: 'All quiet',
-            message: 'You’re all caught up. New updates will show up here.',
+            title: NotificationCopy.allQuiet,
+            message: NotificationCopy.allQuietMessage,
           ),
         ],
       );
@@ -132,7 +134,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     if (state.isLoadingMore) return const SangaSkeleton.heights([72]);
     if (state.loadMoreFailed) {
       return SangaFailureMessage(
-        title: 'We couldn’t load more',
+        title: CommonCopy.loadMoreFailed,
         message: LoadProblem.connection.message,
         onRetry: _controller.loadMore,
       );
@@ -161,7 +163,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                     NotificationsFailed(:final problem) => Padding(
                       padding: const EdgeInsets.all(SangaSpacing.gutter),
                       child: SangaFailureMessage(
-                        title: 'We couldn’t load your notifications',
+                        title: NotificationCopy.loadFailed,
                         message: problem.message,
                         onRetry: _controller.retry,
                       ),

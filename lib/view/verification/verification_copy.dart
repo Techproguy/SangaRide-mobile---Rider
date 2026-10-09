@@ -9,6 +9,48 @@ class VerificationHeroCopy {
 }
 
 abstract final class VerificationCopy {
+  static const String done = 'Done';
+  static const String tryAgain = 'Try again';
+  static const String addYourId = 'Add your ID';
+  static const String underReviewTitle = 'Verification under review';
+  static const String idSavedTakeSelfie = 'Your ID is saved. Take your selfie and we’ll send it all off.';
+  static const String takeYourSelfie = 'Take your selfie';
+  static const String documentType = 'Document type';
+  static const String pickIdLead = 'Pick the ID you want to use and we’ll show you what to upload.';
+  static const String backOfId = 'Back of ID';
+  static const String informationSecure = 'Your information is secure and only used for verification.';
+  static const String documentVerification = 'Document verification';
+  static const String submitForReview = 'Submit for review';
+  static const String uploadValidId = 'Upload a valid ID';
+  static const String verifiedTitle = 'You’re verified';
+  static const String verifiedMessage = 'Thanks for waiting. Your account is all set.';
+  static const String anotherGoTitle = 'Verification needs another go';
+  static const String anotherGoMessage = 'We couldn’t verify everything. Have a look and try again.';
+  static const String notNow = 'Not now';
+  static const String talkToSupport = 'Need help? Talk to support';
+  static const String centreTitle = 'Verification centre';
+  static const String selfieTitle = 'Selfie verification';
+  static const String selfieSubtitle = 'Verify your identity';
+  static const String selfiePassed = 'Looking good! Your selfie is saved.';
+  static const String uploaded = 'Uploaded';
+  static const String choosePhoto = 'Choose a photo';
+  static const String chooseAnother = 'Choose another';
+  static const String tagVerified = 'Verified';
+  static const String tagInReview = 'In review';
+  static const String tagExpired = 'Expired';
+  static const String tagExpiringSoon = 'Expiring soon';
+
+  static String underReviewMessage(int estimatedReviewHours) =>
+      'This usually takes up to ${hoursLabel(estimatedReviewHours)}. We’ll let you know in your notifications.';
+
+  static String sentLine(String ago) => 'Sent $ago. We’ll let you know in your notifications.';
+
+  static String uploading(String label) => 'Uploading $label';
+
+  static String replace(String label) => 'Replace $label';
+
+  static String remove(String label) => 'Remove $label';
+
   static VerificationHeroCopy heroOf(Verification verification) => switch (verification.status) {
     VerificationStatus.unverified => const VerificationHeroCopy(
       title: 'Let’s verify you',
@@ -41,9 +83,9 @@ abstract final class VerificationCopy {
     final next = verification.nextItem;
     final status = verification.status;
     if (next == null) {
-      return verification.isReadyToSubmit ? 'Submit for review' : 'Done';
+      return verification.isReadyToSubmit ? submitForReview : done;
     }
-    if (status.needsAction) return 'Try again';
+    if (status.needsAction) return tryAgain;
     return next.status == ItemStatus.missing && verification.items.every((item) => item.status == ItemStatus.missing)
         ? 'Start verification'
         : 'Continue';

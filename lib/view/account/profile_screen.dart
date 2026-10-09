@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sanga_ride/controller/rider/account/account_controller.dart';
+import 'package:sanga_ride/core/copy/common_copy.dart';
 import 'package:sanga_ride/core/router/account_routes.dart';
 import 'package:sanga_ride/core/services/permission_center.dart';
 import 'package:sanga_ride/model/models.dart';
@@ -34,7 +35,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _changePhoto() async {
-    final source = await showPhotoSourceSheet(context, title: 'Change your photo');
+    final source = await showPhotoSourceSheet(context, title: AccountCopy.changeYourPhoto);
     if (source == null || !mounted) return;
     if (source == PhotoSource.camera) {
       final access = await Get.find<PermissionCenter>().prime(PermissionKind.camera, context);
@@ -52,10 +53,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final isConfirmed = await showSangaPromptSheet(
       context: context,
       icon: Icons.logout_rounded,
-      title: 'Log out?',
-      message: 'You’ll need your phone number to get back in.',
-      actionLabel: 'Yes, log out',
-      dismissLabel: 'Stay logged in',
+      title: AccountCopy.logOutTitle,
+      message: AccountCopy.logOutMessage,
+      actionLabel: AccountCopy.logOutAction,
+      dismissLabel: AccountCopy.stayLoggedIn,
     );
     if (!isConfirmed || !mounted) return;
     setState(() => _isLoggingOut = true);
@@ -100,13 +101,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
           SangaNotice(message: problem.message),
           if (problem.opensSettings)
             SangaButton.outline(
-              label: 'Open Settings',
+              label: CommonCopy.openSettings,
               size: SangaButtonSize.compact,
               onPressed: Get.find<PermissionCenter>().openSettings,
             ),
           if (state.hasPendingPhoto)
             SangaButton.outline(
-              label: 'Try again',
+              label: AccountCopy.tryAgain,
               size: SangaButtonSize.compact,
               onPressed: () => unawaited(_controller.retryPhoto()),
             ),
@@ -122,24 +123,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
       spacing: SangaSpacing.sm,
       children: [
         SangaProfileFieldTile(
-          label: 'Full name',
+          label: AccountCopy.fullName,
           value: account.fullName,
           onTap: () => showProfileEditSheet(context, field: ProfileField.name, account: account),
         ),
         SangaProfileFieldTile(
-          label: 'Phone number',
-          value: '${SangaPhoneNumber.dialCode} ${SangaPhoneNumber.format(account.phone)}',
+          label: AccountCopy.phoneNumber,
+          value: AccountCopy.phoneValue(SangaPhoneNumber.dialCode, SangaPhoneNumber.format(account.phone)),
           onTap: () => context.push(AccountRoutes.phone),
         ),
         SangaProfileFieldTile(
-          label: 'Email',
-          value: email ?? 'Add your email',
+          label: AccountCopy.email,
+          value: email ?? AccountCopy.addEmail,
           isEmpty: email == null,
           onTap: () => showProfileEditSheet(context, field: ProfileField.email, account: account),
         ),
         SangaProfileFieldTile(
-          label: 'Date of birth',
-          value: birthday == null ? 'Add your birthday' : TimeFormat.longDate(birthday),
+          label: AccountCopy.dateOfBirth,
+          value: birthday == null ? AccountCopy.addBirthday : TimeFormat.longDate(birthday),
           isEmpty: birthday == null,
           icon: Icons.calendar_month_rounded,
           onTap: () => showProfileEditSheet(context, field: ProfileField.birthday, account: account),
@@ -153,19 +154,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       spacing: SangaSpacing.xs,
       children: [
-        const SangaSectionHeader('Account'),
+        const SangaSectionHeader(AccountCopy.accountSection),
         SangaListGroup(
           children: [
             SangaListRow(
               leading: const Icon(Icons.logout_rounded, size: 22, color: SangaColors.textPrimary),
-              title: 'Log out',
+              title: AccountCopy.logOut,
               trailing: _isLoggingOut ? SangaListRow.spinner : const SizedBox.shrink(),
               onTap: _isLoggingOut ? null : _logout,
             ),
             SangaListRow(
               leading: const Icon(Icons.delete_outline_rounded, size: 22, color: SangaColors.dangerStrong),
-              title: 'Delete account',
-              subtitle: 'Removed after 30 days',
+              title: AccountCopy.deleteAccount,
+              subtitle: AccountCopy.removedAfter30Days,
               titleMaxLines: 2,
               onTap: () => context.push(AccountRoutes.delete),
             ),
@@ -194,7 +195,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Obx(() {
       final state = _controller.state;
       return SangaPageLayout(
-        title: 'Profile',
+        title: AccountCopy.profileTitle,
         children: [
           switch (state) {
             AccountLoading() => const SangaSkeleton.heights([96, 24, 56, 56, 56, 56]),

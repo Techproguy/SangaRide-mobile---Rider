@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:sanga_ride/controller/rider/account/account_controller.dart';
 import 'package:sanga_ride/model/models.dart';
+import 'package:sanga_ride/view/account/account_copy.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 enum ProfileField { name, email, birthday }
@@ -46,9 +47,9 @@ class _ProfileEditSheetState extends State<_ProfileEditSheet> {
   }
 
   String get _title => switch (widget.field) {
-    ProfileField.name => 'Your name',
-    ProfileField.email => 'Your email',
-    ProfileField.birthday => 'Your birthday',
+    ProfileField.name => AccountCopy.yourName,
+    ProfileField.email => AccountCopy.yourEmail,
+    ProfileField.birthday => AccountCopy.yourBirthday,
   };
 
   AccountProblem? _localProblem() => switch (widget.field) {
@@ -83,7 +84,7 @@ class _ProfileEditSheetState extends State<_ProfileEditSheet> {
     if (!mounted) return;
     if (problem == null) {
       Navigator.of(context).pop();
-      return SangaToast.show('Profile updated', tone: SangaToastTone.success);
+      return SangaToast.show(AccountCopy.profileUpdated, tone: SangaToastTone.success);
     }
     setState(() {
       _isSaving = false;
@@ -103,7 +104,7 @@ class _ProfileEditSheetState extends State<_ProfileEditSheet> {
             children: [
               Expanded(
                 child: SangaTextField(
-                  label: 'First name',
+                  label: AccountCopy.firstName,
                   controller: _firstName,
                   textCapitalization: TextCapitalization.words,
                   autofillHints: const [AutofillHints.givenName],
@@ -112,7 +113,7 @@ class _ProfileEditSheetState extends State<_ProfileEditSheet> {
               ),
               Expanded(
                 child: SangaTextField(
-                  label: 'Last name',
+                  label: AccountCopy.lastName,
                   controller: _lastName,
                   textCapitalization: TextCapitalization.words,
                   textInputAction: TextInputAction.done,
@@ -127,7 +128,7 @@ class _ProfileEditSheetState extends State<_ProfileEditSheet> {
         ],
       ),
       ProfileField.email => SangaTextField(
-        label: 'Email address',
+        label: AccountCopy.emailAddress,
         controller: _email,
         errorText: message,
         keyboardType: TextInputType.emailAddress,
@@ -158,7 +159,7 @@ class _ProfileEditSheetState extends State<_ProfileEditSheet> {
         const SizedBox(height: SangaSpacing.lg),
         _input(),
         const SizedBox(height: SangaSpacing.xl),
-        SangaButton.primary(label: 'Save', isLoading: _isSaving, onPressed: _canSave ? _save : null),
+        SangaButton.primary(label: AccountCopy.save, isLoading: _isSaving, onPressed: _canSave ? _save : null),
       ],
     );
   }

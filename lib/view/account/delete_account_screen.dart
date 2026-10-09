@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:sanga_ride/controller/rider/account/account_controller.dart';
 import 'package:sanga_ride/model/models.dart';
+import 'package:sanga_ride/view/account/account_copy.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 class DeleteAccountScreen extends StatefulWidget {
@@ -14,13 +15,6 @@ class DeleteAccountScreen extends StatefulWidget {
 }
 
 class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
-  static const List<String> _consequences = [
-    'Your account is scheduled for deletion and disappears after 30 days',
-    'Log back in during those 30 days and your account stays right where it was',
-    'Your ride history and saved places go with it',
-    'Records we must keep by law stay with us',
-  ];
-
   final _controller = Get.find<AccountController>();
   DeleteReason? _reason;
   bool _isUnderstood = false;
@@ -38,10 +32,10 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
       context: context,
       status: SangaStatus.caution,
       icon: Icons.delete_outline_rounded,
-      title: 'Delete your account?',
-      message: 'This is the last step. You’ll be logged out right away.',
-      actionLabel: 'Yes, delete it',
-      secondaryLabel: 'Keep my account',
+      title: AccountCopy.deleteConfirmTitle,
+      message: AccountCopy.deleteConfirmMessage,
+      actionLabel: AccountCopy.deleteConfirmAction,
+      secondaryLabel: AccountCopy.keepMyAccount,
       isDestructive: true,
     );
     if (!isConfirmed || !mounted) return;
@@ -56,18 +50,18 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
     await showSangaStatusSheet(
       context: context,
       status: SangaStatus.success,
-      title: 'Deletion scheduled',
+      title: AccountCopy.deletionScheduled,
       message: deletesAt != null
-          ? 'Your account goes on ${TimeFormat.longDate(deletesAt)}. Log in before then to keep it.'
-          : 'Log in within 30 days to keep your account.',
-      actionLabel: 'Log out',
+          ? AccountCopy.deletionDate(TimeFormat.longDate(deletesAt))
+          : AccountCopy.deletionWindow,
+      actionLabel: AccountCopy.logOut,
     );
     await _controller.logout();
   }
 
   Widget _footer(DeleteAccountState state) {
     return SangaButton.danger(
-      label: state is DeleteUnknown ? 'Check again' : 'Delete my account',
+      label: state is DeleteUnknown ? AccountCopy.checkAgain : AccountCopy.deleteMyAccount,
       isLoading: state is DeleteDeleting,
       onPressed: state is DeleteUnknown ? () => unawaited(_checkAgain()) : (_isUnderstood ? _confirm : null),
     );
@@ -84,24 +78,24 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
       final state = _controller.deleteState;
       final block = state is DeleteIdle ? state.block : null;
       return SangaPageLayout(
-        title: 'Delete account',
+        title: AccountCopy.deleteAccount,
         footer: _footer(state),
         children: [
-          Text('Before you go', style: SangaTextStyles.title),
+          Text(AccountCopy.beforeYouGo, style: SangaTextStyles.title),
           const SizedBox(height: SangaSpacing.xs),
-          Text('Here’s what happens when you delete your account.', style: SangaTextStyles.body),
+          Text(AccountCopy.deleteLead, style: SangaTextStyles.body),
           const SizedBox(height: SangaSpacing.lg),
           SangaSectionCard(
-            title: 'What to expect',
+            title: AccountCopy.whatToExpect,
             children: [
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: SangaSpacing.md, vertical: SangaSpacing.xs),
-                child: Column(spacing: SangaSpacing.sm, children: [for (final line in _consequences) _Bullet(line)]),
+                child: Column(spacing: SangaSpacing.sm, children: [for (final line in AccountCopy.deletionConsequences) _Bullet(line)]),
               ),
             ],
           ),
           const SizedBox(height: SangaSpacing.xl),
-          const SangaSectionHeader('Why are you leaving? (optional)'),
+          const SangaSectionHeader(AccountCopy.whyLeaving),
           const SizedBox(height: SangaSpacing.sm),
           SangaChoiceChips<DeleteReason>(
             options: [for (final reason in DeleteReason.values) SangaSelectOption(reason, reason.label)],
@@ -112,7 +106,7 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
           SangaCheckRow.text(
             isChecked: _isUnderstood,
             onChanged: (value) => setState(() => _isUnderstood = value),
-            text: 'I understand my account will be deleted',
+            text: AccountCopy.understandDeletion,
           ),
           if (block != null) ...[const SizedBox(height: SangaSpacing.lg), SangaNotice(message: block.message)],
           if (state is DeleteUnknown) ...[
