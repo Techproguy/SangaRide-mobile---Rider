@@ -3,12 +3,11 @@ import 'dart:developer';
 import 'package:dio/dio.dart';
 import 'package:flutter_polyline_points/flutter_polyline_points.dart' show PolylinePoints, PointLatLng;
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:sanga_ride/core/api/maps_endpoints.dart';
 import 'package:sanga_ride/core/constants.dart';
 import 'package:sanga_ride/core/storage_keys.dart';
 
 class DirectionsService {
-  static const String _endpoint = 'https://routes.googleapis.com/directions/v2:computeRoutes';
-
   final Dio _dio;
   final Map<String, _CachedRoute> _cache = {};
 
@@ -35,7 +34,7 @@ class DirectionsService {
 
     try {
       final response = await _dio.post<Map<String, dynamic>>(
-        _endpoint,
+        MapsEndpoints.routes,
         options: Options(
           headers: {
             'Content-Type': 'application/json',

@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:sanga_ride/core/api/maps_endpoints.dart';
 import 'package:sanga_ride/core/api/mock/mock_places.dart';
 import 'package:sanga_ride/core/constants.dart';
 import 'package:sanga_ride/core/services/app_signature.dart';
@@ -10,9 +11,6 @@ import 'package:sanga_ride/core/storage_keys.dart';
 import 'package:sanga_ride/model/models.dart';
 
 class PlacesService {
-  static const String _placesBase = 'https://places.googleapis.com/v1';
-  static const String _geocodeUrl = 'https://maps.googleapis.com/maps/api/geocode/json';
-
   static const String _placeListMask = 'places.id,places.displayName,places.formattedAddress,places.location';
   static const String _placeDetailMask = 'id,displayName,formattedAddress,location';
 
@@ -42,7 +40,7 @@ class PlacesService {
     if (!SangaMapsKeys.isConfigured) return MockPlaces.autocomplete(input, origin: origin);
 
     final response = await _dio.post(
-      '$_placesBase/places:autocomplete',
+      MapsEndpoints.placesAutocomplete,
       data: {
         'input': input,
         'sessionToken': ?sessionToken,
@@ -70,7 +68,7 @@ class PlacesService {
   Future<Place?> getPlaceDetails(String placeId, {String? sessionToken}) async {
     if (!SangaMapsKeys.isConfigured) return MockPlaces.details(placeId);
     final response = await _dio.get(
-      '$_placesBase/places/$placeId',
+      MapsEndpoints.placeDetailsOf(placeId),
       queryParameters: {'sessionToken': ?sessionToken},
       options: _options(_placeDetailMask),
     );
@@ -92,7 +90,7 @@ class PlacesService {
     }
     try {
       final response = await _dio.post(
-        '$_placesBase/places:searchNearby',
+        MapsEndpoints.placesSearchNearby,
         data: {
           if (type != null) 'includedTypes': [type],
           'maxResultCount': 20,
@@ -126,7 +124,7 @@ class PlacesService {
 
   Future<List<Place>> _textSearch(String query, {double? biasLat, double? biasLng, int? biasRadius}) async {
     final response = await _dio.post(
-      '$_placesBase/places:searchText',
+      MapsEndpoints.placesSearchText,
       data: {
         'textQuery': query,
         'regionCode': SangaConstants.placesCountryCode,
@@ -172,7 +170,7 @@ class PlacesService {
   Future<List<GeocodedLocation>> _geocode(LatLng coordinates, {String? resultType}) async {
     try {
       final response = await _dio.get(
-        _geocodeUrl,
+        MapsEndpoints.geocode,
         queryParameters: {
           'latlng': '${coordinates.latitude},${coordinates.longitude}',
           'key': _apiKey,
