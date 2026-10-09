@@ -13,7 +13,12 @@ class SangaMapsKeys {
   static const String _android = String.fromEnvironment('MAPS_API_KEY_ANDROID');
   static const String _ios = String.fromEnvironment('MAPS_API_KEY_IOS');
 
-  static bool get isConfigured => (Platform.isIOS ? _ios : _android).isNotEmpty;
+  static const String _placeholderPrefix = 'replace-with';
+
+  static bool get isConfigured {
+    final key = Platform.isIOS ? _ios : _android;
+    return key.isNotEmpty && !key.startsWith(_placeholderPrefix);
+  }
 
   static String get defaultKey {
     final key = Platform.isIOS ? _ios : _android;
