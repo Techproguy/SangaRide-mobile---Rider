@@ -16,7 +16,7 @@ class ResolutionOptions extends StatelessWidget {
       children: [
         for (final option in options)
           SangaOptionCard(
-            leading: const SangaIconBadge(size: 34, child: Icon(Icons.touch_app_outlined)),
+            leading: const SangaIconBadge(size: 36, child: Icon(Icons.touch_app_outlined)),
             title: option.label,
             subtitle: option.hint.isEmpty ? null : option.hint,
             isSelected: option.id == selectedId,

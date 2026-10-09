@@ -17,7 +17,7 @@ class IssueTypeList extends StatelessWidget {
       children: [
         for (final type in types)
           SangaOptionCard(
-            leading: SangaIconBadge(size: 34, child: Icon(SupportCopy.issueIconOf(type.icon))),
+            leading: SangaIconBadge(size: 36, child: Icon(SupportCopy.issueIconOf(type.icon))),
             title: type.label,
             subtitle: type.hint.isEmpty ? null : type.hint,
             isSelected: type.id == selectedId,

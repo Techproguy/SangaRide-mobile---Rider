@@ -228,7 +228,7 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
                 _header(state),
                 Expanded(
                   child: switch (state) {
-                    ChatConnecting() => const Center(child: SangaActivityIndicator(size: 36)),
+                    ChatConnecting() => const Center(child: SangaActivityIndicator(size: 32)),
                     ChatUnavailable(:final problem) => _unavailable(problem),
                     final ChatLive live => _live(live),
                   },

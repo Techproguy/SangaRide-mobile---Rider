@@ -11,7 +11,7 @@ class ArticleRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SangaListRow(
-      leading: const SangaIconBadge(size: 34, child: Icon(Icons.article_outlined)),
+      leading: const SangaIconBadge(size: 36, child: Icon(Icons.article_outlined)),
       title: article.title,
       subtitle: article.summary.isEmpty ? null : article.summary,
       titleMaxLines: 2,

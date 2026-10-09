@@ -27,7 +27,7 @@ class TripLinkList extends StatelessWidget {
       children: [
         if (unknown != null)
           SangaOptionCard(
-            leading: const SangaIconBadge(size: 34, child: Icon(Icons.directions_car_outlined)),
+            leading: const SangaIconBadge(size: 36, child: Icon(Icons.directions_car_outlined)),
             title: 'The trip you came from',
             isSelected: selectedId == unknown,
             onTap: () => onSelected(unknown),
@@ -35,7 +35,7 @@ class TripLinkList extends StatelessWidget {
         for (final ride in rides)
           SangaOptionCard(
             leading: SangaIconBadge(
-              size: 34,
+              size: 36,
               child: Icon(ride.kind.isDelivery ? Icons.inventory_2_outlined : Icons.directions_car_outlined),
             ),
             title: '${ride.route.pickup.name} to ${ride.route.dropoff.name}',
@@ -44,7 +44,7 @@ class TripLinkList extends StatelessWidget {
             onTap: () => onSelected(ride.id),
           ),
         SangaOptionCard(
-          leading: const SangaIconBadge(size: 34, child: Icon(Icons.not_interested_rounded)),
+          leading: const SangaIconBadge(size: 36, child: Icon(Icons.not_interested_rounded)),
           title: 'Not about a trip',
           isSelected: selectedId == null,
           onTap: () => onSelected(null),

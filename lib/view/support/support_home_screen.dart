@@ -32,13 +32,13 @@ class _SupportHomeScreenState extends State<SupportHomeScreen> {
     return SangaListGroup(
       children: [
         SangaListRow(
-          leading: const SangaIconBadge(size: 34, child: Icon(Icons.headset_mic_outlined)),
+          leading: const SangaIconBadge(size: 36, child: Icon(Icons.headset_mic_outlined)),
           title: 'Contact support',
           subtitle: 'Chat, call or report an issue',
           onTap: () => context.push(SupportRoutes.contact),
         ),
         SangaListRow(
-          leading: const SangaIconBadge(size: 34, child: Icon(Icons.assignment_outlined)),
+          leading: const SangaIconBadge(size: 36, child: Icon(Icons.assignment_outlined)),
           title: 'My reports',
           subtitle: 'Follow up on issues you reported',
           onTap: () => context.push(SupportRoutes.tickets),

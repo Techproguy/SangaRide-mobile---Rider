@@ -19,7 +19,7 @@ class ArticleBody extends StatelessWidget {
             spacing: SangaSpacing.sm,
             children: [
               const Padding(
-                padding: EdgeInsets.only(top: 8),
+                padding: EdgeInsets.only(top: SangaSpacing.xs),
                 child: Icon(Icons.circle, size: 6, color: SangaColors.primary),
               ),
               Expanded(
