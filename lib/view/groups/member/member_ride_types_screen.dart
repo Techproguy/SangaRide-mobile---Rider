@@ -103,11 +103,10 @@ class _FormState extends State<_Form> {
           if (options.isEmpty && _booking.isLoadingOptions)
             const Center(child: SangaActivityIndicator(size: 32))
           else if (options.isEmpty)
-            SangaInlineMessage(
+            SangaFailureMessage(
               title: 'We couldn’t load the ride types',
               message: 'Check your connection and give it another go.',
-              actionLabel: 'Try again',
-              onAction: _booking.loadOptions,
+              onRetry: _booking.loadOptions,
             )
           else
             SangaListGroup(

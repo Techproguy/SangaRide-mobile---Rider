@@ -78,7 +78,11 @@ class _FormState extends State<_Form> {
         ),
         SangaButton.outline(label: 'Add a place', onPressed: _places.length >= maxPlaces ? null : _add),
         if (_places.isEmpty)
-          SangaInlineMessage(title: 'Anywhere goes', message: 'No places yet, so $name can ride to and from anywhere.')
+          SangaEmptyMessage(
+            icon: Icons.location_on_outlined,
+            title: 'Anywhere goes',
+            message: 'No places yet, so $name can ride to and from anywhere.',
+          )
         else
           Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,

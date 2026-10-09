@@ -100,18 +100,18 @@ class HistoryDelivery {
   });
 
   factory HistoryDelivery.fromJson(Map<String, dynamic> json) {
-    final item = Map<String, dynamic>.from(json['item'] as Map);
-    final recipient = Map<String, dynamic>.from(json['recipient'] as Map);
-    final proof = json['deliveryProof'] as Map?;
+    final reader = JsonReader(json);
+    final item = reader.object('item');
+    final recipient = reader.object('recipient');
     return HistoryDelivery(
-      itemName: item['name'] as String,
-      description: item['description'] as String?,
-      sizeLabel: item['sizeLabel'] as String?,
-      weightLabel: item['weightLabel'] as String?,
-      itemPhotoUrl: item['photoUrl'] as String?,
-      recipientName: recipient['name'] as String,
-      recipientPhone: recipient['phone'] as String,
-      proofPhotoUrl: proof?['photoUrl'] as String?,
+      itemName: item.str('name'),
+      description: item.strOrNull('description'),
+      sizeLabel: item.strOrNull('sizeLabel'),
+      weightLabel: item.strOrNull('weightLabel'),
+      itemPhotoUrl: item.strOrNull('photoUrl'),
+      recipientName: recipient.strOr('name', ''),
+      recipientPhone: recipient.strOr('phone', ''),
+      proofPhotoUrl: reader.objectOrNull('deliveryProof')?.strOrNull('photoUrl'),
     );
   }
 
@@ -156,6 +156,15 @@ class HistoryDetail {
 
   factory HistoryDetail.fromJson(Map<String, dynamic> json) {
     Map<String, dynamic>? map(String key) => json[key] is Map ? Map<String, dynamic>.from(json[key] as Map) : null;
+    T? attempt<T>(Map<String, dynamic>? source, T Function(Map<String, dynamic> source) parse) {
+      if (source == null) return null;
+      try {
+        return parse(source);
+      } on Object {
+        return null;
+      }
+    }
+
     final driver = map('driver');
     final vehicle = map('vehicle');
     final paidWith = map('paidWith');
@@ -177,13 +186,13 @@ class HistoryDetail {
       distanceKm: reader.doubleOrNull('distanceKm'),
       durationMinutes: reader.intOrNull('durationMinutes'),
       lines: reader.listOf('lines', (line) => ReceiptLine.fromJson(line.raw)),
-      paidWith: paidWith == null ? null : ReceiptPayment.fromJson(paidWith),
-      driver: driver == null ? null : HistoryDriver.fromJson(driver),
-      vehicle: vehicle == null ? null : DriverVehicle.fromJson(vehicle),
+      paidWith: attempt(paidWith, ReceiptPayment.fromJson),
+      driver: attempt(driver, HistoryDriver.fromJson),
+      vehicle: attempt(vehicle, DriverVehicle.fromJson),
       events: [for (final event in reader.listOf('events', HistoryEvent.tryFromReader)) ?event],
       ratedStars: (rating?['stars'] as num?)?.toInt(),
-      cancellation: cancellation == null ? null : HistoryCancellation.fromJson(cancellation),
-      delivery: delivery == null ? null : HistoryDelivery.fromJson(delivery),
+      cancellation: attempt(cancellation, HistoryCancellation.fromJson),
+      delivery: attempt(delivery, HistoryDelivery.fromJson),
     );
   }
 
