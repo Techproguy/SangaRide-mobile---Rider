@@ -21,7 +21,7 @@ class AppAssets {
   static const String serviceSomeone = '$images/service_someone.webp';
 
   static const String splashRoad = '$images/splash_road.webp';
-  static const String splashCar = '$images/splash_car.webp';
+  static const String splashCar = '$images/splash_car.png';
 
   static const String promoLux = '$images/promo_lux.webp';
 
