@@ -28,16 +28,17 @@ class LocationService {
 
   static Future<LocationResult>? _inFlight;
 
-  Future<LocationResult> resolveCurrentLocation() => _inFlight ??= _resolve().whenComplete(() => _inFlight = null);
+  Future<LocationResult> resolveCurrentLocation({bool mayPrompt = false}) =>
+      _inFlight ??= _resolve(mayPrompt: mayPrompt).whenComplete(() => _inFlight = null);
 
-  Future<LocationResult> _resolve() async {
+  Future<LocationResult> _resolve({required bool mayPrompt}) async {
     try {
       if (!await Geolocator.isLocationServiceEnabled()) {
         return const LocationResult(LocationStatus.serviceDisabled);
       }
 
       var permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.denied) permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied && mayPrompt) permission = await Geolocator.requestPermission();
       if (permission == LocationPermission.denied) return const LocationResult(LocationStatus.denied);
       if (permission == LocationPermission.deniedForever) return const LocationResult(LocationStatus.deniedForever);
 

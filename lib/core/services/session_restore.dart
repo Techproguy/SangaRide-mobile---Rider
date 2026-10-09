@@ -6,6 +6,7 @@ import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 import 'package:sanga_ride/core/api/api.dart';
 import 'package:sanga_ride/core/api/app_endpoints.dart';
+import 'package:sanga_ride/controller/shared/user_controller.dart';
 import 'package:sanga_ride/core/router/router.dart';
 import 'package:sanga_ride/core/router/routes.dart';
 import 'package:sanga_ride/core/router/safety_routes.dart';
@@ -64,6 +65,7 @@ class SessionRestore extends GetxService {
 
   Future<List<String>> resolveBoot() async {
     _isRestoring.value = true;
+    unawaited(Get.find<UserController>().fetchMe());
     try {
       final state = await _fetch(bootCap);
       if (state == null) {
@@ -169,7 +171,7 @@ class SessionRestore extends GetxService {
     if (state.activeSosId != null) return [SangaRoutes.home, SafetyRoutes.centreOf(tripId: state.activeTrip?.id)];
     final trip = state.activeTrip;
     if (trip != null) return [SangaRoutes.home, TripRoutes.tripOf(trip.id)];
-    if (state.activeRideRequest != null) return const [SangaRoutes.home];
+    if (state.activeRideRequest != null) return const [SangaRoutes.home, SangaRoutes.rideOffers];
     final unpaid = state.tripNeedingPayment;
     if (unpaid != null) return [SangaRoutes.home, TripWrapUpRoutes.payOf(unpaid)];
     final unrated = state.tripNeedingRating;

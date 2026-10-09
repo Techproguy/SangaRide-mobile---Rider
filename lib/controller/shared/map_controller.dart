@@ -162,8 +162,8 @@ class MapController extends GetxController {
     return current == null ? null : _locationService.calculateDistance(current, destination);
   }
 
-  Future<LocationResult> resolveCurrentLocation() async {
-    final result = await _locationService.resolveCurrentLocation();
+  Future<LocationResult> resolveCurrentLocation({bool mayPrompt = false}) async {
+    final result = await _locationService.resolveCurrentLocation(mayPrompt: mayPrompt);
     if (result.isGranted) _updateCurrentLocation(result.position!);
     return result;
   }

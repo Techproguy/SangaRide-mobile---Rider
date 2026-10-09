@@ -86,7 +86,7 @@ class _HomeLocationScreenState extends State<HomeLocationScreen> {
     }
     if (!access.isUsable) return;
     setState(() => _isLocating = true);
-    final result = await _location.resolveCurrentLocation();
+    final result = await _location.resolveCurrentLocation(mayPrompt: true);
     final position = result.position;
     final place = position == null ? null : await _places.placeAt(position);
     if (!mounted) return;
