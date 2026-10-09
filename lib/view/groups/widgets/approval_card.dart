@@ -67,32 +67,17 @@ class ApprovalCard extends StatelessWidget {
   }
 }
 
-class _ExpiryLine extends StatefulWidget {
+class _ExpiryLine extends StatelessWidget {
   const _ExpiryLine({required this.expiresAt, required this.onExpired});
 
   final DateTime expiresAt;
   final VoidCallback onExpired;
 
   @override
-  State<_ExpiryLine> createState() => _ExpiryLineState();
-}
-
-class _ExpiryLineState extends State<_ExpiryLine> {
-  late DateTime _endsAt = _rebase(widget.expiresAt);
-
-  @override
-  void didUpdateWidget(_ExpiryLine oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.expiresAt != widget.expiresAt) _endsAt = _rebase(widget.expiresAt);
-  }
-
-  DateTime _rebase(DateTime deadline) => DateTime.now().add(ServerClock.instance.remaining(deadline));
-
-  @override
   Widget build(BuildContext context) {
-    return SangaCountdown(
-      endsAt: _endsAt,
-      onFinished: widget.onExpired,
+    return SangaCountdown.server(
+      endsAt: expiresAt,
+      onFinished: onExpired,
       builder: (context, remaining) => Text(
         remaining == Duration.zero ? 'This request has closed' : GroupCopy.approvalExpiry(remaining),
         style: SangaTextStyles.caption,

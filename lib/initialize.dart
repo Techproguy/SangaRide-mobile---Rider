@@ -42,6 +42,7 @@ import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 Future<void> initializeSanga() async {
   WidgetsFlutterBinding.ensureInitialized();
   await GetStorage.init();
+  SangaCountdown.serverClock = ServerClock.instance.now;
   ApiEnvironment.verify();
   await SessionStorage.tokens.hydrate();
   unawaited(SangaMarkerIcons.preload());

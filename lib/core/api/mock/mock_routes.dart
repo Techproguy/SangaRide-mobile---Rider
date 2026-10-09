@@ -64,7 +64,6 @@ class MockRoutes {
     MockRoute.get(AppEndpoints.weather, (_) => MockData.weather),
   ];
 
-
   static void resetRideRequests() => MockRideRequests.reset();
 
   static ({String id, String status})? activeRideRequest() => MockRideRequests.activeRideRequest();
