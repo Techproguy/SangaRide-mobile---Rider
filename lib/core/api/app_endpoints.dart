@@ -17,6 +17,8 @@ class AppEndpoints {
   static const String logout = '$_auth/logout';
 
   static const String me = AccountEndpoints.me;
+  static const String meState = '/me/state';
+  static const String health = '/health';
 
   static const String selfie = '$_verification/selfie';
 
