@@ -48,7 +48,7 @@ Future<void> initializeSanga() async {
   await SangaFrame.preload(SangaConstants.frame);
   await SangaPhotoBackdrop.precache([
     for (final image in AppAssets.firstScreenPhotos) AssetImage(image),
-    if (SessionStorage.tokens.hasSession) const AssetImage(AppAssets.bootSplash),
+    if (SessionStorage.tokens.hasSession) ...const [AssetImage(AppAssets.splashRoad), AssetImage(AppAssets.splashCar)],
   ]);
 
   final api = Get.put(ApiService(), permanent: true);
