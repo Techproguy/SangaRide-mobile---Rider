@@ -26,7 +26,7 @@ class VerificationItemTile extends StatelessWidget {
     return InkWell(
       onTap: onTap,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: SangaSpacing.md, vertical: SangaSpacing.sm + 2),
+        padding: const EdgeInsets.symmetric(horizontal: SangaSpacing.md, vertical: SangaSpacing.sm),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           spacing: SangaSpacing.sm,
@@ -40,7 +40,7 @@ class VerificationItemTile extends StatelessWidget {
                   Text(item.label, style: SangaTextStyles.cardTitle),
                   Text(
                     VerificationCopy.itemSubtitleOf(item),
-                    style: SangaTextStyles.tileSubtitle.copyWith(color: _isProblem ? SangaColors.dangerStrong : null),
+                    style: SangaTextStyles.tileSubtitle.copyWith(color: _isProblem ? SangaColors.danger : null),
                   ),
                 ],
               ),

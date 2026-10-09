@@ -89,10 +89,9 @@ class DocumentSlot extends StatelessWidget {
             onPressed: onPick,
             icon: const Icon(Icons.autorenew_rounded, color: SangaColors.primary),
           ),
-          IconButton(
-            tooltip: 'Remove $label',
-            onPressed: onRemove,
-            icon: const Icon(Icons.close_rounded, color: SangaColors.textMuted),
+          Tooltip(
+            message: 'Remove $label',
+            child: SangaCircleButton.close(onPressed: onRemove),
           ),
         ],
       ),
