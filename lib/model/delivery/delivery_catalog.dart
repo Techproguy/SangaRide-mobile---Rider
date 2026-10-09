@@ -1,3 +1,5 @@
+import 'package:sanga_ride_core/sanga_ride_core.dart';
+
 abstract final class DeliveryRules {
   static const String documentsKindId = 'documents';
   static const String defaultPackageTypeId = 'not_fragile';
@@ -17,8 +19,8 @@ String deliveryEtaLabel(List<int> minutes) {
 class DeliveryKindOption {
   const DeliveryKindOption({required this.id, required this.label, required this.hint});
 
-  factory DeliveryKindOption.fromJson(Map<String, dynamic> json) =>
-      DeliveryKindOption(id: json['id'] as String, label: json['label'] as String, hint: json['hint'] as String);
+  factory DeliveryKindOption.fromReader(JsonReader reader) =>
+      DeliveryKindOption(id: reader.str('id'), label: reader.str('label'), hint: reader.str('hint'));
 
   final String id;
   final String label;
@@ -30,8 +32,8 @@ class DeliveryKindOption {
 class PackageSize {
   const PackageSize({required this.id, required this.label, required this.maxKg});
 
-  factory PackageSize.fromJson(Map<String, dynamic> json) =>
-      PackageSize(id: json['id'] as String, label: json['label'] as String, maxKg: (json['maxKg'] as num).toInt());
+  factory PackageSize.fromReader(JsonReader reader) =>
+      PackageSize(id: reader.str('id'), label: reader.str('label'), maxKg: reader.number('maxKg').toInt());
 
   final String id;
   final String label;
@@ -45,8 +47,7 @@ class PackageSize {
 class PackageType {
   const PackageType({required this.id, required this.label});
 
-  factory PackageType.fromJson(Map<String, dynamic> json) =>
-      PackageType(id: json['id'] as String, label: json['label'] as String);
+  factory PackageType.fromReader(JsonReader reader) => PackageType(id: reader.str('id'), label: reader.str('label'));
 
   final String id;
   final String label;
@@ -55,11 +56,11 @@ class PackageType {
 class DeliveryTierInfo {
   const DeliveryTierInfo({required this.id, required this.label, required this.blurb, required this.etaMinutes});
 
-  factory DeliveryTierInfo.fromJson(Map<String, dynamic> json) => DeliveryTierInfo(
-    id: json['id'] as String,
-    label: json['label'] as String,
-    blurb: json['blurb'] as String,
-    etaMinutes: [for (final minutes in json['etaMinutes'] as List) (minutes as num).toInt()],
+  factory DeliveryTierInfo.fromReader(JsonReader reader) => DeliveryTierInfo(
+    id: reader.str('id'),
+    label: reader.str('label'),
+    blurb: reader.str('blurb'),
+    etaMinutes: [for (final minutes in _requiredList(reader, 'etaMinutes')) (minutes as num).toInt()],
   );
 
   final String id;
@@ -79,18 +80,21 @@ class DeliveryCatalog {
     required this.prohibitedNotice,
   });
 
-  factory DeliveryCatalog.fromJson(Map<String, dynamic> json) => DeliveryCatalog(
-    kinds: _list(json['kinds'], DeliveryKindOption.fromJson),
-    sizes: _list(json['sizes'], PackageSize.fromJson),
-    packageTypes: _list(json['packageTypes'], PackageType.fromJson),
-    tiers: _list(json['tiers'], DeliveryTierInfo.fromJson),
-    highValueThreshold: (json['highValueThreshold'] as num).toInt(),
-    maxDeclaredValue: (json['maxDeclaredValue'] as num).toInt(),
-    prohibitedNotice: json['prohibitedNotice'] as String,
-  );
+  factory DeliveryCatalog.fromJson(Map<String, dynamic> json) {
+    final reader = JsonReader.of(json);
+    return DeliveryCatalog(
+      kinds: _parseAll(reader, 'kinds', DeliveryKindOption.fromReader),
+      sizes: _parseAll(reader, 'sizes', PackageSize.fromReader),
+      packageTypes: _parseAll(reader, 'packageTypes', PackageType.fromReader),
+      tiers: _parseAll(reader, 'tiers', DeliveryTierInfo.fromReader),
+      highValueThreshold: reader.number('highValueThreshold').toInt(),
+      maxDeclaredValue: reader.number('maxDeclaredValue').toInt(),
+      prohibitedNotice: reader.str('prohibitedNotice'),
+    );
+  }
 
-  static List<T> _list<T>(Object? raw, T Function(Map<String, dynamic>) parse) => [
-    for (final json in raw as List) parse(Map<String, dynamic>.from(json as Map)),
+  static List<T> _parseAll<T>(JsonReader reader, String key, T Function(JsonReader item) parse) => [
+    for (final item in _requiredList(reader, key)) parse(JsonReader.of(item)),
   ];
 
   final List<DeliveryKindOption> kinds;
@@ -116,6 +120,12 @@ class DeliveryCatalog {
   String get premiumTierLabel => tierOf(DeliveryRules.premiumTierId)?.label ?? 'a premium tier';
 
   bool isHighValue(int? value) => value != null && value >= highValueThreshold;
+}
+
+List<Object?> _requiredList(JsonReader reader, String key) {
+  final value = reader.raw[key];
+  if (value is! List) throw JsonFormatError('Expected a list at "$key"', value);
+  return value;
 }
 
 sealed class DeliveryCatalogState {

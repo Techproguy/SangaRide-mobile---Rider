@@ -1,8 +1,10 @@
+import 'package:sanga_ride/core/api/server_codes.dart';
+import 'package:sanga_ride/core/copy/common_copy.dart';
 import 'package:sanga_ride_core/sanga_ride_core.dart';
 
 enum DeliveryFailure {
-  fileTooLarge('file_too_large', 'That photo is too big', 'Pick a smaller one or snap it again.'),
-  unsupportedType('unsupported_type', 'We can’t use that file', 'Choose a JPG or PNG photo instead.'),
+  fileTooLarge(ServerCode.fileTooLarge, 'That photo is too big', 'Pick a smaller one or snap it again.'),
+  unsupportedType(ServerCode.unsupportedType, 'We can’t use that file', 'Choose a JPG or PNG photo instead.'),
   unreadablePhoto('unreadable_photo', 'We couldn’t read that photo', 'Try another one or snap it again.'),
   cameraDenied(
     'camera_denied',
@@ -22,7 +24,7 @@ enum DeliveryFailure {
     'Try again, or choose a photo from your gallery.',
   ),
   quoteExpired(
-    'quote_expired',
+    ServerCode.quoteExpired,
     'Your price timed out',
     'We’ve fetched a fresh price for you. Have a look and go again.',
   ),
@@ -36,8 +38,8 @@ enum DeliveryFailure {
     'That phone number looks off',
     'Check the recipient’s number so your driver can reach them.',
   ),
-  connection('connection', 'We couldn’t reach the server', 'Check your connection and give it another go.'),
-  unknown('unknown', 'Something went wrong', 'Give it another go in a moment.');
+  connection('connection', CommonCopy.unreachableTitle, CommonCopy.connectionBody),
+  unknown('unknown', CommonCopy.serverTitle, 'Give it another go in a moment.');
 
   const DeliveryFailure(this.code, this.title, this.message, {this.opensSettings = false});
 
@@ -47,8 +49,6 @@ enum DeliveryFailure {
   final bool opensSettings;
 
   bool get isRetriable => this == connection || this == unknown;
-
-  bool get isRejection => this == quoteExpired || this == itemProhibited || this == invalidRecipientPhone;
 
   String get actionLabel => switch (this) {
     quoteExpired => 'See new price',
