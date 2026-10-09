@@ -90,7 +90,10 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
             children: [
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: SangaSpacing.md, vertical: SangaSpacing.xs),
-                child: Column(spacing: SangaSpacing.sm, children: [for (final line in AccountCopy.deletionConsequences) _Bullet(line)]),
+                child: Column(
+                  spacing: SangaSpacing.sm,
+                  children: [for (final line in AccountCopy.deletionConsequences) _Bullet(line)],
+                ),
               ),
             ],
           ),

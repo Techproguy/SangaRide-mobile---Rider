@@ -107,7 +107,11 @@ class _ChangePhoneScreenState extends State<ChangePhoneScreen> {
         onExpired: () => setState(() => _isExpired = true),
       ),
       const SizedBox(height: SangaSpacing.xxl),
-      SangaButton.primary(label: AccountCopy.verify, isLoading: state.isVerifying, onPressed: _canVerify ? _verify : null),
+      SangaButton.primary(
+        label: AccountCopy.verify,
+        isLoading: state.isVerifying,
+        onPressed: _canVerify ? _verify : null,
+      ),
       const SizedBox(height: SangaSpacing.sm),
       SangaTextLink(label: AccountCopy.useDifferentNumber, onPressed: _useAnotherNumber),
     ];
