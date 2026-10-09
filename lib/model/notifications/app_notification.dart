@@ -1,3 +1,5 @@
+import 'package:sanga_ride_core/sanga_ride_core.dart';
+
 enum NotificationRoute {
   trip('trip'),
   scheduledRide('scheduled_ride'),
@@ -11,7 +13,8 @@ enum NotificationRoute {
 
   final String code;
 
-  static NotificationRoute fromCode(Object? code) => values.where((route) => route.code == '$code').firstOrNull ?? none;
+  static NotificationRoute fromCode(Object? code) =>
+      enumByCode(values, '$code', (route) => route.code, NotificationRoute.none);
 }
 
 enum NotificationKind {
@@ -28,14 +31,15 @@ enum NotificationKind {
 
   final String code;
 
-  static NotificationKind fromCode(Object? code) => values.where((kind) => kind.code == '$code').firstOrNull ?? general;
+  static NotificationKind fromCode(Object? code) =>
+      enumByCode(values, '$code', (kind) => kind.code, NotificationKind.general);
 }
 
 class NotificationAction {
   const NotificationAction({required this.route, this.id});
 
-  factory NotificationAction.fromJson(Map<String, dynamic>? json) =>
-      NotificationAction(route: NotificationRoute.fromCode(json?['route']), id: json?['id'] as String?);
+  factory NotificationAction.fromReader(JsonReader? reader) =>
+      NotificationAction(route: NotificationRoute.fromCode(reader?.strOrNull('route')), id: reader?.strOrNull('id'));
 
   final NotificationRoute route;
   final String? id;
@@ -52,16 +56,14 @@ class AppNotification {
     required this.action,
   });
 
-  factory AppNotification.fromJson(Map<String, dynamic> json) => AppNotification(
-    id: json['id'] as String,
-    kind: NotificationKind.fromCode(json['kind']),
-    title: json['title'] as String,
-    body: json['body'] as String,
-    createdAt: DateTime.parse('${json['createdAt']}').toLocal(),
-    readAt: json['readAt'] == null ? null : DateTime.parse('${json['readAt']}').toLocal(),
-    action: NotificationAction.fromJson(
-      json['action'] == null ? null : Map<String, dynamic>.from(json['action'] as Map),
-    ),
+  factory AppNotification.fromReader(JsonReader reader) => AppNotification(
+    id: reader.str('id'),
+    kind: NotificationKind.fromCode(reader.strOrNull('kind')),
+    title: reader.strOr('title', ''),
+    body: reader.strOr('body', ''),
+    createdAt: reader.time('createdAt').toLocal(),
+    readAt: reader.timeOrNull('readAt')?.toLocal(),
+    action: NotificationAction.fromReader(reader.objectOrNull('action')),
   );
 
   final String id;
@@ -88,11 +90,15 @@ class AppNotification {
 class NotificationsPage {
   const NotificationsPage({required this.items, required this.unreadCount, required this.hasMore});
 
-  factory NotificationsPage.fromJson(Map<String, dynamic> json) => NotificationsPage(
-    items: [for (final item in json['items'] as List) AppNotification.fromJson(Map<String, dynamic>.from(item as Map))],
-    unreadCount: (json['unreadCount'] as num).toInt(),
-    hasMore: json['hasMore'] == true,
-  );
+  factory NotificationsPage.fromJson(Map<String, dynamic> json) {
+    final reader = JsonReader(json);
+    final items = reader.listOf('items', AppNotification.fromReader);
+    return NotificationsPage(
+      items: items,
+      unreadCount: reader.intOr('unreadCount', items.where((item) => !item.isRead).length),
+      hasMore: reader.boolOr('hasMore', false),
+    );
+  }
 
   final List<AppNotification> items;
   final int unreadCount;

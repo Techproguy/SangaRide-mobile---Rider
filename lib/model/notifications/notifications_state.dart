@@ -1,3 +1,4 @@
+import 'package:sanga_ride/model/account/load_problem.dart';
 import 'package:sanga_ride/model/notifications/app_notification.dart';
 
 sealed class NotificationsState {
@@ -9,7 +10,9 @@ final class NotificationsLoading extends NotificationsState {
 }
 
 final class NotificationsFailed extends NotificationsState {
-  const NotificationsFailed();
+  const NotificationsFailed(this.problem);
+
+  final LoadProblem problem;
 }
 
 final class NotificationsLoaded extends NotificationsState {
@@ -19,6 +22,7 @@ final class NotificationsLoaded extends NotificationsState {
     required this.hasMore,
     this.isLoadingMore = false,
     this.loadMoreFailed = false,
+    this.isStale = false,
   });
 
   final List<AppNotification> items;
@@ -26,6 +30,7 @@ final class NotificationsLoaded extends NotificationsState {
   final bool hasMore;
   final bool isLoadingMore;
   final bool loadMoreFailed;
+  final bool isStale;
 
   NotificationsLoaded copyWith({
     List<AppNotification>? items,
@@ -33,11 +38,13 @@ final class NotificationsLoaded extends NotificationsState {
     bool? hasMore,
     bool? isLoadingMore,
     bool? loadMoreFailed,
+    bool? isStale,
   }) => NotificationsLoaded(
     items ?? this.items,
     page: page ?? this.page,
     hasMore: hasMore ?? this.hasMore,
     isLoadingMore: isLoadingMore ?? this.isLoadingMore,
     loadMoreFailed: loadMoreFailed ?? this.loadMoreFailed,
+    isStale: isStale ?? this.isStale,
   );
 }

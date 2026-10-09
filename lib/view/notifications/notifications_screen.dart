@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sanga_ride/controller/rider/account/notifications_controller.dart';
+import 'package:sanga_ride/core/services/permission_center.dart';
+import 'package:sanga_ride/core/services/session_restore.dart';
 import 'package:sanga_ride/model/models.dart';
-import 'package:sanga_ride/view/account/widgets/load_state.dart';
 import 'package:sanga_ride/view/notifications/notification_routing.dart';
 import 'package:sanga_ride/view/notifications/widgets/notification_row.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
@@ -40,9 +41,39 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     if (_scroll.position.extentAfter < _loadMoreThreshold) _controller.loadMore();
   }
 
-  void _open(AppNotification notification, String destination) {
+  void _open(AppNotification notification) {
+    final activeTripId = Get.find<SessionRestore>().meState?.activeTrip?.id;
+    final destination = NotificationRouting.destinationOf(notification, activeTripId: activeTripId);
+    if (destination == null) return;
     _controller.markRead(notification);
     context.push(destination);
+  }
+
+  Widget _permissionNotice() {
+    final permissions = Get.find<PermissionCenter>();
+    return Obx(() {
+      final access = permissions.accessOf(PermissionKind.notifications);
+      if (access.isUsable || access.canAskAgain) return const SizedBox.shrink();
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(SangaSpacing.gutter, 0, SangaSpacing.gutter, SangaSpacing.sm),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          spacing: SangaSpacing.xs,
+          children: [
+            const SangaNotice(
+              tone: SangaTone.warning,
+              icon: Icons.notifications_off_outlined,
+              message: 'Notifications are off, so updates only show up here. Turn them on in Settings.',
+            ),
+            SangaButton.outline(
+              label: 'Open Settings',
+              size: SangaButtonSize.compact,
+              onPressed: permissions.openSettings,
+            ),
+          ],
+        ),
+      );
+    });
   }
 
   Widget _header() {
@@ -74,26 +105,34 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
   Widget _list(NotificationsLoaded state) {
     if (state.items.isEmpty) {
-      return const Center(
-        child: SangaInlineMessage(title: 'All quiet', message: 'You’re all caught up. New updates will show up here.'),
+      return SangaRefreshList.children(
+        onRefresh: _controller.reload,
+        children: const [
+          SangaEmptyMessage(
+            icon: Icons.notifications_none_rounded,
+            title: 'All quiet',
+            message: 'You’re all caught up. New updates will show up here.',
+          ),
+        ],
       );
     }
-    return RefreshIndicator.adaptive(
-      color: SangaColors.primary,
+    final staleOffset = state.isStale ? 1 : 0;
+    return SangaRefreshList(
       onRefresh: _controller.reload,
       child: ListView.separated(
         controller: _scroll,
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.fromLTRB(SangaSpacing.gutter, SangaSpacing.xs, SangaSpacing.gutter, SangaSpacing.xl),
-        itemCount: state.items.length + 1,
+        itemCount: state.items.length + 1 + staleOffset,
         separatorBuilder: (context, index) => const SizedBox(height: SangaSpacing.sm),
-        itemBuilder: (context, index) {
+        itemBuilder: (context, rawIndex) {
+          if (state.isStale && rawIndex == 0) return SangaStaleNotice(onRetry: _controller.reload);
+          final index = rawIndex - staleOffset;
           if (index == state.items.length) return _footer(state);
           final notification = state.items[index];
-          final destination = NotificationRouting.destinationOf(notification);
           return NotificationRow(
             notification: notification,
-            onTap: destination == null ? null : () => _open(notification, destination),
+            onTap: NotificationRouting.hasDestination(notification) ? () => _open(notification) : null,
           );
         },
       ),
@@ -101,9 +140,13 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   }
 
   Widget _footer(NotificationsLoaded state) {
-    if (state.isLoadingMore) return const LoadingIndicator();
+    if (state.isLoadingMore) return const SangaSkeleton.heights([72]);
     if (state.loadMoreFailed) {
-      return LoadFailure(message: 'We couldn’t load more.', onRetry: _controller.loadMore);
+      return SangaFailureMessage(
+        title: 'We couldn’t load more',
+        message: LoadProblem.connection.message,
+        onRetry: _controller.loadMore,
+      );
     }
     return const SizedBox.shrink();
   }
@@ -118,14 +161,22 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           child: Column(
             children: [
               _header(),
+              _permissionNotice(),
               Expanded(
                 child: Obx(() {
                   final state = _controller.state;
                   return switch (state) {
-                    NotificationsLoading() => const LoadingIndicator(),
-                    NotificationsFailed() => Padding(
+                    NotificationsLoading() => const Padding(
+                      padding: EdgeInsets.all(SangaSpacing.gutter),
+                      child: SangaSkeleton.list(count: 4, height: 80),
+                    ),
+                    NotificationsFailed(:final problem) => Padding(
                       padding: const EdgeInsets.all(SangaSpacing.gutter),
-                      child: LoadFailure(message: 'We couldn’t load your notifications.', onRetry: _controller.retry),
+                      child: SangaFailureMessage(
+                        title: 'We couldn’t load your notifications',
+                        message: problem.message,
+                        onRetry: _controller.retry,
+                      ),
                     ),
                     NotificationsLoaded() => _list(state),
                   };

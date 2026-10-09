@@ -12,72 +12,13 @@ class NotificationRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isUnread = !notification.isRead;
-    return Semantics(
-      button: onTap != null,
-      label: '${isUnread ? 'Unread. ' : ''}${notification.title}. ${notification.body}',
-      excludeSemantics: true,
-      child: Material(
-        color: isUnread ? SangaColors.chipBlue : SangaColors.surface,
-        shape: RoundedRectangleBorder(
-          borderRadius: SangaRadii.field,
-          side: BorderSide(color: isUnread ? SangaColors.primarySoft : SangaColors.cardBorder),
-        ),
-        clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.all(SangaSpacing.md),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              spacing: SangaSpacing.sm,
-              children: [
-                SangaIconBadge(size: 34, child: Icon(notification.kind.icon)),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    spacing: SangaSpacing.xxs,
-                    children: [
-                      Row(
-                        spacing: SangaSpacing.xs,
-                        children: [
-                          Expanded(
-                            child: Text(
-                              notification.title,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: SangaTextStyles.cardTitle.copyWith(
-                                fontWeight: isUnread ? FontWeight.w700 : FontWeight.w500,
-                              ),
-                            ),
-                          ),
-                          if (isUnread)
-                            const DecoratedBox(
-                              decoration: BoxDecoration(color: SangaColors.primary, shape: BoxShape.circle),
-                              child: SizedBox.square(dimension: 8),
-                            ),
-                        ],
-                      ),
-                      Text(
-                        notification.body,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: SangaTextStyles.cardSubtitle.copyWith(fontSize: 13, color: SangaColors.textMid),
-                      ),
-                      Text(TimeFormat.ago(notification.createdAt), style: SangaTextStyles.caption),
-                    ],
-                  ),
-                ),
-                if (onTap != null)
-                  const Padding(
-                    padding: EdgeInsets.only(top: SangaSpacing.xs),
-                    child: SangaListRow.chevron,
-                  ),
-              ],
-            ),
-          ),
-        ),
-      ),
+    return SangaNotificationRow(
+      title: notification.title,
+      body: notification.body,
+      timeLabel: TimeFormat.ago(notification.createdAt),
+      icon: notification.kind.icon,
+      isUnread: !notification.isRead,
+      onTap: onTap,
     );
   }
 }
