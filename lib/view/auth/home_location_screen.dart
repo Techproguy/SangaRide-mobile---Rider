@@ -170,7 +170,7 @@ class _HomeLocationScreenState extends State<HomeLocationScreen> {
         ),
         const SizedBox(height: SangaSpacing.xs),
         Center(
-          child: SangaTextAction(label: 'Skip for now', onPressed: _skip),
+          child: SangaTextAction(label: 'Skip for now', onPressed: _skip, isMuted: true),
         ),
       ],
     );
