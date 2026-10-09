@@ -2,6 +2,30 @@ import 'package:sanga_ride/model/wallet/wallet.dart';
 import 'package:sanga_ride/view/wallet/wallet_format.dart';
 
 abstract final class WalletCopy {
+  static const String processingTitle = 'Payment in progress';
+  static const String processingMessage = 'Hang tight, this only takes a moment.';
+  static const String checkingTitle = 'Checking on your payment';
+  static const String checkingMessage = 'Hang tight. We’re making sure your money is safe.';
+  static const String stillWorkingMessage = 'Still working on it. You can close this and we’ll keep checking.';
+  static const String unknownTitle = 'We’re not sure it went through';
+  static const String unknownMessage =
+      'Your payment may still land. Check your wallet before you try again so you’re never charged twice.';
+  static const String unknownTransferMessage =
+      'We didn’t hear back from the server. Check your wallet before you try again so there’s only one top up.';
+  static const String reconnecting = 'Trouble reaching Sanga. We’ll keep trying.';
+
+  static String resumeTitle(int amount) =>
+      amount > 0 ? 'Finish adding ${WalletFormat.money(amount)}' : 'Finish your top up';
+
+  static String resumeSubtitle(TopUpMethod method) =>
+      method == TopUpMethod.card ? 'Tap to pick up where you left off' : 'Tap to check on it';
+
+  static String countdownLabel(Duration remaining) {
+    final minutes = remaining.inMinutes;
+    final seconds = remaining.inSeconds % 60;
+    return 'Account details valid for $minutes:${seconds.toString().padLeft(2, '0')}';
+  }
+
   static String walletTitle(WalletScope scope) => scope.isGroup ? 'Group wallet' : 'Wallet';
 
   static String transactionsTitle(WalletScope scope) => scope.isGroup ? 'Group wallet activity' : 'Transaction history';

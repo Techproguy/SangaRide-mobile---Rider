@@ -1,3 +1,5 @@
+import 'package:sanga_ride_core/sanga_ride_core.dart';
+
 enum TopUpMethod {
   transfer('transfer', 'Transfer', 'Send from any bank app'),
   card('card', 'Card', 'Pay with a debit or credit card');
@@ -7,6 +9,13 @@ enum TopUpMethod {
   final String code;
   final String label;
   final String subtitle;
+
+  static TopUpMethod? tryFromCode(String? code) {
+    for (final method in values) {
+      if (method.code == code) return method;
+    }
+    return null;
+  }
 }
 
 enum TopUpStatus {
@@ -15,14 +24,16 @@ enum TopUpStatus {
   failed('failed'),
   requiresAction('requires_action'),
   awaitingTransfer('awaiting_transfer'),
-  expired('expired');
+  expired('expired'),
+  unknown('unknown');
 
   const TopUpStatus(this.code);
 
   final String code;
 
-  static TopUpStatus fromCode(String? code) =>
-      values.where((status) => status.code == code).firstOrNull ?? TopUpStatus.pending;
+  bool get isOpen => this == pending || this == requiresAction || this == awaitingTransfer;
+
+  static TopUpStatus fromCode(String? code) => enumByCode(values, code, (status) => status.code, TopUpStatus.unknown);
 }
 
 enum TopUpActionType {
@@ -33,7 +44,12 @@ enum TopUpActionType {
 
   final String code;
 
-  static TopUpActionType? tryFromCode(String? code) => values.where((type) => type.code == code).firstOrNull;
+  static TopUpActionType? tryFromCode(String? code) {
+    for (final type in values) {
+      if (type.code == code) return type;
+    }
+    return null;
+  }
 }
 
 class TopUpAction {
@@ -42,9 +58,12 @@ class TopUpAction {
   final TopUpActionType? type;
   final String message;
 
-  static TopUpAction? tryFromJson(Object? json) {
-    if (json is! Map) return null;
-    return TopUpAction(type: TopUpActionType.tryFromCode(json['type'] as String?), message: json['message'] as String);
+  static TopUpAction? tryFromJson(JsonReader? reader) {
+    if (reader == null) return null;
+    return TopUpAction(
+      type: TopUpActionType.tryFromCode(reader.strOrNull('type')),
+      message: reader.strOr('message', ''),
+    );
   }
 }
 
@@ -56,19 +75,23 @@ class TopUp {
     this.amount,
     this.method,
     this.expiresAt,
+    this.createdAt,
     this.failureCode,
+    this.balance,
   });
 
   factory TopUp.fromJson(Map<String, dynamic> json) {
-    final expiresAt = json['expiresAt'] as String?;
+    final reader = JsonReader(json);
     return TopUp(
-      id: json['id'] as String,
-      status: TopUpStatus.fromCode(json['status'] as String?),
-      action: TopUpAction.tryFromJson(json['action']),
-      amount: (json['amount'] as num?)?.toInt(),
-      method: TopUpMethod.values.where((method) => method.code == json['method']).firstOrNull,
-      expiresAt: expiresAt == null ? null : DateTime.parse(expiresAt).toLocal(),
-      failureCode: json['failureCode'] as String?,
+      id: reader.str('id'),
+      status: TopUpStatus.fromCode(reader.strOrNull('status')),
+      action: TopUpAction.tryFromJson(reader.objectOrNull('action')),
+      amount: reader.intOrNull('amount'),
+      method: TopUpMethod.tryFromCode(reader.strOrNull('method')),
+      expiresAt: reader.timeOrNull('expiresAt'),
+      createdAt: reader.timeOrNull('createdAt'),
+      failureCode: reader.strOrNull('failureCode'),
+      balance: reader.intOrNull('balance'),
     );
   }
 
@@ -78,15 +101,18 @@ class TopUp {
   final int? amount;
   final TopUpMethod? method;
   final DateTime? expiresAt;
+  final DateTime? createdAt;
   final String? failureCode;
+  final int? balance;
 }
 
 class TransferExpectation {
-  const TransferExpectation({required this.id, required this.amount, required this.expiresAt});
+  const TransferExpectation({required this.id, required this.amount, required this.expiresAt, this.createdAt});
 
   final String id;
   final int amount;
   final DateTime? expiresAt;
+  final DateTime? createdAt;
 }
 
 enum TopUpFailure {
@@ -111,10 +137,10 @@ enum TopUpFailure {
     'That transfer window closed',
     'We didn’t get your transfer in time. If you already sent it, it will show up in your wallet as soon as it lands.',
   ),
-  unconfirmed(
-    'unconfirmed',
-    'We couldn’t confirm your top up',
-    'We couldn’t reach the server, so we’re not sure it went through. Check your balance before you try again.',
+  connection(
+    'connection',
+    'You’re offline',
+    'We couldn’t reach the server and nothing was charged. Check your connection and give it another go.',
   ),
   unknown('unknown', 'Top up didn’t go through', 'Something went wrong on our side. Give it another go.');
 
@@ -124,7 +150,68 @@ enum TopUpFailure {
   final String title;
   final String message;
 
-  bool get mayHaveGoneThrough => this == unconfirmed;
+  static TopUpFailure fromCode(String? code) =>
+      enumByCode(values, code, (failure) => failure.code, TopUpFailure.unknown);
 
-  static TopUpFailure fromCode(String? code) => values.where((failure) => failure.code == code).firstOrNull ?? unknown;
+  static TopUpFailure of(Object error) => switch (ProblemKind.of(error)) {
+    ProblemOffline() => connection,
+    ProblemRejected(:final code) => fromCode(code),
+    _ => unknown,
+  };
+}
+
+class SavedTopUp {
+  const SavedTopUp({
+    required this.intentKey,
+    required this.method,
+    required this.amount,
+    this.topUpId,
+    this.status,
+    this.savedCardId,
+  });
+
+  static SavedTopUp? tryFromJson(Map<String, dynamic>? json) {
+    if (json == null) return null;
+    final reader = JsonReader(json);
+    final method = TopUpMethod.tryFromCode(reader.strOrNull('method'));
+    final key = reader.strOrNull('intentKey');
+    final amount = reader.intOrNull('amount');
+    if (method == null || key == null || amount == null) return null;
+    final status = reader.strOrNull('status');
+    return SavedTopUp(
+      intentKey: key,
+      method: method,
+      amount: amount,
+      topUpId: reader.strOrNull('topUpId'),
+      status: status == null ? null : TopUpStatus.fromCode(status),
+      savedCardId: reader.strOrNull('savedCardId'),
+    );
+  }
+
+  final String intentKey;
+  final TopUpMethod method;
+  final int amount;
+  final String? topUpId;
+  final TopUpStatus? status;
+  final String? savedCardId;
+
+  bool get isResumable => topUpId != null && (status == null || status!.isOpen);
+
+  Map<String, dynamic> toJson() => {
+    'intentKey': intentKey,
+    'method': method.code,
+    'amount': amount,
+    'topUpId': ?topUpId,
+    'status': ?status?.code,
+    'savedCardId': ?savedCardId,
+  };
+
+  SavedTopUp copyWith({String? topUpId, TopUpStatus? status}) => SavedTopUp(
+    intentKey: intentKey,
+    method: method,
+    amount: amount,
+    topUpId: topUpId ?? this.topUpId,
+    status: status ?? this.status,
+    savedCardId: savedCardId,
+  );
 }

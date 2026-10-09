@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:sanga_ride/model/groups/group_models.dart';
 import 'package:sanga_ride/view/groups/group_copy.dart';
 import 'package:sanga_ride/view/groups/widgets/member_row.dart';
-import 'package:sanga_ride/view/wallet/widgets/wallet_page.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 class GroupMembersTab extends StatelessWidget {
@@ -27,7 +26,7 @@ class GroupMembersTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return WalletList(
+    return SangaRefreshList.children(
       onRefresh: onRefresh,
       children: [
         Column(

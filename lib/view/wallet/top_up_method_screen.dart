@@ -14,8 +14,6 @@ class TopUpMethodScreen extends StatelessWidget {
 
   final WalletScope scope;
 
-  static const List<TopUpMethod> _methods = [TopUpMethod.transfer, TopUpMethod.card];
-
   IconData _iconOf(TopUpMethod method) => switch (method) {
     TopUpMethod.transfer => Icons.account_balance_rounded,
     TopUpMethod.card => Icons.credit_card_rounded,
@@ -34,12 +32,15 @@ class TopUpMethodScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final topUp = WalletControllers.topUp(scope);
+    final wallet = WalletControllers.wallet(scope);
     return Obx(() {
       final draft = topUp.draft;
       final amount = draft.amount;
+      final methods = [if (wallet.overview?.canPayByTransfer ?? false) TopUpMethod.transfer, TopUpMethod.card];
+      final selected = methods.contains(draft.method) ? draft.method : TopUpMethod.card;
       return SangaPageLayout(
         title: 'Add money',
-        footer: SangaButton.primary(label: 'Continue', onPressed: () => _continue(context, topUp, draft.method)),
+        footer: SangaButton.primary(label: 'Continue', onPressed: () => _continue(context, topUp, selected)),
         children: [
           Column(
             spacing: SangaSpacing.lg,
@@ -48,12 +49,12 @@ class TopUpMethodScreen extends StatelessWidget {
               Column(
                 spacing: SangaSpacing.sm,
                 children: [
-                  for (final method in _methods)
+                  for (final method in methods)
                     SangaOptionCard(
                       leading: SangaIconBadge(child: Icon(_iconOf(method))),
                       title: method.label,
                       subtitle: method.subtitle,
-                      isSelected: method == draft.method,
+                      isSelected: method == selected,
                       onTap: () => topUp.chooseMethod(method),
                     ),
                 ],

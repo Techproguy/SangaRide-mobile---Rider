@@ -1,9 +1,9 @@
-import 'dart:developer';
-
 import 'package:get/get.dart';
 import 'package:sanga_ride/core/api/api.dart';
 import 'package:sanga_ride/core/api/wallet_endpoints.dart';
+import 'package:sanga_ride/model/account/load_problem.dart';
 import 'package:sanga_ride/model/wallet/wallet.dart';
+import 'package:sanga_ride_core/sanga_ride_core.dart';
 
 class WalletTransactionsController extends GetxController {
   WalletTransactionsController(this.scope);
@@ -53,11 +53,10 @@ class WalletTransactionsController extends GetxController {
       final page = await _fetch(target, 1);
       if (epoch != _feedEpochs[target]) return;
       _feeds[target] = TransactionsLoaded(page.entries, page: page.page, hasMore: page.hasMore);
-    } catch (e) {
-      log('transactions load failed: ${_describe(e)}');
-      if (epoch == _feedEpochs[target] && _feeds[target] is! TransactionsLoaded) {
-        _feeds[target] = const TransactionsFailed();
-      }
+    } on Object catch (error) {
+      if (epoch != _feedEpochs[target]) return;
+      final current = _feeds[target];
+      _feeds[target] = current is TransactionsLoaded ? current.markStale() : TransactionsFailed(LoadProblem.of(error));
     }
   }
 
@@ -75,8 +74,7 @@ class WalletTransactionsController extends GetxController {
         page: next.page,
         hasMore: next.hasMore,
       );
-    } catch (e) {
-      log('transactions page failed: ${_describe(e)}');
+    } on Object {
       if (epoch == _feedEpochs[target]) _feeds[target] = current.withMore(TransactionMore.failed);
     }
   }
@@ -105,10 +103,9 @@ class WalletTransactionsController extends GetxController {
       );
       if (epoch != _detailEpoch) return;
       _detail.value = TransactionDetailLoaded(WalletTransaction.fromJson(_dataOf(response.data)));
-    } catch (e) {
-      log('transaction detail failed: ${_describe(e)}');
+    } on Object catch (error) {
       if (epoch != _detailEpoch) return;
-      final failure = TransactionFailure.fromCode(e is ApiException ? e.code : null);
+      final failure = TransactionFailure.of(error);
       if (_detail.value is TransactionDetailLoaded && failure.canRetry) return;
       _detail.value = TransactionDetailFailed(failure);
     }
@@ -123,7 +120,5 @@ class WalletTransactionsController extends GetxController {
     return TransactionPage.fromJson(_dataOf(response.data));
   }
 
-  String _describe(Object error) => error is ApiException ? '${error.code}' : '${error.runtimeType}';
-
-  Map<String, dynamic> _dataOf(dynamic body) => Map<String, dynamic>.from((body as Map)['data'] as Map);
+  Map<String, dynamic> _dataOf(dynamic body) => JsonReader.of(JsonReader.of(body).raw['data']).raw;
 }

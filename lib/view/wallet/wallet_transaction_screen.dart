@@ -7,11 +7,11 @@ import 'package:go_router/go_router.dart';
 import 'package:sanga_ride/controller/rider/wallet_bindings.dart';
 import 'package:sanga_ride/core/router/history_routes.dart';
 import 'package:sanga_ride/core/router/wallet_routes.dart';
-import 'package:sanga_ride/core/services/toast_service.dart';
 import 'package:sanga_ride/model/wallet/wallet.dart';
 import 'package:sanga_ride/view/wallet/widgets/transaction_facts.dart';
 import 'package:sanga_ride/view/wallet/widgets/transaction_hero.dart';
 import 'package:sanga_ride/view/wallet/widgets/wallet_page.dart';
+import 'package:sanga_ride_core/sanga_ride_core.dart' show AppLifecycle;
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 enum _DetailStage { loading, failed, loaded }
@@ -28,11 +28,19 @@ class WalletTransactionScreen extends StatefulWidget {
 
 class _WalletTransactionScreenState extends State<WalletTransactionScreen> {
   late final _transactions = WalletControllers.transactions(widget.scope);
+  StreamSubscription<void>? _resumeSubscription;
 
   @override
   void initState() {
     super.initState();
+    _resumeSubscription = AppLifecycle.instance.onResume.listen((_) => unawaited(_transactions.refreshDetail()));
     WidgetsBinding.instance.addPostFrameCallback((_) => unawaited(_transactions.openDetail(widget.id)));
+  }
+
+  @override
+  void dispose() {
+    _resumeSubscription?.cancel();
+    super.dispose();
   }
 
   _DetailStage _stageOf(TransactionDetailState state) => switch (state) {
@@ -44,7 +52,7 @@ class _WalletTransactionScreenState extends State<WalletTransactionScreen> {
   void _copyReference(String reference) {
     Clipboard.setData(ClipboardData(text: reference));
     HapticFeedback.selectionClick();
-    Toast.success('Reference copied');
+    SangaToast.show('Reference copied', tone: SangaToastTone.success);
   }
 
   Widget? _action(WalletTransaction tx) {
@@ -66,22 +74,18 @@ class _WalletTransactionScreenState extends State<WalletTransactionScreen> {
 
   List<Widget> _children(TransactionDetailState state) => switch (state) {
     TransactionDetailLoading() => [
-      const WalletSkeleton(heights: [150, 150]),
+      const SangaSkeleton.heights([150, 150]),
     ],
     TransactionDetailFailed(:final failure) when failure.canRetry => [
-      SangaInlineMessage(
-        title: failure.title,
-        message: failure.message,
-        actionLabel: 'Try again',
-        onAction: _transactions.reloadDetail,
-      ),
+      SangaFailureMessage(title: failure.title, message: failure.message, onRetry: _transactions.reloadDetail),
     ],
     TransactionDetailFailed(:final failure) => [
-      SangaInlineMessage(
+      SangaFailureMessage(
         title: failure.title,
         message: failure.message,
-        actionLabel: 'Back to history',
-        onAction: context.pop,
+        icon: Icons.search_off_rounded,
+        onRetry: context.pop,
+        retryLabel: 'Back to history',
       ),
     ],
     TransactionDetailLoaded(:final transaction) => _loaded(transaction),
@@ -129,7 +133,7 @@ class _WalletTransactionScreenState extends State<WalletTransactionScreen> {
         final state = _transactions.detailFor(widget.id);
         return SangaHandoff(
           value: _stageOf(state),
-          child: WalletList(onRefresh: _transactions.refreshDetail, children: _children(state)),
+          child: SangaRefreshList.children(onRefresh: _transactions.refreshDetail, children: _children(state)),
         );
       }),
     );

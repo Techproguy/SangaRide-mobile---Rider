@@ -32,14 +32,14 @@ class RecentTransactionsSection extends StatelessWidget {
       children: [
         SangaSectionHeader('Transaction history', actionLabel: hasEntries ? 'See all' : null, onAction: onSeeAll),
         switch (current) {
-          RecentLoading() => const SizedBox(height: 120),
-          RecentFailed() => SangaInlineMessage(
+          RecentLoading() => const SangaSkeleton.heights([56, 56]),
+          RecentFailed(:final problem) => SangaFailureMessage(
             title: WalletCopy.historyFailedTitle(scope),
-            message: 'Check your connection and give it another go.',
-            actionLabel: 'Try again',
-            onAction: onRetry,
+            message: problem.message,
+            onRetry: onRetry,
           ),
-          RecentLoaded(:final entries) when entries.isEmpty => SangaInlineMessage(
+          RecentLoaded(:final entries) when entries.isEmpty => SangaEmptyMessage(
+            icon: Icons.history_rounded,
             title: 'No transactions yet',
             message: WalletCopy.emptyHistoryMessage(scope),
             actionLabel: onAddMoney == null ? null : 'Add money',

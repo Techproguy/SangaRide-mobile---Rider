@@ -5,13 +5,13 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sanga_ride/controller/rider/wallet_bindings.dart';
-import 'package:sanga_ride/core/services/toast_service.dart';
 import 'package:sanga_ride/model/wallet/wallet.dart';
 import 'package:sanga_ride/view/wallet/wallet_copy.dart';
 import 'package:sanga_ride/view/wallet/widgets/top_up_success_sheet.dart';
 import 'package:sanga_ride/view/wallet/widgets/transfer_account_card.dart';
 import 'package:sanga_ride/view/wallet/widgets/transfer_status_views.dart';
 import 'package:sanga_ride/view/widgets/layout/amount_tile.dart';
+import 'package:sanga_ride_core/sanga_ride_core.dart' show LinkState;
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 class TopUpTransferScreen extends StatefulWidget {
@@ -29,6 +29,7 @@ class _TopUpTransferScreenState extends State<TopUpTransferScreen> {
   late final _topUp = WalletControllers.topUp(widget.scope);
   late final Worker _stateWorker;
   bool _isFinishing = false;
+  bool _isRechecking = false;
 
   @override
   void initState() {
@@ -46,15 +47,22 @@ class _TopUpTransferScreenState extends State<TopUpTransferScreen> {
 
   void _start() {
     if (!mounted) return;
-    final id = widget.resumeId;
-    if (id == null) return;
     unawaited(_wallet.open());
-    unawaited(_topUp.resumeTransfer(id));
+    final id = widget.resumeId;
+    if (id != null) unawaited(_topUp.resumeTransfer(id));
   }
 
   void _onState(TopUpState state) {
     if (!mounted) return;
-    if (state is TopUpSucceeded) unawaited(_celebrate(state));
+    switch (state) {
+      case TopUpSucceeded():
+        unawaited(_celebrate(state));
+      case TopUpFailed(method: TopUpMethod.transfer, canRetryAsIs: true, :final failure):
+        SangaToast.show(failure.message, tone: SangaToastTone.warning);
+        _topUp.dismissFailure();
+      default:
+        break;
+    }
   }
 
   Future<void> _celebrate(TopUpSucceeded result) async {
@@ -67,12 +75,19 @@ class _TopUpTransferScreenState extends State<TopUpTransferScreen> {
   void _copy(CopyableValue copyable) {
     Clipboard.setData(ClipboardData(text: copyable.value));
     HapticFeedback.selectionClick();
-    Toast.success('${copyable.label} copied');
+    SangaToast.show('${copyable.label} copied', tone: SangaToastTone.success);
   }
 
   void _leave() => context.pop(false);
 
-  Widget _body(TopUpState state, int? amount, VirtualAccount? account) {
+  Future<void> _checkAgain() async {
+    if (_isRechecking) return;
+    setState(() => _isRechecking = true);
+    await _topUp.refreshNow();
+    if (mounted) setState(() => _isRechecking = false);
+  }
+
+  Widget _body(TopUpState state, int? amount, VirtualAccount? account, LinkState link) {
     if (amount == null && state is! TopUpFailed && state is! TopUpSubmitting) return const SizedBox.shrink();
     return switch (state) {
       TopUpEditing() || TopUpSubmitting() when amount != null && account != null => Column(
@@ -83,8 +98,19 @@ class _TopUpTransferScreenState extends State<TopUpTransferScreen> {
           TransferAccountCard(account: account, amount: amount, onCopy: _copy),
         ],
       ),
-      TopUpTransferWatching() when amount != null => TransferWaitingView(amount: amount),
-      TopUpTransferDelayed() when amount != null => TransferDelayedView(amount: amount, account: account),
+      TopUpTransferWatching(:final expectation) => TransferWaitingView(
+        expectation: expectation,
+        link: link,
+        onElapsed: () => unawaited(_topUp.refreshNow()),
+      ),
+      TopUpTransferDelayed(:final expectation) => TransferDelayedView(
+        expectation: expectation,
+        account: account,
+        link: link,
+        onElapsed: () => unawaited(_topUp.refreshNow()),
+      ),
+      TopUpChecking() => const TransferCheckingView(),
+      TopUpUnknown() => const TransferUnknownView(),
       TopUpFailed(:final failure) => TransferFailedView(failure: failure),
       _ => const Padding(
         padding: EdgeInsets.only(top: SangaSpacing.xxl),
@@ -104,8 +130,16 @@ class _TopUpTransferScreenState extends State<TopUpTransferScreen> {
       mainAxisSize: MainAxisSize.min,
       spacing: SangaSpacing.sm,
       children: [
-        SangaButton.primary(label: 'Check again', onPressed: _topUp.checkAgain),
+        SangaButton.primary(label: 'Check again', isLoading: _isRechecking, onPressed: _checkAgain),
         SangaButton.outline(label: 'Done for now', onPressed: _leave),
+      ],
+    ),
+    TopUpUnknown() => Column(
+      mainAxisSize: MainAxisSize.min,
+      spacing: SangaSpacing.sm,
+      children: [
+        SangaButton.primary(label: 'Check again', onPressed: () => unawaited(_topUp.recheck())),
+        SangaButton.outline(label: 'Check my wallet', onPressed: _leave),
       ],
     ),
     TopUpFailed() => Column(
@@ -116,7 +150,7 @@ class _TopUpTransferScreenState extends State<TopUpTransferScreen> {
         SangaButton.outline(label: 'Back to wallet', onPressed: _leave),
       ],
     ),
-    TopUpOtp() || TopUpConfirming() || TopUpSucceeded() => null,
+    TopUpOtp() || TopUpConfirming() || TopUpChecking() || TopUpSucceeded() => null,
   };
 
   @override
@@ -125,12 +159,13 @@ class _TopUpTransferScreenState extends State<TopUpTransferScreen> {
       final state = _topUp.state;
       final amount = _topUp.draft.amount;
       final account = _wallet.overview?.virtualAccount;
+      final link = _topUp.linkRx.value;
       return PopScope(
-        canPop: state is! TopUpSubmitting,
+        canPop: state is! TopUpSubmitting && state is! TopUpChecking,
         child: SangaPageLayout(
           title: 'Add money',
           footer: _footer(state, amount),
-          children: [_body(state, amount, account)],
+          children: [_body(state, amount, account, link)],
         ),
       );
     });

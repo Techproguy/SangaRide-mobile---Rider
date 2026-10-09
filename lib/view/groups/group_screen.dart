@@ -127,7 +127,7 @@ class _GroupScreenState extends State<GroupScreen> with SingleTickerProviderStat
 
   Widget _body(GroupDetailState state) => switch (state) {
     GroupDetailLoading() => const _GroupSkeleton(),
-    GroupDetailFailed(:final failure) => WalletList(
+    GroupDetailFailed(:final failure) => SangaRefreshList.children(
       onRefresh: _group.reload,
       children: [
         SangaInlineMessage(
@@ -166,10 +166,10 @@ class _GroupSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const WalletList(
+    return const SangaRefreshList.children(
       onRefresh: _noop,
       children: [
-        WalletSkeleton(heights: [72, 56, 56, 56]),
+        SangaSkeleton.heights([72, 56, 56, 56]),
       ],
     );
   }

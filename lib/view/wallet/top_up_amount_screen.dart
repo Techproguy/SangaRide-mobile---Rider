@@ -9,7 +9,6 @@ import 'package:sanga_ride/core/router/wallet_routes.dart';
 import 'package:sanga_ride/model/wallet/wallet.dart';
 import 'package:sanga_ride/view/wallet/wallet_copy.dart';
 import 'package:sanga_ride/view/wallet/wallet_format.dart';
-import 'package:sanga_ride/view/wallet/widgets/wallet_page.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 class TopUpAmountScreen extends StatefulWidget {
@@ -80,12 +79,11 @@ class _TopUpAmountScreenState extends State<TopUpAmountScreen> {
   }
 
   Widget _body(WalletState state, int? amount) => switch (state) {
-    WalletLoading() => const WalletSkeleton(heights: [72, 40, 40]),
-    WalletFailed() => SangaInlineMessage(
+    WalletLoading() => const SangaSkeleton.heights([72, 40, 40]),
+    WalletFailed(:final problem) => SangaFailureMessage(
       title: WalletCopy.loadFailedTitle(widget.scope),
-      message: 'Check your connection and give it another go.',
-      actionLabel: 'Try again',
-      onAction: _wallet.reload,
+      message: problem.message,
+      onRetry: _wallet.reload,
     ),
     WalletLoaded(:final overview) => _form(overview, amount),
   };

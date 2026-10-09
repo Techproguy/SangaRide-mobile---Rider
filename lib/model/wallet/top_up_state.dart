@@ -21,7 +21,7 @@ class TopUpDraft {
   );
 }
 
-enum OtpStage { ready, verifying, mismatch }
+enum OtpStage { ready, verifying, mismatch, failed }
 
 sealed class TopUpState {
   const TopUpState();
@@ -37,14 +37,27 @@ final class TopUpSubmitting extends TopUpState {
   final TopUpMethod method;
 }
 
+final class TopUpChecking extends TopUpState {
+  const TopUpChecking(this.method);
+
+  final TopUpMethod method;
+}
+
+final class TopUpUnknown extends TopUpState {
+  const TopUpUnknown(this.method);
+
+  final TopUpMethod method;
+}
+
 final class TopUpOtp extends TopUpState {
-  const TopUpOtp(this.topUp, this.action, {this.stage = OtpStage.ready});
+  const TopUpOtp(this.topUp, this.action, {this.stage = OtpStage.ready, this.failure});
 
   final TopUp topUp;
   final TopUpAction action;
   final OtpStage stage;
+  final TopUpFailure? failure;
 
-  TopUpOtp withStage(OtpStage next) => TopUpOtp(topUp, action, stage: next);
+  TopUpOtp withStage(OtpStage next, {TopUpFailure? failure}) => TopUpOtp(topUp, action, stage: next, failure: failure);
 }
 
 final class TopUpConfirming extends TopUpState {
@@ -74,8 +87,9 @@ final class TopUpSucceeded extends TopUpState {
 }
 
 final class TopUpFailed extends TopUpState {
-  const TopUpFailed(this.failure, {required this.method});
+  const TopUpFailed(this.failure, {required this.method, this.canRetryAsIs = false});
 
   final TopUpFailure failure;
   final TopUpMethod method;
+  final bool canRetryAsIs;
 }

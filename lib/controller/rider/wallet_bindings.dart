@@ -19,6 +19,16 @@ abstract final class WalletControllers {
     Get.lazyPut(() => TopUpController(scope), tag: scope.tag, fenix: true);
   }
 
+  static void release(WalletScope scope) {
+    final tag = scope.tag;
+    if (tag == null) return;
+    if (Get.isRegistered<TopUpController>(tag: tag)) Get.delete<TopUpController>(tag: tag, force: true);
+    if (Get.isRegistered<WalletTransactionsController>(tag: tag)) {
+      Get.delete<WalletTransactionsController>(tag: tag, force: true);
+    }
+    if (Get.isRegistered<WalletController>(tag: tag)) Get.delete<WalletController>(tag: tag, force: true);
+  }
+
   static WalletController wallet(WalletScope scope) {
     ensure(scope);
     return Get.find<WalletController>(tag: scope.tag);

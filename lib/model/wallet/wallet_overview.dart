@@ -1,10 +1,19 @@
+import 'package:sanga_ride/model/account/load_problem.dart';
 import 'package:sanga_ride/model/wallet/wallet_transaction.dart';
+import 'package:sanga_ride_core/sanga_ride_core.dart';
 
 class WalletLimits {
   const WalletLimits({required this.minTopUp, required this.maxTopUp});
 
-  factory WalletLimits.fromJson(Map<String, dynamic> json) =>
-      WalletLimits(minTopUp: (json['minTopUp'] as num).toInt(), maxTopUp: (json['maxTopUp'] as num).toInt());
+  factory WalletLimits.fromJson(Map<String, dynamic> json) {
+    final reader = JsonReader(json);
+    return WalletLimits(
+      minTopUp: reader.intOr('minTopUp', permissive.minTopUp),
+      maxTopUp: reader.intOr('maxTopUp', permissive.maxTopUp),
+    );
+  }
+
+  static const WalletLimits permissive = WalletLimits(minTopUp: 1, maxTopUp: 10000000);
 
   final int minTopUp;
   final int maxTopUp;
@@ -15,11 +24,16 @@ class WalletLimits {
 class VirtualAccount {
   const VirtualAccount({required this.bankName, required this.accountNumber, required this.accountName});
 
-  factory VirtualAccount.fromJson(Map<String, dynamic> json) => VirtualAccount(
-    bankName: json['bankName'] as String,
-    accountNumber: json['accountNumber'] as String,
-    accountName: json['accountName'] as String,
-  );
+  static VirtualAccount? tryFromJson(JsonReader? reader) {
+    if (reader == null) return null;
+    final number = reader.strOrNull('accountNumber');
+    if (number == null || number.isEmpty) return null;
+    return VirtualAccount(
+      bankName: reader.strOr('bankName', 'Your bank'),
+      accountNumber: number,
+      accountName: reader.strOr('accountName', ''),
+    );
+  }
 
   final String bankName;
   final String accountNumber;
@@ -37,17 +51,17 @@ enum CardBrand {
   final String code;
   final String label;
 
-  static CardBrand fromCode(String? code) => values.where((brand) => brand.code == code).firstOrNull ?? CardBrand.other;
+  static CardBrand fromCode(String? code) => enumByCode(values, code, (brand) => brand.code, CardBrand.other);
 }
 
 class SavedCard {
   const SavedCard({required this.id, required this.brand, required this.last4, required this.expiry});
 
-  factory SavedCard.fromJson(Map<String, dynamic> json) => SavedCard(
-    id: json['id'] as String,
-    brand: CardBrand.fromCode(json['brand'] as String?),
-    last4: json['last4'] as String,
-    expiry: json['expiry'] as String,
+  factory SavedCard.fromReader(JsonReader reader) => SavedCard(
+    id: reader.str('id'),
+    brand: CardBrand.fromCode(reader.strOrNull('brand')),
+    last4: reader.str('last4'),
+    expiry: reader.strOr('expiry', ''),
   );
 
   final String id;
@@ -66,19 +80,22 @@ class WalletOverview {
     required this.savedCards,
   });
 
-  factory WalletOverview.fromJson(Map<String, dynamic> json) => WalletOverview(
-    balance: (json['balance'] as num).toInt(),
-    limits: WalletLimits.fromJson(Map<String, dynamic>.from(json['limits'] as Map)),
-    virtualAccount: VirtualAccount.fromJson(Map<String, dynamic>.from(json['virtualAccount'] as Map)),
-    savedCards: [
-      for (final card in json['savedCards'] as List) SavedCard.fromJson(Map<String, dynamic>.from(card as Map)),
-    ],
-  );
+  factory WalletOverview.fromJson(Map<String, dynamic> json) {
+    final reader = JsonReader(json);
+    return WalletOverview(
+      balance: reader.integer('balance'),
+      limits: WalletLimits.fromJson(reader.objectOrNull('limits')?.raw ?? const {}),
+      virtualAccount: VirtualAccount.tryFromJson(reader.objectOrNull('virtualAccount')),
+      savedCards: reader.listOf('savedCards', SavedCard.fromReader),
+    );
+  }
 
   final int balance;
   final WalletLimits limits;
-  final VirtualAccount virtualAccount;
+  final VirtualAccount? virtualAccount;
   final List<SavedCard> savedCards;
+
+  bool get canPayByTransfer => virtualAccount != null;
 }
 
 sealed class RecentTransactions {
@@ -90,7 +107,9 @@ final class RecentLoading extends RecentTransactions {
 }
 
 final class RecentFailed extends RecentTransactions {
-  const RecentFailed();
+  const RecentFailed(this.problem);
+
+  final LoadProblem problem;
 }
 
 final class RecentLoaded extends RecentTransactions {
@@ -110,12 +129,17 @@ final class WalletLoading extends WalletState {
 }
 
 final class WalletFailed extends WalletState {
-  const WalletFailed();
+  const WalletFailed(this.problem);
+
+  final LoadProblem problem;
 }
 
 final class WalletLoaded extends WalletState {
-  const WalletLoaded(this.overview, this.recent);
+  const WalletLoaded(this.overview, this.recent, {this.isStale = false});
 
   final WalletOverview overview;
   final RecentTransactions recent;
+  final bool isStale;
+
+  WalletLoaded markStale() => WalletLoaded(overview, recent, isStale: true);
 }

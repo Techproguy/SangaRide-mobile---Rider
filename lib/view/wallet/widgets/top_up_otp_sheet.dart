@@ -18,6 +18,7 @@ Future<void> showTopUpOtpSheet({required BuildContext context, required TopUpCon
         return TopUpOtpContent(
           message: state.action.message,
           stage: state.stage,
+          failureMessage: state.failure?.message,
           onSubmit: controller.submitOtp,
           onEdit: controller.editOtp,
           onCancel: controller.cancelOtp,
@@ -33,6 +34,7 @@ class TopUpOtpContent extends StatefulWidget {
     required this.message,
     required this.stage,
     required this.onSubmit,
+    this.failureMessage,
     required this.onEdit,
     required this.onCancel,
   });
@@ -42,6 +44,7 @@ class TopUpOtpContent extends StatefulWidget {
 
   final String message;
   final OtpStage stage;
+  final String? failureMessage;
   final ValueChanged<String> onSubmit;
   final VoidCallback onEdit;
   final VoidCallback onCancel;
@@ -78,7 +81,7 @@ class _TopUpOtpContentState extends State<TopUpOtpContent> {
   void _refresh() => setState(() {});
 
   void _changed(String value) {
-    if (widget.stage == OtpStage.mismatch && value.isNotEmpty) widget.onEdit();
+    if (widget.stage != OtpStage.ready && widget.stage != OtpStage.verifying && value.isNotEmpty) widget.onEdit();
   }
 
   void _submit() {
@@ -106,6 +109,10 @@ class _TopUpOtpContentState extends State<TopUpOtpContent> {
             onCompleted: (_) => _submit(),
           ),
         ),
+        if (widget.stage == OtpStage.failed && widget.failureMessage != null) ...[
+          const SizedBox(height: SangaSpacing.md),
+          SangaNotice(message: widget.failureMessage!, tone: SangaTone.warning),
+        ],
         const SizedBox(height: SangaSpacing.xl),
         SangaButton.primary(
           label: 'Confirm',

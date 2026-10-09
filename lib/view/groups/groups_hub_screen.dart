@@ -85,7 +85,7 @@ class _GroupsHubScreenState extends State<GroupsHubScreen> {
 
   List<Widget> _children(GroupsState state) => switch (_stageOf(state)) {
     _HubStage.loading => [
-      const WalletSkeleton(heights: [96, 96, 96]),
+      const SangaSkeleton.heights([96, 96, 96]),
     ],
     _HubStage.failed => [
       SangaInlineMessage(
@@ -168,7 +168,7 @@ class _GroupsHubScreenState extends State<GroupsHubScreen> {
         final state = _groups.state;
         return SangaHandoff(
           value: _stageOf(state),
-          child: WalletList(onRefresh: _groups.reloadQuietly, children: _children(state)),
+          child: SangaRefreshList.children(onRefresh: _groups.reloadQuietly, children: _children(state)),
         );
       }),
     );

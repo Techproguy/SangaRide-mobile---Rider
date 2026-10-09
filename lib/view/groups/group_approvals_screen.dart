@@ -49,7 +49,7 @@ class _GroupApprovalsScreenState extends State<GroupApprovalsScreen> {
 
   List<Widget> _children(ApprovalsState state) => switch (state) {
     ApprovalsLoading() => [
-      const WalletSkeleton(heights: [150, 150]),
+      const SangaSkeleton.heights([150, 150]),
     ],
     ApprovalsFailed() => [
       SangaInlineMessage(
@@ -90,7 +90,7 @@ class _GroupApprovalsScreenState extends State<GroupApprovalsScreen> {
         final state = _group.approvalsState;
         return SangaHandoff(
           value: _stageOf(state),
-          child: WalletList(onRefresh: _group.loadApprovals, children: _children(state)),
+          child: SangaRefreshList.children(onRefresh: _group.loadApprovals, children: _children(state)),
         );
       }),
     );

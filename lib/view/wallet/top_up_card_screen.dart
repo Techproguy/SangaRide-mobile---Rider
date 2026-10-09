@@ -7,6 +7,7 @@ import 'package:sanga_ride/controller/rider/wallet_bindings.dart';
 import 'package:sanga_ride/model/wallet/wallet.dart';
 import 'package:sanga_ride/view/wallet/widgets/saved_card_picker.dart';
 import 'package:sanga_ride/view/wallet/widgets/top_up_otp_sheet.dart';
+import 'package:sanga_ride/view/wallet/widgets/top_up_sheets.dart';
 import 'package:sanga_ride/view/wallet/widgets/top_up_success_sheet.dart';
 import 'package:sanga_ride/view/wallet/wallet_copy.dart';
 import 'package:sanga_ride/view/wallet/wallet_format.dart';
@@ -38,6 +39,9 @@ class _TopUpCardScreenState extends State<TopUpCardScreen> {
   void initState() {
     super.initState();
     _stateWorker = ever(_topUp.stateRx, _onState);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _onState(_topUp.state);
+    });
   }
 
   @override
@@ -55,7 +59,7 @@ class _TopUpCardScreenState extends State<TopUpCardScreen> {
   void _onState(TopUpState state) {
     if (!mounted) return;
     switch (state) {
-      case TopUpSubmitting(method: TopUpMethod.card) || TopUpConfirming():
+      case TopUpSubmitting(method: TopUpMethod.card) || TopUpConfirming() || TopUpChecking(method: TopUpMethod.card):
         _showProcessing();
       case TopUpOtp():
         _processing.close(context);
@@ -63,46 +67,56 @@ class _TopUpCardScreenState extends State<TopUpCardScreen> {
       case TopUpSucceeded():
         _closeSheets();
         _celebrate(state);
-      case TopUpFailed(method: TopUpMethod.card, :final failure):
+      case TopUpUnknown(method: TopUpMethod.card):
         _closeSheets();
-        _showFailure(failure);
-      case TopUpEditing() || TopUpSubmitting() || TopUpTransferWatching() || TopUpTransferDelayed() || TopUpFailed():
+        _showUnknown();
+      case TopUpFailed(method: TopUpMethod.card, :final failure, :final canRetryAsIs):
+        _closeSheets();
+        _showFailure(failure, canRetryAsIs: canRetryAsIs);
+      case TopUpEditing() ||
+          TopUpSubmitting() ||
+          TopUpChecking() ||
+          TopUpUnknown() ||
+          TopUpTransferWatching() ||
+          TopUpTransferDelayed() ||
+          TopUpFailed():
         _closeSheets();
     }
   }
 
   Future<void> _showProcessing() async {
-    await _processing.show(
-      () => showPaymentPendingSheet(
-        context: context,
-        title: 'Payment in progress',
-        message: 'Hang tight, this only takes a moment.',
-      ),
-    );
+    final shouldLeave = await _processing.show(() => showTopUpProcessingSheet(context: context, controller: _topUp));
+    if (shouldLeave == true && mounted) context.pop(true);
   }
 
   Future<void> _showOtp() async {
     await _otp.show(() => showTopUpOtpSheet(context: context, controller: _topUp));
   }
 
-  Future<void> _showFailure(TopUpFailure failure) async {
+  Future<void> _showUnknown() async {
+    final checksWallet = await _processing.show(() => showTopUpUnknownSheet(context: context));
+    if (!mounted || checksWallet == null) return;
+    if (checksWallet) {
+      unawaited(_wallet.reloadQuietly());
+      context.pop(true);
+      return;
+    }
+    unawaited(_topUp.recheck());
+  }
+
+  Future<void> _showFailure(TopUpFailure failure, {required bool canRetryAsIs}) async {
     final retry = await _processing.show(
       () => showPaymentFailureSheet(
         context: context,
         title: failure.title,
         message: failure.message,
         primaryLabel: 'Try again',
-        secondaryLabel: failure.mayHaveGoneThrough ? 'Check my wallet' : 'Pick another way',
+        secondaryLabel: 'Pick another way',
       ),
     );
     if (!mounted || retry == null) return;
     if (retry) {
-      _topUp.retry();
-      return;
-    }
-    if (failure.mayHaveGoneThrough) {
-      unawaited(_wallet.reloadQuietly());
-      context.pop(true);
+      canRetryAsIs ? unawaited(_topUp.retryCard()) : _topUp.retry();
       return;
     }
     _topUp.retry();
@@ -152,7 +166,9 @@ class _TopUpCardScreenState extends State<TopUpCardScreen> {
       final draft = _topUp.draft;
       final amount = draft.amount;
       final overview = _wallet.overview;
-      final isBusy = _topUp.state is TopUpSubmitting || _topUp.state is TopUpOtp || _topUp.state is TopUpConfirming;
+      final state = _topUp.state;
+      final isBusy =
+          state is TopUpSubmitting || state is TopUpOtp || state is TopUpConfirming || state is TopUpChecking;
       if (amount == null || overview == null) return const Scaffold();
       return PopScope(
         canPop: !isBusy,

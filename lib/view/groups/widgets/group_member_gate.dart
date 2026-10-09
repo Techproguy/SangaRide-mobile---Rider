@@ -6,7 +6,6 @@ import 'package:go_router/go_router.dart';
 import 'package:sanga_ride/controller/rider/groups/group_bindings.dart';
 import 'package:sanga_ride/controller/rider/groups/group_controller.dart';
 import 'package:sanga_ride/model/groups/group_models.dart';
-import 'package:sanga_ride/view/wallet/widgets/wallet_page.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 class GroupGate extends StatefulWidget {
@@ -36,7 +35,7 @@ class _GroupGateState extends State<GroupGate> {
     return Obx(() {
       final state = _group.state;
       return switch (state) {
-        GroupDetailLoading() => _page(const WalletSkeleton(heights: [72, 56, 56, 56])),
+        GroupDetailLoading() => _page(const SangaSkeleton.heights([72, 56, 56, 56])),
         GroupDetailFailed(:final failure) => _page(
           SangaInlineMessage(
             title: failure.title,

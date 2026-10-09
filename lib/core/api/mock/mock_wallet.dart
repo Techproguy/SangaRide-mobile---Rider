@@ -14,12 +14,14 @@ abstract final class MockWallet {
     MockRoute.get(WalletEndpoints.transactions, _transactions),
     MockRoute.get(WalletEndpoints.transaction, _transaction),
     MockRoute.post(WalletEndpoints.topUps, _createTopUp),
+    MockRoute.get(WalletEndpoints.topUps, _findTopUps),
     MockRoute.get(WalletEndpoints.topUp, _topUp),
     MockRoute.post(WalletEndpoints.topUpAuthorize, _authorize),
     MockRoute.get(WalletEndpoints.groupWallet, _overview),
     MockRoute.get(WalletEndpoints.groupTransactions, _transactions),
     MockRoute.get(WalletEndpoints.groupTransaction, _transaction),
     MockRoute.post(WalletEndpoints.groupTopUps, _createTopUp),
+    MockRoute.get(WalletEndpoints.groupTopUps, _findTopUps),
     MockRoute.get(WalletEndpoints.groupTopUp, _topUp),
     MockRoute.post(WalletEndpoints.groupTopUpAuthorize, _authorize),
   ];
@@ -33,6 +35,8 @@ abstract final class MockWallet {
   static const Duration _transferWindow = Duration(minutes: 30);
   static const String _declinedLast4 = '0002';
   static const String _brokeLast4 = '9995';
+  static const String _slowLast4 = '0004';
+  static const Duration _cardSettlesAfter = Duration(seconds: 14);
   static const String _otpMessage = 'Enter the 4 digit code your bank just sent you.';
 
   static const Map<String, dynamic> _virtualAccount = {
@@ -262,6 +266,20 @@ abstract final class MockWallet {
     };
   }
 
+  static Object? _findTopUps(MockRequest request) {
+    final book = _bookOf(request);
+    _syncTopUps(book);
+    final key = request.query['idempotencyKey'];
+    final matching = [
+      for (final topUp in book.topUps.values)
+        if (key == null || topUp.intentKey == key) topUp,
+    ];
+    return {
+      'topUps': [for (final topUp in matching) topUp.toJson()],
+      'serverTime': _iso(DateTime.now()),
+    };
+  }
+
   static Object? _transactions(MockRequest request) {
     final book = _bookOf(request);
     _syncTopUps(book);
@@ -313,9 +331,10 @@ abstract final class MockWallet {
     final book = _bookOf(request);
     final amount = (request.body['amount'] as num?)?.toInt();
     _checkAmount(amount);
+    final key = request.headers['Idempotency-Key'] as String?;
     return switch (request.body['method']) {
-      'card' => _createCardTopUp(book, amount!, request.body),
-      'transfer' => _createTransferTopUp(book, amount!),
+      'card' => _createCardTopUp(book, amount!, request.body, key),
+      'transfer' => _createTransferTopUp(book, amount!, key),
       _ => throw const MockFailure(422, 'Pick a way to add money.', code: 'invalid_method'),
     };
   }
@@ -336,7 +355,7 @@ abstract final class MockWallet {
         (throw const MockFailure(422, 'Check your card details.', code: 'invalid_card'));
   }
 
-  static Object? _createCardTopUp(_Book book, int amount, Map<String, dynamic> body) {
+  static Object? _createCardTopUp(_Book book, int amount, Map<String, dynamic> body, String? key) {
     final card = _cardOf(body);
     if (card.last4 == _declinedLast4) _decline(book, amount, card, 'card_declined', 'Your bank declined this card.');
     if (card.last4 == _brokeLast4) {
@@ -351,6 +370,7 @@ abstract final class MockWallet {
       createdAt: DateTime.now(),
       card: card,
       shouldSaveCard: !isSaved && body['saveCard'] == true,
+      intentKey: key,
     );
     book.topUps[topUp.id] = topUp;
     if (isSaved) {
@@ -377,7 +397,7 @@ abstract final class MockWallet {
     throw MockFailure(402, message, code: code);
   }
 
-  static Object? _createTransferTopUp(_Book book, int amount) {
+  static Object? _createTransferTopUp(_Book book, int amount, String? key) {
     final now = DateTime.now();
     final topUp = _TopUp(
       book: book,
@@ -386,6 +406,7 @@ abstract final class MockWallet {
       amount: amount,
       createdAt: now,
       expiresAt: now.add(_transferWindow),
+      intentKey: key,
     );
     book.topUps[topUp.id] = topUp;
     topUp.entry = _Entry(
@@ -399,7 +420,7 @@ abstract final class MockWallet {
       meta: {'method': 'transfer', 'topUpId': topUp.id, 'expiresAt': _iso(topUp.expiresAt!)},
     );
     book.ledger.add(topUp.entry!);
-    return {'id': topUp.id, 'status': 'awaiting_transfer', 'expiresAt': _iso(topUp.expiresAt!)};
+    return topUp.toJson();
   }
 
   static _TopUp _topUpOf(MockRequest request) {
@@ -418,7 +439,7 @@ abstract final class MockWallet {
     if (request.body['otp'] != MockData.otpCode) {
       throw const MockFailure(422, 'That code didn’t match. Check it and try again.', code: 'otp_mismatch');
     }
-    topUp.complete();
+    topUp.afterAuthorization();
     return topUp.toJson();
   }
 
@@ -437,7 +458,7 @@ abstract final class MockWallet {
     ];
   }
 
-  static const Set<String> _pendingStatuses = {'awaiting_transfer', 'requires_action'};
+  static const Set<String> _pendingStatuses = {'awaiting_transfer', 'requires_action', 'pending'};
 
   static String _syncedStatus(_TopUp topUp) {
     topUp.sync(DateTime.now());
@@ -575,6 +596,7 @@ class _TopUp {
     this.expiresAt,
     this.card,
     this.shouldSaveCard = false,
+    this.intentKey,
   });
 
   final _Book book;
@@ -585,12 +607,22 @@ class _TopUp {
   final DateTime? expiresAt;
   final MockCardRef? card;
   final bool shouldSaveCard;
+  final String? intentKey;
   String status = 'awaiting_transfer';
+  DateTime? settlesAt;
   _Entry? entry;
 
   bool get _neverArrives => amount % 10 == 7;
 
+  void afterAuthorization() {
+    if (card?.last4 != MockWallet._slowLast4) return complete();
+    status = 'pending';
+    settlesAt = DateTime.now().add(MockWallet._cardSettlesAfter);
+  }
+
   void sync(DateTime now) {
+    final settleAt = settlesAt;
+    if (method == 'card' && status == 'pending' && settleAt != null && !now.isBefore(settleAt)) complete();
     if (method != 'transfer' || status != 'awaiting_transfer') return;
     if (!_neverArrives && now.difference(createdAt) >= MockWallet._transferSettlesAfter) {
       complete();
@@ -632,6 +664,8 @@ class _TopUp {
     if (withAmount) 'amount': amount,
     if (expiresAt != null) 'expiresAt': MockWallet._iso(expiresAt!),
     'action': status == 'requires_action' ? {'type': 'otp', 'message': MockWallet._otpMessage} : null,
+    'createdAt': MockWallet._iso(createdAt),
+    if (status == 'completed') 'balance': book.balance,
     'serverTime': MockWallet._iso(DateTime.now()),
   };
 }

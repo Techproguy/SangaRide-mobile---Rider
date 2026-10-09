@@ -34,7 +34,7 @@ abstract final class TransactionVisuals {
     TransactionStatus.pending => SangaColors.warning,
     TransactionStatus.completed => SangaColors.success,
     TransactionStatus.failed => SangaColors.dangerStrong,
-    TransactionStatus.reversed => SangaColors.textMuted,
+    TransactionStatus.reversed || TransactionStatus.unknown => SangaColors.textMuted,
   };
 
   static Widget statusTag(TransactionStatus status) => switch (status) {
@@ -42,5 +42,6 @@ abstract final class TransactionVisuals {
     TransactionStatus.completed => const SangaTag.success(label: 'Completed'),
     TransactionStatus.failed => const SangaTag.urgent(label: 'Failed', icon: Icons.error_outline_rounded),
     TransactionStatus.reversed => const SangaTag.scheduled(label: 'Reversed', icon: Icons.undo_rounded),
+    TransactionStatus.unknown => const SangaTag.scheduled(label: 'Updating', icon: Icons.sync_rounded),
   };
 }

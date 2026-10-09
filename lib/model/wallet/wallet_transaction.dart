@@ -1,3 +1,5 @@
+import 'package:sanga_ride_core/sanga_ride_core.dart';
+
 enum TransactionKind {
   rideEarning('ride_earning'),
   deliveryEarning('delivery_earning'),
@@ -14,14 +16,15 @@ enum TransactionKind {
   final String code;
 
   static TransactionKind fromCode(String? code) =>
-      values.where((kind) => kind.code == code).firstOrNull ?? TransactionKind.adjustment;
+      enumByCode(values, code, (kind) => kind.code, TransactionKind.adjustment);
 }
 
 enum TransactionStatus {
   pending('pending', 'Pending'),
   completed('completed', 'Completed'),
   failed('failed', 'Failed'),
-  reversed('reversed', 'Reversed');
+  reversed('reversed', 'Reversed'),
+  unknown('unknown', 'Updating');
 
   const TransactionStatus(this.code, this.label);
 
@@ -29,7 +32,7 @@ enum TransactionStatus {
   final String label;
 
   static TransactionStatus fromCode(String? code) =>
-      values.where((status) => status.code == code).firstOrNull ?? TransactionStatus.completed;
+      enumByCode(values, code, (status) => status.code, TransactionStatus.unknown);
 }
 
 enum TransactionFilter {
@@ -63,20 +66,20 @@ class TransactionMeta {
   });
 
   factory TransactionMeta.fromJson(Map<String, dynamic> json) {
-    final expiresAt = json['expiresAt'] as String?;
+    final reader = JsonReader(json);
     return TransactionMeta(
-      tripId: json['tripId'] as String?,
-      route: json['route'] as String?,
-      fare: (json['fare'] as num?)?.toInt(),
-      paymentMethod: json['paymentMethod'] as String?,
-      method: json['method'] as String?,
-      cardLast4: json['cardLast4'] as String?,
-      cardBrand: json['cardBrand'] as String?,
-      topUpId: json['topUpId'] as String?,
-      expiresAt: expiresAt == null ? null : DateTime.parse(expiresAt).toLocal(),
-      note: json['note'] as String?,
-      failureReason: json['failureReason'] as String?,
-      isDelivery: json['tripKind'] == 'delivery',
+      tripId: reader.strOrNull('tripId'),
+      route: reader.strOrNull('route'),
+      fare: reader.intOrNull('fare'),
+      paymentMethod: reader.strOrNull('paymentMethod'),
+      method: reader.strOrNull('method'),
+      cardLast4: reader.strOrNull('cardLast4'),
+      cardBrand: reader.strOrNull('cardBrand'),
+      topUpId: reader.strOrNull('topUpId'),
+      expiresAt: reader.timeOrNull('expiresAt')?.toLocal(),
+      note: reader.strOrNull('note'),
+      failureReason: reader.strOrNull('failureReason'),
+      isDelivery: reader.strOrNull('tripKind') == 'delivery',
     );
   }
 
@@ -108,16 +111,19 @@ class WalletTransaction {
     required this.meta,
   });
 
-  factory WalletTransaction.fromJson(Map<String, dynamic> json) => WalletTransaction(
-    id: json['id'] as String,
-    kind: TransactionKind.fromCode(json['kind'] as String?),
-    title: json['title'] as String,
-    amount: (json['amount'] as num).toInt(),
-    status: TransactionStatus.fromCode(json['status'] as String?),
-    createdAt: DateTime.parse(json['createdAt'] as String).toLocal(),
-    reference: json['reference'] as String,
-    meta: TransactionMeta.fromJson(Map<String, dynamic>.from((json['meta'] as Map?) ?? const {})),
-  );
+  factory WalletTransaction.fromJson(Map<String, dynamic> json) {
+    final reader = JsonReader(json);
+    return WalletTransaction(
+      id: reader.str('id'),
+      kind: TransactionKind.fromCode(reader.strOrNull('kind')),
+      title: reader.strOr('title', ''),
+      amount: reader.integer('amount'),
+      status: TransactionStatus.fromCode(reader.strOrNull('status')),
+      createdAt: reader.time('createdAt').toLocal(),
+      reference: reader.strOr('reference', ''),
+      meta: TransactionMeta.fromJson(reader.objectOrNull('meta')?.raw ?? const {}),
+    );
+  }
 
   final String id;
   final TransactionKind kind;
