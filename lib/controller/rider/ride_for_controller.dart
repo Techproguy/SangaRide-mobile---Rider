@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:sanga_ride/controller/rider/groups/group_bindings.dart';
 import 'package:sanga_ride/controller/rider/groups/groups_controller.dart';
 import 'package:sanga_ride/core/api/api.dart';
+import 'package:sanga_ride/core/api/idempotency_intents.dart';
 import 'package:sanga_ride/core/api/who_for_endpoints.dart';
 import 'package:sanga_ride/model/groups/group_models.dart';
 import 'package:sanga_ride/model/models.dart';
@@ -159,7 +160,7 @@ class RideForController extends GetxController {
   IdempotencyKey _keyFor(PassengerInfo info, {required bool isResend}) {
     final signature = '${info.toJson()}${isResend ? 'resend' : ''}';
     if (_codeKey == null || _codeSignature != signature) {
-      _codeKey = IdempotencyKey.newFor('passenger-code');
+      _codeKey = IdempotencyKey.newFor(IdempotencyIntent.passengerCode);
       _codeSignature = signature;
     }
     return _codeKey!;

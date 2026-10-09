@@ -1,10 +1,10 @@
-import 'package:dio/dio.dart' show Options;
 import 'package:get/get.dart';
 import 'package:sanga_ride/model/account/load_problem.dart';
 import 'package:sanga_ride_core/sanga_ride_core.dart';
 import 'package:sanga_ride/core/api/api.dart';
 import 'package:sanga_ride/core/api/group_endpoints.dart';
 import 'package:sanga_ride/core/api/history_endpoints.dart';
+import 'package:sanga_ride/core/api/idempotency_intents.dart';
 import 'package:sanga_ride/model/history/history_detail.dart';
 import 'package:sanga_ride/model/history/history_item.dart';
 import 'package:sanga_ride/model/history/history_scope.dart';
@@ -13,17 +13,16 @@ class RideHistoryController extends GetxController {
   RideHistoryController([this.scope = const HistoryScope.personal()]);
 
   static const int pageSize = 10;
-  static final Options _quiet = Options(extra: {'suppressErrorToast': true});
 
   final HistoryScope scope;
   final _api = Get.find<ApiService>();
 
   final RxMap<HistoryStatus, HistoryFeedState> _feeds = <HistoryStatus, HistoryFeedState>{}.obs;
   final RxnString _memberId = RxnString();
-  final Map<HistoryStatus, int> _feedEpochs = {};
+  final Map<HistoryStatus, Epoch> _feedEpochs = {};
   final Rx<HistoryDetailState> _detail = Rx<HistoryDetailState>(const HistoryDetailLoading());
   final RxnString _detailId = RxnString();
-  int _detailEpoch = 0;
+  final _detailEpoch = Epoch();
 
   String? get memberId => _memberId.value;
 
@@ -51,10 +50,10 @@ class RideHistoryController extends GetxController {
     if (current is! HistoryFeedLoaded) _feeds[status] = const HistoryFeedLoading();
     try {
       final page = await _fetch(status, 1);
-      if (epoch != _feedEpochs[status]) return;
+      if (!_isCurrentFeed(status, epoch)) return;
       _feeds[status] = HistoryFeedLoaded(items: page.items, page: page.page, hasMore: page.hasMore);
     } on Object catch (error) {
-      if (epoch != _feedEpochs[status]) return;
+      if (!_isCurrentFeed(status, epoch)) return;
       final latest = _feeds[status];
       _feeds[status] = latest is HistoryFeedLoaded
           ? latest.copyWith(isStale: true)
@@ -69,18 +68,20 @@ class RideHistoryController extends GetxController {
     _feeds[status] = current.copyWith(more: HistoryMore.loading);
     try {
       final page = await _fetch(status, current.page + 1);
-      if (epoch != _feedEpochs[status]) return;
+      if (!_isCurrentFeed(status, epoch)) return;
       _feeds[status] = HistoryFeedLoaded(
         items: [...current.items, ...page.items],
         page: page.page,
         hasMore: page.hasMore,
       );
     } on Object {
-      if (epoch == _feedEpochs[status]) _feeds[status] = current.copyWith(more: HistoryMore.failed);
+      if (_isCurrentFeed(status, epoch)) _feeds[status] = current.copyWith(more: HistoryMore.failed);
     }
   }
 
-  int _nextEpoch(HistoryStatus status) => _feedEpochs[status] = (_feedEpochs[status] ?? 0) + 1;
+  int _nextEpoch(HistoryStatus status) => (_feedEpochs[status] ??= Epoch()).next();
+
+  bool _isCurrentFeed(HistoryStatus status, int epoch) => _feedEpochs[status]?.isCurrent(epoch) ?? false;
 
   Future<HistoryPage> _fetch(HistoryStatus status, int page) async {
     final groupId = scope.groupId;
@@ -89,10 +90,8 @@ class RideHistoryController extends GetxController {
       queryParameters: {'status': status.code, 'page': page, 'pageSize': pageSize, 'memberId': ?memberId},
       suppressErrorToast: true,
     );
-    return HistoryPage.fromJson(JsonReader.of(JsonReader.of(response.data).raw['data']).raw);
+    return HistoryPage.fromJson(response.dataMapOrEmpty);
   }
-
-  Future<void> refreshOpenFeeds() => Future.wait([for (final status in _feeds.keys.toList()) _loadFirstPage(status)]);
 
   Future<void> openDetail(String id) async {
     final isSame = _detailId.value == id;
@@ -113,20 +112,20 @@ class RideHistoryController extends GetxController {
   Future<void> _loadDetail({required bool showLoading}) async {
     final id = _detailId.value;
     if (id == null) return;
-    final epoch = ++_detailEpoch;
+    final epoch = _detailEpoch.next();
     final previous = detailState;
     if (showLoading) _detail.value = const HistoryDetailLoading();
     try {
       final response = await _api.get(HistoryEndpoints.rideOf(id), suppressErrorToast: true);
-      if (epoch != _detailEpoch) return;
-      final data = JsonReader.of(JsonReader.of(response.data).raw['data']).raw;
+      if (!_detailEpoch.isCurrent(epoch)) return;
+      final data = response.dataMapOrEmpty;
       final latest = detailState;
       _detail.value = HistoryDetailLoaded(
         HistoryDetail.fromJson(data),
         driverAction: latest is HistoryDetailLoaded ? latest.driverAction : null,
       );
     } on Object catch (error) {
-      if (epoch != _detailEpoch) return;
+      if (!_detailEpoch.isCurrent(epoch)) return;
       final failure = HistoryFailure.of(error);
       final keepsPrevious = previous is HistoryDetailLoaded && failure.canRetry;
       _detail.value = keepsPrevious
@@ -140,7 +139,7 @@ class RideHistoryController extends GetxController {
     if (current is! HistoryDetailLoaded || current.driverAction != null) return null;
     final driver = current.detail.driver;
     if (driver == null) return HistoryProblem.driverNotFound;
-    final epoch = _detailEpoch;
+    final epoch = _detailEpoch.current;
     _detail.value = HistoryDetailLoaded(
       current.detail,
       driverAction: isBlocked ? HistoryDriverAction.blocking : HistoryDriverAction.unblocking,
@@ -148,16 +147,20 @@ class RideHistoryController extends GetxController {
     try {
       final endpoint = HistoryEndpoints.blockDriverOf(driver.profile.id);
       if (isBlocked) {
-        await _api.post(endpoint, key: IdempotencyKey.newFor('block-driver'), suppressErrorToast: true);
+        await _api.post(endpoint, key: IdempotencyKey.newFor(IdempotencyIntent.blockDriver), suppressErrorToast: true);
       } else {
-        await _api.delete(endpoint, key: IdempotencyKey.newFor('unblock-driver'), options: _quiet);
+        await _api.delete(
+          endpoint,
+          key: IdempotencyKey.newFor(IdempotencyIntent.unblockDriver),
+          suppressErrorToast: true,
+        );
       }
-      if (epoch == _detailEpoch) {
+      if (_detailEpoch.isCurrent(epoch)) {
         _detail.value = HistoryDetailLoaded(current.detail.withDriver(driver.copyWith(isBlocked: isBlocked)));
       }
       return null;
     } on Object catch (error) {
-      if (epoch == _detailEpoch) _detail.value = HistoryDetailLoaded(current.detail);
+      if (_detailEpoch.isCurrent(epoch)) _detail.value = HistoryDetailLoaded(current.detail);
       return HistoryProblem.of(error);
     }
   }

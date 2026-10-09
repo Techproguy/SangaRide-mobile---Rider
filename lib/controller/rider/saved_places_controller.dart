@@ -3,6 +3,7 @@ import 'dart:developer';
 
 import 'package:get/get.dart';
 import 'package:sanga_ride/core/api/api.dart';
+import 'package:sanga_ride/core/api/idempotency_intents.dart';
 import 'package:sanga_ride/core/api/places_endpoints.dart';
 import 'package:sanga_ride/model/location/place.dart';
 import 'package:sanga_ride/model/places/saved_place.dart';
@@ -16,7 +17,7 @@ class SavedPlacesController extends GetxController {
   String? _createSignature;
 
   final Rx<SavedPlacesState> _state = Rx<SavedPlacesState>(const SavedPlacesLoading());
-  int _epoch = 0;
+  final _epoch = Epoch();
 
   Rx<SavedPlacesState> get stateRx => _state;
 
@@ -36,11 +37,11 @@ class SavedPlacesController extends GetxController {
   bool isSaved(Place place) => book?.isSaved(place) ?? false;
 
   Future<bool> load() async {
-    final epoch = ++_epoch;
+    final epoch = _epoch.next();
     if (state is! SavedPlacesLoaded) _state.value = const SavedPlacesLoading();
     try {
       final response = await _api.get(PlacesEndpoints.saved, suppressErrorToast: true);
-      if (epoch != _epoch) return state is SavedPlacesLoaded;
+      if (!_epoch.isCurrent(epoch)) return state is SavedPlacesLoaded;
       final current = state;
       _state.value = SavedPlacesLoaded(
         SavedPlaceBook.fromJson((response.data as Map)['data']),
@@ -49,7 +50,7 @@ class SavedPlacesController extends GetxController {
       return true;
     } catch (e) {
       log('load saved places failed: $e');
-      if (epoch == _epoch && state is! SavedPlacesLoaded) {
+      if (_epoch.isCurrent(epoch) && state is! SavedPlacesLoaded) {
         _state.value = SavedPlacesFailed(problem: RideLoadProblem.of(e));
       }
       return state is SavedPlacesLoaded;
@@ -87,7 +88,7 @@ class SavedPlacesController extends GetxController {
   ) async {
     final current = state;
     if (current is! SavedPlacesLoaded || current.isBusy(key)) return null;
-    _epoch++;
+    _epoch.next();
     _state.value = current.copyWith(busy: {...current.busy, key});
     try {
       final update = await request();
@@ -105,7 +106,7 @@ class SavedPlacesController extends GetxController {
   IdempotencyKey _keyFor(Map<String, dynamic> body) {
     final signature = body.toString();
     if (_createKey == null || _createSignature != signature) {
-      _createKey = IdempotencyKey.newFor('save-place');
+      _createKey = IdempotencyKey.newFor(IdempotencyIntent.savePlace);
       _createSignature = signature;
     }
     return _createKey!;

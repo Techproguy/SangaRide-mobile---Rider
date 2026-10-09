@@ -5,13 +5,14 @@ import 'package:get/get.dart';
 import 'package:sanga_ride/controller/rider/trip/live_problem.dart';
 import 'package:sanga_ride/core/api/airport_endpoints.dart';
 import 'package:sanga_ride/core/api/api.dart';
+import 'package:sanga_ride/core/api/idempotency_intents.dart';
+import 'package:sanga_ride/core/api/server_codes.dart';
 import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride/model/ride/booking.dart';
 import 'package:sanga_ride_core/sanga_ride_core.dart';
 
 class FlightTrackingController extends GetxController {
   static const Duration pollInterval = Duration(seconds: 30);
-  static const String alreadyNotifiedCode = 'already_notified';
 
   final _api = Get.find<ApiService>();
 
@@ -21,7 +22,7 @@ class FlightTrackingController extends GetxController {
   LivePoller? _poller;
   Mutation<DateTime>? _notifyMutation;
   String? _rideId;
-  int _epoch = 0;
+  final _epoch = Epoch();
 
   FlightTrackingState get state => _state.value;
 
@@ -42,7 +43,7 @@ class FlightTrackingController extends GetxController {
     if (_rideId == rideId) return;
     close();
     _rideId = rideId;
-    final epoch = ++_epoch;
+    final epoch = _epoch.next();
     _state.value = const FlightTrackingLoading();
     final poller = LivePoller(fetch: () => _fetch(epoch), interval: pollInterval);
     _poller = poller;
@@ -55,7 +56,7 @@ class FlightTrackingController extends GetxController {
     _notifyMutation?.dispose();
     _notifyMutation = null;
     _rideId = null;
-    _epoch++;
+    _epoch.next();
     _state.value = const FlightTrackingLoading();
     _notify.value = const NotifyIdle();
   }
@@ -74,16 +75,15 @@ class FlightTrackingController extends GetxController {
 
   Future<void> _fetch(int epoch) async {
     final id = _rideId;
-    if (id == null || epoch != _epoch) return;
+    if (id == null || !_epoch.isCurrent(epoch)) return;
     try {
       final response = await _api.get(AirportEndpoints.rideFlightOf(id), suppressErrorToast: true);
-      if (epoch != _epoch) return;
-      final data = JsonReader.of(JsonReader.of(response.data).raw['data']).raw;
-      _state.value = FlightTrackingReady(FlightTracking.fromJson(data));
+      if (!_epoch.isCurrent(epoch)) return;
+      _state.value = FlightTrackingReady(FlightTracking.fromJson(response.dataMapOrEmpty));
     } catch (e) {
       log('flight tracking failed: $e');
-      if (epoch != _epoch) return;
-      if (e is ApiException && (e.statusCode == 404 || e.statusCode == 410)) {
+      if (!_epoch.isCurrent(epoch)) return;
+      if (e is ApiException && e.isGone) {
         _poller?.stop();
         _state.value = const FlightTrackingFailed(FlightTrackingFailure.notFound);
         return;
@@ -102,18 +102,18 @@ class FlightTrackingController extends GetxController {
     final id = _rideId;
     if (id == null || notifyState is NotifySending) return null;
     if (LiveProblem.isOffline) return BookingProblem.connection;
-    final epoch = _epoch;
+    final epoch = _epoch.current;
     _notify.value = const NotifySending();
     final mutation = _notifyMutation ??= Mutation<DateTime>(
-      intent: 'flight-notify',
+      intent: IdempotencyIntent.flightNotify,
       run: (key) async {
         final response = await _api.post(AirportEndpoints.notifyDriverOf(id), key: key, suppressErrorToast: true);
-        final data = JsonReader.of(JsonReader.of(response.data).raw['data']);
+        final data = JsonReader(response.dataMapOrEmpty);
         return (data.timeOrNull('notifiedAt') ?? DateTime.now()).toLocal();
       },
     );
     final result = await mutation.start();
-    if (epoch != _epoch) return null;
+    if (!_epoch.isCurrent(epoch)) return null;
     switch (result) {
       case MutationDone<DateTime>(:final value):
         _notifyMutation?.dispose();
@@ -123,7 +123,7 @@ class FlightTrackingController extends GetxController {
       case MutationRejected<DateTime>(:final error):
         _notifyMutation?.dispose();
         _notifyMutation = null;
-        if (error.code == alreadyNotifiedCode) {
+        if (error.code == ServerCode.alreadyNotified) {
           _notify.value = NotifySent(DateTime.now());
           return null;
         }

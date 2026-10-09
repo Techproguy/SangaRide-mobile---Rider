@@ -9,17 +9,21 @@ import 'package:google_maps_flutter/google_maps_flutter.dart' show LatLng;
 import 'package:sanga_ride/core/api/api.dart';
 import 'package:sanga_ride/core/api/booking_endpoints.dart';
 import 'package:sanga_ride/core/api/app_endpoints.dart';
+import 'package:sanga_ride/core/api/idempotency_intents.dart';
 import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride/model/ride/booking.dart';
 import 'package:sanga_ride/model/ride/ride_load_problem.dart';
 import 'package:sanga_ride_core/sanga_ride_core.dart';
+
+part 'ride_request_payload.dart';
+part 'ride_request_route.dart';
 
 class RideRequestController extends GetxController {
   static const int maxStops = Trip.maxStops;
   static const Duration catalogLifetime = Duration(minutes: 10);
 
   final _api = Get.find<ApiService>();
-  int _estimateRequest = 0;
+  final _estimateEpoch = Epoch();
   StreamSubscription<void>? _resumeSubscription;
   DateTime? _optionsLoadedAt;
   DateTime? _catalogLoadedAt;
@@ -230,51 +234,6 @@ class RideRequestController extends GetxController {
     }
   }
 
-  void setPickup(Place place) {
-    _pickup.value = place;
-    _clearQuote();
-  }
-
-  void setDropoff(Place place) {
-    _dropoff.value = place;
-    _clearQuote();
-  }
-
-  String? applyRouteEdit(RouteEdit edit, Place place) {
-    final others = [
-      if (edit.point != RoutePoint.pickup) pickup,
-      for (final (index, stop) in stops.indexed)
-        if (edit.point != RoutePoint.stop || edit.stopIndex != index) stop,
-      if (edit.point != RoutePoint.dropoff) dropoff,
-    ].whereType<Place>();
-    final clash = others.where((other) => other.isSameAs(place)).firstOrNull;
-    if (clash != null) {
-      final isEnds = edit.point != RoutePoint.stop && (identical(clash, pickup) || identical(clash, dropoff));
-      return isEnds ? 'Your pickup and drop off can’t be the same place.' : 'That place is already on your route.';
-    }
-    switch (edit.point) {
-      case RoutePoint.pickup:
-        setPickup(place);
-      case RoutePoint.dropoff:
-        setDropoff(place);
-      case RoutePoint.stop:
-        final index = edit.stopIndex;
-        if (index == null) {
-          if (stops.length >= maxStops) return 'You can add up to $maxStops stops.';
-          _stops.add(place);
-        } else {
-          _stops[index] = place;
-        }
-        _clearQuote();
-    }
-    return null;
-  }
-
-  void removeStopAt(int index) {
-    _stops.removeAt(index);
-    _clearQuote();
-  }
-
   void setTripType(TripType type) {
     if (type == tripType) return;
     final wasAlwaysScheduled = tripType.isAlwaysScheduled;
@@ -326,7 +285,7 @@ class RideRequestController extends GetxController {
   }
 
   void _clearQuote() {
-    _estimateRequest++;
+    _estimateEpoch.next();
     _isEstimating.value = false;
     _estimate.value = null;
     _estimateProblem.value = null;
@@ -360,9 +319,9 @@ class RideRequestController extends GetxController {
       ]);
       _catalog.value = CatalogReady(
         BookingCatalog(
-          hourly: HourlyCatalog.fromJson(_dataOf(responses[0].data)),
-          intercity: IntercityCatalog.fromJson(_dataOf(responses[1].data)),
-          rules: BookingRules.fromJson(_dataOf(responses[2].data)),
+          hourly: HourlyCatalog.fromJson(responses[0].dataMap),
+          intercity: IntercityCatalog.fromJson(responses[1].dataMap),
+          rules: BookingRules.fromJson(responses[2].dataMap),
         ),
       );
       _catalogLoadedAt = DateTime.now();
@@ -371,106 +330,6 @@ class RideRequestController extends GetxController {
       if (catalog is! CatalogReady) _catalog.value = CatalogFailed(RideLoadProblem.of(e));
     }
   }
-
-  Map<String, dynamic> get bookingJson => {
-    'tripType': tripType.name,
-    'timing': timing.name,
-    if (scheduledAt case final at?) ...{'scheduledAt': at.toUtc().toIso8601String(), 'timezone': BookingZone.of(at)},
-    if (repeatRule case final rule?) 'repeat': rule.toJson(),
-    if (tripType == TripType.hourly) ...{'hours': hours, 'stayWithMe': staysWithRider},
-    if (tripType == TripType.intercity) ...{'fromCityId': fromCity?.id, 'toCityId': toCity?.id},
-    if (returnAt case final at? when tripType.needsReturn) 'returnAt': at.toUtc().toIso8601String(),
-    if (airportBooking case final booking? when tripType == TripType.airport) 'airport': booking.toJson(),
-    if (deliveryBooking case final booking? when tripType == TripType.delivery) 'delivery': booking.toJson(),
-  };
-
-  Map<String, dynamic>? _deliveryPayload() {
-    final pickup = this.pickup;
-    final dropoff = this.dropoff;
-    final booking = deliveryBooking;
-    if (pickup == null || dropoff == null || booking == null) return null;
-    return {
-      'pickup': pickup.toJson(),
-      'stops': [for (final stop in stops) stop.toJson()],
-      'dropoff': dropoff.toJson(),
-      'rideFor': Get.find<RideForController>().rideFor.toJson(),
-      'pricingMode': PricingOption.standard.name,
-      'proposedFare': booking.fare,
-      ...bookingJson,
-    };
-  }
-
-  Map<String, dynamic>? requestPayload() {
-    if (tripType == TripType.delivery) return _deliveryPayload();
-    final pickup = this.pickup;
-    final dropoff = this.dropoff;
-    final option = this.option;
-    final pricing = this.pricing;
-    final price = this.price;
-    if (pickup == null || dropoff == null || option == null || pricing == null || price == null) return null;
-    return {
-      'optionId': option.id,
-      'pickup': pickup.toJson(),
-      'stops': [for (final stop in stops) stop.toJson()],
-      'dropoff': dropoff.toJson(),
-      'preferences': preferences.toJson(),
-      'rideFor': Get.find<RideForController>().rideFor.toJson(),
-      'pricingMode': pricing.name,
-      'proposedFare': price.round(),
-      'quoteId': ?estimate?.quoteId,
-      ...bookingJson,
-    };
-  }
-
-  Future<ScheduleOutcome?> scheduleBooking() async {
-    if (isScheduling || !isScheduledBooking) return null;
-    final payload = requestPayload();
-    if (payload == null) return const ScheduleRejected(BookingProblem.unknown);
-    final mutation = _scheduleMutationFor(payload);
-    _isScheduling.value = true;
-    try {
-      final result = await mutation.start();
-      return switch (result) {
-        MutationDone<ScheduledBooking>(:final value) => ScheduleSucceeded(value),
-        MutationRejected<ScheduledBooking>(:final error) => _scheduleRejection(error),
-        MutationFailed<ScheduledBooking>(:final error) => ScheduleRejected(BookingProblem.of(error)),
-        MutationUnknown<ScheduledBooking>() => const ScheduleUnconfirmed(),
-        MutationIdle<ScheduledBooking>() ||
-        MutationRunning<ScheduledBooking>() ||
-        MutationChecking<ScheduledBooking>() => const ScheduleUnconfirmed(),
-      };
-    } finally {
-      _isScheduling.value = false;
-    }
-  }
-
-  ScheduleOutcome _scheduleRejection(ApiException error) {
-    final problem = BookingProblem.of(error);
-    if (problem == BookingProblem.quoteExpired) _estimate.value = null;
-    return ScheduleRejected(problem);
-  }
-
-  Mutation<ScheduledBooking> _scheduleMutationFor(Map<String, dynamic> payload) {
-    final signature = jsonEncode(payload);
-    final existing = _scheduleMutation;
-    if (existing != null && _scheduleSignature == signature) return existing;
-    existing?.dispose();
-    _scheduleSignature = signature;
-    return _scheduleMutation = Mutation<ScheduledBooking>(
-      intent: 'schedule-ride',
-      run: (key) async {
-        final response = await _api.post(
-          BookingEndpoints.scheduledRides,
-          data: payload,
-          key: key,
-          suppressErrorToast: true,
-        );
-        return ScheduledBooking.fromJson(_dataOf(response.data));
-      },
-    );
-  }
-
-  Map<String, dynamic> _dataOf(dynamic body) => Map<String, dynamic>.from((body as Map)['data'] as Map);
 
   Future<void> loadOptions({bool force = false}) async {
     if (_options.isNotEmpty && !force && _isFresh(_optionsLoadedAt)) return;
@@ -503,7 +362,7 @@ class RideRequestController extends GetxController {
     final dropoff = this.dropoff;
     final option = this.option;
     if (pickup == null || dropoff == null || option == null) return false;
-    final request = ++_estimateRequest;
+    final request = _estimateEpoch.next();
     _isEstimating.value = true;
     _estimateProblem.value = null;
     try {
@@ -520,17 +379,17 @@ class RideRequestController extends GetxController {
         },
         suppressErrorToast: true,
       );
-      if (request != _estimateRequest) return false;
+      if (!_estimateEpoch.isCurrent(request)) return false;
       final estimate = FareEstimate.fromJson((response.data as Map)['data']);
       _estimate.value = estimate;
       if (estimate.meetGreetFee != null) _knownMeetGreetFee.value = estimate.meetGreetFee;
       return true;
     } catch (e) {
       log('loadEstimate failed: $e');
-      if (request == _estimateRequest) _estimateProblem.value = RideLoadProblem.of(e);
+      if (_estimateEpoch.isCurrent(request)) _estimateProblem.value = RideLoadProblem.of(e);
       return false;
     } finally {
-      if (request == _estimateRequest) _isEstimating.value = false;
+      if (_estimateEpoch.isCurrent(request)) _isEstimating.value = false;
     }
   }
 

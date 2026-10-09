@@ -4,6 +4,7 @@ import 'dart:developer';
 import 'package:get/get.dart';
 import 'package:sanga_ride/core/api/api.dart';
 import 'package:sanga_ride/core/api/booking_endpoints.dart';
+import 'package:sanga_ride/core/api/idempotency_intents.dart';
 import 'package:sanga_ride/model/ride/booking.dart';
 import 'package:sanga_ride/model/ride/ride_load_problem.dart';
 import 'package:sanga_ride_core/sanga_ride_core.dart';
@@ -37,7 +38,7 @@ class ScheduledRidesController extends GetxController {
   Future<BookingProblem?> remind(String id) => _act(id, ScheduledAction.remind, () async {
     final response = await _api.post(
       BookingEndpoints.scheduledRideReminderOf(id),
-      key: IdempotencyKey.newFor('remind-ride'),
+      key: IdempotencyKey.newFor(IdempotencyIntent.remindRide),
       suppressErrorToast: true,
     );
     return ScheduledRide.fromJson(JsonReader.of((response.data as Map)['data']));

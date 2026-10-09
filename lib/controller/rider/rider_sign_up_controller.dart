@@ -6,10 +6,12 @@ import 'package:sanga_ride/controller/shared/auth_controller.dart';
 import 'package:sanga_ride/core/api/account_endpoints.dart';
 import 'package:sanga_ride/core/api/api.dart';
 import 'package:sanga_ride/core/api/app_endpoints.dart';
+import 'package:sanga_ride/core/api/idempotency_intents.dart';
 import 'package:sanga_ride/core/api/places_endpoints.dart';
 import 'package:sanga_ride/core/services/selfie_verifier.dart';
 import 'package:sanga_ride/model/auth/otp_session.dart';
 import 'package:sanga_ride/model/models.dart';
+import 'package:sanga_ride/model/places/saved_place.dart';
 import 'package:sanga_ride_core/sanga_ride_core.dart' show ConnectionMonitor;
 import 'package:sanga_ride_ui/sanga_ride_ui.dart' show SangaSelfieOutcome;
 
@@ -39,8 +41,6 @@ class RiderSignUpController extends GetxController {
     _phoneError.value = null;
     _formError.value = null;
   }
-
-  void clearFormError() => _formError.value = null;
 
   bool get _isOffline => ConnectionMonitor.current?.isOnline == false;
 
@@ -89,7 +89,7 @@ class RiderSignUpController extends GetxController {
   Future<SangaSelfieOutcome> verifySelfie(String photoPath) => _selfie.verify(photoPath);
 
   Future<bool> saveHome(Place place) {
-    final body = {'kind': 'home', 'label': 'Home', 'place': place.toJson()};
+    final body = {'kind': SavedPlaceKind.home.code, 'label': 'Home', 'place': place.toJson()};
     return _save(
       () => _api.post(PlacesEndpoints.saved, data: body, key: _keyFor(body, isHome: true), suppressErrorToast: true),
       onDone: () => _homeKey = null,
@@ -107,7 +107,7 @@ class RiderSignUpController extends GetxController {
           .post(
             AccountEndpoints.onboardingSkip,
             data: {'step': step},
-            key: IdempotencyKey.newFor('skip-$step'),
+            key: IdempotencyKey.newFor(IdempotencyIntent.skipOnboardingStep(step)),
             suppressErrorToast: true,
           )
           .timeout(skipCap);
@@ -120,13 +120,13 @@ class RiderSignUpController extends GetxController {
     final signature = body.toString();
     if (isHome) {
       if (_homeKey == null || _homeSignature != signature) {
-        _homeKey = IdempotencyKey.newFor('save-home');
+        _homeKey = IdempotencyKey.newFor(IdempotencyIntent.saveHome);
         _homeSignature = signature;
       }
       return _homeKey!;
     }
     if (_signUpKey == null || _signUpSignature != signature) {
-      _signUpKey = IdempotencyKey.newFor('sign-up');
+      _signUpKey = IdempotencyKey.newFor(IdempotencyIntent.signUp);
       _signUpSignature = signature;
     }
     return _signUpKey!;

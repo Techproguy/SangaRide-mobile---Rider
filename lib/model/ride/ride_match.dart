@@ -10,6 +10,7 @@ enum RideRequestStatus {
   offers('offers'),
   noDriverFound('no_driver_found'),
   cancelled('cancelled'),
+  scheduled('scheduled'),
   unknown('unknown');
 
   const RideRequestStatus(this.code);

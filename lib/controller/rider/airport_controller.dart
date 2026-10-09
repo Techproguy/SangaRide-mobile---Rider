@@ -16,7 +16,7 @@ class AirportController extends GetxController {
   final Rx<AirportCatalogState> _catalog = Rx<AirportCatalogState>(const AirportCatalogLoading());
   final Rx<AirportDraft> _draft = Rx<AirportDraft>(const AirportDraft());
   final Rx<FlightLookupState> _lookup = Rx<FlightLookupState>(const FlightIdle());
-  int _lookupRequest = 0;
+  final _lookupEpoch = Epoch();
   DateTime? _catalogLoadedAt;
   StreamSubscription<void>? _resumeSubscription;
 
@@ -62,7 +62,7 @@ class AirportController extends GetxController {
   }
 
   void begin() {
-    _lookupRequest++;
+    _lookupEpoch.next();
     _draft.value = const AirportDraft();
     _lookup.value = const FlightIdle();
   }
@@ -137,14 +137,14 @@ class AirportController extends GetxController {
   }
 
   void _resetLookup() {
-    _lookupRequest++;
+    _lookupEpoch.next();
     _lookup.value = const FlightIdle();
   }
 
   Future<bool> lookupFlight() async {
     final query = draft.query;
     if (query == null || lookup is FlightSearching) return false;
-    final request = ++_lookupRequest;
+    final request = _lookupEpoch.next();
     _lookup.value = const FlightSearching();
     try {
       final response = await _api.get(
@@ -152,13 +152,13 @@ class AirportController extends GetxController {
         queryParameters: query.toQuery(),
         suppressErrorToast: true,
       );
-      if (request != _lookupRequest) return false;
-      final data = _dataOf(response.data);
+      if (!_lookupEpoch.isCurrent(request)) return false;
+      final data = response.dataMap;
       _lookup.value = FlightFound(Flight.fromJson(Map<String, dynamic>.from(data['flight'] as Map)));
       return true;
     } catch (e) {
       log('lookupFlight failed: $e');
-      if (request == _lookupRequest) {
+      if (_lookupEpoch.isCurrent(request)) {
         _lookup.value = FlightLookupFailed(
           FlightProblem.of(e),
           destination: e is ApiException ? e.data['destination'] as String? : null,
@@ -167,6 +167,4 @@ class AirportController extends GetxController {
       return false;
     }
   }
-
-  Map<String, dynamic> _dataOf(dynamic body) => Map<String, dynamic>.from((body as Map)['data'] as Map);
 }
