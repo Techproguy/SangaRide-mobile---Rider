@@ -13,8 +13,6 @@ class SangaMap extends StatefulWidget {
   final bool myLocationButtonEnabled;
   final bool zoomControlsEnabled;
   final MapType mapType;
-  final ValueChanged<LatLng>? onMapTap;
-  final ValueChanged<LatLng>? onMapLongPress;
   final VoidCallback? onMapCreated;
   final VoidCallback? onCameraIdle;
   final ValueChanged<CameraPosition>? onCameraMove;
@@ -31,8 +29,6 @@ class SangaMap extends StatefulWidget {
     this.myLocationButtonEnabled = false,
     this.zoomControlsEnabled = false,
     this.mapType = MapType.normal,
-    this.onMapTap,
-    this.onMapLongPress,
     this.onMapCreated,
     this.onCameraIdle,
     this.onCameraMove,
@@ -96,31 +92,27 @@ class _SangaMapState extends State<SangaMap> {
     return LayoutBuilder(
       builder: (context, constraints) {
         _camera.mapSize = constraints.biggest;
-        return Obx(
-          () => GoogleMap(
-            mapType: widget.mapType,
-            style: widget.style,
-            initialCameraPosition: _initialPosition,
-            markers: {..._mapController.markers, ...?widget.extraMarkers},
-            polylines: {..._mapController.polylines, ...?widget.extraPolylines},
-            onMapCreated: (controller) {
-              _gmController = controller;
-              _camera.attach(controller);
-              widget.onMapCreated?.call();
-            },
-            onTap: widget.onMapTap,
-            onLongPress: widget.onMapLongPress,
-            onCameraIdle: widget.onCameraIdle,
-            onCameraMove: widget.onCameraMove,
-            myLocationButtonEnabled: widget.myLocationButtonEnabled,
-            zoomControlsEnabled: widget.zoomControlsEnabled,
-            myLocationEnabled: widget.myLocationEnabled,
-            gestureRecognizers: <Factory<OneSequenceGestureRecognizer>>{
-              Factory<PanGestureRecognizer>(PanGestureRecognizer.new),
-              Factory<HorizontalDragGestureRecognizer>(HorizontalDragGestureRecognizer.new),
-              Factory<VerticalDragGestureRecognizer>(VerticalDragGestureRecognizer.new),
-            },
-          ),
+        return GoogleMap(
+          mapType: widget.mapType,
+          style: widget.style,
+          initialCameraPosition: _initialPosition,
+          markers: {...?widget.extraMarkers},
+          polylines: {...?widget.extraPolylines},
+          onMapCreated: (controller) {
+            _gmController = controller;
+            _camera.attach(controller);
+            widget.onMapCreated?.call();
+          },
+          onCameraIdle: widget.onCameraIdle,
+          onCameraMove: widget.onCameraMove,
+          myLocationButtonEnabled: widget.myLocationButtonEnabled,
+          zoomControlsEnabled: widget.zoomControlsEnabled,
+          myLocationEnabled: widget.myLocationEnabled,
+          gestureRecognizers: <Factory<OneSequenceGestureRecognizer>>{
+            Factory<PanGestureRecognizer>(PanGestureRecognizer.new),
+            Factory<HorizontalDragGestureRecognizer>(HorizontalDragGestureRecognizer.new),
+            Factory<VerticalDragGestureRecognizer>(VerticalDragGestureRecognizer.new),
+          },
         );
       },
     );

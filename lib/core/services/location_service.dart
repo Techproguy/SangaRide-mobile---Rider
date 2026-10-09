@@ -15,16 +15,9 @@ class LocationResult {
 }
 
 class LocationService {
-  static const _settings = LocationSettings(accuracy: LocationAccuracy.high, distanceFilter: 10);
   static const _fixSettings = LocationSettings(accuracy: LocationAccuracy.high, timeLimit: Duration(seconds: 10));
 
   Future<bool> isLocationServiceEnabled() => Geolocator.isLocationServiceEnabled();
-
-  Future<bool> checkAndRequestPermission() async {
-    var permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied) permission = await Geolocator.requestPermission();
-    return permission == LocationPermission.whileInUse || permission == LocationPermission.always;
-  }
 
   static Future<LocationResult>? _inFlight;
 
@@ -51,15 +44,6 @@ class LocationService {
   }
 
   Future<LatLng?> getCurrentLocation() async => (await resolveCurrentLocation()).position;
-
-  Stream<LatLng> getLocationStream() {
-    return Geolocator.getPositionStream(locationSettings: _settings)
-        .map((position) => LatLng(position.latitude, position.longitude));
-  }
-
-  double calculateDistance(LatLng from, LatLng to) {
-    return Geolocator.distanceBetween(from.latitude, from.longitude, to.latitude, to.longitude);
-  }
 
   Future<void> openLocationSettings() => Geolocator.openLocationSettings();
 

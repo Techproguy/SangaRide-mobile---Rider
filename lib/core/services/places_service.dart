@@ -78,38 +78,6 @@ class PlacesService {
 
   static Map<String, double> _latLng(LatLng point) => {'latitude': point.latitude, 'longitude': point.longitude};
 
-  Future<List<Place>> searchNearby({
-    required double latitude,
-    required double longitude,
-    int radius = 1500,
-    String? type,
-    String? keyword,
-  }) async {
-    if (keyword != null && keyword.isNotEmpty) {
-      return _textSearch(keyword, biasLat: latitude, biasLng: longitude, biasRadius: radius);
-    }
-    try {
-      final response = await _dio.post(
-        MapsEndpoints.placesSearchNearby,
-        data: {
-          if (type != null) 'includedTypes': [type],
-          'maxResultCount': 20,
-          'locationRestriction': {
-            'circle': {
-              'center': {'latitude': latitude, 'longitude': longitude},
-              'radius': radius.toDouble(),
-            },
-          },
-        },
-        options: _options(_placeListMask),
-      );
-      return _parsePlaces(response);
-    } catch (e) {
-      log('Error searching nearby places: $e');
-      return [];
-    }
-  }
-
   Future<List<Place>> searchPlaces(String query) async {
     query = query.trim();
     if (query.isEmpty) return [];
@@ -122,20 +90,10 @@ class PlacesService {
     }
   }
 
-  Future<List<Place>> _textSearch(String query, {double? biasLat, double? biasLng, int? biasRadius}) async {
+  Future<List<Place>> _textSearch(String query) async {
     final response = await _dio.post(
       MapsEndpoints.placesSearchText,
-      data: {
-        'textQuery': query,
-        'regionCode': SangaConstants.placesCountryCode,
-        if (biasLat != null && biasLng != null)
-          'locationBias': {
-            'circle': {
-              'center': {'latitude': biasLat, 'longitude': biasLng},
-              'radius': (biasRadius ?? 1500).toDouble(),
-            },
-          },
-      },
+      data: {'textQuery': query, 'regionCode': SangaConstants.placesCountryCode},
       options: _options(_placeListMask),
     );
     return _parsePlaces(response);
@@ -164,8 +122,6 @@ class PlacesService {
     final results = await _geocode(coordinates, resultType: 'street_address|premise|subpremise|route|locality');
     return results.isEmpty ? null : results.first;
   }
-
-  Future<List<GeocodedLocation>> reverseGeocodeAll(LatLng coordinates) => _geocode(coordinates);
 
   Future<List<GeocodedLocation>> _geocode(LatLng coordinates, {String? resultType}) async {
     try {
