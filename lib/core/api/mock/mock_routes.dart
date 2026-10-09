@@ -50,7 +50,10 @@ class MockRoutes {
     MockRoute.post(AppEndpoints.verifyOtp, _verifyOtp),
     MockRoute.post(AppEndpoints.googleSignIn, (_) => _session),
     MockRoute.post(AppEndpoints.appleSignIn, (_) => _session),
-    MockRoute.post(AppEndpoints.logout, (_) => null),
+    MockRoute.post(AppEndpoints.logout, (request) {
+      MockServer.engine.revoke(request);
+      return null;
+    }),
     MockRoute.post(AppEndpoints.selfie, _selfie),
     MockRoute.get(AppEndpoints.recentPlaces, (_) => _recentPlaces),
     MockRoute.post(AppEndpoints.recentPlaces, _addRecentPlace),

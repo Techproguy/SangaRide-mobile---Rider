@@ -116,7 +116,13 @@ class AuthController extends GetxController {
 
   Future<void> _revokeSession() async {
     try {
-      await _api.post(AppEndpoints.logout, suppressErrorToast: true).timeout(logoutRevokeCap);
+      await _api
+          .post(
+            AppEndpoints.logout,
+            data: {'refreshToken': SessionStorage.tokens.refreshToken},
+            suppressErrorToast: true,
+          )
+          .timeout(logoutRevokeCap);
     } catch (e) {
       log('logout request failed: ${e.runtimeType}');
     }
