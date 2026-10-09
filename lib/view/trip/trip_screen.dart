@@ -32,6 +32,9 @@ import 'package:sanga_ride/view/trip/widgets/trip_state_panel.dart';
 import 'package:sanga_ride/view/trip/widgets/verifying_panel.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
+part 'trip_panels.dart';
+part 'trip_sheets.dart';
+
 class TripScreen extends StatefulWidget {
   const TripScreen({super.key, required this.tripId});
 
@@ -43,23 +46,25 @@ class TripScreen extends StatefulWidget {
 
 class _TripScreenState extends State<TripScreen> {
   static const double _topInset = 120;
+
   static const Duration _reframeDelay = Duration(milliseconds: 180);
-  static const EdgeInsets _sheetPadding = EdgeInsets.all(SangaSpacing.gutter);
-  static const EdgeInsets _statusPadding = EdgeInsets.fromLTRB(
-    SangaSpacing.xl,
-    SangaSpacing.xxl,
-    SangaSpacing.xl,
-    SangaSpacing.xl,
-  );
 
   final _trip = Get.find<TripController>();
+
   final _ride = Get.find<RideRequestController>();
+
   final _camera = MapCamera();
+
   final _panelKey = GlobalKey();
+
   late final Worker _worker;
+
   TripState _previous = const TripLoading();
+
   DeliveryPhase? _phase;
+
   Timer? _reframeTimer;
+
   bool _isLeaving = false;
 
   @override
@@ -147,22 +152,6 @@ class _TripScreenState extends State<TripScreen> {
     unawaited(_camera.fitBounds(tripFramePoints(trip)));
   }
 
-  Future<void> _present({
-    required WidgetBuilder builder,
-    bool isDismissible = true,
-    EdgeInsets padding = _sheetPadding,
-  }) async {
-    _closeSheet();
-    if (!mounted) return;
-    await showSangaSheet<void>(
-      context: context,
-      isDismissible: isDismissible,
-      enableDrag: isDismissible,
-      padding: padding,
-      builder: builder,
-    );
-  }
-
   void _closeSheet() {
     if (!mounted) return;
     Navigator.of(context).popUntil((route) => route is! PopupRoute);
@@ -172,152 +161,6 @@ class _TripScreenState extends State<TripScreen> {
     if (!mounted) return;
     final own = ModalRoute.of(context);
     Navigator.of(context).popUntil((route) => route == own || route.isFirst);
-  }
-
-  void _openDetailsCheck() {
-    final trip = _trip.trip;
-    if (trip == null) return;
-    unawaited(
-      _present(
-        builder: (_) => Obx(
-          () => DetailsCheckSheet(
-            trip: trip,
-            unreadCount: _trip.unreadCount,
-            isConfirming: _trip.isConfirmingDetails.value,
-            onCall: () => _call(trip),
-            onMessage: _openChat,
-            onConfirm: _trip.confirmDetails,
-            onReport: _openReport,
-          ),
-        ),
-      ),
-    );
-  }
-
-  Future<void> _showPin(Trip initial) {
-    var latest = initial;
-    return _present(
-      builder: (_) => Obx(() {
-        if (_trip.state case TripVerifying(:final trip)) latest = trip;
-        return PinSheet(
-          trip: latest,
-          isRefreshing: _trip.isRefreshingPin.value,
-          onRefresh: _trip.refreshPin,
-          onExpired: () => unawaited(_trip.pollNow()),
-        );
-      }),
-    );
-  }
-
-  void _openReport() {
-    unawaited(
-      _present(
-        builder: (_) => Obx(
-          () => ReportSheet(isReporting: _trip.isReporting.value, onReport: _trip.reportIssue, onDismiss: _closeSheet),
-        ),
-      ),
-    );
-  }
-
-  Future<void> _showAuthenticated() {
-    return _present(
-      isDismissible: false,
-      padding: _statusPadding,
-      builder: (_) => PopScope(
-        canPop: false,
-        child: SangaStatusContent(
-          status: SangaStatus.success,
-          title: 'Ride authenticated',
-          message: 'Your driver confirmed your PIN.',
-          action: SangaButton.primary(label: 'Make payment', onPressed: _makePayment),
-        ),
-      ),
-    );
-  }
-
-  Future<void> _startPickupConfirmation(Trip trip) async {
-    _closeSheet();
-    if (trip.deliveryPhase != DeliveryPhase.confirmPickup || !mounted) return;
-    await context.push(DeliveryLiveRoutes.confirmPickupOf(trip.id));
-  }
-
-  Future<void> _showPickedUp() async {
-    if (!mounted) return;
-    _closeSheet();
-    if (!(ModalRoute.of(context)?.isCurrent ?? false)) {
-      _trip.announce(TripNotice.packagePickedUp);
-      return;
-    }
-    await _present(
-      isDismissible: false,
-      padding: _statusPadding,
-      builder: (_) => PopScope(
-        canPop: false,
-        child: SangaStatusContent(
-          status: SangaStatus.success,
-          title: 'Package picked up',
-          message: 'Your driver has your package. Make your payment and they’ll be on their way.',
-          action: SangaButton.primary(label: 'Make payment', onPressed: _makePayment),
-        ),
-      ),
-    );
-  }
-
-  Future<void> _showRefused(DeliveryRefusal refusal) {
-    return _present(
-      isDismissible: false,
-      padding: _statusPadding,
-      builder: (_) => PopScope(
-        canPop: false,
-        child: DeliveryRefusedContent(refusal: refusal, onHome: _goHome),
-      ),
-    );
-  }
-
-  Future<void> _showCancelled(Trip trip, TripCancelReason reason) {
-    return _present(
-      isDismissible: false,
-      padding: _statusPadding,
-      builder: (_) => PopScope(
-        canPop: false,
-        child: reason.offersRematch && !trip.isDelivery
-            ? Obx(() => _rematchContent(trip, reason))
-            : SangaStatusContent(
-                status: reason.didNotHappen ? SangaStatus.failure : SangaStatus.caution,
-                title: reason.title,
-                message: trip.cancellationMessage ?? reason.message,
-                action: SangaButton.primary(label: CommonCopy.backToHome, onPressed: _goHome),
-              ),
-      ),
-    );
-  }
-
-  Widget _rematchContent(Trip trip, TripCancelReason reason) {
-    return SangaStatusContent(
-      status: SangaStatus.failure,
-      title: reason.title,
-      message: trip.cancellationMessage ?? reason.message,
-      action: SangaButton.primary(
-        label: 'Find another driver',
-        isLoading: _ride.isRestoring,
-        onPressed: () => unawaited(_findAnotherDriver(trip)),
-      ),
-      secondary: SangaButton.muted(label: CommonCopy.backToHome, onPressed: _goHome),
-    );
-  }
-
-  Future<void> _findAnotherDriver(Trip trip) async {
-    final isReady = await _ride.restoreRoute(
-      pickup: trip.pickup.toPlace(),
-      stops: [for (final stop in trip.stops) stop.toPlace()],
-      dropoff: trip.dropoff.toPlace(),
-      category: trip.rideType,
-    );
-    if (!mounted) return;
-    if (!isReady) return SangaToast.show('We couldn’t set that up. Give it another go.', tone: SangaToastTone.error);
-    _isLeaving = true;
-    _closeSheet();
-    await startMatching(context);
   }
 
   Future<void> _makePayment() async {
@@ -355,170 +198,6 @@ class _TripScreenState extends State<TripScreen> {
   void _openProof() => unawaited(context.push(DeliveryLiveRoutes.proofOf(widget.tripId)));
 
   void _call(Trip trip) => unawaited(callDriver(context, firstName: trip.driver.firstName));
-
-  Widget _flightLine(TripState state) {
-    final airport = switch (state) {
-      TripEnRoute(:final trip) || TripArrived(:final trip) || TripVerifying(:final trip) => trip.airport,
-      TripAuthenticated(:final trip) => trip.airport,
-      _ => null,
-    };
-    if (airport == null) return const SizedBox.shrink();
-    return TripFlightLine(
-      airport: airport,
-      onTap: () => unawaited(context.push(BookingRoutes.flightTrackingOf(widget.tripId, isTrip: true))),
-    );
-  }
-
-  Widget _deliveryPanel(Trip trip, TripDelivery delivery, DeliveryPhase phase) {
-    return DeliveryTripPanel(
-      trip: trip,
-      delivery: delivery,
-      phase: phase,
-      unreadCount: _trip.unreadCount,
-      actions: DeliveryPanelActions(
-        onCall: () => _call(trip),
-        onMessage: _openChat,
-        onSafety: _openSafety,
-        onShare: () => unawaited(shareTrip(trip.id, isDelivery: true)),
-        onReportIssue: _openDeliveryIssue,
-        onCancel: _openCancel,
-        onConfirmDetails: _openDetailsCheck,
-        onShowPin: () => unawaited(_showPin(trip)),
-        onReportMismatch: _openReport,
-        onConfirmPickup: _openConfirmPickup,
-        onMakePayment: _makePayment,
-        onSeeDetails: _openDetails,
-        onSeeProof: _openProof,
-      ),
-    );
-  }
-
-  Widget _panel(TripState state) {
-    if (state case TripLoaded(:final trip)) {
-      final delivery = trip.delivery;
-      final phase = trip.deliveryPhase;
-      if (delivery != null && phase != null) return _deliveryPanel(trip, delivery, phase);
-    }
-    return switch (state) {
-      TripLoading() || TripCompleted() => const TripLoadingPanel(),
-      TripUpdating(:final trip) => TripUpdatingPanel(
-        unreadCount: _trip.unreadCount,
-        onCall: () => _call(trip),
-        onMessage: _openChat,
-        onSafety: _openSafety,
-      ),
-      TripFailed(:final reason) => TripFailedPanel(reason: reason, onRetry: _trip.retryLoad, onHome: _goHome),
-      TripEnRoute(:final trip) => EnRoutePanel(
-        trip: trip,
-        unreadCount: _trip.unreadCount,
-        onCall: () => _call(trip),
-        onMessage: _openChat,
-        onSafety: _openSafety,
-        onAddStops: _openAddStops,
-        onCancel: _openCancel,
-      ),
-      TripArrived(:final trip) => ArrivedPanel(
-        trip: trip,
-        unreadCount: _trip.unreadCount,
-        onCall: () => _call(trip),
-        onMessage: _openChat,
-        onSafety: _openSafety,
-        onConfirmDetails: _openDetailsCheck,
-        onAddStops: _openAddStops,
-        onCancel: _openCancel,
-      ),
-      TripVerifying(:final trip) => VerifyingPanel(
-        trip: trip,
-        unreadCount: _trip.unreadCount,
-        onCall: () => _call(trip),
-        onMessage: _openChat,
-        onSafety: _openSafety,
-        onShowPin: () => unawaited(_showPin(trip)),
-        onReport: _openReport,
-        onAddStops: _openAddStops,
-        onCancel: _openCancel,
-      ),
-      TripAuthenticated(:final trip) => AuthenticatedPanel(
-        trip: trip,
-        unreadCount: _trip.unreadCount,
-        onCall: () => _call(trip),
-        onMessage: _openChat,
-        onSafety: _openSafety,
-        onMakePayment: _makePayment,
-      ),
-      TripInProgress(:final trip) => ActiveRidePanel(
-        trip: trip,
-        unreadCount: _trip.unreadCount,
-        onCall: () => _call(trip),
-        onMessage: _openChat,
-        onSafety: _openSafety,
-        onShare: () => unawaited(shareTrip(trip.id)),
-        onAddStops: _openAddStops,
-        onCancel: _openCancel,
-        action: SangaButton.primary(label: 'See details', onPressed: _openDetails),
-      ),
-      TripAtDropoff(:final trip) => ActiveRidePanel(
-        trip: trip,
-        unreadCount: _trip.unreadCount,
-        onCall: () => _call(trip),
-        onMessage: _openChat,
-        onSafety: _openSafety,
-        onShare: () => unawaited(shareTrip(trip.id)),
-        onAddStops: _openAddStops,
-        onCancel: _openCancel,
-        action: SangaButton.primary(
-          label: 'Complete ride',
-          isLoading: _trip.isCompleting.value,
-          onPressed: _trip.completeRide,
-        ),
-      ),
-      TripCancelled(:final reason, :final trip) => TripEndedPanel(
-        reason: reason,
-        message: trip.cancellationMessage,
-        onHome: _goHome,
-      ),
-      TripRefused(:final trip) => TripEndedPanel(
-        reason: TripCancelReason.packageRefused,
-        message: trip.cancellationMessage,
-        onHome: _goHome,
-      ),
-      TripReturned(:final trip) => TripEndedPanel(
-        reason: TripCancelReason.deliveryReturned,
-        message: trip.cancellationMessage,
-        returnFee: trip.returnFee,
-        onHome: _goHome,
-      ),
-    };
-  }
-
-  Widget _overlays(TripState state) {
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(SangaSpacing.gutter, SangaSpacing.sm, SangaSpacing.gutter, 0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          spacing: SangaSpacing.sm,
-          children: [
-            if (!_isLive(state)) SangaMapButton.back(onPressed: _goHome),
-            if (state is TripArrived)
-              SangaMapToast(
-                message: 'Your driver has arrived',
-                detail: state.trip.isDelivery
-                    ? 'Check their details before you hand over the package'
-                    : 'Check their details before you share your trip PIN',
-              ),
-            if (state is TripLoaded && state.trip.deliveryPhase == DeliveryPhase.handedOver)
-              const SangaMapToast(message: 'Package handed over to recipient'),
-            if (_trip.notice case final notice?) SangaMapToast(message: notice.message),
-            if (_trip.isOffline)
-              const SangaMapToast(icon: Icons.wifi_off_rounded, message: 'You’re offline. Showing your last update.')
-            else if (_trip.isReconnecting)
-              const SangaMapToast(icon: Icons.sync_rounded, message: 'Reconnecting. Showing your last update.'),
-          ],
-        ),
-      ),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
