@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:sanga_ride/core/nav_key.dart';
 import 'package:sanga_ride/core/router/router.dart';
 import 'package:sanga_ride/core/router/routes.dart';
-import 'package:sanga_ride_core/sanga_ride_core.dart' show SessionEndReason;
+import 'package:sanga_ride_core/sanga_ride_core.dart' show SessionEndReason, navigatorKey;
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 class SessionEndNotice {

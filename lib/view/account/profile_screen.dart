@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sanga_ride/controller/rider/account/account_controller.dart';
-import 'package:sanga_ride/core/format/time_format.dart';
 import 'package:sanga_ride/core/router/account_routes.dart';
 import 'package:sanga_ride/core/services/permission_center.dart';
 import 'package:sanga_ride/model/models.dart';

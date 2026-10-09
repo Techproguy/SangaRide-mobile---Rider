@@ -1,4 +1,3 @@
-import 'package:sanga_ride/model/verification/verification_status.dart';
 import 'package:sanga_ride_core/sanga_ride_core.dart';
 
 enum VerificationItemKind {

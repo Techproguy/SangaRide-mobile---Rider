@@ -1,9 +1,8 @@
+import 'package:sanga_ride_core/sanga_ride_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart' show BuildContext;
 import 'package:go_router/go_router.dart';
-import 'package:sanga_ride/core/nav_key.dart';
 import 'package:sanga_ride/core/router/routes.dart';
-import 'package:sanga_ride/core/services/nav_observer.dart';
 import 'package:sanga_ride/core/services/session_storage.dart';
 import 'package:sanga_ride/view/widgets/widgets.dart';
 
