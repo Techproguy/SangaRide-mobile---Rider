@@ -50,33 +50,33 @@ class _DeliveryTrackingScreenState extends State<DeliveryTrackingScreen> {
       tripId: widget.tripId,
       title: 'Live tracking',
       child: Obx(() {
-      final trip = _trip.trip;
-      final delivery = trip?.delivery;
-      final isLive = trip != null && !trip.status.isTerminal;
-      return SangaPageLayout(
-        title: 'Live tracking',
-        footer: isLive
-            ? SangaButton.primary(
-                label: _issue.hasOpenIssue ? 'See your report' : 'Report an issue',
-                onPressed: _reportOrOpen,
-              )
-            : null,
-        children: [
-          if (trip == null || delivery == null)
-            const SangaSkeleton.heights([72, 220, 120])
-          else
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              spacing: SangaSpacing.xl,
-              children: [
-                if (trip.deliveryPhase case final DeliveryPhase phase) DeliveryLiveStatus(trip: trip, phase: phase),
-                SangaTimeline(entries: DeliveryTimelineEntries.of(delivery)),
-                DeliveryPhotoStrip(delivery: delivery),
-              ],
-            ),
-        ],
-      );
-    }),
+        final trip = _trip.trip;
+        final delivery = trip?.delivery;
+        final isLive = trip != null && !trip.status.isTerminal;
+        return SangaPageLayout(
+          title: 'Live tracking',
+          footer: isLive
+              ? SangaButton.primary(
+                  label: _issue.hasOpenIssue ? 'See your report' : 'Report an issue',
+                  onPressed: _reportOrOpen,
+                )
+              : null,
+          children: [
+            if (trip == null || delivery == null)
+              const SangaSkeleton.heights([72, 220, 120])
+            else
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                spacing: SangaSpacing.xl,
+                children: [
+                  if (trip.deliveryPhase case final DeliveryPhase phase) DeliveryLiveStatus(trip: trip, phase: phase),
+                  SangaTimeline(entries: DeliveryTimelineEntries.of(delivery)),
+                  DeliveryPhotoStrip(delivery: delivery),
+                ],
+              ),
+          ],
+        );
+      }),
     );
   }
 }

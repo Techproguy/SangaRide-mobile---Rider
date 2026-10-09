@@ -19,42 +19,42 @@ class DeliveryProofScreen extends StatelessWidget {
       tripId: tripId,
       title: 'Delivery proof',
       child: Obx(() {
-      final trip = controller.trip;
-      final proof = trip?.delivery?.deliveryProof;
-      final canComplete = trip?.deliveryPhase == DeliveryPhase.handedOver;
-      return SangaPageLayout(
-        title: 'Delivery proof',
-        footer: canComplete
-            ? SangaButton.primary(
-                label: 'Complete delivery',
-                isLoading: controller.isCompleting.value,
-                onPressed: controller.completeRide,
+        final trip = controller.trip;
+        final proof = trip?.delivery?.deliveryProof;
+        final canComplete = trip?.deliveryPhase == DeliveryPhase.handedOver;
+        return SangaPageLayout(
+          title: 'Delivery proof',
+          footer: canComplete
+              ? SangaButton.primary(
+                  label: 'Complete delivery',
+                  isLoading: controller.isCompleting.value,
+                  onPressed: controller.completeRide,
+                )
+              : null,
+          children: [
+            if (trip == null)
+              const SangaSkeleton.heights([220, 64, 64])
+            else if (proof == null)
+              const SangaInlineMessage(
+                icon: Icons.hourglass_top_rounded,
+                title: 'Your driver is still finishing up',
+                message: 'The proof of delivery shows up here as soon as the package is handed over.',
               )
-            : null,
-        children: [
-          if (trip == null)
-            const SangaSkeleton.heights([220, 64, 64])
-          else if (proof == null)
-            const SangaInlineMessage(
-              icon: Icons.hourglass_top_rounded,
-              title: 'Your driver is still finishing up',
-              message: 'The proof of delivery shows up here as soon as the package is handed over.',
-            )
-          else
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              spacing: SangaSpacing.xl,
-              children: [
-                DeliveryPhoto(
-                  source: proof.photoUrl,
-                  onTap: proof.photoUrl == null ? null : () => showDeliveryPhotoViewer(context, proof.photoUrl!),
-                ),
-                DeliveryProofRows(proof: proof, dropoff: trip.dropoff, recipient: trip.delivery!.recipient),
-              ],
-            ),
-        ],
-      );
-    }),
+            else
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                spacing: SangaSpacing.xl,
+                children: [
+                  DeliveryPhoto(
+                    source: proof.photoUrl,
+                    onTap: proof.photoUrl == null ? null : () => showDeliveryPhotoViewer(context, proof.photoUrl!),
+                  ),
+                  DeliveryProofRows(proof: proof, dropoff: trip.dropoff, recipient: trip.delivery!.recipient),
+                ],
+              ),
+          ],
+        );
+      }),
     );
   }
 }

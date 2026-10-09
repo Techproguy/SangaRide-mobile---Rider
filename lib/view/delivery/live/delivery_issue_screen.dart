@@ -6,7 +6,6 @@ import 'package:go_router/go_router.dart';
 import 'package:sanga_ride/controller/rider/trip/delivery_issue_controller.dart';
 import 'package:sanga_ride/core/router/delivery_live_routes.dart';
 import 'package:sanga_ride/core/router/safety_routes.dart';
-import 'package:sanga_ride/core/services/toast_service.dart';
 import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride/view/delivery/live/widgets/issue_reason_list.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
@@ -57,7 +56,7 @@ class _DeliveryIssueScreenState extends State<DeliveryIssueScreen> {
       return;
     }
     if (_issue.state case IssueSubmitFailed(:final problem) when problem == DeliveryIssueProblem.tripEnded) {
-      Toast.info(problem.message);
+      SangaToast.show(problem.message);
       DeliveryLiveRoutes.popToTrip(context);
     }
   }
@@ -104,7 +103,7 @@ class _DeliveryIssueScreenState extends State<DeliveryIssueScreen> {
                   if (reason.needsNote) ListenableBuilder(listenable: _note, builder: (context, _) => _lengthHint()),
                 ],
                 if (state case IssueSubmitFailed(:final problem))
-                  SangaNotice(message: problem.message, icon: Icons.error_outline_rounded),
+                  SangaNotice(message: problem.message, tone: SangaTone.warning),
               ],
             ),
           ],

@@ -36,6 +36,8 @@ abstract final class MockDeliveryLive {
     MockRoute.post(DeliveryLiveEndpoints.issueResolution, _resolveIssue),
   ];
 
+  static const int returnFee = 600;
+
   static const String refuseHook = '#refuse';
   static const String returnHook = '#return';
 
@@ -202,6 +204,7 @@ abstract final class MockDeliveryLive {
       'item': _item(id),
       'recipient': _recipient(id),
       'stage': stage,
+      'openIssueId': _openIssueIdOf(id),
       'pickupProof': hasPickedUp ? {'photoUrl': pickupProofAsset, 'at': _iso(pickedUpAt!)} : null,
       'senderConfirmation': confirmation == null
           ? null
@@ -212,6 +215,12 @@ abstract final class MockDeliveryLive {
           : null,
       'events': _events(id, clock, pickedUpAt, handedOverAt),
     };
+  }
+
+  static String? _openIssueIdOf(String tripId) {
+    final issueId = _openIssueByTrip[tripId];
+    final issue = issueId == null ? null : _issues[issueId];
+    return issue == null || issue.resolvedAt != null ? null : issue.id;
   }
 
   static Map<String, dynamic> _deliveryProof(MockDeliveryClock clock, DateTime handedOverAt) => {
@@ -315,6 +324,7 @@ abstract final class MockDeliveryLive {
     final issue = _requireIssue(request);
     final link = _requireLink(issue.tripId);
     final option = request.body['option'] as String?;
+    if (issue.resolvedAt != null && issue.resolution == request.body['option']) return _issueJson(issue, link);
     final status = _issueStatus(issue, DateTime.now());
     final available = _optionIdsFor(_stage(issue.tripId, link.clockOf(issue.tripId)));
     if (status != 'action_needed' || option == null || !available.contains(option)) {

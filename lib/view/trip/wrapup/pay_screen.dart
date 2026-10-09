@@ -45,6 +45,7 @@ class _PayScreenState extends State<PayScreen> {
   @override
   void dispose() {
     _stateWorker.dispose();
+    _payment.stopWatching();
     super.dispose();
   }
 

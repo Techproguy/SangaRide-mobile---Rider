@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sanga_ride/controller/rider/safety/safety_report_controller.dart';
-import 'package:sanga_ride/core/services/toast_service.dart';
 import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride/view/safety/widgets/report_category_chips.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
@@ -49,7 +48,7 @@ class _SafetyReportScreenState extends State<SafetyReportScreen> {
     final receipt = await _report.submit(tripId: widget.tripId, category: category, details: _details.text);
     if (!mounted) return;
     if (receipt == null) {
-      if (_report.state case ReportFailed(:final problem)) Toast.error(problem.message);
+      if (_report.state case ReportFailed(:final problem)) SangaToast.show(problem.message, tone: SangaToastTone.error);
       return;
     }
     await showSangaStatusSheet(

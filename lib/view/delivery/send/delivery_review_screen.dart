@@ -8,7 +8,6 @@ import 'package:sanga_ride/controller/rider/delivery/send_delivery_controller.da
 import 'package:sanga_ride/controller/rider/ride_match_controller.dart';
 import 'package:sanga_ride/controller/rider/ride_request_controller.dart';
 import 'package:sanga_ride/core/router/delivery_routes.dart';
-import 'package:sanga_ride/core/services/toast_service.dart';
 import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride/view/delivery/send/widgets/package_summary.dart';
 import 'package:sanga_ride/view/delivery/send/widgets/review_edit_button.dart';
@@ -53,9 +52,12 @@ class _DeliveryReviewScreenState extends State<DeliveryReviewScreen> {
     setState(() => _isPreparing = false);
     switch (check) {
       case SubmitCheck.priceUnavailable:
-        Toast.error('We couldn’t refresh your price. Check your connection and go again.');
+        SangaToast.show(
+          'We couldn’t refresh your price. Check your connection and go again.',
+          tone: SangaToastTone.error,
+        );
       case SubmitCheck.incomplete:
-        Toast.error('Something’s missing. Check your details and go again.');
+        SangaToast.show('Something’s missing. Check your details and go again.', tone: SangaToastTone.error);
       case SubmitCheck.priceRefreshed:
         await _announcePrice();
       case SubmitCheck.ready:
@@ -90,7 +92,7 @@ class _DeliveryReviewScreenState extends State<DeliveryReviewScreen> {
     final failure = DeliveryFailure.fromCode(state.code);
     await showSangaStatusSheet(
       context: context,
-      status: SangaStatus.failure,
+      status: failure == DeliveryFailure.itemProhibited ? SangaStatus.failure : SangaStatus.caution,
       title: failure.title,
       message: failure.messageWith(state.data),
       actionLabel: failure.actionLabel,
@@ -149,19 +151,22 @@ class _DeliveryReviewScreenState extends State<DeliveryReviewScreen> {
     final info = _delivery.selectedTierInfo;
     final tier = _delivery.selectedTier;
     if (state is QuoteFailed) {
-      return SangaInlineMessage(
+      return SangaFailureMessage(
         title: 'We couldn’t get your price',
-        message: 'Check your connection and try again.',
-        actionLabel: 'Try again',
-        onAction: () => _delivery.ensureQuote(force: true),
+        message: state.failure.message,
+        onRetry: () => _delivery.ensureQuote(force: true),
       );
     }
-    if (info == null || tier == null || state is! QuoteReady) {
-      return Container(
-        height: 72,
-        decoration: const BoxDecoration(color: SangaColors.cardMuted, borderRadius: SangaRadii.field),
+    if (state is QuoteIdle) {
+      return SangaFailureMessage(
+        title: 'We need a few more details',
+        message: 'Pick your route and what you’re sending, then we’ll show your price.',
+        icon: Icons.inventory_2_outlined,
+        retryLabel: 'Check again',
+        onRetry: () => _delivery.ensureQuote(force: true),
       );
     }
+    if (info == null || tier == null || state is! QuoteReady) return const SangaSkeleton.block(height: 72);
     return SangaSectionCard(
       title: info.label,
       subtitle: '${info.blurb} · ${deliveryEtaLabel(tier.etaMinutes)}',

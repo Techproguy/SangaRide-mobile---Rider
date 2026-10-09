@@ -1,4 +1,6 @@
 import 'package:sanga_ride/core/api/mock/mock_data.dart';
+import 'package:sanga_ride/core/api/mock/mock_card_tokenizer.dart';
+import 'package:sanga_ride/core/api/trip_live_endpoints.dart';
 import 'package:sanga_ride/core/api/app_endpoints.dart';
 import 'package:sanga_ride/core/api/mock/mock_groups.dart';
 import 'package:sanga_ride/core/api/mock/mock_server.dart';
@@ -11,6 +13,7 @@ abstract final class MockTripWrapUp {
     MockRoute.get(AppEndpoints.tripPayment, _payment),
     MockRoute.post(AppEndpoints.tripPayment, _pay),
     MockRoute.post(AppEndpoints.tripPaymentCancel, _cancelPayment),
+    MockRoute.post(TripLiveEndpoints.tripPaymentAuthorize, _authorize),
     MockRoute.get(AppEndpoints.tripReceipt, _receipt),
     MockRoute.post(AppEndpoints.tripRating, _rate),
   ];
@@ -21,14 +24,17 @@ abstract final class MockTripWrapUp {
   static const int _fallbackDurationMinutes = 24;
   static const List<String> _allowedMethods = ['cash', 'card', 'wallet'];
 
-  static final Map<String, DateTime> _cashPostedAt = {};
-  static final Map<String, String> _cardLast4 = {};
-  static final Map<String, int> _ratings = {};
-  static String? _lastMethod;
+  static Duration cashConfirmDelay = _cashConfirmDelay;
+  static Duration cashWaitWindow = const Duration(seconds: 90);
 
-  static bool isSettled(String id) => MockTripState.paidAt.containsKey(id) || _cashPostedAt.containsKey(id);
+  static const String _directLast4 = '1111';
+  static const String _declinedLast4 = '0002';
+  static const String _otpMessage = 'Enter the 4 digit code your bank just sent you.';
 
-  static bool isRated(String id) => _ratings.containsKey(id);
+  static bool isSettled(String id) =>
+      MockTripState.paidAt.containsKey(id) || MockTripState.cashPostedAt.containsKey(id);
+
+  static bool isRated(String id) => MockTripState.ratings.containsKey(id);
 
   static String _isoNow() => DateTime.now().toUtc().toIso8601String();
 
@@ -47,16 +53,16 @@ abstract final class MockTripWrapUp {
   static int _fareOf(Map<String, dynamic> trip) => (trip['fare'] as num?)?.toInt() ?? _fallbackFare;
 
   static DateTime? _cashConfirmedAt(String id) {
-    final posted = _cashPostedAt[id];
+    final posted = MockTripState.cashPostedAt[id];
     if (posted == null) return null;
-    final confirmedAt = posted.add(_cashConfirmDelay);
+    final confirmedAt = posted.add(cashConfirmDelay);
     return DateTime.now().isBefore(confirmedAt) ? null : confirmedAt;
   }
 
   static void _settle(String id, String method, DateTime at) {
     MockTripState.paidAt.putIfAbsent(id, () => at);
     MockTripState.paymentMethod[id] = method;
-    _lastMethod = method;
+    MockTripState.lastMethod = method;
   }
 
   static Map<String, dynamic>? _rideForOf(Map<String, dynamic> trip) {
@@ -76,6 +82,8 @@ abstract final class MockTripWrapUp {
     String? method,
     String? last4,
     DateTime? paidAt,
+    Map<String, dynamic>? action,
+    DateTime? cashWaitExpiresAt,
   }) => {
     'tripId': id,
     'status': status,
@@ -86,7 +94,9 @@ abstract final class MockTripWrapUp {
     'paidAt': paidAt?.toUtc().toIso8601String(),
     'allowedMethods': _allowedFor(trip),
     'group': MockGroups.paymentGroup(_rideForOf(trip)),
-    'lastMethod': _lastMethod,
+    'lastMethod': MockTripState.lastMethod,
+    'action': action,
+    'cashWaitExpiresAt': cashWaitExpiresAt?.toUtc().toIso8601String(),
     'serverTime': _isoNow(),
   };
 
@@ -96,15 +106,52 @@ abstract final class MockTripWrapUp {
     final paidAt = MockTripState.paidAt[id];
     final method = MockTripState.paymentMethod[id];
     if (paidAt != null && method != null) {
-      return _paymentPayload(id, trip, 'succeeded', method: method, last4: _cardLast4[id], paidAt: paidAt);
+      return _paymentPayload(id, trip, 'succeeded', method: method, last4: MockTripState.cardLast4[id], paidAt: paidAt);
     }
-    if (_cashPostedAt.containsKey(id)) {
+    final challenge = MockTripState.cardChallenges[id];
+    if (challenge != null) {
+      return _paymentPayload(id, trip, 'requires_action', method: 'card', last4: challenge, action: _otpAction());
+    }
+    final postedAt = MockTripState.cashPostedAt[id];
+    if (postedAt != null) {
       final confirmedAt = _cashConfirmedAt(id);
-      if (confirmedAt == null) return _paymentPayload(id, trip, 'awaiting_driver', method: 'cash');
-      _settle(id, 'cash', confirmedAt);
-      return _paymentPayload(id, trip, 'succeeded', method: 'cash', paidAt: confirmedAt);
+      if (confirmedAt != null) {
+        _settle(id, 'cash', confirmedAt);
+        return _paymentPayload(id, trip, 'succeeded', method: 'cash', paidAt: confirmedAt);
+      }
+      final deadline = postedAt.add(cashWaitWindow);
+      if (DateTime.now().isAfter(deadline)) {
+        MockTripState.cashPostedAt.remove(id);
+        return _paymentPayload(id, trip, 'pending');
+      }
+      return _paymentPayload(id, trip, 'awaiting_driver', method: 'cash', cashWaitExpiresAt: deadline);
     }
     return _paymentPayload(id, trip, 'pending');
+  }
+
+  static Map<String, dynamic> _otpAction() => {'type': 'otp', 'message': _otpMessage, 'codeLength': 4};
+
+  static Object? _authorize(MockRequest request) {
+    final id = request.params['id']!;
+    final trip = _tripOf(request);
+    if (MockTripState.paidAt.containsKey(id)) {
+      throw const MockFailure(409, 'This trip is already paid.', code: 'already_paid');
+    }
+    final last4 = MockTripState.cardChallenges[id];
+    if (last4 == null) throw const MockFailure(409, 'There’s nothing to confirm right now.', code: 'no_challenge');
+    if (request.body['otp'] != MockData.otpCode) {
+      throw const MockFailure(422, 'That code didn’t match. Check it and try again.', code: 'otp_mismatch');
+    }
+    MockTripState.cardChallenges.remove(id);
+    return _settleCard(id, trip, last4);
+  }
+
+  static Object? _settleCard(String id, Map<String, dynamic> trip, String last4) {
+    final paidAt = DateTime.now();
+    MockTripState.cashPostedAt.remove(id);
+    MockTripState.cardLast4[id] = last4;
+    _settle(id, 'card', paidAt);
+    return _paymentPayload(id, trip, 'succeeded', method: 'card', last4: last4, paidAt: paidAt);
   }
 
   static Object? _pay(MockRequest request) {
@@ -113,6 +160,7 @@ abstract final class MockTripWrapUp {
     if (MockTripState.paidAt.containsKey(id)) {
       throw const MockFailure(409, 'This trip is already paid.', code: 'already_paid');
     }
+    MockTripState.cardChallenges.remove(id);
     final method = request.body['method'];
     return switch (method) {
       'cash' => _payCash(id, trip),
@@ -124,28 +172,26 @@ abstract final class MockTripWrapUp {
   }
 
   static Object? _payCash(String id, Map<String, dynamic> trip) {
-    _cashPostedAt[id] = DateTime.now();
-    return _paymentPayload(id, trip, 'awaiting_driver', method: 'cash');
+    MockTripState.cashPostedAt[id] = DateTime.now();
+    return _paymentPayload(
+      id,
+      trip,
+      'awaiting_driver',
+      method: 'cash',
+      cashWaitExpiresAt: MockTripState.cashPostedAt[id]!.add(cashWaitWindow),
+    );
   }
 
   static Object? _payCard(String id, Map<String, dynamic> trip, Map<String, dynamic> card) {
-    final number = (card['number'] as String? ?? '').replaceAll(RegExp(r'\D'), '');
-    final expiry = card['expiry'] as String? ?? '';
-    final cvv = card['cvv'] as String? ?? '';
-    final pin = card['pin'] as String? ?? '';
-    if (!_isFutureExpiry(expiry)) throw const MockFailure(402, 'This card has expired.', code: 'card_expired');
-    if (number.length < 13 || cvv.length != 3 || pin.length != 4) {
-      throw const MockFailure(422, 'Check your card details.', code: 'invalid_card');
-    }
-    if (number.endsWith('0002')) {
+    final ref = MockCardTokenizer.decode(card['token'] as String?);
+    if (ref == null) throw const MockFailure(422, 'Check your card details.', code: 'invalid_card');
+    if (!_isFutureExpiry(ref.expiry)) throw const MockFailure(402, 'This card has expired.', code: 'card_expired');
+    if (ref.last4 == _declinedLast4) {
       throw const MockFailure(402, 'Your bank declined this card.', code: 'card_declined');
     }
-    final last4 = number.substring(number.length - 4);
-    final paidAt = DateTime.now();
-    _cashPostedAt.remove(id);
-    _cardLast4[id] = last4;
-    _settle(id, 'card', paidAt);
-    return _paymentPayload(id, trip, 'succeeded', method: 'card', last4: last4, paidAt: paidAt);
+    if (ref.last4 == _directLast4) return _settleCard(id, trip, ref.last4);
+    MockTripState.cardChallenges[id] = ref.last4;
+    return _paymentPayload(id, trip, 'requires_action', method: 'card', last4: ref.last4, action: _otpAction());
   }
 
   static Object? _payWallet(String id, Map<String, dynamic> trip) {
@@ -158,7 +204,7 @@ abstract final class MockTripWrapUp {
       at: paidAt,
       itemName: MockTrip.deliveryItemName(id),
     );
-    _cashPostedAt.remove(id);
+    MockTripState.cashPostedAt.remove(id);
     _settle(id, 'wallet', paidAt);
     return _paymentPayload(id, trip, 'succeeded', method: 'wallet', paidAt: paidAt);
   }
@@ -181,7 +227,7 @@ abstract final class MockTripWrapUp {
       memberName: target.memberName,
     );
     MockGroups.recordSpend(rideFor, _fareOf(trip));
-    _cashPostedAt.remove(id);
+    MockTripState.cashPostedAt.remove(id);
     _settle(id, 'group_wallet', paidAt);
     return _paymentPayload(id, trip, 'succeeded', method: 'group_wallet', paidAt: paidAt);
   }
@@ -202,7 +248,7 @@ abstract final class MockTripWrapUp {
     if (MockTripState.paidAt.containsKey(id)) {
       throw const MockFailure(409, 'This trip is already paid.', code: 'already_paid');
     }
-    _cashPostedAt.remove(id);
+    MockTripState.cashPostedAt.remove(id);
     return _paymentPayload(id, trip, 'pending');
   }
 
@@ -265,7 +311,7 @@ abstract final class MockTripWrapUp {
     final distanceKm = (trip['distanceKm'] as num?)?.toDouble() ?? _fallbackDistanceKm;
     final durationMinutes = (trip['durationMinutes'] as num?)?.toInt() ?? _fallbackDurationMinutes;
     final method = MockTripState.paymentMethod[id] ?? 'cash';
-    final stars = _ratings[id];
+    final stars = MockTripState.ratings[id];
     return {
       'id': 'rcpt_$id',
       'tripId': id,
@@ -280,7 +326,7 @@ abstract final class MockTripWrapUp {
       'total': fare,
       'paidWith': {
         'method': method,
-        'last4': method == 'card' ? _cardLast4[id] : null,
+        'last4': method == 'card' ? MockTripState.cardLast4[id] : null,
         'group': method == 'group_wallet' ? MockGroups.paymentGroup(_rideForOf(trip)) : null,
       },
       'paidAt': (MockTripState.paidAt[id] ?? DateTime.now()).toUtc().toIso8601String(),
@@ -313,6 +359,7 @@ abstract final class MockTripWrapUp {
       ],
       'dropoff': live['dropoff'],
       'fare': receipt['total'],
+      'returnFee': ?live['returnFee'],
       if (isDelivery) 'itemName': item['name'],
       'reference': '${isDelivery ? 'DL' : 'SR'}-${id.hashCode.abs() % 90000000 + 10000000}',
       'requestedAt': MockTrip.createdAt(id).toUtc().toIso8601String(),
@@ -357,10 +404,10 @@ abstract final class MockTripWrapUp {
     _tripOf(request);
     final stars = (request.body['stars'] as num?)?.toInt() ?? 0;
     if (stars < 1 || stars > 5) throw const MockFailure(422, 'Pick between 1 and 5 stars.', code: 'invalid_stars');
-    if (_ratings.containsKey(id)) {
+    if (MockTripState.ratings.containsKey(id)) {
       throw const MockFailure(409, 'You already rated this trip.', code: 'already_rated');
     }
-    _ratings[id] = stars;
+    MockTripState.ratings[id] = stars;
     return {'tripId': id, 'stars': stars, 'serverTime': _isoNow()};
   }
 }

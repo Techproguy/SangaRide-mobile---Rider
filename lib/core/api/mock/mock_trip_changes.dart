@@ -204,6 +204,7 @@ abstract final class MockTripChanges {
     final isRefundable = MockTripState.paidAt.containsKey(id) && method == 'card';
     final fare = (trip['fare'] as num).toInt();
     return {
+      'reviewId': 'rev_${id}_${fee.fee}_$reason',
       'fee': fee.fee,
       'feeReason': fee.feeReason,
       'refund': isRefundable ? {'amount': math.max(0, fare - fee.fee), 'method': method} : null,
@@ -241,6 +242,15 @@ abstract final class MockTripChanges {
       throw const MockFailure(422, 'Add a short note so we know what happened.', code: 'note_required');
     }
     final review = _review(id, reason);
+    final reviewedFee = request.body['fee'];
+    if (reviewedFee is num && reviewedFee.toInt() != review['fee']) {
+      throw MockFailure(
+        409,
+        'The cancellation fee changed while you were looking.',
+        code: 'fee_changed',
+        data: {'review': review},
+      );
+    }
     MockTrip.cancel(id, reason: 'rider_cancelled', by: 'rider');
     return {
       'tripId': id,

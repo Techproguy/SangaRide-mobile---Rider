@@ -97,22 +97,19 @@ class _DeliveryIssueStatusScreenState extends State<DeliveryIssueStatusScreen> {
   Widget _body(DeliveryIssueState state) {
     return switch (state) {
       IssueLoaded(:final issue) => _IssueBody(issue: issue, state: state, onSelect: _issue.selectOption),
-      IssueUnavailable(:final problem) => SangaInlineMessage(
+      IssueUnavailable(:final problem) => SangaFailureMessage(
         title: problem.title,
         message: problem.message,
-        actionLabel: problem.canRetry ? 'Try again' : null,
-        onAction: () => unawaited(_issue.open(widget.tripId)),
+        onRetry: problem.canRetry ? () => unawaited(_issue.open(widget.tripId)) : null,
       ),
-      IssueIdle() => SangaInlineMessage(
+      IssueIdle() => SangaEmptyMessage(
+        icon: Icons.flag_outlined,
         title: 'No report yet',
         message: 'You haven’t reported anything on this delivery.',
         actionLabel: 'Report an issue',
         onAction: () => context.pushReplacement(DeliveryLiveRoutes.issueOf(widget.tripId)),
       ),
-      IssueLoading() || IssueSubmitting() || IssueSubmitFailed() => const Padding(
-        padding: EdgeInsets.all(SangaSpacing.xl),
-        child: Center(child: SangaActivityIndicator(size: 40)),
-      ),
+      IssueLoading() || IssueSubmitting() || IssueSubmitFailed() => const SangaSkeleton.heights([120, 72, 72]),
     };
   }
 }
@@ -142,7 +139,7 @@ class _IssueBody extends StatelessWidget {
         if (state is IssueActionNeeded || state is IssueResolving || state is IssueResolutionFailed)
           IssueResolutionList(options: issue.options, selectedId: _selectedOf(state), onSelect: onSelect),
         if (state case IssueResolutionFailed(:final problem))
-          SangaNotice(message: problem.message, icon: Icons.error_outline_rounded),
+          SangaNotice(message: problem.message, tone: SangaTone.warning),
       ],
     );
   }

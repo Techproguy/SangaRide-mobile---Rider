@@ -78,10 +78,7 @@ class _ConfirmPickupScreenState extends State<ConfirmPickupScreen> {
           ),
           children: [
             if (delivery == null)
-              const Padding(
-                padding: EdgeInsets.all(SangaSpacing.xl),
-                child: Center(child: SangaActivityIndicator(size: 40)),
-              )
+              const SangaSkeleton.heights([120, 150])
             else
               Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,

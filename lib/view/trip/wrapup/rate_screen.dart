@@ -6,7 +6,6 @@ import 'package:go_router/go_router.dart';
 import 'package:sanga_ride/controller/rider/trip/trip_rating_controller.dart';
 import 'package:sanga_ride/controller/rider/trip/trip_receipt_controller.dart';
 import 'package:sanga_ride/core/router/routes.dart';
-import 'package:sanga_ride/core/services/toast_service.dart';
 import 'package:sanga_ride/model/ride/ride_match.dart';
 import 'package:sanga_ride/model/trip/wrapup/wrapup.dart';
 import 'package:sanga_ride/view/trip/wrapup/widgets/rating_comment_field.dart';
@@ -57,7 +56,7 @@ class _RateScreenState extends State<RateScreen> {
   Future<void> _submit(OfferDriver driver) async {
     final isDone = await _rating.submit();
     if (!isDone || !mounted) return;
-    Toast.success('Thanks for rating ${driver.firstName}');
+    SangaToast.show('Thanks for rating ${driver.firstName}', tone: SangaToastTone.success);
     _home();
   }
 

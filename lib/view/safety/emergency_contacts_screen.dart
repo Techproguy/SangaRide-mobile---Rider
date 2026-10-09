@@ -5,7 +5,6 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:sanga_ride/controller/rider/safety/contacts_controller.dart';
 import 'package:sanga_ride/controller/rider/safety/safety_centre_controller.dart';
-import 'package:sanga_ride/core/services/toast_service.dart';
 import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride/view/safety/widgets/dial_number.dart';
 import 'package:sanga_ride/view/safety/widgets/emergency_contacts_card.dart';
@@ -60,12 +59,12 @@ class _EmergencyContactsScreenState extends State<EmergencyContactsScreen> {
     if (isAdded) {
       _name.clear();
       _phone.clear();
-      Toast.success('$name is now an emergency contact');
+      SangaToast.show('$name is now an emergency contact', tone: SangaToastTone.success);
       return;
     }
     final state = _contacts.state;
     if (state is! ContactsFailed || state.problem.isPhoneProblem) return;
-    Toast.error(state.problem.message);
+    SangaToast.show(state.problem.message, tone: SangaToastTone.error);
     if (state.problem == SafetyProblem.contactsLimit) unawaited(_contacts.reloadContacts());
   }
 

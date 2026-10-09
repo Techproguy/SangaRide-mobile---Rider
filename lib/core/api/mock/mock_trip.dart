@@ -9,6 +9,7 @@ import 'package:sanga_ride/core/api/mock/mock_server.dart';
 import 'package:sanga_ride/core/api/mock/mock_trip_changes.dart';
 import 'package:sanga_ride/core/api/mock/mock_trip_state.dart';
 import 'package:sanga_ride/core/api/mock/mock_trip_wrapup.dart';
+import 'package:sanga_ride/core/api/trip_live_endpoints.dart';
 
 abstract final class MockTrip {
   static final List<MockRoute> routes = [
@@ -19,6 +20,7 @@ abstract final class MockTrip {
     MockRoute.post(AppEndpoints.liveTripReport, _report),
     MockRoute.post(AppEndpoints.liveTripComplete, _complete),
     MockRoute.post(AppEndpoints.liveTripCall, (_) => {'maskedNumber': _maskedNumber}),
+    MockRoute.post(TripLiveEndpoints.tripShare, _share),
     MockRoute.get(AppEndpoints.liveTripMessages, _messages),
     MockRoute.post(AppEndpoints.liveTripMessages, _sendMessage),
     MockRoute.get(AppEndpoints.liveTripEvents, (request) => {'events': _events(request.params['id']!)}),
@@ -323,6 +325,7 @@ abstract final class MockTrip {
       'unreadMessages': _unread(id, now),
       'events': _events(id),
       'cancellationReason': ?(_cancelReasons[id] ?? (status == 'cancelled' ? _refusalReason(id) : null)),
+      'returnFee': ?(_returnLegOf(id) == null ? null : MockDeliveryLive.returnFee),
       'airport': ?MockAirport.tripBlock(id),
       'delivery': ?MockDeliveryLive.tripBlock(id, () => _deliveryClock(id)),
     };
@@ -373,6 +376,7 @@ abstract final class MockTrip {
     final id = request.params['id']!;
     final reasons = request.body['reasons'];
     if (reasons is! List || reasons.isEmpty) throw const MockFailure(422, 'Pick at least one reason.');
+    if (_cancelReasons[id] == 'driver_mismatch') return _payload(id);
     if (_status(id, DateTime.now()) != 'driver_arrived') {
       throw const MockFailure(409, 'This trip has already moved on.');
     }
@@ -380,8 +384,20 @@ abstract final class MockTrip {
     return _payload(id);
   }
 
+  static Object? _share(MockRequest request) {
+    final id = request.params['id']!;
+    _stored(id);
+    final token = id.hashCode.abs().toRadixString(36);
+    return {
+      'url': 'https://sanga.ride/t/$token',
+      'expiresAt': _iso(DateTime.now().add(const Duration(hours: 6))),
+      'serverTime': _iso(DateTime.now()),
+    };
+  }
+
   static Object? _complete(MockRequest request) {
     final id = request.params['id']!;
+    if (_completedAt.containsKey(id)) return _payload(id);
     if (_status(id, DateTime.now()) != 'arrived_dropoff') {
       throw const MockFailure(409, 'You can complete the ride once you’ve arrived.');
     }
@@ -603,6 +619,8 @@ abstract final class MockTrip {
     if (body.contains('#fail') && clientId != null && _failedOnce.add(clientId)) {
       throw const MockFailure(503, 'Message not sent.');
     }
+    final existing = _riderMessages[id]?.where((message) => message['clientId'] == clientId).firstOrNull;
+    if (clientId != null && existing != null) return existing;
     final now = DateTime.now();
     if (body.contains('#drivercancel') && !_cancelledAt.containsKey(id) && _status(id, now) != 'completed') {
       cancel(id, reason: 'driver_cancelled', by: 'driver');
