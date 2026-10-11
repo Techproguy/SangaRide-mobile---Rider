@@ -207,7 +207,7 @@ abstract final class MockWallet {
       amount: -fare,
       status: 'completed',
       createdAt: DateTime.parse(trip['occurredAt'] as String).add(const Duration(minutes: 1)),
-      reference: _reference('SR-PAY', int.parse(id.substring(5))),
+      reference: _reference('SR-PAY', int.tryParse(id.replaceAll(RegExp(r'\D'), '')) ?? id.hashCode.abs()),
       meta: {
         'tripId': id,
         'route': '$pickup to $dropoff',

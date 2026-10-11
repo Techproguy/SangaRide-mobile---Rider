@@ -186,7 +186,8 @@ abstract final class MockGroups {
     final role = _myRole(group);
     final rides = <Map<String, dynamic>>[];
     for (final summary in MockHistory.summaries(status)) {
-      final index = int.parse((summary['id'] as String).substring(5));
+      final id = summary['id'] as String;
+      final index = int.tryParse(id.replaceAll(RegExp(r'\D'), '')) ?? id.hashCode.abs();
       if (index % 2 != parity || members.isEmpty) continue;
       final member = members[(index ~/ 2) % members.length];
       if (!role.isManager && member['id'] != _meId) continue;
