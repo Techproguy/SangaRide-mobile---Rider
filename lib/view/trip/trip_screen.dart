@@ -169,10 +169,8 @@ class _TripScreenState extends State<TripScreen> {
   }
 
   void _leaveForCompletion(String tripId) {
-    final wasOnTrip = ModalRoute.of(context)?.isCurrent ?? false;
     _isLeaving = true;
     _closeSheet();
-    if (!wasOnTrip) SangaToast.show('Trip complete', tone: SangaToastTone.success);
     context.go(TripWrapUpRoutes.completeOf(tripId));
   }
 
