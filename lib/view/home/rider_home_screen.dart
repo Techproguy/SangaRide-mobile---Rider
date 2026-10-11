@@ -44,7 +44,6 @@ class _RiderHomeScreenState extends State<RiderHomeScreen> {
   final _map = Get.find<MapController>();
   final _notifications = Get.find<NotificationsController>();
   final _restore = Get.find<SessionRestore>();
-  final _panelKey = GlobalKey();
   Set<Marker> _markers = const {};
   Worker? _placeWorker;
 
@@ -53,7 +52,6 @@ class _RiderHomeScreenState extends State<RiderHomeScreen> {
     super.initState();
     _placeWorker = ever(_home.currentPlaceObs, (_) => _showCurrentPlace());
     _showCurrentPlace();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _syncPanelInset());
     WidgetsBinding.instance.addPostFrameCallback((_) => unawaited(_notifications.reload()));
     WidgetsBinding.instance.addPostFrameCallback((_) => unawaited(_askForLocation()));
   }
@@ -64,10 +62,7 @@ class _RiderHomeScreenState extends State<RiderHomeScreen> {
     super.dispose();
   }
 
-  void _syncPanelInset() {
-    final box = _panelKey.currentContext?.findRenderObject() as RenderBox?;
-    if (box != null) _map.camera.visibleInsets = EdgeInsets.only(top: 120, bottom: box.size.height);
-  }
+  void _onSheetHeight(double height) => _map.camera.visibleInsets = EdgeInsets.only(top: 120, bottom: height);
 
   Future<void> _showCurrentPlace() async {
     final place = _home.currentPlace;
@@ -190,29 +185,22 @@ class _RiderHomeScreenState extends State<RiderHomeScreen> {
                 ),
               ),
             ),
-            Align(
-              alignment: Alignment.bottomCenter,
-              child: NotificationListener<SizeChangedLayoutNotification>(
-                onNotification: (_) {
-                  WidgetsBinding.instance.addPostFrameCallback((_) => _syncPanelInset());
-                  return false;
-                },
-                child: SizeChangedLayoutNotifier(
-                  child: Obx(
-                    () => HomePanel(
-                      key: _panelKey,
-                      isLocked: _restore.isRestoring,
-                      home: _home.home,
-                      work: _home.work,
-                      onSearch: _search,
-                      onRideTo: _rideTo,
-                      onSavedPlaces: () => context.push(PlacesRoutes.saved),
-                      onAddPlace: _setUpPlace,
-                      onDelivery: () => openDelivery(context, pickup: _home.currentPlace),
-                      onBookForSomeone: _bookForSomeone,
-                      onAirport: () => openAirportRides(context),
-                      onPromo: () => _search(category: RideCategory.lux),
-                    ),
+            Positioned.fill(
+              child: SangaMapSheet(
+                onVisibleHeightChanged: _onSheetHeight,
+                child: Obx(
+                  () => HomePanel(
+                    isLocked: _restore.isRestoring,
+                    home: _home.home,
+                    work: _home.work,
+                    onSearch: _search,
+                    onRideTo: _rideTo,
+                    onSavedPlaces: () => context.push(PlacesRoutes.saved),
+                    onAddPlace: _setUpPlace,
+                    onDelivery: () => openDelivery(context, pickup: _home.currentPlace),
+                    onBookForSomeone: _bookForSomeone,
+                    onAirport: () => openAirportRides(context),
+                    onPromo: () => _search(category: RideCategory.lux),
                   ),
                 ),
               ),

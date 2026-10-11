@@ -72,22 +72,23 @@ class _StopLocationConfirmState extends State<StopLocationConfirm> {
                 ),
               ),
             ),
-            Align(
-              alignment: Alignment.bottomCenter,
-              child: SangaMapPanel(
-                children: [
-                  Text('Selected location', textAlign: TextAlign.center, style: SangaTextStyles.statusTitle),
-                  const SizedBox(height: SangaSpacing.md),
-                  SangaLocationRow(
-                    kind: SangaStopKind.stop,
-                    title: widget.place.name,
-                    subtitle: widget.place.address,
-                    onTap: widget.onChange,
-                    trailing: Text('Change', style: SangaTextStyles.link),
-                  ),
-                  const SizedBox(height: SangaSpacing.lg),
-                  SangaButton.primary(label: 'Confirm this location', onPressed: widget.onConfirm),
-                ],
+            Positioned.fill(
+              child: SangaMapSheet(
+                child: SangaMapPanel(
+                  children: [
+                    Text('Selected location', textAlign: TextAlign.center, style: SangaTextStyles.statusTitle),
+                    const SizedBox(height: SangaSpacing.md),
+                    SangaLocationRow(
+                      kind: SangaStopKind.stop,
+                      title: widget.place.name,
+                      subtitle: widget.place.address,
+                      onTap: widget.onChange,
+                      trailing: Text('Change', style: SangaTextStyles.link),
+                    ),
+                    const SizedBox(height: SangaSpacing.lg),
+                    SangaButton.primary(label: 'Confirm this location', onPressed: widget.onConfirm),
+                  ],
+                ),
               ),
             ),
           ],

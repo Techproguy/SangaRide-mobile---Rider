@@ -55,8 +55,6 @@ class _TripScreenState extends State<TripScreen> {
 
   final _camera = MapCamera();
 
-  final _panelKey = GlobalKey();
-
   late final Worker _worker;
 
   TripState _previous = const TripLoading();
@@ -72,7 +70,6 @@ class _TripScreenState extends State<TripScreen> {
     super.initState();
     _worker = ever(_trip.stateRx, _onState);
     unawaited(_trip.open(widget.tripId));
-    WidgetsBinding.instance.addPostFrameCallback((_) => _syncPanelInset());
   }
 
   @override
@@ -132,10 +129,8 @@ class _TripScreenState extends State<TripScreen> {
     return previous.trip.status != next.trip.status || previous.trip.stops.length != next.trip.stops.length;
   }
 
-  void _syncPanelInset() {
-    final box = _panelKey.currentContext?.findRenderObject() as RenderBox?;
-    if (box == null) return;
-    final inset = EdgeInsets.only(top: _topInset, bottom: box.size.height);
+  void _onSheetHeight(double height) {
+    final inset = EdgeInsets.only(top: _topInset, bottom: height);
     if (inset == _camera.visibleInsets) return;
     _camera.visibleInsets = inset;
     _scheduleReframe();
@@ -212,21 +207,10 @@ class _TripScreenState extends State<TripScreen> {
                   child: TripMap(trip: _trip.trip, camera: _camera, onMapCreated: _scheduleReframe),
                 ),
                 _overlays(state),
-                Align(
-                  alignment: Alignment.bottomCenter,
-                  child: NotificationListener<SizeChangedLayoutNotification>(
-                    onNotification: (_) {
-                      WidgetsBinding.instance.addPostFrameCallback((_) => _syncPanelInset());
-                      return false;
-                    },
-                    child: SizeChangedLayoutNotifier(
-                      child: AnimatedSize(
-                        duration: SangaMotion.morph,
-                        curve: SangaMotion.springBlock,
-                        alignment: Alignment.bottomCenter,
-                        child: SangaMapPanel(key: _panelKey, children: [_flightLine(state), _panel(state)]),
-                      ),
-                    ),
+                Positioned.fill(
+                  child: SangaMapSheet(
+                    onVisibleHeightChanged: _onSheetHeight,
+                    child: SangaMapPanel(children: [_flightLine(state), _panel(state)]),
                   ),
                 ),
               ],

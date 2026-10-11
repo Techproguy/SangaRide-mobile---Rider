@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -28,6 +30,7 @@ class RideRouteScreen extends StatefulWidget {
 
 class _RideRouteScreenState extends State<RideRouteScreen> {
   static const double _topInset = 120;
+  static const Duration _reframeDelay = Duration(milliseconds: 180);
   static const String _routeId = 'route';
   static const int _dashesPerRoute = 40;
 
@@ -35,10 +38,10 @@ class _RideRouteScreenState extends State<RideRouteScreen> {
   final _home = Get.find<RiderHomeController>();
   final _camera = MapCamera();
   final _directions = DirectionsService();
-  final _panelKey = GlobalKey();
   Set<Marker> _markers = const {};
   Set<Polyline> _polylines = const {};
   Worker? _currentPlaceWorker;
+  Timer? _frameTimer;
   int _drawRequest = 0;
 
   @override
@@ -47,25 +50,22 @@ class _RideRouteScreenState extends State<RideRouteScreen> {
     _currentPlaceWorker = ever(_home.currentPlaceObs, (_) {
       if (_ride.pickup == null) _draw();
     });
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _syncPanelInset();
-      _draw();
-    });
+    WidgetsBinding.instance.addPostFrameCallback((_) => _draw());
   }
 
   @override
   void dispose() {
     _currentPlaceWorker?.dispose();
+    _frameTimer?.cancel();
     super.dispose();
   }
 
-  void _syncPanelInset() {
-    final box = _panelKey.currentContext?.findRenderObject() as RenderBox?;
-    if (box == null) return;
-    final inset = EdgeInsets.only(top: _topInset, bottom: box.size.height);
+  void _onSheetHeight(double height) {
+    final inset = EdgeInsets.only(top: _topInset, bottom: height);
     if (inset == _camera.visibleInsets) return;
     _camera.visibleInsets = inset;
-    _frame();
+    _frameTimer?.cancel();
+    _frameTimer = Timer(_reframeDelay, _frame);
   }
 
   List<LatLng> get _framePoints {
@@ -223,24 +223,17 @@ class _RideRouteScreenState extends State<RideRouteScreen> {
                 ),
               ),
             ),
-            Align(
-              alignment: Alignment.bottomCenter,
-              child: NotificationListener<SizeChangedLayoutNotification>(
-                onNotification: (_) {
-                  WidgetsBinding.instance.addPostFrameCallback((_) => _syncPanelInset());
-                  return false;
-                },
-                child: SizeChangedLayoutNotifier(
-                  child: RoutePanel(
-                    key: _panelKey,
-                    pickup: _ride.pickup,
-                    stops: _ride.stops,
-                    dropoff: _ride.dropoff,
-                    canAddStop: _ride.canAddStop,
-                    onEdit: _edit,
-                    onRemoveStop: _removeStop,
-                    onConfirm: _ride.hasRoute ? _confirm : null,
-                  ),
+            Positioned.fill(
+              child: SangaMapSheet(
+                onVisibleHeightChanged: _onSheetHeight,
+                child: RoutePanel(
+                  pickup: _ride.pickup,
+                  stops: _ride.stops,
+                  dropoff: _ride.dropoff,
+                  canAddStop: _ride.canAddStop,
+                  onEdit: _edit,
+                  onRemoveStop: _removeStop,
+                  onConfirm: _ride.hasRoute ? _confirm : null,
                 ),
               ),
             ),
