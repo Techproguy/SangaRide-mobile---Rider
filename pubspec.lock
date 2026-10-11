@@ -830,28 +830,28 @@ packages:
   sanga_device_frame:
     dependency: transitive
     description:
-      path: "../sanga_device_frame"
+      path: "../sanga-ride-building-blocks/packages/sanga_device_frame"
       relative: true
     source: path
     version: "0.0.1"
   sanga_ride_core:
     dependency: "direct main"
     description:
-      path: "../sanga_ride_core"
+      path: "../sanga-ride-building-blocks/packages/sanga_ride_core"
       relative: true
     source: path
     version: "0.0.1"
   sanga_ride_maps:
     dependency: "direct main"
     description:
-      path: "../sanga_ride_maps"
+      path: "../sanga-ride-building-blocks/packages/sanga_ride_maps"
       relative: true
     source: path
     version: "0.0.1"
   sanga_ride_ui:
     dependency: "direct main"
     description:
-      path: "../sanga_ride_ui"
+      path: "../sanga-ride-building-blocks/packages/sanga_ride_ui"
       relative: true
     source: path
     version: "0.0.1"

@@ -12,11 +12,11 @@ dependencies:
   flutter:
     sdk: flutter
   sanga_ride_ui:
-    path: ../sanga_ride_ui
+    path: ../sanga-ride-building-blocks/packages/sanga_ride_ui
   sanga_ride_maps:
-    path: ../sanga_ride_maps
+    path: ../sanga-ride-building-blocks/packages/sanga_ride_maps
   sanga_ride_core:
-    path: ../sanga_ride_core
+    path: ../sanga-ride-building-blocks/packages/sanga_ride_core
   get: ^4.7.3
   go_router: ^17.0.1
   dio: ^5.9.1
