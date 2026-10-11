@@ -1,6 +1,5 @@
 import 'dart:async';
 
-
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
@@ -175,6 +174,7 @@ class _RideRouteScreenState extends State<RideRouteScreen> {
                   followsUser: false,
                   extraMarkers: _markers,
                   extraPolylines: _routeLines.polylines,
+                  onCameraMove: (position) => _routeLines.updateZoom(position.zoom),
                 ),
               ),
             ),

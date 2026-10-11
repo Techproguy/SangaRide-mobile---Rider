@@ -211,6 +211,11 @@ class _TripMapState extends State<TripMap> with SingleTickerProviderStateMixin {
     };
   }
 
+  void _onCameraMove(CameraPosition position) {
+    _tripLine.updateZoom(position.zoom);
+    _approachLine.updateZoom(position.zoom);
+  }
+
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
@@ -221,6 +226,7 @@ class _TripMapState extends State<TripMap> with SingleTickerProviderStateMixin {
         onMapCreated: widget.onMapCreated,
         extraMarkers: {..._placeMarkers, ..._carMarkers},
         extraPolylines: {..._tripLine.polylines, ..._approachLine.polylines},
+        onCameraMove: _onCameraMove,
       ),
     );
   }
