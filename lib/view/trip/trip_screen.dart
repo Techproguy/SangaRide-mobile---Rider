@@ -201,19 +201,21 @@ class _TripScreenState extends State<TripScreen> {
         child: AnnotatedRegion(
           value: SangaSystemUi.onLight,
           child: Scaffold(
-            body: Stack(
-              children: [
-                Positioned.fill(
-                  child: TripMap(trip: _trip.trip, camera: _camera, onMapCreated: _scheduleReframe),
-                ),
-                _overlays(state),
-                Positioned.fill(
-                  child: SangaMapSheet(
-                    onVisibleHeightChanged: _onSheetHeight,
-                    child: SangaMapPanel(children: [_flightLine(state), _panel(state)]),
+            body: SizedBox.expand(
+              child: Stack(
+                children: [
+                  Positioned.fill(
+                    child: TripMap(trip: _trip.trip, camera: _camera, onMapCreated: _scheduleReframe),
                   ),
-                ),
-              ],
+                  _overlays(state),
+                  Positioned.fill(
+                    child: SangaMapSheet(
+                      onVisibleHeightChanged: _onSheetHeight,
+                      child: SangaMapPanel(children: [_flightLine(state), _panel(state)]),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),

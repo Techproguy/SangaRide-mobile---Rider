@@ -164,44 +164,46 @@ class _RideRouteScreenState extends State<RideRouteScreen> {
     return AnnotatedRegion(
       value: SangaSystemUi.onLight,
       child: Scaffold(
-        body: Stack(
-          children: [
-            Positioned.fill(
-              child: ListenableBuilder(
-                listenable: _routeLines,
-                builder: (context, _) => SangaMap(
-                  camera: _camera,
-                  followsUser: false,
-                  extraMarkers: _markers,
-                  extraPolylines: _routeLines.polylines,
-                  onCameraMove: (position) => _routeLines.updateZoom(position.zoom),
+        body: SizedBox.expand(
+          child: Stack(
+            children: [
+              Positioned.fill(
+                child: ListenableBuilder(
+                  listenable: _routeLines,
+                  builder: (context, _) => SangaMap(
+                    camera: _camera,
+                    followsUser: false,
+                    extraMarkers: _markers,
+                    extraPolylines: _routeLines.polylines,
+                    onCameraMove: (position) => _routeLines.updateZoom(position.zoom),
+                  ),
                 ),
               ),
-            ),
-            SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(SangaSpacing.gutter, SangaSpacing.sm, SangaSpacing.gutter, 0),
-                child: Align(
-                  alignment: Alignment.topLeft,
-                  child: SangaMapButton.back(onPressed: context.pop),
+              SafeArea(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(SangaSpacing.gutter, SangaSpacing.sm, SangaSpacing.gutter, 0),
+                  child: Align(
+                    alignment: Alignment.topLeft,
+                    child: SangaMapButton.back(onPressed: context.pop),
+                  ),
                 ),
               ),
-            ),
-            Positioned.fill(
-              child: SangaMapSheet(
-                onVisibleHeightChanged: _onSheetHeight,
-                child: RoutePanel(
-                  pickup: _ride.pickup,
-                  stops: _ride.stops,
-                  dropoff: _ride.dropoff,
-                  canAddStop: _ride.canAddStop,
-                  onEdit: _edit,
-                  onRemoveStop: _removeStop,
-                  onConfirm: _ride.hasRoute ? _confirm : null,
+              Positioned.fill(
+                child: SangaMapSheet(
+                  onVisibleHeightChanged: _onSheetHeight,
+                  child: RoutePanel(
+                    pickup: _ride.pickup,
+                    stops: _ride.stops,
+                    dropoff: _ride.dropoff,
+                    canAddStop: _ride.canAddStop,
+                    onEdit: _edit,
+                    onRemoveStop: _removeStop,
+                    onConfirm: _ride.hasRoute ? _confirm : null,
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

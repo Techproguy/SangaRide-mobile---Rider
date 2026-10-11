@@ -54,44 +54,46 @@ class _StopLocationConfirmState extends State<StopLocationConfirm> {
     return AnnotatedRegion(
       value: SangaSystemUi.onLight,
       child: Scaffold(
-        body: Stack(
-          children: [
-            Positioned.fill(
-              child: SangaMap(
-                followsUser: false,
-                initialCameraPosition: CameraPosition(target: _position, zoom: StopLocationConfirm._zoom),
-                extraMarkers: _markers,
-              ),
-            ),
-            SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(SangaSpacing.gutter, SangaSpacing.sm, SangaSpacing.gutter, 0),
-                child: Align(
-                  alignment: Alignment.topLeft,
-                  child: SangaMapButton.back(onPressed: widget.onBack),
+        body: SizedBox.expand(
+          child: Stack(
+            children: [
+              Positioned.fill(
+                child: SangaMap(
+                  followsUser: false,
+                  initialCameraPosition: CameraPosition(target: _position, zoom: StopLocationConfirm._zoom),
+                  extraMarkers: _markers,
                 ),
               ),
-            ),
-            Positioned.fill(
-              child: SangaMapSheet(
-                child: SangaMapPanel(
-                  children: [
-                    Text('Selected location', textAlign: TextAlign.center, style: SangaTextStyles.statusTitle),
-                    const SizedBox(height: SangaSpacing.md),
-                    SangaLocationRow(
-                      kind: SangaStopKind.stop,
-                      title: widget.place.name,
-                      subtitle: widget.place.address,
-                      onTap: widget.onChange,
-                      trailing: Text('Change', style: SangaTextStyles.link),
-                    ),
-                    const SizedBox(height: SangaSpacing.lg),
-                    SangaButton.primary(label: 'Confirm this location', onPressed: widget.onConfirm),
-                  ],
+              SafeArea(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(SangaSpacing.gutter, SangaSpacing.sm, SangaSpacing.gutter, 0),
+                  child: Align(
+                    alignment: Alignment.topLeft,
+                    child: SangaMapButton.back(onPressed: widget.onBack),
+                  ),
                 ),
               ),
-            ),
-          ],
+              Positioned.fill(
+                child: SangaMapSheet(
+                  child: SangaMapPanel(
+                    children: [
+                      Text('Selected location', textAlign: TextAlign.center, style: SangaTextStyles.statusTitle),
+                      const SizedBox(height: SangaSpacing.md),
+                      SangaLocationRow(
+                        kind: SangaStopKind.stop,
+                        title: widget.place.name,
+                        subtitle: widget.place.address,
+                        onTap: widget.onChange,
+                        trailing: Text('Change', style: SangaTextStyles.link),
+                      ),
+                      const SizedBox(height: SangaSpacing.lg),
+                      SangaButton.primary(label: 'Confirm this location', onPressed: widget.onConfirm),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

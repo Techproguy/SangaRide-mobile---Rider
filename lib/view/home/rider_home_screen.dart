@@ -168,44 +168,46 @@ class _RiderHomeScreenState extends State<RiderHomeScreen> {
     return AnnotatedRegion(
       value: SangaSystemUi.onLight,
       child: Scaffold(
-        body: Stack(
-          children: [
-            Positioned.fill(child: SangaMap(extraMarkers: _markers)),
-            SafeArea(
-              child: Obx(
-                () => MapTopBar(
-                  leading: SangaMapButton.menu(onPressed: _openMenu),
-                  weather: _home.weather,
-                  userName: user?.displayName ?? '',
-                  bell: const NotificationBell(),
-                  notices: _notices(),
-                  changedCity: _home.changedCity,
-                  onConfirmCity: _home.confirmCity,
-                  onDeclineCity: _home.dismissCity,
-                ),
-              ),
-            ),
-            Positioned.fill(
-              child: SangaMapSheet(
-                onVisibleHeightChanged: _onSheetHeight,
+        body: SizedBox.expand(
+          child: Stack(
+            children: [
+              Positioned.fill(child: SangaMap(extraMarkers: _markers)),
+              SafeArea(
                 child: Obx(
-                  () => HomePanel(
-                    isLocked: _restore.isRestoring,
-                    home: _home.home,
-                    work: _home.work,
-                    onSearch: _search,
-                    onRideTo: _rideTo,
-                    onSavedPlaces: () => context.push(PlacesRoutes.saved),
-                    onAddPlace: _setUpPlace,
-                    onDelivery: () => openDelivery(context, pickup: _home.currentPlace),
-                    onBookForSomeone: _bookForSomeone,
-                    onAirport: () => openAirportRides(context),
-                    onPromo: () => _search(category: RideCategory.lux),
+                  () => MapTopBar(
+                    leading: SangaMapButton.menu(onPressed: _openMenu),
+                    weather: _home.weather,
+                    userName: user?.displayName ?? '',
+                    bell: const NotificationBell(),
+                    notices: _notices(),
+                    changedCity: _home.changedCity,
+                    onConfirmCity: _home.confirmCity,
+                    onDeclineCity: _home.dismissCity,
                   ),
                 ),
               ),
-            ),
-          ],
+              Positioned.fill(
+                child: SangaMapSheet(
+                  onVisibleHeightChanged: _onSheetHeight,
+                  child: Obx(
+                    () => HomePanel(
+                      isLocked: _restore.isRestoring,
+                      home: _home.home,
+                      work: _home.work,
+                      onSearch: _search,
+                      onRideTo: _rideTo,
+                      onSavedPlaces: () => context.push(PlacesRoutes.saved),
+                      onAddPlace: _setUpPlace,
+                      onDelivery: () => openDelivery(context, pickup: _home.currentPlace),
+                      onBookForSomeone: _bookForSomeone,
+                      onAirport: () => openAirportRides(context),
+                      onPromo: () => _search(category: RideCategory.lux),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
