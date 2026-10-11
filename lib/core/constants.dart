@@ -11,6 +11,8 @@ class SangaConstants {
 
   static const String baseUrl = String.fromEnvironment('BASE_URL');
 
+  static const bool roadRoutes = bool.fromEnvironment('ROAD_ROUTES');
+
   static const String iosBundleId = 'com.sangatechnologies.ride';
   static const String androidPackageName = 'com.sangatechnologies.ride';
 
