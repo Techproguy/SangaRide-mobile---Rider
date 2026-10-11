@@ -4,6 +4,8 @@ The Sanga Ride rider app. Built on the sanga_mobile architecture (GetX controlle
 
 ## Setup
 
+The shared packages live in [sanga-ride-building-blocks](https://github.com/Techproguy/sanga-ride-building-blocks). Clone it next to this repo (`../sanga-ride-building-blocks`), then `flutter pub get`.
+
 Maps keys live in three gitignored files. Copy each example and fill in the keys:
 
 ```sh
