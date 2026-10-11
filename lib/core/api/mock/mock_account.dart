@@ -1,3 +1,4 @@
+import 'package:get_storage/get_storage.dart';
 import 'package:sanga_ride/core/api/account_endpoints.dart';
 import 'package:sanga_ride/core/api/mock/mock_data.dart';
 import 'package:sanga_ride/core/api/mock/mock_delivery.dart';
@@ -37,6 +38,10 @@ abstract final class MockAccount {
   ];
 
   static final DateTime _memberSince = DateTime.now().subtract(const Duration(days: 430));
+  static const String _storageKey = 'mock_account_profile';
+  static const List<String> _keptFields = ['firstName', 'lastName', 'phone', 'email', 'dateOfBirth'];
+
+  static final GetStorage _box = GetStorage();
   static final Map<String, dynamic> _fields = {
     'id': MockData.user['id'],
     'firstName': MockData.user['firstName'],
@@ -47,12 +52,39 @@ abstract final class MockAccount {
     'photoUrl': MockData.user['photoUrl'],
     'rating': MockData.user['rating'],
     'ridesCount': MockData.user['ridesCount'],
+    ..._kept(),
   };
   static MockOnboardingStep? _onboardingStep;
   static String? _pendingPhone;
   static DateTime? _codeSentAt;
 
   static String get firstName => '${_fields['firstName']}';
+
+  static String get lastName => '${_fields['lastName']}';
+
+  static String get phone => '${_fields['phone']}';
+
+  static Map<String, dynamic> get user => {for (final key in MockData.user.keys) key: _fields[key]};
+
+  static Map<String, dynamic> _kept() {
+    final stored = _box.read<Map<String, dynamic>>(_storageKey);
+    if (stored == null) return const {};
+    return {
+      for (final key in _keptFields)
+        if (stored[key] != null) key: stored[key],
+    };
+  }
+
+  static void _keep() => _box.write(_storageKey, {for (final key in _keptFields) key: _fields[key]});
+
+  static void startSignUp(MockRequest request) {
+    final body = request.body;
+    for (final key in const ['firstName', 'lastName', 'phone']) {
+      final value = '${body[key] ?? ''}'.trim();
+      if (value.isNotEmpty) _fields[key] = value;
+    }
+    _keep();
+  }
 
   static String? get onboardingNextStep => _onboardingStep?.code;
 
@@ -99,6 +131,7 @@ abstract final class MockAccount {
     final birthday = body['dateOfBirth'] ?? body['birthday'];
     if (birthday != null) _fields['dateOfBirth'] = _validBirthday('$birthday');
     if (body.containsKey('email')) completeOnboardingStep(MockOnboardingStep.aboutYou);
+    _keep();
     return _json();
   }
 
@@ -162,6 +195,7 @@ abstract final class MockAccount {
       throw const MockFailure(400, 'That code didn’t match.', code: 'otp_mismatch');
     }
     _fields['phone'] = pending;
+    _keep();
     _pendingPhone = null;
     _codeSentAt = null;
     return _json();

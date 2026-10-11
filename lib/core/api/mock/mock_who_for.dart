@@ -1,3 +1,4 @@
+import 'package:sanga_ride/core/api/mock/mock_account.dart';
 import 'package:sanga_ride/core/api/mock/mock_data.dart';
 import 'package:sanga_ride/core/api/mock/mock_server.dart';
 import 'package:sanga_ride/core/api/who_for_endpoints.dart';
@@ -23,7 +24,7 @@ abstract final class MockWhoFor {
   static Object? _sendCode(MockRequest request) {
     final phone = _digits(request.body['phone']);
     if (phone.length < 13) throw const MockFailure(422, 'We can’t text that number.', code: 'invalid_phone');
-    if (phone == _digits(MockData.user['phone'])) {
+    if (phone == _digits(MockAccount.phone)) {
       throw const MockFailure(422, 'That’s your own number.', code: 'own_number');
     }
     final id = 'ver_${_verifications.length + 1}';

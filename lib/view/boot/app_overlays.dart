@@ -22,23 +22,17 @@ class _AppOverlaysState extends State<AppOverlays> {
   final _connectivity = Get.find<ConnectivityService>();
   final _restore = Get.find<SessionRestore>();
   final ValueNotifier<String> _path = ValueNotifier(SangaRouter.currentPath);
-  final ValueNotifier<bool> _bannerOccupiesTop = ValueNotifier(false);
-  Timer? _bannerRelease;
 
   @override
   void initState() {
     super.initState();
     SangaRouter.router.routerDelegate.addListener(_onRouteChanged);
-    _connectivity.bannerState.addListener(_onBannerState);
   }
 
   @override
   void dispose() {
     SangaRouter.router.routerDelegate.removeListener(_onRouteChanged);
-    _connectivity.bannerState.removeListener(_onBannerState);
-    _bannerRelease?.cancel();
     _path.dispose();
-    _bannerOccupiesTop.dispose();
     super.dispose();
   }
 
@@ -53,17 +47,6 @@ class _AppOverlaysState extends State<AppOverlays> {
     });
   }
 
-  void _onBannerState() {
-    _bannerRelease?.cancel();
-    if (_connectivity.bannerState.value != SangaConnectionState.online) {
-      _bannerOccupiesTop.value = true;
-      return;
-    }
-    _bannerRelease = Timer(SangaConnectionBanner.recoveredHold + SangaMotion.morph, () {
-      _bannerOccupiesTop.value = false;
-    });
-  }
-
   void _openActivity(SangaLiveActivity activity) {
     final route = LiveActivities.routeFor(activity.id, _restore.meState);
     if (route != null) unawaited(SangaRouter.router.push<Object?>(route));
@@ -73,37 +56,31 @@ class _AppOverlaysState extends State<AppOverlays> {
   Widget build(BuildContext context) {
     return SangaTopOverlayHost(
       content: widget.child,
-      overlay: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          SangaConnectionBanner(state: _connectivity.bannerState),
-          ValueListenableBuilder<bool>(
-            valueListenable: _bannerOccupiesTop,
-            builder: (context, occupied, _) => _withoutTopInset(
-              context,
-              isRemoved: occupied,
-              child: ValueListenableBuilder<String>(
+      overlay: Material(
+        type: MaterialType.transparency,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SangaConnectionBanner(
+              state: _connectivity.bannerState,
+              onShownChanged: (shown) => _connectivity.bannerShown.value = shown,
+            ),
+            ValueListenableBuilder<bool>(
+              valueListenable: _connectivity.bannerShown,
+              builder: (context, isBannerShown, _) => ValueListenableBuilder<String>(
                 valueListenable: _path,
                 builder: (context, path, _) => Obx(
                   () => SangaLiveActivityBar(
+                    avoidStatusBar: !isBannerShown,
                     activities: LiveActivities.from(_restore.meStateRx.value, path),
                     onTap: _openActivity,
                   ),
                 ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
-    );
-  }
-
-  Widget _withoutTopInset(BuildContext context, {required bool isRemoved, required Widget child}) {
-    if (!isRemoved) return child;
-    final media = MediaQuery.of(context);
-    return MediaQuery(
-      data: media.copyWith(padding: media.padding.copyWith(top: 0)),
-      child: child,
     );
   }
 }

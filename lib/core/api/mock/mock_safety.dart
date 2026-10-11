@@ -1,4 +1,4 @@
-import 'package:sanga_ride/core/api/mock/mock_data.dart';
+import 'package:sanga_ride/core/api/mock/mock_account.dart';
 import 'package:sanga_ride/core/api/mock/mock_server.dart';
 import 'package:sanga_ride/core/api/mock/mock_trip.dart';
 import 'package:sanga_ride/core/api/mock/mock_trip_state.dart';
@@ -172,7 +172,7 @@ abstract final class MockSafety {
     if (!_nigerianNumber.hasMatch(phone)) {
       throw const MockFailure(422, 'That number doesn’t look right.', code: 'invalid_phone');
     }
-    if (_digits(phone) == _digits(MockData.user['phone'])) {
+    if (_digits(phone) == _digits(MockAccount.phone)) {
       throw const MockFailure(422, 'That’s your own number.', code: 'own_number');
     }
     if (name.isEmpty) throw const MockFailure(422, 'Add a name for this contact.');

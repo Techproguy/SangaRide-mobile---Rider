@@ -11,6 +11,7 @@ class ConnectivityService extends GetxService {
   final RxBool isOnline = true.obs;
   final RxBool hasLink = true.obs;
   final ValueNotifier<SangaConnectionState> bannerState = ValueNotifier(SangaConnectionState.online);
+  final ValueNotifier<bool> bannerShown = ValueNotifier(false);
 
   @override
   void onInit() {

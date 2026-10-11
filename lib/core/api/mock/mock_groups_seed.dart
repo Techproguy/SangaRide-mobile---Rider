@@ -1,3 +1,4 @@
+import 'package:sanga_ride/core/api/mock/mock_account.dart';
 import 'package:sanga_ride/core/api/mock/mock_data.dart';
 
 class MockApproval {
@@ -174,8 +175,8 @@ abstract final class MockGroupsSeed {
     final isBusinessMember = forKind == 'business' && role == 'member';
     return member(
       id: MockData.user['id'] as String,
-      name: '${MockData.user['firstName']} ${MockData.user['lastName']}',
-      phone: MockData.user['phone'] as String,
+      name: '${MockAccount.firstName} ${MockAccount.lastName}',
+      phone: MockAccount.phone,
       relation: relation,
       role: role,
       permissions: role == 'owner' ? {'bookForOthers': true} : null,

@@ -42,10 +42,7 @@ class MockRoutes {
     ...MockGroups.routes,
     MockRoute.get(AppEndpoints.meState, MockMeState.handle),
     MockRoute.post(AppEndpoints.signUp, _signUp),
-    MockRoute.post(
-      AppEndpoints.checkExistence,
-      (request) => {'exists': request.body['phone'] == MockData.user['phone']},
-    ),
+    MockRoute.post(AppEndpoints.checkExistence, (request) => {'exists': request.body['phone'] == MockAccount.phone}),
     MockRoute.post(AppEndpoints.requestOtp, _requestOtp),
     MockRoute.post(AppEndpoints.verifyOtp, _verifyOtp),
     MockRoute.post(AppEndpoints.googleSignIn, (_) => _session),
@@ -81,9 +78,10 @@ class MockRoutes {
     return place;
   }
 
-  static Map<String, dynamic> get _session => {'tokens': MockServer.engine.issueTokens(), 'user': MockData.user};
+  static Map<String, dynamic> get _session => {'tokens': MockServer.engine.issueTokens(), 'user': MockAccount.user};
 
   static Object? _signUp(MockRequest request) {
+    MockAccount.startSignUp(request);
     MockAccount.beginOnboarding();
     return {'phone': request.body['phone'], 'expiresInSeconds': 300, 'resendInSeconds': 60};
   }
