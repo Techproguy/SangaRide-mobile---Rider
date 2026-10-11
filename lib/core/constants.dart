@@ -5,6 +5,7 @@ import 'package:sanga_ride/core/storage_keys.dart';
 class SangaConstants {
   SangaConstants._();
 
+  static const String appId = 'com.sangatechnologies.ride';
   static const String appName = 'Sanga Ride';
   static const String userType = 'rider';
 

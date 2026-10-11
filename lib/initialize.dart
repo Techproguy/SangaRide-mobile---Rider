@@ -37,6 +37,7 @@ import 'package:sanga_ride/core/services/session_restore.dart';
 import 'package:sanga_ride/core/services/session_storage.dart';
 import 'package:sanga_ride/view/widgets/map/sanga_marker_icons.dart';
 import 'package:sanga_ride_core/sanga_ride_core.dart';
+import 'package:sanga_ride_maps/sanga_ride_maps.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 Future<void> initializeSanga() async {
@@ -44,6 +45,13 @@ Future<void> initializeSanga() async {
   await GetStorage.init();
   SangaCountdown.serverClock = ServerClock.instance.now;
   ApiEnvironment.verify();
+  SangaRouteService.configure(
+    SangaRouteConfig(
+      apiKey: SangaConstants.googleMapsApiKey,
+      iosBundleId: SangaConstants.appId,
+      androidPackage: SangaConstants.appId,
+    ),
+  );
   await SessionStorage.tokens.hydrate();
   unawaited(SangaMarkerIcons.preload());
   await SangaFrame.preload(SangaConstants.frame);

@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -9,14 +8,13 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:sanga_ride/controller/rider/ride_request_controller.dart';
 import 'package:sanga_ride/controller/rider/rider_home_controller.dart';
 import 'package:sanga_ride/controller/shared/map_camera.dart';
-import 'package:sanga_ride/core/extensions/lat_lng.dart';
 import 'package:sanga_ride/core/router/booking_routes.dart';
-import 'package:sanga_ride/core/services/directions_service.dart';
 import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride/view/ride/widgets/place_search_sheet.dart';
 import 'package:sanga_ride/view/ride/widgets/route_panel.dart';
 import 'package:sanga_ride/view/widgets/map/place_marker.dart';
 import 'package:sanga_ride/view/widgets/map/sanga_map.dart';
+import 'package:sanga_ride_maps/sanga_ride_maps.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 class RideRouteScreen extends StatefulWidget {
@@ -31,15 +29,12 @@ class RideRouteScreen extends StatefulWidget {
 class _RideRouteScreenState extends State<RideRouteScreen> {
   static const double _topInset = 120;
   static const Duration _reframeDelay = Duration(milliseconds: 180);
-  static const String _routeId = 'route';
-  static const int _dashesPerRoute = 40;
 
   final _ride = Get.find<RideRequestController>();
   final _home = Get.find<RiderHomeController>();
   final _camera = MapCamera();
-  final _directions = DirectionsService();
+  final _routeLines = SangaRouteLines(id: 'route');
   Set<Marker> _markers = const {};
-  Set<Polyline> _polylines = const {};
   Worker? _currentPlaceWorker;
   Timer? _frameTimer;
   int _drawRequest = 0;
@@ -57,6 +52,7 @@ class _RideRouteScreenState extends State<RideRouteScreen> {
   void dispose() {
     _currentPlaceWorker?.dispose();
     _frameTimer?.cancel();
+    _routeLines.dispose();
     super.dispose();
   }
 
@@ -81,14 +77,9 @@ class _RideRouteScreenState extends State<RideRouteScreen> {
     final request = ++_drawRequest;
     final markers = await _buildMarkers();
     if (!mounted || request != _drawRequest) return;
-    setState(() {
-      _markers = markers;
-      _polylines = _straightLine();
-    });
+    setState(() => _markers = markers);
+    _routeLines.show(_ride.routePoints);
     _frame();
-    final route = await _directions.getRoute(_ride.routePoints);
-    if (!mounted || request != _drawRequest || route == null) return;
-    setState(() => _polylines = {_polyline(route)});
   }
 
   Future<Set<Marker>> _buildMarkers() async {
@@ -130,41 +121,6 @@ class _RideRouteScreenState extends State<RideRouteScreen> {
           subtitle: 'Drop off point',
         ),
     };
-  }
-
-  Set<Polyline> _straightLine() {
-    final points = _ride.routePoints;
-    if (points.length < 2) return const {};
-    return {
-      Polyline(
-        polylineId: const PolylineId(_routeId),
-        points: points,
-        color: SangaColors.primary,
-        width: 4,
-        patterns: _dashes(points),
-      ),
-    };
-  }
-
-  List<PatternItem> _dashes(List<LatLng> points) {
-    if (!Platform.isIOS) return [PatternItem.dash(18), PatternItem.gap(10)];
-    var meters = 0.0;
-    for (var i = 1; i < points.length; i++) {
-      meters += points[i - 1].metersTo(points[i]);
-    }
-    return [PatternItem.dash(meters / _dashesPerRoute), PatternItem.gap(meters / (_dashesPerRoute * 2))];
-  }
-
-  Polyline _polyline(List<LatLng> points) {
-    return Polyline(
-      polylineId: const PolylineId(_routeId),
-      points: points,
-      color: SangaColors.primary,
-      width: 5,
-      startCap: Cap.roundCap,
-      endCap: Cap.roundCap,
-      jointType: JointType.round,
-    );
   }
 
   Future<void> _edit(RouteEdit edit) async {
@@ -212,7 +168,15 @@ class _RideRouteScreenState extends State<RideRouteScreen> {
         body: Stack(
           children: [
             Positioned.fill(
-              child: SangaMap(camera: _camera, followsUser: false, extraMarkers: _markers, extraPolylines: _polylines),
+              child: ListenableBuilder(
+                listenable: _routeLines,
+                builder: (context, _) => SangaMap(
+                  camera: _camera,
+                  followsUser: false,
+                  extraMarkers: _markers,
+                  extraPolylines: _routeLines.polylines,
+                ),
+              ),
             ),
             SafeArea(
               child: Padding(

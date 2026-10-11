@@ -1,17 +1,14 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:sanga_ride/controller/rider/trip/trip_controller.dart';
 import 'package:sanga_ride/controller/shared/map_camera.dart';
-import 'package:sanga_ride/core/extensions/lat_lng.dart';
-import 'package:sanga_ride/core/services/directions_service.dart';
 import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride/view/widgets/map/car_marker.dart';
 import 'package:sanga_ride/view/widgets/map/place_marker.dart';
 import 'package:sanga_ride/view/widgets/map/sanga_map.dart';
-import 'package:sanga_ride_ui/sanga_ride_ui.dart';
+import 'package:sanga_ride_maps/sanga_ride_maps.dart';
 
 List<LatLng> tripFramePoints(Trip trip) {
   final driver = trip.driverPosition?.position;
@@ -40,21 +37,17 @@ class TripMap extends StatefulWidget {
 }
 
 class _TripMapState extends State<TripMap> with SingleTickerProviderStateMixin {
-  static const String _routeId = 'route';
-  static const int _dashesPerRoute = 40;
   static const Duration _glideDuration = TripController.pollInterval;
   static const Duration _frameGap = Duration(milliseconds: 60);
 
-  final _directions = DirectionsService();
+  final _tripLine = SangaRouteLines(id: 'trip');
+  final _approachLine = SangaRouteLines(id: 'approach', style: SangaRouteStyle.approach);
   late final AnimationController _glide = AnimationController(vsync: this, duration: _glideDuration)
     ..addListener(_onGlide);
   Set<Marker> _placeMarkers = const {};
   Set<Marker> _carMarkers = const {};
-  Set<Polyline> _polylines = const {};
-  List<LatLng> _route = const [];
-  bool _isRouteDetailed = false;
   int _routeRequest = 0;
-  int _routeCursor = 0;
+  String? _approachKey;
   LatLng? _carFrom;
   LatLng? _carTo;
   double _headingFrom = 0;
@@ -67,6 +60,8 @@ class _TripMapState extends State<TripMap> with SingleTickerProviderStateMixin {
 
   bool get _trimsRoute => (widget.trip?.status.rank ?? 0) >= TripStatus.inProgress.rank;
 
+  bool get _isApproaching => widget.trip?.status == TripStatus.driverEnRoute;
+
   @override
   void initState() {
     super.initState();
@@ -77,6 +72,8 @@ class _TripMapState extends State<TripMap> with SingleTickerProviderStateMixin {
   @override
   void dispose() {
     _glide.dispose();
+    _tripLine.dispose();
+    _approachLine.dispose();
     super.dispose();
   }
 
@@ -86,6 +83,7 @@ class _TripMapState extends State<TripMap> with SingleTickerProviderStateMixin {
     final trip = widget.trip;
     final before = oldWidget.trip;
     if (!_sameRoute(trip, before)) _drawRoute();
+    if (trip?.status != before?.status) _syncLines();
     if (trip?.driverPosition?.position != before?.driverPosition?.position ||
         trip?.driverPosition?.heading != before?.driverPosition?.heading) {
       _driveTo(trip?.driverPosition);
@@ -154,47 +152,34 @@ class _TripMapState extends State<TripMap> with SingleTickerProviderStateMixin {
     if (!mounted) return;
     _carNow = position;
     _headingNow = heading;
-    setState(() {
-      _carMarkers = {CarMarker.build(position: position, heading: heading)};
-      if (_trimsRoute) _polylines = _trimmed(position);
-    });
+    setState(() => _carMarkers = {CarMarker.build(position: position, heading: heading)});
+    _syncLines();
   }
 
-  Set<Polyline> _trimmed(LatLng car) {
-    final route = _route;
-    if (route.length < 2) return _polylines;
-    var best = _routeCursor.clamp(0, route.length - 1);
-    var bestDistance = car.metersTo(route[best]);
-    for (var i = best + 1; i < route.length && i <= best + 40; i++) {
-      final distance = car.metersTo(route[i]);
-      if (distance < bestDistance) {
-        bestDistance = distance;
-        best = i;
-      }
+  void _syncLines() {
+    final car = _carNow;
+    _tripLine.follow(_trimsRoute ? car : null);
+    final pickup = widget.trip?.pickup.position;
+    if (!_isApproaching || car == null || pickup == null) {
+      _approachKey = null;
+      _approachLine.clear();
+      return;
     }
-    _routeCursor = best;
-    final remaining = [car, ...route.skip(best + 1)];
-    if (remaining.length < 2) return const {};
-    return {_isRouteDetailed ? _polyline(remaining) : _dashedLine(remaining)};
+    final key = '${pickup.latitude},${pickup.longitude}';
+    if (key != _approachKey) {
+      _approachKey = key;
+      _approachLine.show([car, pickup]);
+    }
+    _approachLine.follow(car);
   }
 
   Future<void> _drawRoute() async {
     final request = ++_routeRequest;
     final markers = await _buildMarkers();
     if (!mounted || request != _routeRequest) return;
-    _route = _routePoints;
-    _isRouteDetailed = false;
-    _routeCursor = 0;
-    setState(() {
-      _placeMarkers = markers;
-      _polylines = _straightLine();
-    });
-    final route = await _directions.getRoute(_routePoints);
-    if (!mounted || request != _routeRequest || route == null) return;
-    _route = route;
-    _isRouteDetailed = true;
-    _routeCursor = 0;
-    setState(() => _polylines = _trimsRoute && _carNow != null ? _trimmed(_carNow!) : {_polyline(route)});
+    setState(() => _placeMarkers = markers);
+    _tripLine.show(_routePoints);
+    _syncLines();
   }
 
   Future<Set<Marker>> _buildMarkers() async {
@@ -226,51 +211,17 @@ class _TripMapState extends State<TripMap> with SingleTickerProviderStateMixin {
     };
   }
 
-  Set<Polyline> _straightLine() {
-    final points = _routePoints;
-    if (points.length < 2) return const {};
-    return {_dashedLine(points)};
-  }
-
-  Polyline _dashedLine(List<LatLng> points) {
-    return Polyline(
-      polylineId: const PolylineId(_routeId),
-      points: points,
-      color: SangaColors.primary,
-      width: 4,
-      patterns: _dashes(points),
-    );
-  }
-
-  List<PatternItem> _dashes(List<LatLng> points) {
-    if (!Platform.isIOS) return [PatternItem.dash(18), PatternItem.gap(10)];
-    var meters = 0.0;
-    for (var i = 1; i < points.length; i++) {
-      meters += points[i - 1].metersTo(points[i]);
-    }
-    return [PatternItem.dash(meters / _dashesPerRoute), PatternItem.gap(meters / (_dashesPerRoute * 2))];
-  }
-
-  Polyline _polyline(List<LatLng> points) {
-    return Polyline(
-      polylineId: const PolylineId(_routeId),
-      points: points,
-      color: SangaColors.primary,
-      width: 5,
-      startCap: Cap.roundCap,
-      endCap: Cap.roundCap,
-      jointType: JointType.round,
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
-    return SangaMap(
-      camera: widget.camera,
-      followsUser: false,
-      onMapCreated: widget.onMapCreated,
-      extraMarkers: {..._placeMarkers, ..._carMarkers},
-      extraPolylines: _polylines,
+    return ListenableBuilder(
+      listenable: Listenable.merge([_tripLine, _approachLine]),
+      builder: (context, _) => SangaMap(
+        camera: widget.camera,
+        followsUser: false,
+        onMapCreated: widget.onMapCreated,
+        extraMarkers: {..._placeMarkers, ..._carMarkers},
+        extraPolylines: {..._tripLine.polylines, ..._approachLine.polylines},
+      ),
     );
   }
 }
