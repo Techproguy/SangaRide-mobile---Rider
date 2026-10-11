@@ -23,7 +23,7 @@ class _DeliveryValueScreenState extends State<DeliveryValueScreen> {
 
   String _initialText() {
     final value = _delivery.draft.declaredValue;
-    return value == null ? '' : NumberFormats.groupedNigeria.format(value);
+    return value == null ? '' : NumberFormats.groupedMoney.format(value);
   }
 
   @override

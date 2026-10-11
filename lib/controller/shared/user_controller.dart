@@ -1,5 +1,6 @@
 import 'dart:developer';
 
+import 'package:sanga_ride/core/services/region_memory.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:sanga_ride/core/api/api.dart';
@@ -23,6 +24,7 @@ class UserController extends GetxController {
     final cached = _storage.read<Map<String, dynamic>>(SangaStorageKeys.user);
     if (cached == null) return;
     _user.value = UserModel.fromJson(cached);
+    RegionMemory.applyPhone(_user.value?.phone);
     SessionStorage.drafts.userScope = _user.value?.id;
   }
 
@@ -36,6 +38,7 @@ class UserController extends GetxController {
   }
 
   Future<void> setUser(UserModel user) async {
+    RegionMemory.applyPhone(user.phone);
     _user.value = user;
     SessionStorage.drafts.userScope = user.id;
     await _storage.write(SangaStorageKeys.user, user.toJson());

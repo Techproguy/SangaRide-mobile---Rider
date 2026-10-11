@@ -57,7 +57,7 @@ class _SangaMapState extends State<SangaMap> {
     if (widget.initialCameraPosition != null) return widget.initialCameraPosition!;
     final current = _mapController.currentLocation;
     if (current != null) return CameraPosition(target: current, zoom: _userZoom);
-    return const CameraPosition(target: SangaConstants.defaultMapCenter, zoom: 12.0);
+    return CameraPosition(target: SangaConstants.defaultMapCenter, zoom: 12.0);
   }
 
   @override

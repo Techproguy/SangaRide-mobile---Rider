@@ -129,7 +129,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
         SangaProfileFieldTile(
           label: AccountCopy.phoneNumber,
-          value: AccountCopy.phoneValue(SangaPhoneNumber.dialCode, SangaPhoneNumber.format(account.phone)),
+          value: SangaPhoneNumber.international(account.phone),
           onTap: () => context.push(AccountRoutes.phone),
         ),
         SangaProfileFieldTile(

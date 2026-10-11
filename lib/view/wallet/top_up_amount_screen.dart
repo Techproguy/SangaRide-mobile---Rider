@@ -48,7 +48,7 @@ class _TopUpAmountScreenState extends State<TopUpAmountScreen> {
     if (!mounted) return;
     final initial = widget.initialAmount;
     _topUp.begin(amount: initial);
-    if (initial != null) _amount.text = NumberFormats.groupedNigeria.format(initial);
+    if (initial != null) _amount.text = NumberFormats.groupedMoney.format(initial);
     unawaited(_wallet.open());
   }
 
@@ -57,7 +57,7 @@ class _TopUpAmountScreenState extends State<TopUpAmountScreen> {
   }
 
   void _pickQuick(int amount) {
-    _amount.text = NumberFormats.groupedNigeria.format(amount);
+    _amount.text = NumberFormats.groupedMoney.format(amount);
     _topUp.setAmount(amount);
     _focus.unfocus();
   }

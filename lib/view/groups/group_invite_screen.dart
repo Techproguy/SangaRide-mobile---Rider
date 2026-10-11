@@ -36,7 +36,7 @@ class _InviteForm extends StatefulWidget {
 }
 
 class _InviteFormState extends State<_InviteForm> {
-  final _phone = TextEditingController();
+  final _phone = SangaPhoneController();
   late String _relation = GroupCopy.relations(widget.detail.kind).first;
   bool _asAdmin = false;
   String? _phoneError;
@@ -49,18 +49,18 @@ class _InviteFormState extends State<_InviteForm> {
 
   Future<void> _send() async {
     FocusScope.of(context).unfocus();
-    if (!SangaPhoneNumber.isValid(_phone.text)) {
+    if (!_phone.isValid) {
       return setState(() => _phoneError = CommonCopy.invalidPhone);
     }
     final outcome = await widget.group.invite(
-      phone: SangaPhoneNumber.toE164(_phone.text),
+      phone: _phone.e164,
       relation: _relation,
       role: _asAdmin ? GroupRole.admin : GroupRole.member,
     );
     if (!mounted) return;
     switch (outcome) {
       case GroupDone():
-        SangaToast.show(GroupCopy.inviteSent(SangaPhoneNumber.masked(_phone.text)), tone: SangaToastTone.success);
+        SangaToast.show(GroupCopy.inviteSent(SangaPhoneNumber.masked(_phone.e164)), tone: SangaToastTone.success);
         context.pop();
       case GroupRejected(:final failure)
           when failure == GroupFailure.invalidPhone || failure == GroupFailure.phoneInGroup:

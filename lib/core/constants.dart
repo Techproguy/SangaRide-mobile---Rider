@@ -18,9 +18,14 @@ class SangaConstants {
 
   static final String googleMapsApiKey = SangaMapsKeys.defaultKey;
 
-  static const String placesCountryCode = 'ng';
+  static String get placesCountryCode => SangaRegion.current.placesCountryCode;
 
-  static const LatLng defaultMapCenter = LatLng(6.5244, 3.3792);
+  static LatLng get defaultMapCenter => _mapCenters[SangaRegion.current]!;
+
+  static const Map<SangaRegion, LatLng> _mapCenters = {
+    SangaRegion.ng: LatLng(6.5244, 3.3792),
+    SangaRegion.us: LatLng(29.7604, -95.3698),
+  };
 
   static const SangaFrameConfig frame = SangaFrameConfig();
 }

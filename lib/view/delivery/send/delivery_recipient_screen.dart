@@ -25,14 +25,9 @@ class _DeliveryRecipientScreenState extends State<DeliveryRecipientScreen> {
   final _delivery = Get.find<SendDeliveryController>();
   late final _name = TextEditingController(text: _delivery.draft.recipient?.name);
   late final _email = TextEditingController(text: _delivery.draft.recipient?.email);
-  late final _phone = TextEditingController(text: _initialPhone());
+  late final _phone = SangaPhoneController.fromE164(_delivery.draft.recipient?.phone);
   late PassengerGender? _gender = _delivery.draft.recipient?.gender;
   var _errors = <_Field, String>{};
-
-  String _initialPhone() {
-    final phone = _delivery.draft.recipient?.phone;
-    return phone == null ? '' : SangaPhoneNumber.format(phone);
-  }
 
   @override
   void dispose() {
@@ -52,7 +47,7 @@ class _DeliveryRecipientScreenState extends State<DeliveryRecipientScreen> {
     return {
       if (_name.text.trim().isEmpty) _Field.name: 'Add the recipient’s name',
       if (email.isNotEmpty && !_emailPattern.hasMatch(email)) _Field.email: 'Enter a valid email or leave it blank',
-      if (!SangaPhoneNumber.isValid(_phone.text)) _Field.phone: CommonCopy.invalidPhone,
+      if (!_phone.isValid) _Field.phone: CommonCopy.invalidPhone,
     };
   }
 
@@ -64,7 +59,7 @@ class _DeliveryRecipientScreenState extends State<DeliveryRecipientScreen> {
     _delivery.setRecipient(
       BookingRecipient(
         name: _name.text.trim(),
-        phone: SangaPhoneNumber.toE164(_phone.text),
+        phone: _phone.e164,
         email: email.isEmpty ? null : email,
         gender: _gender,
       ),

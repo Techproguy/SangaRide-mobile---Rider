@@ -62,8 +62,6 @@ abstract final class AccountCopy {
 
   static String deletionDate(String date) => 'Your account goes on $date. Log in before then to keep it.';
 
-  static String phoneValue(String dialCode, String number) => '$dialCode $number';
-
   static String tripsLine(Account account) {
     final rides = account.ridesCount;
     return rides == 1 ? '1 trip' : '${NumberFormats.grouped.format(rides)} trips';

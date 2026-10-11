@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:sanga_ride/core/services/region_memory.dart';
 import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
@@ -43,6 +44,7 @@ import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 Future<void> initializeSanga() async {
   WidgetsFlutterBinding.ensureInitialized();
   await GetStorage.init();
+  RegionMemory.restore();
   SangaCountdown.serverClock = ServerClock.instance.now;
   ApiEnvironment.verify();
   SangaRouteService.configure(

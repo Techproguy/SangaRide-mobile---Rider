@@ -13,5 +13,5 @@ class EmergencyContact {
   final String name;
   final String phone;
 
-  String get displayPhone => '${SangaPhoneNumber.dialCode} ${SangaPhoneNumber.format(phone)}';
+  String get displayPhone => SangaPhoneNumber.international(phone);
 }

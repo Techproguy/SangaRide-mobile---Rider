@@ -22,7 +22,7 @@ class _PassengerInfoScreenState extends State<PassengerInfoScreen> {
   final _flow = Get.find<RideForController>();
   final _name = TextEditingController();
   final _email = TextEditingController();
-  final _phone = TextEditingController();
+  final _phone = SangaPhoneController();
   PassengerGender? _gender;
   var _errors = <_Field, String>{};
 
@@ -50,7 +50,7 @@ class _PassengerInfoScreenState extends State<PassengerInfoScreen> {
     return {
       if (_name.text.trim().isEmpty) _Field.name: 'Add the passenger’s name',
       if (email.isNotEmpty && !_emailPattern.hasMatch(email)) _Field.email: 'Enter a valid email or leave it blank',
-      if (!SangaPhoneNumber.isValid(_phone.text)) _Field.phone: CommonCopy.invalidPhone,
+      if (!_phone.isValid) _Field.phone: CommonCopy.invalidPhone,
     };
   }
 
@@ -68,7 +68,7 @@ class _PassengerInfoScreenState extends State<PassengerInfoScreen> {
     final email = _email.text.trim();
     final info = PassengerInfo(
       name: _name.text.trim(),
-      phone: SangaPhoneNumber.toE164(_phone.text),
+      phone: _phone.e164,
       email: email.isEmpty ? null : email,
       gender: _gender,
     );

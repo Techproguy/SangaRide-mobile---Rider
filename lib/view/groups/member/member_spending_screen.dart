@@ -48,7 +48,7 @@ class _FormState extends State<_Form> {
   void initState() {
     super.initState();
     final current = _value;
-    if (current != null) _amount.text = NumberFormats.groupedNigeria.format(current);
+    if (current != null) _amount.text = NumberFormats.groupedMoney.format(current);
   }
 
   @override

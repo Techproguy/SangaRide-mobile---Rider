@@ -1,3 +1,4 @@
+import 'package:sanga_ride/core/services/region_memory.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
@@ -23,7 +24,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final _signUp = Get.find<RiderSignUpController>();
   final _firstName = TextEditingController();
   final _lastName = TextEditingController();
-  final _phone = TextEditingController();
+  final _phone = SangaPhoneController();
   var _errors = <_Field, String>{};
 
   @override
@@ -44,7 +45,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
     return {
       if (_firstName.text.trim().isEmpty) _Field.firstName: 'Add your first name',
       if (_lastName.text.trim().isEmpty) _Field.lastName: 'Add your last name',
-      if (!SangaPhoneNumber.isValid(_phone.text)) _Field.phone: CommonCopy.invalidPhone,
+      if (!_phone.isValid) _Field.phone: CommonCopy.invalidPhone,
     };
   }
 
@@ -52,7 +53,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
     if (_signUp.isSaving) return;
     final errors = _validate();
     if (errors.isNotEmpty) return setState(() => _errors = errors);
-    final phone = SangaPhoneNumber.toE164(_phone.text);
+    final phone = _phone.e164;
     final session = await _signUp.start(
       firstName: _firstName.text.trim(),
       lastName: _lastName.text.trim(),
@@ -106,6 +107,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
         const SizedBox(height: SangaSpacing.xl),
         Obx(
           () => SangaPhoneField(
+            onRegionChanged: RegionMemory.apply,
             controller: _phone,
             errorText: _errors[_Field.phone] ?? _signUp.phoneError,
             onChanged: (_) => _clearError(_Field.phone),

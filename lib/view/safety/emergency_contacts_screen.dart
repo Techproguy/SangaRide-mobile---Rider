@@ -25,7 +25,7 @@ class _EmergencyContactsScreenState extends State<EmergencyContactsScreen> {
 
   final _centre = Get.find<SafetyCentreController>();
   final _contacts = Get.find<ContactsController>();
-  final _phone = TextEditingController();
+  final _phone = SangaPhoneController();
   final _name = TextEditingController();
 
   @override
@@ -44,7 +44,7 @@ class _EmergencyContactsScreenState extends State<EmergencyContactsScreen> {
     super.dispose();
   }
 
-  bool get _isValid => SangaPhoneNumber.isValid(_phone.text) && _name.text.trim().length >= _minNameLength;
+  bool get _isValid => _phone.isValid && _name.text.trim().length >= _minNameLength;
 
   String? _phoneError(ContactsState state) {
     if (state is ContactsFailed && state.problem.isPhoneProblem) return state.problem.message;
@@ -54,7 +54,7 @@ class _EmergencyContactsScreenState extends State<EmergencyContactsScreen> {
   Future<void> _submit() async {
     FocusScope.of(context).unfocus();
     final name = _name.text.trim();
-    final isAdded = await _contacts.add(name: name, phone: SangaPhoneNumber.toE164(_phone.text));
+    final isAdded = await _contacts.add(name: name, phone: _phone.e164);
     if (!mounted) return;
     if (isAdded) {
       _name.clear();

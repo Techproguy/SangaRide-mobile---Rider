@@ -1,6 +1,7 @@
 import 'package:intl/intl.dart';
+import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 abstract final class NumberFormats {
-  static final NumberFormat groupedNigeria = NumberFormat('#,##0', 'en_NG');
+  static NumberFormat get groupedMoney => SangaMoney.grouped();
   static final NumberFormat grouped = NumberFormat('#,##0');
 }

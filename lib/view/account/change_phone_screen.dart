@@ -17,7 +17,7 @@ class ChangePhoneScreen extends StatefulWidget {
 
 class _ChangePhoneScreenState extends State<ChangePhoneScreen> {
   final _controller = Get.find<PhoneChangeController>();
-  final _phone = TextEditingController();
+  final _phone = SangaPhoneController();
   final _code = TextEditingController();
   bool _isExpired = false;
   String? _localError;
@@ -41,10 +41,10 @@ class _ChangePhoneScreenState extends State<ChangePhoneScreen> {
   bool get _canVerify => _code.text.length == AuthController.otpLength && !_isExpired;
 
   Future<void> _send() async {
-    if (!SangaPhoneNumber.isValid(_phone.text)) {
+    if (!_phone.isValid) {
       return setState(() => _localError = AccountProblem.invalidPhone.message);
     }
-    await _controller.sendCode(SangaPhoneNumber.toE164(_phone.text));
+    await _controller.sendCode(_phone.e164);
   }
 
   Future<void> _verify() async {

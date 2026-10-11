@@ -1,8 +1,8 @@
 abstract final class CommonCopy {
   static const String backToHome = 'Back to home';
   static const String connectionBody = 'Check your connection and give it another go.';
-  static const String invalidPhone = 'Enter a valid Nigerian phone number';
-  static const String invalidPhoneSentence = 'Enter a valid Nigerian phone number.';
+  static const String invalidPhone = 'Enter a valid phone number';
+  static const String invalidPhoneSentence = 'Enter a valid phone number.';
   static const String loadMoreFailed = 'We couldn’t load more';
   static const String newCodeSent = 'New code sent. Check your messages.';
   static const String offline = 'You’re offline. Check your connection and give it another go.';

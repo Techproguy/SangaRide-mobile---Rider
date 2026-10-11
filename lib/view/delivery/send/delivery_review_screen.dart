@@ -218,7 +218,7 @@ class _DeliveryReviewScreenState extends State<DeliveryReviewScreen> {
         SangaDetailRow(
           icon: Icons.phone_outlined,
           label: 'Phone',
-          value: recipient == null ? '' : '0${SangaPhoneNumber.national(recipient.phone)}',
+          value: recipient == null ? '' : SangaPhoneNumber.international(recipient.phone),
         ),
         if (recipient?.email case final email?)
           SangaDetailRow(icon: Icons.mail_outline_rounded, label: 'Email', value: email),

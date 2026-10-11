@@ -1,3 +1,4 @@
+import 'package:sanga_ride/core/services/region_memory.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
@@ -17,10 +18,10 @@ class SignInScreen extends StatefulWidget {
 
 class _SignInScreenState extends State<SignInScreen> {
   final _auth = Get.find<AuthController>();
-  final _phone = TextEditingController();
+  final _phone = SangaPhoneController();
   String? _phoneError;
 
-  bool get _canSubmit => SangaPhoneNumber.national(_phone.text).length >= 10;
+  bool get _canSubmit => _phone.isComplete;
 
   @override
   void dispose() {
@@ -31,11 +32,11 @@ class _SignInScreenState extends State<SignInScreen> {
 
   Future<void> _submit() async {
     if (_auth.isSendingCode) return;
-    if (!SangaPhoneNumber.isValid(_phone.text)) {
+    if (!_phone.isValid) {
       setState(() => _phoneError = CommonCopy.invalidPhone);
       return;
     }
-    final phone = SangaPhoneNumber.toE164(_phone.text);
+    final phone = _phone.e164;
     final result = await _auth.requestOtp(phone, purpose: OtpPurpose.login);
     if (result is! OtpSent || !mounted) return;
     context.push(
@@ -58,6 +59,7 @@ class _SignInScreenState extends State<SignInScreen> {
       children: [
         Obx(
           () => SangaPhoneField(
+            onRegionChanged: RegionMemory.apply,
             controller: _phone,
             autofocus: true,
             errorText: _phoneError ?? _auth.phoneError ?? _auth.requestError,
