@@ -16,7 +16,8 @@ class TripActionTiles extends StatelessWidget {
   });
 
   static const int fittingCount = 4;
-  static const double _scrollTileWidth = 60;
+  static const double _tileWidth = 60;
+  static const double _narrowestTileWidth = 52;
 
   final int unreadCount;
   final VoidCallback? onCall;
@@ -54,20 +55,28 @@ class TripActionTiles extends StatelessWidget {
     if (tiles.length <= fittingCount) {
       return Row(mainAxisAlignment: alignment, spacing: SangaSpacing.sm, children: tiles);
     }
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      physics: SangaMotion.pagePhysics,
-      clipBehavior: Clip.none,
-      child: Row(
-        spacing: SangaSpacing.sm,
-        children: [
-          for (final tile in tiles)
-            SizedBox(
-              width: _scrollTileWidth,
-              child: Center(child: tile),
-            ),
-        ],
-      ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final gaps = SangaSpacing.sm * (tiles.length - 1);
+        final fittedWidth = ((constraints.maxWidth - gaps) / tiles.length).clamp(0.0, _tileWidth);
+        final row = Row(
+          spacing: SangaSpacing.sm,
+          children: [
+            for (final tile in tiles)
+              SizedBox(
+                width: fittedWidth >= _narrowestTileWidth ? fittedWidth : _tileWidth,
+                child: Center(child: tile),
+              ),
+          ],
+        );
+        if (fittedWidth >= _narrowestTileWidth) return row;
+        return SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          physics: SangaMotion.pagePhysics,
+          clipBehavior: Clip.hardEdge,
+          child: row,
+        );
+      },
     );
   }
 }
