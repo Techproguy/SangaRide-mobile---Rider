@@ -37,7 +37,6 @@ class TopUpController extends GetxController {
 
   Mutation<TopUp>? _creation;
   int? _creationAmount;
-  String? _cardToken;
   Mutation<TopUp>? _authorization;
   LivePoller? _poller;
   DateTime? _watchStartedAt;
@@ -106,8 +105,7 @@ class TopUpController extends GetxController {
       return;
     }
     if (!_epoch.isCurrent(epoch)) return;
-    _cardToken = token;
-    final mutation = _newCreation(TopUpMethod.card, amount);
+    final mutation = _newCreation(TopUpMethod.card, amount, cardToken: token);
     await _persistIntent(mutation, TopUpMethod.card, amount, savedCardId);
     await _runCreation(mutation, TopUpMethod.card, amount, epoch);
   }
@@ -224,12 +222,11 @@ class TopUpController extends GetxController {
     _state.value = TopUpFailed(TopUpFailure.connection, method: method, canRetryAsIs: _creation != null);
   }
 
-  Mutation<TopUp> _newCreation(TopUpMethod method, int amount) {
+  Mutation<TopUp> _newCreation(TopUpMethod method, int amount, {String? cardToken}) {
     _disposeCreation();
     _creationAmount = amount;
     final savedCardId = draft.savedCardId;
     final saveCard = draft.saveCard;
-    final token = _cardToken;
     final mutation = Mutation<TopUp>(
       intent: IdempotencyIntent.topUp(method.code),
       run: (key) async {
@@ -240,7 +237,7 @@ class TopUpController extends GetxController {
                   'amount': amount,
                   'method': method.code,
                   'cardId': savedCardId,
-                  'card': token == null ? null : SensitiveBody({'token': token}),
+                  'card': cardToken == null ? null : SensitiveBody({'token': cardToken}),
                   'saveCard': savedCardId == null && saveCard,
                 })
               : {'method': method.code, 'amount': amount},
@@ -373,7 +370,6 @@ class TopUpController extends GetxController {
     _creation?.dispose();
     _creation = null;
     _creationAmount = null;
-    _cardToken = null;
   }
 
   void _disposeMutations() {

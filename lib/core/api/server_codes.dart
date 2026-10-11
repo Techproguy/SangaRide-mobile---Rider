@@ -6,6 +6,7 @@ abstract final class ServerCode {
   static const String articleNotFound = 'article_not_found';
   static const String cardDeclined = 'card_declined';
   static const String cardExpired = 'card_expired';
+  static const String invalidCard = 'invalid_card';
   static const String chatEnded = 'chat_ended';
   static const String chatUnavailable = 'chat_unavailable';
   static const String driverNotFound = 'driver_not_found';

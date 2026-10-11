@@ -122,6 +122,11 @@ enum TopUpFailure {
     'Card declined',
     'Your bank declined this card. Try another card or pay by transfer.',
   ),
+  invalidCard(
+    ServerCode.invalidCard,
+    'Check your card details',
+    'Something in your card details doesn’t look right. Check them and give it another go.',
+  ),
   insufficientFunds(
     'insufficient_funds',
     'Not enough in that account',
