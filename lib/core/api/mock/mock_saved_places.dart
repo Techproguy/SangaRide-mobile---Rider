@@ -1,3 +1,4 @@
+import 'package:get_storage/get_storage.dart';
 import 'package:sanga_ride/core/api/mock/mock_account.dart';
 import 'package:sanga_ride/core/api/mock/mock_server.dart';
 import 'package:sanga_ride/core/api/places_endpoints.dart';
@@ -13,32 +14,46 @@ abstract final class MockSavedPlaces {
   static const int _maxOthers = 10;
   static const int _maxLabelLength = 24;
 
-  static final List<Map<String, dynamic>> _places = [
-    {
-      'id': 'sp_home',
-      'kind': 'home',
-      'label': 'Home',
-      'place': {
-        'place_id': 'mock_home',
-        'name': '12 Ajegule Street',
-        'address': '12 Ajegule Street, Ikorodu, Lagos',
-        'coordinates': {'lat': 6.6194, 'lng': 3.5105},
-      },
-    },
-    {
-      'id': 'sp_work',
-      'kind': 'work',
-      'label': 'Work',
-      'place': {
-        'place_id': 'mock_work',
-        'name': 'Akeredolu Building',
-        'address': 'Akeredolu Building, Agege, Lagos',
-        'coordinates': {'lat': 6.6180, 'lng': 3.3209},
-      },
-    },
-  ];
+  static const String _storageKey = 'mock_saved_places';
 
-  static int _created = 0;
+  static final GetStorage _box = GetStorage();
+  static final List<Map<String, dynamic>> _places =
+      _stored() ??
+      [
+        {
+          'id': 'sp_home',
+          'kind': 'home',
+          'label': 'Home',
+          'place': {
+            'place_id': 'mock_home',
+            'name': '12 Ajegule Street',
+            'address': '12 Ajegule Street, Ikorodu, Lagos',
+            'coordinates': {'lat': 6.6194, 'lng': 3.5105},
+          },
+        },
+        {
+          'id': 'sp_work',
+          'kind': 'work',
+          'label': 'Work',
+          'place': {
+            'place_id': 'mock_work',
+            'name': 'Akeredolu Building',
+            'address': 'Akeredolu Building, Agege, Lagos',
+            'coordinates': {'lat': 6.6180, 'lng': 3.3209},
+          },
+        },
+      ];
+
+  static List<Map<String, dynamic>>? _stored() {
+    final raw = _box.read<List<dynamic>>(_storageKey);
+    if (raw == null) return null;
+    return [
+      for (final entry in raw)
+        if (entry is Map) Map<String, dynamic>.from(entry),
+    ];
+  }
+
+  static void _keep() => _box.write(_storageKey, _places);
 
   static String _iso(DateTime time) => time.toUtc().toIso8601String();
 
@@ -96,20 +111,28 @@ abstract final class MockSavedPlaces {
         data: {'max': _maxOthers},
       );
     }
-    final saved = {'id': 'sp_${++_created}', 'kind': 'other', 'label': label, 'place': place};
+    final saved = {
+      'id': 'sp_${DateTime.now().microsecondsSinceEpoch}',
+      'kind': 'other',
+      'label': label,
+      'place': place,
+    };
     _places.add(saved);
+    _keep();
     return Map<String, dynamic>.of(saved);
   }
 
   static Map<String, dynamic> _setSlot(String kind, Map<String, dynamic> place) {
+    if (kind == 'home') MockAccount.completeOnboardingStep(MockOnboardingStep.home);
     final existing = _places.where((saved) => saved['kind'] == kind).firstOrNull;
     if (existing != null) {
       existing['place'] = place;
+      _keep();
       return Map<String, dynamic>.of(existing);
     }
     final saved = {'id': 'sp_$kind', 'kind': kind, 'label': kind == 'home' ? 'Home' : 'Work', 'place': place};
     _places.add(saved);
-    if (kind == 'home') MockAccount.completeOnboardingStep(MockOnboardingStep.home);
+    _keep();
     return Map<String, dynamic>.of(saved);
   }
 
@@ -129,12 +152,14 @@ abstract final class MockSavedPlaces {
     saved
       ..['label'] = label
       ..['place'] = place;
+    _keep();
     return Map<String, dynamic>.of(saved);
   }
 
   static Object? _delete(MockRequest request) {
     final saved = _require(request);
     _places.remove(saved);
+    _keep();
     return {'id': saved['id'], 'deleted': true};
   }
 }
