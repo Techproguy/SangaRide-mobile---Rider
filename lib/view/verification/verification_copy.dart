@@ -18,7 +18,6 @@ abstract final class VerificationCopy {
   static const String documentType = 'Document type';
   static const String pickIdLead = 'Pick the ID you want to use and we’ll show you what to upload.';
   static const String backOfId = 'Back of ID';
-  static const String informationSecure = 'Your information is secure and only used for verification.';
   static const String documentVerification = 'Document verification';
   static const String submitForReview = 'Submit for review';
   static const String uploadValidId = 'Upload a valid ID';

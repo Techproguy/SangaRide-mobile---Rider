@@ -142,11 +142,7 @@ class _VerificationDocumentScreenState extends State<VerificationDocumentScreen>
           ],
         ),
       const SizedBox(height: SangaSpacing.lg),
-      const SangaNotice(
-        tone: SangaTone.neutral,
-        icon: Icons.lock_outline_rounded,
-        message: VerificationCopy.informationSecure,
-      ),
+      SangaCallout.secure(),
       const SizedBox(height: SangaSpacing.md),
       _problem(draft),
     ];

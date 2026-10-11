@@ -109,13 +109,13 @@ class PermissionCenter extends GetxService {
         actionLabel: primer.actionLabel,
       );
       if (!accepted) return current;
-      await _box.write('$SangaStorageKeys.permissionPrimedPrefix${kind.name}', true);
+      await _box.write('${SangaStorageKeys.permissionPrimedPrefix}${kind.name}', true);
     }
     return request(kind);
   }
 
   Future<PermissionAccess> offer(PermissionKind kind, BuildContext context) async {
-    final offeredKey = '$SangaStorageKeys.permissionOfferedPrefix${kind.name}';
+    final offeredKey = '${SangaStorageKeys.permissionOfferedPrefix}${kind.name}';
     if (_box.read<bool>(offeredKey) ?? false) return check(kind);
     await _box.write(offeredKey, true);
     if (!context.mounted) return check(kind);
@@ -132,7 +132,7 @@ class PermissionCenter extends GetxService {
   }
 
   bool _wasPrimed(PermissionKind kind) =>
-      _box.read<bool>('$SangaStorageKeys.permissionPrimedPrefix${kind.name}') ?? false;
+      _box.read<bool>('${SangaStorageKeys.permissionPrimedPrefix}${kind.name}') ?? false;
 
   Future<void> _ask(PermissionKind kind) async {
     switch (kind) {
