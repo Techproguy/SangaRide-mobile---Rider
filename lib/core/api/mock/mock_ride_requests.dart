@@ -140,10 +140,10 @@ abstract final class MockRideRequests {
     return markup == null ? null : ((fare * (1 + markup)) / 50).round() * 50;
   }
 
-  static Map<String, dynamic> _priced(Map<String, dynamic> offer, num fare, {bool isFixed = false}) => {
-    ...offer..remove('counterMarkup'),
-    'counterOffer': MockMoney.jsonOrNull(_counterOffer(offer, fare, isFixed: isFixed)),
-  };
+  static Map<String, dynamic> _priced(Map<String, dynamic> offer, num fare, {bool isFixed = false}) {
+    final counterOffer = MockMoney.jsonOrNull(_counterOffer(offer, fare, isFixed: isFixed));
+    return {...offer..remove('counterMarkup'), 'counterOffer': counterOffer};
+  }
 
   static Object? _rideOffers(MockRequest request) {
     final record = _requireRideRequest(request);
