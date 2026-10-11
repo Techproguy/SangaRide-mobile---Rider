@@ -264,7 +264,7 @@ abstract final class MockWallet {
       'balance': MockMoney.json(book.balance),
       'currency': MockMoney.currency,
       'limits': {'minTopUp': MockMoney.json(_minTopUp), 'maxTopUp': MockMoney.json(_maxTopUp)},
-      'virtualAccount': book.virtualAccount(),
+      'virtualAccount': MockRegion.isUnitedStates ? null : book.virtualAccount(),
       'savedCards': [for (final card in _cards) Map<String, dynamic>.of(card)],
       'serverTime': _iso(DateTime.now()),
     };
