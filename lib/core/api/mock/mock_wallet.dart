@@ -5,6 +5,8 @@ import 'package:sanga_ride/core/api/history_endpoints.dart';
 import 'package:sanga_ride/core/api/mock/mock_data.dart';
 import 'package:sanga_ride/core/api/mock/mock_groups.dart';
 import 'package:sanga_ride/core/api/mock/mock_history.dart';
+import 'package:sanga_ride/core/api/mock/mock_money.dart';
+import 'package:sanga_ride/core/api/mock/mock_region.dart';
 import 'package:sanga_ride/core/api/mock/mock_server.dart';
 import 'package:sanga_ride/core/api/wallet_endpoints.dart';
 
@@ -39,11 +41,13 @@ abstract final class MockWallet {
   static const Duration _cardSettlesAfter = Duration(seconds: 14);
   static const String _otpMessage = 'Enter the 4 digit code your bank just sent you.';
 
-  static const Map<String, dynamic> _virtualAccount = {
-    'bankName': 'Sanga Wallet (Wema)',
+  static Map<String, dynamic> _virtualAccount() => {
+    'bankName': _bankName,
     'accountNumber': '8123456789',
     'accountName': 'Sanga / Ada Okafor',
   };
+
+  static String get _bankName => 'Sanga Wallet (${MockRegion.walletBank})';
 
   static const List<(int, int, int, String, bool)> _seedTopUps = [
     (1, 9, 20000, 'card', true),
@@ -106,8 +110,8 @@ abstract final class MockWallet {
     final seeds = _groupSeeds[groupId] ?? const [];
     final book = _Book(
       balance: _groupOpening[groupId] ?? 0,
-      virtualAccount: {
-        'bankName': 'Sanga Wallet (Wema)',
+      virtualAccount: () => {
+        'bankName': _bankName,
         'accountNumber': '${9100000000 + groupId.hashCode.abs() % 90000000}',
         'accountName': 'Sanga / ${MockGroups.nameOf(groupId)}',
       },
@@ -131,7 +135,7 @@ abstract final class MockWallet {
                 }
               : {
                   'tripId': seed.$6,
-                  'route': 'Chicken Republic to The Palms Mall',
+                  'route': '${MockRegion.spec('mock_cr_ikeja').name} to ${MockRegion.spec('mock_palms').name}',
                   'fare': -seed.$3,
                   'paymentMethod': 'group_wallet',
                 },
@@ -199,7 +203,7 @@ abstract final class MockWallet {
     final pickup = (trip['pickup'] as Map)['name'] as String;
     final dropoff = (trip['dropoff'] as Map)['name'] as String;
     final isDelivery = trip['kind'] == 'delivery';
-    final fare = (trip['fare'] as num).toInt();
+    final fare = MockMoney.naira(trip['fare']).toInt();
     return _Entry(
       id: 'wtx_ride_$id',
       kind: 'ride_payment',
@@ -257,10 +261,10 @@ abstract final class MockWallet {
     final book = _bookOf(request);
     _syncTopUps(book);
     return {
-      'balance': book.balance,
-      'currency': 'NGN',
-      'limits': {'minTopUp': _minTopUp, 'maxTopUp': _maxTopUp},
-      'virtualAccount': book.virtualAccount,
+      'balance': MockMoney.json(book.balance),
+      'currency': MockMoney.currency,
+      'limits': {'minTopUp': MockMoney.json(_minTopUp), 'maxTopUp': MockMoney.json(_maxTopUp)},
+      'virtualAccount': book.virtualAccount(),
       'savedCards': [for (final card in _cards) Map<String, dynamic>.of(card)],
       'serverTime': _iso(DateTime.now()),
     };
@@ -317,11 +321,11 @@ abstract final class MockWallet {
 
   static void _checkAmount(int? amount) {
     if (amount == null || amount < _minTopUp || amount > _maxTopUp) {
-      throw const MockFailure(
+      throw MockFailure(
         422,
         'That amount is outside what you can add.',
         code: 'amount_out_of_range',
-        data: {'min': _minTopUp, 'max': _maxTopUp},
+        data: {'min': MockMoney.json(_minTopUp), 'max': MockMoney.json(_maxTopUp)},
       );
     }
   }
@@ -329,7 +333,7 @@ abstract final class MockWallet {
   static Object? _createTopUp(MockRequest request) {
     _requireTopUpAccess(request);
     final book = _bookOf(request);
-    final amount = (request.body['amount'] as num?)?.toInt();
+    final amount = MockMoney.nairaOrNull(request.body['amount'])?.toInt();
     _checkAmount(amount);
     final key = request.headers['Idempotency-Key'] as String?;
     return switch (request.body['method']) {
@@ -504,7 +508,7 @@ abstract final class MockWallet {
             ? 'There isn’t enough in your wallet for this ride.'
             : 'The group wallet is short for this ride.',
         code: groupId == null ? 'insufficient_balance' : 'group_wallet_short',
-        data: {'balance': book.balance, 'shortBy': fare - book.balance},
+        data: {'balance': MockMoney.json(book.balance), 'shortBy': MockMoney.json(fare - book.balance)},
       );
     }
     book.balance -= fare;
@@ -564,18 +568,18 @@ class _Entry {
     'id': id,
     'kind': kind,
     'title': title,
-    'amount': amount,
+    'amount': MockMoney.json(amount),
     'status': status,
     'createdAt': MockWallet._iso(createdAt),
     'reference': reference,
-    'meta': meta,
+    'meta': {...meta, if (meta['fare'] != null) 'fare': MockMoney.json(meta['fare'] as num)},
   };
 }
 
 class _Book {
   _Book({required this.balance, required this.virtualAccount, required this.ledger});
 
-  final Map<String, dynamic> virtualAccount;
+  final Map<String, dynamic> Function() virtualAccount;
   final List<_Entry> ledger;
   final Map<String, _TopUp> topUps = {};
   int balance;
@@ -607,7 +611,7 @@ class _TopUp {
   DateTime? settlesAt;
   _Entry? entry;
 
-  bool get _neverArrives => amount % 10 == 7;
+  bool get _neverArrives => MockMoney.of(amount).wholeMajor % 10 == 7;
 
   void afterAuthorization() {
     if (card?.last4 != MockWallet._slowLast4) return complete();
@@ -656,11 +660,11 @@ class _TopUp {
     'id': id,
     'status': status,
     'method': method,
-    if (withAmount) 'amount': amount,
+    if (withAmount) 'amount': MockMoney.json(amount),
     if (expiresAt != null) 'expiresAt': MockWallet._iso(expiresAt!),
     'action': status == 'requires_action' ? {'type': 'otp', 'message': MockWallet._otpMessage} : null,
     'createdAt': MockWallet._iso(createdAt),
-    if (status == 'completed') 'balance': book.balance,
+    if (status == 'completed') 'balance': MockMoney.json(book.balance),
     'serverTime': MockWallet._iso(DateTime.now()),
   };
 }

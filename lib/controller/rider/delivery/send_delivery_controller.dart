@@ -13,6 +13,7 @@ import 'package:sanga_ride/core/services/session_storage.dart';
 import 'package:sanga_ride/core/storage/draft_keys.dart';
 import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride_core/sanga_ride_core.dart';
+import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 enum SubmitCheck { ready, priceRefreshed, priceUnavailable, incomplete }
 
@@ -108,7 +109,7 @@ class SendDeliveryController extends GetxController {
       description: reader.strOr('description', ''),
       sizeId: reader.strOrNull('sizeId'),
       packageTypeId: reader.strOrNull('packageTypeId'),
-      declaredValue: reader.intOrNull('declaredValue'),
+      declaredValue: Money.tryParse(reader.raw['declaredValue']),
       recipient: recipient == null
           ? null
           : BookingRecipient(
@@ -145,7 +146,7 @@ class SendDeliveryController extends GetxController {
       'description': current.description,
       'sizeId': current.sizeId,
       'packageTypeId': current.packageTypeId,
-      'declaredValue': current.declaredValue,
+      'declaredValue': current.declaredValue?.toJson(),
       'recipient': current.recipient?.toJson(),
       'photo': uploaded is PhotoUploaded ? {'path': uploaded.path, 'id': uploaded.id, 'url': uploaded.url} : null,
     });
@@ -193,7 +194,7 @@ class SendDeliveryController extends GetxController {
     _persist();
   }
 
-  void setDeclaredValue(int? value) {
+  void setDeclaredValue(Money? value) {
     _draft.value = draft.copyWith(declaredValue: () => value);
     _persist();
   }
@@ -356,7 +357,7 @@ class SendDeliveryController extends GetxController {
       draft.kindId,
       draft.effectiveSizeId(catalog),
       draft.effectivePackageTypeId(catalog),
-      draft.declaredValue,
+      draft.declaredValue?.minor,
       for (final place in places) '${place?.placeId}@${place?.coordinates?.latitude},${place?.coordinates?.longitude}',
     ].join('|');
   }
@@ -368,6 +369,6 @@ class SendDeliveryController extends GetxController {
     'kind': draft.kindId,
     'size': draft.effectiveSizeId(catalog),
     'packageType': draft.effectivePackageTypeId(catalog),
-    'declaredValue': draft.declaredValue,
+    'declaredValue': draft.declaredValue?.toJson(),
   };
 }

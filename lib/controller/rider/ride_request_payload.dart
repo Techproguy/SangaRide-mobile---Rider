@@ -24,7 +24,7 @@ extension RideRequestPayload on RideRequestController {
       'dropoff': dropoff.toJson(),
       'rideFor': Get.find<RideForController>().rideFor.toJson(),
       'pricingMode': PricingOption.standard.name,
-      'proposedFare': booking.fare,
+      'proposedFare': booking.fare.toJson(),
       ...bookingJson,
     };
   }
@@ -45,7 +45,7 @@ extension RideRequestPayload on RideRequestController {
       'preferences': preferences.toJson(),
       'rideFor': Get.find<RideForController>().rideFor.toJson(),
       'pricingMode': pricing.name,
-      'proposedFare': price.round(),
+      'proposedFare': price.toJson(),
       'quoteId': ?estimate?.quoteId,
       ...bookingJson,
     };

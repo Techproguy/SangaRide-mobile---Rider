@@ -14,6 +14,7 @@ import 'package:sanga_ride/core/storage/draft_keys.dart';
 import 'package:sanga_ride/model/trip/wrapup/card_details.dart';
 import 'package:sanga_ride/model/wallet/wallet.dart';
 import 'package:sanga_ride_core/sanga_ride_core.dart';
+import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 part 'top_up_polling.dart';
 part 'top_up_resume.dart';
@@ -36,7 +37,7 @@ class TopUpController extends GetxController {
   final Rx<LinkState> _link = Rx<LinkState>(LinkState.live);
 
   Mutation<TopUp>? _creation;
-  int? _creationAmount;
+  Money? _creationAmount;
   Mutation<TopUp>? _authorization;
   LivePoller? _poller;
   DateTime? _watchStartedAt;
@@ -62,7 +63,7 @@ class TopUpController extends GetxController {
     super.onClose();
   }
 
-  void begin({int? amount}) {
+  void begin({Money? amount}) {
     _stopPolling();
     _disposeMutations();
     _epoch.next();
@@ -76,7 +77,7 @@ class TopUpController extends GetxController {
     if (state is TopUpTransferWatching || state is TopUpTransferDelayed) _stopPolling();
   }
 
-  void setAmount(int? amount) => _draft.value = draft.copyWith(amount: () => amount);
+  void setAmount(Money? amount) => _draft.value = draft.copyWith(amount: () => amount);
 
   void chooseMethod(TopUpMethod method) => _draft.value = draft.copyWith(method: method);
 
@@ -213,7 +214,7 @@ class TopUpController extends GetxController {
     _state.value = TopUpChecking(current.method);
     final result = await mutation.recheck();
     if (!_epoch.isCurrent(epoch)) return;
-    await _settle(result, method: current.method, amount: draft.amount ?? 0, epoch: epoch);
+    await _settle(result, method: current.method, amount: draft.amount ?? Money.zero(), epoch: epoch);
   }
 
   bool get _isOffline => ConnectionMonitor.current?.isOnline == false;
@@ -222,7 +223,7 @@ class TopUpController extends GetxController {
     _state.value = TopUpFailed(TopUpFailure.connection, method: method, canRetryAsIs: _creation != null);
   }
 
-  Mutation<TopUp> _newCreation(TopUpMethod method, int amount, {String? cardToken}) {
+  Mutation<TopUp> _newCreation(TopUpMethod method, Money amount, {String? cardToken}) {
     _disposeCreation();
     _creationAmount = amount;
     final savedCardId = draft.savedCardId;
@@ -234,13 +235,13 @@ class TopUpController extends GetxController {
           WalletEndpoints.topUpsOf(scope.groupId),
           data: method == TopUpMethod.card
               ? SensitiveBody({
-                  'amount': amount,
+                  'amount': amount.toJson(),
                   'method': method.code,
                   'cardId': savedCardId,
                   'card': cardToken == null ? null : SensitiveBody({'token': cardToken}),
                   'saveCard': savedCardId == null && saveCard,
                 })
-              : {'method': method.code, 'amount': amount},
+              : {'method': method.code, 'amount': amount.toJson()},
           key: key,
           suppressErrorToast: true,
         );
@@ -252,7 +253,7 @@ class TopUpController extends GetxController {
     return mutation;
   }
 
-  Future<void> _runCreation(Mutation<TopUp> mutation, TopUpMethod method, int amount, int epoch) async {
+  Future<void> _runCreation(Mutation<TopUp> mutation, TopUpMethod method, Money amount, int epoch) async {
     _mirrorChecking(mutation, method, epoch);
     final result = await mutation.start();
     if (!_epoch.isCurrent(epoch)) return;
@@ -262,7 +263,7 @@ class TopUpController extends GetxController {
   Future<void> _settle(
     MutationState<TopUp> result, {
     required TopUpMethod method,
-    required int amount,
+    required Money amount,
     required int epoch,
   }) async {
     switch (result) {
@@ -313,7 +314,7 @@ class TopUpController extends GetxController {
     return TopUp.fromJson(response.dataMapOrEmpty);
   }
 
-  Future<void> _apply(TopUp topUp, {required int amount, required TopUpMethod method, required int epoch}) async {
+  Future<void> _apply(TopUp topUp, {required Money amount, required TopUpMethod method, required int epoch}) async {
     switch (topUp.status) {
       case TopUpStatus.completed:
         await _succeed(topUp, amount, method, epoch);
@@ -343,7 +344,7 @@ class TopUpController extends GetxController {
     }
   }
 
-  TransferExpectation _expectationOf(TopUp topUp, int amount) {
+  TransferExpectation _expectationOf(TopUp topUp, Money amount) {
     return TransferExpectation(
       id: topUp.id,
       amount: topUp.amount ?? amount,
@@ -352,7 +353,7 @@ class TopUpController extends GetxController {
     );
   }
 
-  Future<void> _succeed(TopUp topUp, int amount, TopUpMethod method, int epoch) async {
+  Future<void> _succeed(TopUp topUp, Money amount, TopUpMethod method, int epoch) async {
     _stopPolling();
     await _clearSaved();
     var balance = topUp.balance;

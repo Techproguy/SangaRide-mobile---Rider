@@ -3,6 +3,7 @@ import 'package:sanga_ride/core/api/mock/mock_data.dart';
 import 'package:sanga_ride/core/api/mock/mock_server.dart';
 import 'package:sanga_ride/core/api/who_for_endpoints.dart';
 import 'package:sanga_ride_core/mock.dart' show NetworkLab;
+import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 abstract final class MockWhoFor {
   static const Duration _codeLifetime = Duration(minutes: 5);
@@ -23,7 +24,9 @@ abstract final class MockWhoFor {
 
   static Object? _sendCode(MockRequest request) {
     final phone = _digits(request.body['phone']);
-    if (phone.length < 13) throw const MockFailure(422, 'We can’t text that number.', code: 'invalid_phone');
+    if (!SangaPhoneNumber.isValid('+$phone')) {
+      throw const MockFailure(422, 'We can’t text that number.', code: 'invalid_phone');
+    }
     if (phone == _digits(MockAccount.phone)) {
       throw const MockFailure(422, 'That’s your own number.', code: 'own_number');
     }

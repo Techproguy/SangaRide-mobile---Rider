@@ -46,9 +46,9 @@ class _TopUpAmountScreenState extends State<TopUpAmountScreen> {
 
   void _start() {
     if (!mounted) return;
-    final initial = widget.initialAmount;
+    final initial = NumberFormats.moneyOf(widget.initialAmount);
     _topUp.begin(amount: initial);
-    if (initial != null) _amount.text = NumberFormats.groupedMoney.format(initial);
+    if (initial != null) _amount.text = NumberFormats.groupedWhole(initial);
     unawaited(_wallet.open());
   }
 
@@ -56,8 +56,8 @@ class _TopUpAmountScreenState extends State<TopUpAmountScreen> {
     if (!_focus.hasFocus && _amount.text.isNotEmpty) _hasLeftField.value = true;
   }
 
-  void _pickQuick(int amount) {
-    _amount.text = NumberFormats.groupedMoney.format(amount);
+  void _pickQuick(Money amount) {
+    _amount.text = NumberFormats.groupedWhole(amount);
     _topUp.setAmount(amount);
     _focus.unfocus();
   }
@@ -68,7 +68,7 @@ class _TopUpAmountScreenState extends State<TopUpAmountScreen> {
     if (done == true && mounted) context.pop(true);
   }
 
-  String? _errorOf(int? amount, WalletLimits limits) {
+  String? _errorOf(Money? amount, WalletLimits limits) {
     if (amount == null) return null;
     final problem = limits.problemWith(amount);
     if (problem == null) return null;
@@ -76,7 +76,7 @@ class _TopUpAmountScreenState extends State<TopUpAmountScreen> {
     return WalletCopy.amountProblem(problem, limits);
   }
 
-  Widget _body(WalletState state, int? amount) => switch (state) {
+  Widget _body(WalletState state, Money? amount) => switch (state) {
     WalletLoading() => const SangaSkeleton.heights([72, 40, 40]),
     WalletFailed(:final problem) => SangaFailureMessage(
       title: WalletCopy.loadFailedTitle(widget.scope),
@@ -86,7 +86,7 @@ class _TopUpAmountScreenState extends State<TopUpAmountScreen> {
     WalletLoaded(:final overview) => _form(overview, amount),
   };
 
-  Widget _form(WalletOverview overview, int? amount) {
+  Widget _form(WalletOverview overview, Money? amount) {
     final limits = overview.limits;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -101,9 +101,9 @@ class _TopUpAmountScreenState extends State<TopUpAmountScreen> {
               controller: _amount,
               focusNode: _focus,
               hintText: '0',
-              maxDigits: limits.maxTopUp.toString().length,
+              maxDigits: limits.maxTopUp.wholeMajor.toString().length,
               errorText: _errorOf(amount, limits),
-              onChanged: _topUp.setAmount,
+              onChanged: (value) => _topUp.setAmount(NumberFormats.moneyOf(value)),
               onSubmitted: (_) => _focus.unfocus(),
             ),
             Text(WalletCopy.limitsHint(limits), style: SangaTextStyles.caption),

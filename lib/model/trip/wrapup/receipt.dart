@@ -1,9 +1,11 @@
 import 'package:sanga_ride/core/copy/common_copy.dart';
+import 'package:sanga_ride/core/format/money_json.dart';
 import 'package:sanga_ride/model/ride/ride_match.dart';
 import 'package:sanga_ride/model/ride/ride_request.dart';
 import 'package:sanga_ride/model/trip/trip_delivery.dart';
 import 'package:sanga_ride/model/trip/wrapup/payment.dart';
 import 'package:sanga_ride_core/sanga_ride_core.dart';
+import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 class ReceiptPlace {
   const ReceiptPlace({required this.name, required this.address});
@@ -22,12 +24,12 @@ class ReceiptLine {
 
   factory ReceiptLine.fromJson(Map<String, dynamic> json) {
     final reader = JsonReader.of(json);
-    return ReceiptLine(key: reader.strOr('key', ''), label: reader.str('label'), amount: reader.integer('amount'));
+    return ReceiptLine(key: reader.strOr('key', ''), label: reader.str('label'), amount: reader.money('amount'));
   }
 
   final String key;
   final String label;
-  final int amount;
+  final Money amount;
 }
 
 class ReceiptPayment {
@@ -124,7 +126,7 @@ class TripReceipt {
       distanceKm: reader.doubleOr('distanceKm', 0),
       durationMinutes: reader.intOr('durationMinutes', 0),
       lines: reader.listOf('lines', (line) => ReceiptLine.fromJson(line.raw)),
-      total: reader.integer('total'),
+      total: reader.money('total'),
       paidWith: ReceiptPayment.fromJson(reader.objectOrNull('paidWith')?.raw ?? const {}),
       paidAt: reader.timeOrNull('paidAt')?.toLocal() ?? DateTime.now(),
       driver: OfferDriver.fromJson(reader.raw['driver']),
@@ -143,7 +145,7 @@ class TripReceipt {
   final double distanceKm;
   final int durationMinutes;
   final List<ReceiptLine> lines;
-  final int total;
+  final Money total;
   final ReceiptPayment paidWith;
   final DateTime paidAt;
   final OfferDriver driver;
@@ -156,10 +158,7 @@ class TripReceipt {
 
   bool get isRated => ratedStars != null;
 
-  String get distanceLabel {
-    final rounded = distanceKm.toStringAsFixed(1);
-    return '${rounded.endsWith('.0') ? rounded.substring(0, rounded.length - 2) : rounded} km';
-  }
+  String get distanceLabel => SangaDistance.fromKilometers(distanceKm);
 
   String get durationLabel => durationMinutes == 1 ? '1 minute' : '$durationMinutes minutes';
 }

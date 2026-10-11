@@ -54,7 +54,7 @@ class RideRequestController extends GetxController {
   final Rx<BookingCatalogState> _catalog = Rx<BookingCatalogState>(const CatalogLoading());
   final Rxn<AirportBooking> _airport = Rxn<AirportBooking>();
   final Rxn<DeliveryBooking> _delivery = Rxn<DeliveryBooking>();
-  final Rxn<num> _knownMeetGreetFee = Rxn<num>();
+  final Rxn<Money> _knownMeetGreetFee = Rxn<Money>();
 
   Place? get pickup => _pickup.value;
 
@@ -106,7 +106,7 @@ class RideRequestController extends GetxController {
 
   DeliveryBooking? get deliveryBooking => _delivery.value;
 
-  num? get meetGreetFee => estimate?.meetGreetFee ?? _knownMeetGreetFee.value;
+  Money? get meetGreetFee => estimate?.meetGreetFee ?? _knownMeetGreetFee.value;
 
   bool fitsGroup(RideOption option) {
     final booking = airportBooking;
@@ -142,7 +142,7 @@ class RideRequestController extends GetxController {
 
   String rateLabel(RideOption option) {
     final hourly = tripType == TripType.hourly ? readyCatalog?.hourly.rates[option.category] : null;
-    return hourly == null ? SangaMoney.perKm(option.pricePerKm) : SangaMoney.perHour(hourly);
+    return hourly == null ? SangaMoney.perDistance(option.pricePerKm) : SangaMoney.perHourOf(hourly);
   }
 
   City? cityOf(Place? place) {
@@ -164,7 +164,7 @@ class RideRequestController extends GetxController {
     return null;
   }
 
-  num? get hourlyRate => readyCatalog?.hourly.rateFor(option?.category);
+  Money? get hourlyRate => readyCatalog?.hourly.rateFor(option?.category);
 
   bool get isScheduledBooking => timing.isScheduled || tripType.isAlwaysScheduled;
 
@@ -189,7 +189,7 @@ class RideRequestController extends GetxController {
     for (final place in [pickup, ...stops, dropoff]) ?place?.coordinates,
   ];
 
-  num? get price => pricing == null ? null : estimate?.pricing[pricing];
+  Money? get price => pricing == null ? null : estimate?.pricing[pricing];
 
   void start({Place? pickup, Place? dropoff, RideCategory? category}) {
     _pickup.value = pickup;
@@ -373,7 +373,7 @@ class RideRequestController extends GetxController {
           'dropoff': dropoff.toJson(),
           'stops': [for (final stop in stops) stop.toJson()],
           'optionId': option.id,
-          'pricePerKm': option.pricePerKm,
+          'pricePerKm': option.pricePerKm.toJson(),
           'preferences': preferences.toJson(),
           ...bookingJson,
         },

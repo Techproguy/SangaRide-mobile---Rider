@@ -112,7 +112,7 @@ Future<void> _showQuoteChanged(BuildContext context, RideRequestController trip)
     title: MatchFailure.quoteExpired.title,
     message: trip.price == null
         ? 'We couldn’t refresh it. Go back and pick your price again.'
-        : 'It’s now ${SangaMoney.naira(trip.price!)}. Have a look, then go again.',
+        : 'It’s now ${trip.price!.format()}. Have a look, then go again.',
     actionLabel: 'Got it',
   );
 }

@@ -1,8 +1,10 @@
+import 'package:sanga_ride/core/format/money_json.dart';
 import 'package:sanga_ride/model/ride/airport.dart';
 import 'package:sanga_ride/model/ride/booking.dart';
 import 'package:sanga_ride/model/ride/ride_load_problem.dart';
 import 'package:sanga_ride/model/ride/ride_request.dart';
 import 'package:sanga_ride_core/sanga_ride_core.dart';
+import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 enum ScheduledRideKind {
   oneTime('one_time'),
@@ -57,7 +59,7 @@ class ScheduledRide {
       scheduledAt: json.time('scheduledAt').toLocal(),
       pickup: ScheduledStop.fromJson(json.object('pickup')),
       dropoff: ScheduledStop.fromJson(json.object('dropoff')),
-      fare: json.numOrNull('fare') ?? 0,
+      fare: json.money('fare'),
       canRemind: json.boolOr('canRemind', false),
       repeat: json.objectOrNull('repeat') == null ? null : RepeatRule.fromJson(json.object('repeat')),
       hours: json.intOrNull('hours'),
@@ -73,7 +75,7 @@ class ScheduledRide {
   final DateTime scheduledAt;
   final ScheduledStop pickup;
   final ScheduledStop dropoff;
-  final num fare;
+  final Money fare;
   final bool canRemind;
   final RepeatRule? repeat;
   final int? hours;

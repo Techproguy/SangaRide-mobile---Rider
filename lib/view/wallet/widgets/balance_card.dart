@@ -6,7 +6,7 @@ import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 class BalanceCard extends StatelessWidget {
   const BalanceCard({super.key, required this.balance, this.onAddMoney, this.label = WalletCopy.yourBalance});
 
-  final int balance;
+  final Money balance;
   final String label;
   final VoidCallback? onAddMoney;
 

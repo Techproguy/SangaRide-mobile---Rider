@@ -2,7 +2,10 @@ import 'dart:math' as math;
 
 import 'package:sanga_ride/core/api/history_endpoints.dart';
 import 'package:sanga_ride/core/api/mock/mock_data.dart';
+import 'package:sanga_ride/core/api/mock/mock_money.dart';
+import 'package:sanga_ride/core/api/mock/mock_region.dart';
 import 'package:sanga_ride/core/api/mock/mock_server.dart';
+import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 abstract final class MockHistory {
   static final List<MockRoute> routes = [
@@ -31,67 +34,17 @@ abstract final class MockHistory {
       if (detailOf() case final detail when detail['status'] == status) detail,
   ];
 
-  static const List<Map<String, dynamic>> _stops = [
-    {
-      'place_id': 'mock_cr_ikeja',
-      'name': 'Chicken Republic',
-      'address': 'Allen Avenue, Ikeja, Lagos',
-      'coordinates': {'lat': 6.6018, 'lng': 3.3515},
-    },
-    {
-      'place_id': 'mock_cr_idumota',
-      'name': 'Chicken Republic',
-      'address': 'Nnamdi Azikiwe Street, Idumota, Lagos',
-      'coordinates': {'lat': 6.4601, 'lng': 3.3895},
-    },
-    {
-      'place_id': 'mock_palms',
-      'name': 'The Palms Mall',
-      'address': 'Lekki Phase 1, Lagos',
-      'coordinates': {'lat': 6.4352, 'lng': 3.4515},
-    },
-    {
-      'place_id': 'mock_yabatech',
-      'name': 'Yaba College of Technology',
-      'address': 'Herbert Macaulay Way, Yaba, Lagos',
-      'coordinates': {'lat': 6.5191, 'lng': 3.3741},
-    },
-    {
-      'place_id': 'mock_icm',
-      'name': 'Ikeja City Mall',
-      'address': 'Obafemi Awolowo Way, Ikeja, Lagos',
-      'coordinates': {'lat': 6.6142, 'lng': 3.3576},
-    },
-    {
-      'place_id': 'mock_eko',
-      'name': 'Eko Hotel and Suites',
-      'address': 'Adetokunbo Ademola Street, Victoria Island, Lagos',
-      'coordinates': {'lat': 6.4262, 'lng': 3.4290},
-    },
-    {
-      'place_id': 'mock_unilag',
-      'name': 'University of Lagos',
-      'address': 'Akoka, Yaba, Lagos',
-      'coordinates': {'lat': 6.5158, 'lng': 3.3966},
-    },
-    {
-      'place_id': 'mock_airport',
-      'name': 'Murtala Muhammed International Airport',
-      'address': 'Ikeja, Lagos',
-      'coordinates': {'lat': 6.5774, 'lng': 3.3212},
-    },
-    {
-      'place_id': 'mock_home',
-      'name': '12 Ajegule Street',
-      'address': '12 Ajegule Street, Ikorodu, Lagos',
-      'coordinates': {'lat': 6.6194, 'lng': 3.5105},
-    },
-    {
-      'place_id': 'mock_work',
-      'name': 'Akeredolu Building',
-      'address': 'Akeredolu Building, Agege, Lagos',
-      'coordinates': {'lat': 6.6180, 'lng': 3.3209},
-    },
+  static const List<String> _stopIds = [
+    'mock_cr_ikeja',
+    'mock_cr_idumota',
+    'mock_palms',
+    'mock_yabatech',
+    'mock_icm',
+    'mock_eko',
+    'mock_unilag',
+    'mock_airport',
+    'mock_home',
+    'mock_work',
   ];
 
   static const List<String> _categories = ['go', 'plus', 'go', 'xl', 'lux', 'moto', 'go', 'plus'];
@@ -129,9 +82,9 @@ abstract final class MockHistory {
   ];
 
   static const List<Map<String, String>> _recipients = [
-    {'name': 'Oladimeji Samuel', 'phone': '+2348015901779'},
-    {'name': 'Ajani Toluwanimi', 'phone': '+2348054308337'},
-    {'name': 'Lawal James Israel', 'phone': '+2348146234260'},
+    {'name': 'Oladimeji Samuel', 'phone': '8015901779'},
+    {'name': 'Ajani Toluwanimi', 'phone': '8054308337'},
+    {'name': 'Lawal James Israel', 'phone': '8146234260'},
   ];
 
   static const List<String> _cardLast4 = ['4242', '1881', '0910'];
@@ -161,7 +114,7 @@ abstract final class MockHistory {
   static DateTime _occurredAt(int i) =>
       _anchor.subtract(Duration(minutes: 40 + i * _minutesBetweenTrips + (i % 4) * 45));
 
-  static Map<String, dynamic> _stop(int index) => Map<String, dynamic>.of(_stops[index % _stops.length]);
+  static Map<String, dynamic> _stop(int index) => MockRegion.place(_stopIds[index % _stopIds.length]);
 
   static List<Map<String, dynamic>> _stopsOf(int i) => [if (i % 7 == 3) _stop(i * 3 + 1)];
 
@@ -207,10 +160,14 @@ abstract final class MockHistory {
     return {...driver, 'blocked': _blockedDrivers.contains(driver['id'])};
   }
 
-  static Map<String, dynamic> _vehicleOf(int i) => {
-    ..._vehicles[i % _vehicles.length],
-    'features': const ['Air conditioned'],
-  };
+  static Map<String, dynamic> _vehicleOf(int i) {
+    final vehicle = _vehicles[i % _vehicles.length];
+    return {
+      ...vehicle,
+      'plate': MockRegion.plate(vehicle['plate'] as String),
+      'features': const ['Air conditioned'],
+    };
+  }
 
   static Map<String, dynamic> _summary(int i) => {
     'id': _idOf(i),
@@ -221,7 +178,7 @@ abstract final class MockHistory {
     'pickup': _pickup(i),
     'stops': _stopsOf(i),
     'dropoff': _dropoff(i),
-    'fare': _fareOf(i),
+    'fare': MockMoney.json(_fareOf(i)),
     if (_isDelivery(i)) 'itemName': _items[i % _items.length]['name'],
     if (_isDelivery(i) && i % 2 == 0) 'packagePhotoUrl': _packagePhotoAsset,
   };
@@ -263,10 +220,14 @@ abstract final class MockHistory {
       service = 0;
     }
     return [
-      {'key': 'base_fare', 'label': 'Base fare', 'amount': base},
-      {'key': 'distance', 'label': 'Distance ($km km)', 'amount': distance},
-      {'key': 'time', 'label': isDelivery ? 'Handling time' : 'Time ($minutes mins)', 'amount': time},
-      {'key': 'service_fee', 'label': 'Service fee', 'amount': service},
+      {'key': 'base_fare', 'label': 'Base fare', 'amount': MockMoney.json(base)},
+      {
+        'key': 'distance',
+        'label': 'Distance (${SangaDistance.fromKilometers(km)})',
+        'amount': MockMoney.json(distance),
+      },
+      {'key': 'time', 'label': isDelivery ? 'Handling time' : 'Time ($minutes mins)', 'amount': MockMoney.json(time)},
+      {'key': 'service_fee', 'label': 'Service fee', 'amount': MockMoney.json(service)},
     ];
   }
 
@@ -308,7 +269,7 @@ abstract final class MockHistory {
         'weightLabel': item['weight'],
         'photoUrl': i % 2 == 0 ? _packagePhotoAsset : null,
       },
-      'recipient': {'name': recipient['name'], 'phone': recipient['phone']},
+      'recipient': {'name': recipient['name'], 'phone': MockRegion.phone(recipient['phone']!)},
       'deliveryProof': hasProof ? {'photoUrl': _proofAsset, 'at': _iso(_occurredAt(i))} : null,
     };
   }
@@ -334,7 +295,7 @@ abstract final class MockHistory {
       ..._summary(i),
       'reference': '${isDelivery ? 'DL' : 'SR'}-${10000000 + (i * 7919) % 90000000}',
       'requestedAt': _iso(requestedAt),
-      'counterOffer': counter ? fare : null,
+      'counterOffer': counter ? MockMoney.json(fare) : null,
       'distanceKm': isCancelled ? null : km,
       'durationMinutes': isCancelled ? null : minutes,
       'lines': isCancelled ? const [] : _lines(fare, km, minutes, isDelivery: isDelivery),
@@ -349,7 +310,7 @@ abstract final class MockHistory {
           ? {
               'by': cancelledBy,
               'reason': _cancelReasons[cancelledBy],
-              'fee': cancelledBy == 'rider' && i % 2 == 0 ? _cancellationFee : 0,
+              'fee': MockMoney.json(cancelledBy == 'rider' && i % 2 == 0 ? _cancellationFee : 0),
             }
           : null,
       'delivery': isDelivery ? _deliveryOf(i) : null,

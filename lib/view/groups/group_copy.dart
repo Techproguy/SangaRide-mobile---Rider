@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:sanga_ride/model/groups/group_models.dart';
 import 'package:sanga_ride/view/wallet/wallet_format.dart';
+import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 abstract final class GroupCopy {
   static String label(GroupKind kind) => switch (kind) {
@@ -165,17 +166,17 @@ abstract final class GroupCopy {
 
   static String savedFor(String firstName) => 'Saved for $firstName';
 
-  static String setAtLeast(int minimum) => 'Set at least ${WalletFormat.money(minimum)}';
+  static String setAtLeast(Money minimum) => 'Set at least ${WalletFormat.money(minimum)}';
 
   static String spendComfort(String firstName) => 'So $firstName can’t spend more than you’re comfortable with.';
 
-  static String spentThisMonth(int amount) => 'Spent this month: ${WalletFormat.money(amount)}';
+  static String spentThisMonth(Money amount) => 'Spent this month: ${WalletFormat.money(amount)}';
 
   static String outsideHours(String firstName) => 'Outside these hours, $firstName can’t book a group ride.';
 
   static String forPurpose(String purpose) => 'For: $purpose';
 
-  static String fare(int amount) => 'Fare ${WalletFormat.money(amount)}';
+  static String fare(Money amount) => 'Fare ${WalletFormat.money(amount)}';
 
   static String countWithCompany(String count, String company) => '$count · $company';
 

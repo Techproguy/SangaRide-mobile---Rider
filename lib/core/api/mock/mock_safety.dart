@@ -1,8 +1,10 @@
 import 'package:sanga_ride/core/api/mock/mock_account.dart';
+import 'package:sanga_ride/core/api/mock/mock_region.dart';
 import 'package:sanga_ride/core/api/mock/mock_server.dart';
 import 'package:sanga_ride/core/api/mock/mock_trip.dart';
 import 'package:sanga_ride/core/api/mock/mock_trip_state.dart';
 import 'package:sanga_ride/core/api/safety_endpoints.dart';
+import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 abstract final class MockSafety {
   static final List<MockRoute> routes = [
@@ -18,15 +20,13 @@ abstract final class MockSafety {
 
   static const int _maxContacts = 5;
   static const int _graceSeconds = 5;
-  static const String _emergencyNumber = '112';
   static const Duration _alertedFor = Duration(seconds: 10);
   static const int _minDetailsLength = 10;
   static const List<String> _reportCategories = ['driving', 'harassment', 'vehicle', 'route', 'other'];
-  static final RegExp _nigerianNumber = RegExp(r'^\+234[789]\d{9}$');
 
   static final List<Map<String, dynamic>> _contacts = [
-    {'id': 'ct_1', 'name': 'Alex Johnson', 'phone': '+2348031234567'},
-    {'id': 'ct_2', 'name': 'Ebuka Samson', 'phone': '+2348052345678'},
+    {'id': 'ct_1', 'name': 'Alex Johnson', 'phone': MockRegion.phone('8031234567')},
+    {'id': 'ct_2', 'name': 'Ebuka Samson', 'phone': MockRegion.phone('8052345678')},
   ];
   static final Map<String, _MockSos> _sosRecords = {};
   static int _contactCount = 2;
@@ -47,7 +47,7 @@ abstract final class MockSafety {
     return {
       ..._contactsPayload(),
       'sosGraceSeconds': _graceSeconds,
-      'emergencyNumber': _emergencyNumber,
+      'emergencyNumber': MockRegion.current.emergencyNumber,
       'activeSos': active == null ? null : _sosPayload(active),
       'trip': trip,
       'serverTime': _iso(DateTime.now()),
@@ -169,7 +169,7 @@ abstract final class MockSafety {
   static Object? _addContact(MockRequest request) {
     final phone = request.body['phone'] as String? ?? '';
     final name = (request.body['name'] as String? ?? '').trim();
-    if (!_nigerianNumber.hasMatch(phone)) {
+    if (!phone.startsWith('+') || !SangaPhoneNumber.isValid(phone)) {
       throw const MockFailure(422, 'That number doesn’t look right.', code: 'invalid_phone');
     }
     if (_digits(phone) == _digits(MockAccount.phone)) {

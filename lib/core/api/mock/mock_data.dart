@@ -1,3 +1,6 @@
+import 'package:sanga_ride/core/api/mock/mock_money.dart';
+import 'package:sanga_ride/core/api/mock/mock_region.dart';
+
 class MockData {
   MockData._();
 
@@ -16,30 +19,12 @@ class MockData {
     'ridesCount': 37,
   };
 
-  static const Map<String, dynamic> weather = {'city': 'Lagos', 'temperatureC': 28, 'condition': 'sunny'};
-
-  static const List<Map<String, dynamic>> recentPlaces = [
-    {
-      'place_id': 'mock_palms',
-      'name': 'The Palms Mall',
-      'address': 'Lekki Phase 1, Lagos',
-      'coordinates': {'lat': 6.4352, 'lng': 3.4515},
-    },
-    {
-      'place_id': 'mock_cv',
-      'name': 'Computer Village',
-      'address': 'Ikeja, Lagos',
-      'coordinates': {'lat': 6.5951, 'lng': 3.3398},
-    },
-    {
-      'place_id': 'mock_cr_ikeja',
-      'name': 'Chicken Republic',
-      'address': 'Allen Avenue, Ikeja, Lagos',
-      'coordinates': {'lat': 6.6018, 'lng': 3.3515},
-    },
+  static List<Map<String, dynamic>> get rideOptions => [
+    for (final option in _rideOptions)
+      {...option, 'pricePerKm': MockMoney.perDistanceJson(option['pricePerKm'] as num)},
   ];
 
-  static const List<Map<String, dynamic>> rideOptions = [
+  static const List<Map<String, dynamic>> _rideOptions = [
     {
       'id': 'go',
       'category': 'go',
@@ -97,12 +82,13 @@ class MockData {
     'Finding a match',
   ];
 
-  static const Map<String, dynamic> driverVehicle = {
+  static Map<String, dynamic> get driverVehicle => {..._driverVehicle, 'plate': MockRegion.plate('BDJ822FQ')};
+
+  static const Map<String, dynamic> _driverVehicle = {
     'make': 'Toyota',
     'model': 'Corolla',
     'year': 2007,
     'colour': 'blue',
-    'plate': 'BDJ822FQ',
     'features': ['Air conditioned'],
   };
 

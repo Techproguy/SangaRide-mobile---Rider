@@ -5,6 +5,8 @@ import 'package:sanga_ride/core/api/mock/mock_data.dart';
 import 'package:sanga_ride/core/api/mock/mock_delivery_live.dart';
 import 'package:sanga_ride/core/api/app_endpoints.dart';
 import 'package:sanga_ride/core/api/mock/mock_history.dart';
+import 'package:sanga_ride/core/api/mock/mock_money.dart';
+import 'package:sanga_ride/core/api/mock/mock_region.dart';
 import 'package:sanga_ride/core/api/mock/mock_server.dart';
 import 'package:sanga_ride/core/api/mock/mock_trip_changes.dart';
 import 'package:sanga_ride/core/api/mock/mock_trip_state.dart';
@@ -18,7 +20,7 @@ abstract final class MockTrip {
     MockRoute.post(AppEndpoints.liveTripPinRefresh, _refreshPin),
     MockRoute.post(AppEndpoints.liveTripReport, _report),
     MockRoute.post(AppEndpoints.liveTripComplete, _complete),
-    MockRoute.post(AppEndpoints.liveTripCall, (_) => {'maskedNumber': _maskedNumber}),
+    MockRoute.post(AppEndpoints.liveTripCall, (_) => {'maskedNumber': MockRegion.maskedCallNumber}),
     MockRoute.post(AppEndpoints.tripShare, _share),
     MockRoute.get(AppEndpoints.liveTripMessages, _messages),
     MockRoute.post(AppEndpoints.liveTripMessages, _sendMessage),
@@ -48,21 +50,8 @@ abstract final class MockTrip {
   static const Duration _pinWindow = Duration(minutes: 5);
 
   static const List<String> _pinCodes = ['5428', '7391', '2064', '8815'];
-  static const String _maskedNumber = '+2342019990001';
   static const double _routeDetour = 1.3;
 
-  static const Map<String, dynamic> _fallbackPickup = {
-    'name': 'Ikeja City Mall',
-    'address': 'Obafemi Awolowo Way, Ikeja',
-    'lat': 6.6145,
-    'lng': 3.3569,
-  };
-  static const Map<String, dynamic> _fallbackDropoff = {
-    'name': 'Lekki Phase 1',
-    'address': 'Admiralty Way, Lekki',
-    'lat': 6.4478,
-    'lng': 3.4723,
-  };
   static const double _averageSpeedKmh = 25;
 
   static const List<(Duration, String, String)> _driverMessages = [
@@ -81,9 +70,9 @@ abstract final class MockTrip {
     required num etaMinutes,
   }) {
     final now = DateTime.now();
-    final pickup = _place(request['pickup'], _fallbackPickup);
-    final stops = [for (final stop in request['stops'] as List? ?? const []) _place(stop, _fallbackPickup)];
-    final dropoff = _place(request['dropoff'], _fallbackDropoff);
+    final pickup = _place(request['pickup'], MockRegion.fallbackPickup);
+    final stops = [for (final stop in request['stops'] as List? ?? const []) _place(stop, MockRegion.fallbackPickup)];
+    final dropoff = _place(request['dropoff'], MockRegion.fallbackDropoff);
     final category = (request['optionId'] as String?) ?? 'go';
     final points = [pickup, ...stops, dropoff];
     var routeKm = 0.0;
@@ -225,7 +214,7 @@ abstract final class MockTrip {
 
   static DateTime createdAt(String id) => _createdAt(_stored(id));
 
-  static Map<String, dynamic> placeOf(Object? json) => _place(json, _fallbackPickup);
+  static Map<String, dynamic> placeOf(Object? json) => _place(json, MockRegion.fallbackPickup);
 
   static double distanceBetween(Map a, Map b) => _distanceKm(a, b);
 
@@ -313,7 +302,11 @@ abstract final class MockTrip {
       'pickup': _apiPlace(trip['pickup'] as Map<String, dynamic>),
       'stops': _apiStops(id, now),
       'dropoff': _apiPlace(trip['dropoff'] as Map<String, dynamic>),
-      'fare': {'total': trip['fare'], 'counterOffer': trip['counterOffer'], 'currency': 'NGN'},
+      'fare': {
+        'total': MockMoney.json(trip['fare'] as num),
+        'counterOffer': MockMoney.jsonOrNull(trip['counterOffer'] as num?),
+        'currency': MockMoney.currency,
+      },
       if (showsPin) 'pin': trip['pin'],
       if (showsPin) 'pinExpiresAt': trip['pinExpiresAt'],
       if (status == 'driver_en_route') 'etaAt': _iso(now.add(_travelTime(_distanceRemaining(trip, status, position)))),
@@ -323,7 +316,7 @@ abstract final class MockTrip {
       'unreadMessages': _unread(id, now),
       'events': _events(id),
       'cancellationReason': ?(_cancelReasons[id] ?? (status == 'cancelled' ? _refusalReason(id) : null)),
-      'returnFee': ?(_returnLegOf(id) == null ? null : MockDeliveryLive.returnFee),
+      'returnFee': ?(_returnLegOf(id) == null ? null : MockMoney.json(MockDeliveryLive.returnFee)),
       'airport': ?MockAirport.tripBlock(id),
       'delivery': ?MockDeliveryLive.tripBlock(id, () => _deliveryClock(id)),
     };

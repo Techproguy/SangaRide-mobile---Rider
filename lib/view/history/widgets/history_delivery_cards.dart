@@ -9,7 +9,7 @@ class HistoryDeliveryCards extends StatelessWidget {
   static const String _assetPrefix = 'assets/';
 
   final HistoryDelivery delivery;
-  final int? returnFee;
+  final Money? returnFee;
 
   static ImageProvider proofImage(String url) => url.startsWith(_assetPrefix) ? AssetImage(url) : NetworkImage(url);
 
@@ -37,12 +37,10 @@ class HistoryDeliveryCards extends StatelessWidget {
             SangaDetailRow(icon: Icons.phone_outlined, label: 'Phone', value: delivery.recipientPhone),
           ],
         ),
-        if (fee != null && fee > 0)
+        if (fee != null && fee.isPositive)
           SangaDetailList(
             title: 'Return fee',
-            rows: [
-              SangaDetailRow(icon: Icons.undo_rounded, label: 'Charged for the way back', value: SangaMoney.naira(fee)),
-            ],
+            rows: [SangaDetailRow(icon: Icons.undo_rounded, label: 'Charged for the way back', value: fee.format())],
           ),
         if (proof != null)
           SangaSectionCard(

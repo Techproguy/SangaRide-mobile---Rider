@@ -6,6 +6,7 @@ import 'package:sanga_ride/core/api/mock/mock_booking.dart';
 import 'package:sanga_ride/core/api/mock/mock_data.dart';
 import 'package:sanga_ride/core/api/mock/mock_delivery.dart';
 import 'package:sanga_ride/core/api/mock/mock_groups.dart';
+import 'package:sanga_ride/core/api/mock/mock_money.dart';
 import 'package:sanga_ride/core/api/mock/mock_server.dart';
 import 'package:sanga_ride/core/api/mock/mock_trip.dart';
 import 'package:sanga_ride/core/api/mock/mock_trip_state.dart';
@@ -104,7 +105,7 @@ abstract final class MockRideRequests {
     _rideRequests[id] = _MockRideRequest(
       createdAt: DateTime.now(),
       pricingMode: request.body['pricingMode'] as String?,
-      proposedFare: (request.body['proposedFare'] as num?)?.toInt() ?? 0,
+      proposedFare: MockMoney.naira(request.body['proposedFare']).toInt(),
       isFixedFare: request.body['delivery'] != null,
     );
     return {..._requestPayload(id, 'searching', 1), 'createdAt': _isoNow()};
@@ -134,13 +135,15 @@ abstract final class MockRideRequests {
     _ => 0,
   };
 
-  static Map<String, dynamic> _priced(Map<String, dynamic> offer, num fare, {bool isFixed = false}) {
+  static int? _counterOffer(Map<String, dynamic> offer, num fare, {bool isFixed = false}) {
     final markup = isFixed ? null : offer['counterMarkup'] as num?;
-    return {
-      ...offer..remove('counterMarkup'),
-      'counterOffer': markup == null ? null : ((fare * (1 + markup)) / 50).round() * 50,
-    };
+    return markup == null ? null : ((fare * (1 + markup)) / 50).round() * 50;
   }
+
+  static Map<String, dynamic> _priced(Map<String, dynamic> offer, num fare, {bool isFixed = false}) => {
+    ...offer..remove('counterMarkup'),
+    'counterOffer': MockMoney.jsonOrNull(_counterOffer(offer, fare, isFixed: isFixed)),
+  };
 
   static Object? _rideOffers(MockRequest request) {
     final record = _requireRideRequest(request);
@@ -169,8 +172,8 @@ abstract final class MockRideRequests {
         'offerId': offer['id'],
         'holdExpiresAt': _now().add(_holdWindow).toIso8601String(),
         'serverTime': _isoNow(),
-        'fare': record.proposedFare,
-        'counterOffer': _priced(Map.of(offer), record.proposedFare, isFixed: record.isFixedFare)['counterOffer'],
+        'fare': MockMoney.json(record.proposedFare),
+        'counterOffer': MockMoney.jsonOrNull(_counterOffer(offer, record.proposedFare, isFixed: record.isFixedFare)),
         'matchLabel': offer['matchLabel'],
       },
       'driver': _driverCard(offer),
@@ -190,8 +193,7 @@ abstract final class MockRideRequests {
         request: MockTrip.requests[requestId] ?? const {},
         driverCard: _driverCard(offer),
         proposedFare: record.proposedFare,
-        counterOffer: (_priced(Map.of(offer), record.proposedFare, isFixed: record.isFixedFare)['counterOffer'] as num?)
-            ?.toInt(),
+        counterOffer: _counterOffer(offer, record.proposedFare, isFixed: record.isFixedFare),
         etaMinutes: offer['etaMinutes'] as num,
       );
     }
@@ -214,8 +216,7 @@ abstract final class MockRideRequests {
     final boost = tripType == 'hourly' ? 0 : 500;
     final meetGreetFee = MockAirport.meetGreetFee(request.body);
     if (tripType == 'hourly') {
-      final rates = (MockBooking.hourlyRates['rates'] as List).cast<Map<String, dynamic>>();
-      final rate = rates.firstWhere((rate) => rate['category'] == optionId)['hourlyRate'] as num;
+      final rate = MockBooking.hourlyRatesNaira.firstWhere((rate) => rate['category'] == optionId)['hourlyRate'] as num;
       final hours = (request.body['hours'] as num?)?.toInt() ?? 2;
       return _fare(
         baseFare: 0,
@@ -223,7 +224,7 @@ abstract final class MockRideRequests {
         distanceFare: hours * rate,
         boost: boost,
         fee: 0,
-        extra: {'hours': hours, 'hourlyRate': rate},
+        extra: {'hours': hours, 'hourlyRate': MockMoney.json(rate)},
       );
     }
     final points = [
@@ -237,7 +238,8 @@ abstract final class MockRideRequests {
     }
     final isIntercity = tripType == 'intercity';
     km = (km * 1.3).clamp(1, isIntercity ? 700 : 200).toDouble();
-    final rate = isIntercity ? (request.body['pricePerKm'] as num) * 0.35 : request.body['pricePerKm'] as num;
+    final pricePerKm = MockMoney.nairaPerKilometer(request.body['pricePerKm']);
+    final rate = isIntercity ? pricePerKm * 0.35 : pricePerKm;
     final legs = tripType == 'roundTrip' ? 2 : 1;
     final baseFare = isIntercity ? 5000 : 500;
     final distanceFare = (km * rate / 10).round() * 10 * legs;
@@ -247,7 +249,7 @@ abstract final class MockRideRequests {
       distanceFare: distanceFare,
       boost: boost,
       fee: meetGreetFee,
-      extra: {'ratePerKm': rate},
+      extra: {'ratePerKm': MockMoney.perDistanceJson(rate)},
     );
   }
 
@@ -266,19 +268,19 @@ abstract final class MockRideRequests {
     return {
       'quoteId': quoteId,
       'expiresAt': expiresAt.toIso8601String(),
-      'baseFare': baseFare,
+      'baseFare': MockMoney.json(baseFare),
       'distanceKm': distanceKm,
-      'distanceFare': distanceFare,
-      'discount': 0,
-      'boost': boost,
-      'total': total,
-      if (fee > 0) 'meetGreetFee': fee,
+      'distanceFare': MockMoney.json(distanceFare),
+      'discount': MockMoney.json(0),
+      'boost': MockMoney.json(boost),
+      'total': MockMoney.json(total),
+      if (fee > 0) 'meetGreetFee': MockMoney.json(fee),
       ...extra,
       'pricing': {
-        'standard': total,
-        'fairFare': (total * 0.9 / 10).round() * 10,
-        'saver': (total * 0.75 / 10).round() * 10,
-        'priority': (total * 1.4 / 10).round() * 10,
+        'standard': MockMoney.json(total),
+        'fairFare': MockMoney.json((total * 0.9 / 10).round() * 10),
+        'saver': MockMoney.json((total * 0.75 / 10).round() * 10),
+        'priority': MockMoney.json((total * 1.4 / 10).round() * 10),
       },
     };
   }

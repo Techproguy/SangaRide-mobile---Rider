@@ -1,7 +1,9 @@
+import 'package:sanga_ride/core/format/money_json.dart';
 import 'package:sanga_ride/model/groups/group_kind.dart';
 import 'package:sanga_ride/model/groups/group_member.dart';
 import 'package:sanga_ride/model/history/history_item.dart';
 import 'package:sanga_ride_core/sanga_ride_core.dart';
+import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 export 'package:sanga_ride/model/groups/group_failure.dart';
 export 'package:sanga_ride/model/groups/group_kind.dart';
@@ -25,7 +27,7 @@ class GroupSummary {
     name: reader.strOr('name', ''),
     role: GroupRole.fromCode(reader.strOrNull('role')),
     membersCount: reader.intOr('membersCount', 0),
-    walletBalance: reader.intOr('walletBalance', 0),
+    walletBalance: reader.money('walletBalance'),
     photoUrl: reader.strOrNull('photoUrl'),
   );
 
@@ -34,7 +36,7 @@ class GroupSummary {
   final String name;
   final GroupRole role;
   final int membersCount;
-  final int walletBalance;
+  final Money walletBalance;
   final String? photoUrl;
 }
 
@@ -219,7 +221,7 @@ class GroupApproval {
     id: reader.str('id'),
     memberId: reader.strOr('memberId', ''),
     memberName: reader.strOr('memberName', 'Someone'),
-    fare: reader.intOr('fare', 0),
+    fare: reader.money('fare'),
     pickup: reader.object('pickup').strOr('name', ''),
     dropoff: reader.object('dropoff').strOr('name', ''),
     purpose: reader.strOrNull('purpose'),
@@ -230,7 +232,7 @@ class GroupApproval {
   final String id;
   final String memberId;
   final String memberName;
-  final int fare;
+  final Money fare;
   final String pickup;
   final String dropoff;
   final String? purpose;

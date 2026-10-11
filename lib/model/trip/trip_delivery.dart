@@ -1,6 +1,8 @@
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:sanga_ride/core/extensions/lat_lng.dart';
+import 'package:sanga_ride/core/format/money_json.dart';
 import 'package:sanga_ride_core/sanga_ride_core.dart';
+import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 enum DeliveryStage {
   toPickup('to_pickup'),
@@ -152,7 +154,7 @@ class DeliveryItem {
       weightLabel: reader.strOrNull('weightLabel'),
       packageType: DeliveryPackageType.fromCode(reader.strOrNull('packageType')),
       photoUrl: reader.strOrNull('photoUrl'),
-      declaredValue: reader.intOrNull('declaredValue'),
+      declaredValue: reader.moneyOrNull('declaredValue'),
     );
   }
 
@@ -162,7 +164,7 @@ class DeliveryItem {
   final String? weightLabel;
   final DeliveryPackageType? packageType;
   final String? photoUrl;
-  final int? declaredValue;
+  final Money? declaredValue;
 
   String get summary => [if (sizeLabel.isNotEmpty) sizeLabel, ?weightLabel, ?packageType?.label].join(' · ');
 }

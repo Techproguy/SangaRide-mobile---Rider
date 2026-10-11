@@ -23,7 +23,7 @@ class _DeliveryValueScreenState extends State<DeliveryValueScreen> {
 
   String _initialText() {
     final value = _delivery.draft.declaredValue;
-    return value == null ? '' : NumberFormats.groupedMoney.format(value);
+    return value == null ? '' : NumberFormats.groupedWhole(value);
   }
 
   @override
@@ -50,7 +50,7 @@ class _DeliveryValueScreenState extends State<DeliveryValueScreen> {
 
   bool _isValid(DeliveryCatalog? catalog) {
     final value = _delivery.draft.declaredValue;
-    return catalog != null && value != null && value > 0 && value <= catalog.maxDeclaredValue;
+    return catalog != null && value != null && value.isPositive && value <= catalog.maxDeclaredValue;
   }
 
   @override
@@ -94,8 +94,8 @@ class _DeliveryValueScreenState extends State<DeliveryValueScreen> {
             SangaMoneyField(
               controller: _value,
               hintText: '350,000',
-              errorText: isTooHigh ? 'The most you can declare is ${SangaMoney.naira(catalog.maxDeclaredValue)}' : null,
-              onChanged: _delivery.setDeclaredValue,
+              errorText: isTooHigh ? 'The most you can declare is ${catalog.maxDeclaredValue.format()}' : null,
+              onChanged: (value) => _delivery.setDeclaredValue(NumberFormats.moneyOf(value)),
               onSubmitted: (_) {
                 if (_isValid(catalog)) _next();
               },
@@ -106,7 +106,7 @@ class _DeliveryValueScreenState extends State<DeliveryValueScreen> {
           ValueWarning(
             title: 'High value item',
             message:
-                'For items above ${SangaMoney.naira(catalog.highValueThreshold)} we recommend ${catalog.premiumTierLabel} '
+                'For items above ${catalog.highValueThreshold.format()} we recommend ${catalog.premiumTierLabel} '
                 'for extra security and careful handling.',
           )
         else

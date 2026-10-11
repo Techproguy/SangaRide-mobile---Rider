@@ -1,4 +1,5 @@
 import 'package:sanga_ride_core/sanga_ride_core.dart';
+import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 abstract final class DeliveryRules {
   static const String documentsKindId = 'documents';
@@ -87,8 +88,8 @@ class DeliveryCatalog {
       sizes: _parseAll(reader, 'sizes', PackageSize.fromReader),
       packageTypes: _parseAll(reader, 'packageTypes', PackageType.fromReader),
       tiers: _parseAll(reader, 'tiers', DeliveryTierInfo.fromReader),
-      highValueThreshold: reader.number('highValueThreshold').toInt(),
-      maxDeclaredValue: reader.number('maxDeclaredValue').toInt(),
+      highValueThreshold: _requiredMoney(reader, 'highValueThreshold'),
+      maxDeclaredValue: _requiredMoney(reader, 'maxDeclaredValue'),
       prohibitedNotice: reader.str('prohibitedNotice'),
     );
   }
@@ -101,8 +102,8 @@ class DeliveryCatalog {
   final List<PackageSize> sizes;
   final List<PackageType> packageTypes;
   final List<DeliveryTierInfo> tiers;
-  final int highValueThreshold;
-  final int maxDeclaredValue;
+  final Money highValueThreshold;
+  final Money maxDeclaredValue;
   final String prohibitedNotice;
 
   DeliveryKindOption? kindOf(String? id) => kinds.where((kind) => kind.id == id).firstOrNull;
@@ -119,8 +120,11 @@ class DeliveryCatalog {
 
   String get premiumTierLabel => tierOf(DeliveryRules.premiumTierId)?.label ?? 'a premium tier';
 
-  bool isHighValue(int? value) => value != null && value >= highValueThreshold;
+  bool isHighValue(Money? value) => value != null && value >= highValueThreshold;
 }
+
+Money _requiredMoney(JsonReader reader, String key) =>
+    Money.tryParse(reader.raw[key]) ?? (throw JsonFormatError('Expected an amount at "$key"', reader.raw[key]));
 
 List<Object?> _requiredList(JsonReader reader, String key) {
   final value = reader.raw[key];

@@ -1,5 +1,7 @@
 import 'package:sanga_ride/core/api/server_codes.dart';
+import 'package:sanga_ride/core/format/money_json.dart';
 import 'package:sanga_ride_core/sanga_ride_core.dart';
+import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 enum TopUpMethod {
   transfer('transfer', 'Transfer', 'Send from any bank app'),
@@ -87,31 +89,31 @@ class TopUp {
       id: reader.str('id'),
       status: TopUpStatus.fromCode(reader.strOrNull('status')),
       action: TopUpAction.tryFromJson(reader.objectOrNull('action')),
-      amount: reader.intOrNull('amount'),
+      amount: reader.moneyOrNull('amount'),
       method: TopUpMethod.tryFromCode(reader.strOrNull('method')),
       expiresAt: reader.timeOrNull('expiresAt'),
       createdAt: reader.timeOrNull('createdAt'),
       failureCode: reader.strOrNull('failureCode'),
-      balance: reader.intOrNull('balance'),
+      balance: reader.moneyOrNull('balance'),
     );
   }
 
   final String id;
   final TopUpStatus status;
   final TopUpAction? action;
-  final int? amount;
+  final Money? amount;
   final TopUpMethod? method;
   final DateTime? expiresAt;
   final DateTime? createdAt;
   final String? failureCode;
-  final int? balance;
+  final Money? balance;
 }
 
 class TransferExpectation {
   const TransferExpectation({required this.id, required this.amount, required this.expiresAt, this.createdAt});
 
   final String id;
-  final int amount;
+  final Money amount;
   final DateTime? expiresAt;
   final DateTime? createdAt;
 }
@@ -185,7 +187,7 @@ class SavedTopUp {
     final reader = JsonReader(json);
     final method = TopUpMethod.tryFromCode(reader.strOrNull('method'));
     final key = reader.strOrNull('intentKey');
-    final amount = reader.intOrNull('amount');
+    final amount = reader.moneyOrNull('amount');
     if (method == null || key == null || amount == null) return null;
     final status = reader.strOrNull('status');
     return SavedTopUp(
@@ -200,7 +202,7 @@ class SavedTopUp {
 
   final String intentKey;
   final TopUpMethod method;
-  final int amount;
+  final Money amount;
   final String? topUpId;
   final TopUpStatus? status;
   final String? savedCardId;
@@ -208,7 +210,7 @@ class SavedTopUp {
   Map<String, dynamic> toJson() => {
     'intentKey': intentKey,
     'method': method.code,
-    'amount': amount,
+    'amount': amount.toJson(),
     'topUpId': ?topUpId,
     'status': ?status?.code,
     'savedCardId': ?savedCardId,

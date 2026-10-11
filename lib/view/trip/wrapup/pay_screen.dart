@@ -163,10 +163,10 @@ class _PayScreenState extends State<PayScreen> {
     }
   }
 
-  Future<void> _topUpWallet(int shortBy) async {
+  Future<void> _topUpWallet(Money shortBy) async {
     final overview = _wallet.overview;
     final suggestion = overview?.limits.suggestionFor(shortBy);
-    await context.push<bool>(WalletRoutes.topUpOf(amount: suggestion));
+    await context.push<bool>(WalletRoutes.topUpOf(amount: suggestion?.wholeMajor));
     if (!mounted) return;
     await _wallet.reloadQuietly();
     if (mounted) _payment.select(PaymentMethod.wallet);
@@ -227,7 +227,7 @@ class _PayBody extends StatelessWidget {
   final PaymentState state;
   final WalletState walletState;
   final ValueChanged<PaymentMethod> onSelect;
-  final ValueChanged<int> onTopUp;
+  final ValueChanged<Money> onTopUp;
   final VoidCallback onRetryWallet;
 
   @override
@@ -249,7 +249,7 @@ class _PayBody extends StatelessWidget {
           group: payment.group,
           walletOption: walletOption,
           onSelect: onSelect,
-          onTopUp: () => onTopUp(walletOption is WalletShort ? walletOption.shortBy : 0),
+          onTopUp: () => onTopUp(walletOption is WalletShort ? walletOption.shortBy : Money.zero()),
           onRetryWallet: onRetryWallet,
         ),
       ],

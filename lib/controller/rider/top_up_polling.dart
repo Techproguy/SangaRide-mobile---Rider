@@ -45,7 +45,7 @@ extension TopUpPolling on TopUpController {
     }
     if (!_epoch.isCurrent(epoch)) return;
     final method = current is TopUpConfirming ? TopUpMethod.card : TopUpMethod.transfer;
-    final amount = topUp.amount ?? draft.amount ?? 0;
+    final amount = topUp.amount ?? draft.amount ?? Money.zero();
     if (topUp.status == TopUpStatus.awaitingTransfer) {
       _markDelayedIfDue(current, topUp);
     } else if (topUp.status != TopUpStatus.pending && topUp.status != TopUpStatus.unknown) {

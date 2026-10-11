@@ -26,7 +26,7 @@ class _CardDetailsScreenState extends State<CardDetailsScreen> {
   final _sheet = PaymentSheetSlot();
   final _unconfirmedSheet = PaymentSheetSlot();
   late final Worker _stateWorker;
-  late final int? _amount = _payment.payment?.amount;
+  late final Money? _amount = _payment.payment?.amount;
   bool _isFinishing = false;
 
   @override
@@ -144,7 +144,7 @@ class _CardDetailsScreenState extends State<CardDetailsScreen> {
           footer: ListenableBuilder(
             listenable: _form,
             builder: (context, _) => SangaButton.primary(
-              label: 'Pay ${SangaMoney.naira(amount)}',
+              label: 'Pay ${amount.format()}',
               onPressed: _form.isValid && !_payment.isProcessing ? _submit : null,
             ),
           ),

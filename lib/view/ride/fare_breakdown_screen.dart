@@ -57,7 +57,7 @@ class FareBreakdownScreen extends StatelessWidget {
         tripType: ride.tripType,
       ),
       totalLabel: 'TOTAL ESTIMATE',
-      total: SangaMoney.naira(price),
+      total: price.format(),
     );
   }
 }

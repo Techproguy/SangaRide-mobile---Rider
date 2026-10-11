@@ -165,7 +165,7 @@ class TripPaymentController extends GetxController {
     }
   }
 
-  bool _walletCovers(int fare) => WalletPayOption.from(_wallet.state, fare) is WalletCovers;
+  bool _walletCovers(Money fare) => WalletPayOption.from(_wallet.state, fare) is WalletCovers;
 
   bool _isChoosable(TripPayment payment, PaymentMethod method) =>
       payment.allowedMethods.contains(method) && (method != PaymentMethod.wallet || _walletCovers(payment.amount));

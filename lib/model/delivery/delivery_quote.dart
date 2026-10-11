@@ -1,6 +1,8 @@
+import 'package:sanga_ride/core/format/money_json.dart';
 import 'package:sanga_ride/model/delivery/delivery_failure.dart';
 import 'package:sanga_ride/model/trip/server_time.dart';
 import 'package:sanga_ride_core/sanga_ride_core.dart';
+import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 class QuoteTier {
   const QuoteTier({required this.id, required this.fare, required this.etaMinutes, required this.isRecommended});
@@ -10,7 +12,7 @@ class QuoteTier {
     final etas = reader.raw['etaMinutes'];
     return QuoteTier(
       id: reader.str('id'),
-      fare: reader.integer('fare'),
+      fare: reader.money('fare'),
       etaMinutes: [
         if (etas is List)
           for (final minutes in etas)
@@ -21,7 +23,7 @@ class QuoteTier {
   }
 
   final String id;
-  final int fare;
+  final Money fare;
   final List<int> etaMinutes;
   final bool isRecommended;
 }

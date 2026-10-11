@@ -88,7 +88,7 @@ class _TopUpTransferScreenState extends State<TopUpTransferScreen> {
     if (mounted) setState(() => _isRechecking = false);
   }
 
-  Widget _body(TopUpState state, int? amount, VirtualAccount? account, LinkState link) {
+  Widget _body(TopUpState state, Money? amount, VirtualAccount? account, LinkState link) {
     if (amount == null && state is! TopUpFailed && state is! TopUpSubmitting) return const SizedBox.shrink();
     return switch (state) {
       TopUpEditing() || TopUpSubmitting() when amount != null && account != null => Column(
@@ -120,7 +120,7 @@ class _TopUpTransferScreenState extends State<TopUpTransferScreen> {
     };
   }
 
-  Widget? _footer(TopUpState state, int? amount) => switch (state) {
+  Widget? _footer(TopUpState state, Money? amount) => switch (state) {
     TopUpEditing() || TopUpSubmitting() => SangaButton.primary(
       label: WalletCopy.sentIt,
       isLoading: state is TopUpSubmitting,

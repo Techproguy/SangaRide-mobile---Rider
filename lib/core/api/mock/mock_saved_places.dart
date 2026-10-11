@@ -1,7 +1,9 @@
 import 'package:get_storage/get_storage.dart';
 import 'package:sanga_ride/core/api/mock/mock_account.dart';
+import 'package:sanga_ride/core/api/mock/mock_region.dart';
 import 'package:sanga_ride/core/api/mock/mock_server.dart';
 import 'package:sanga_ride/core/api/places_endpoints.dart';
+import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 abstract final class MockSavedPlaces {
   static final List<MockRoute> routes = [
@@ -17,35 +19,20 @@ abstract final class MockSavedPlaces {
   static const String _storageKey = 'mock_saved_places';
 
   static final GetStorage _box = GetStorage();
-  static final List<Map<String, dynamic>> _places =
-      _stored() ??
-      [
-        {
-          'id': 'sp_home',
-          'kind': 'home',
-          'label': 'Home',
-          'place': {
-            'place_id': 'mock_home',
-            'name': '12 Ajegule Street',
-            'address': '12 Ajegule Street, Ikorodu, Lagos',
-            'coordinates': {'lat': 6.6194, 'lng': 3.5105},
-          },
-        },
-        {
-          'id': 'sp_work',
-          'kind': 'work',
-          'label': 'Work',
-          'place': {
-            'place_id': 'mock_work',
-            'name': 'Akeredolu Building',
-            'address': 'Akeredolu Building, Agege, Lagos',
-            'coordinates': {'lat': 6.6180, 'lng': 3.3209},
-          },
-        },
-      ];
+  static final Map<SangaRegion, List<Map<String, dynamic>>> _placesByRegion = {};
+
+  static String get _regionKey => MockRegion.isUnitedStates ? '${_storageKey}_us' : _storageKey;
+
+  static List<Map<String, dynamic>> get _places =>
+      _placesByRegion.putIfAbsent(MockRegion.current, () => _stored() ?? _seed());
+
+  static List<Map<String, dynamic>> _seed() => [
+    {'id': 'sp_home', 'kind': 'home', 'label': 'Home', 'place': MockRegion.place('mock_home')},
+    {'id': 'sp_work', 'kind': 'work', 'label': 'Work', 'place': MockRegion.place('mock_work')},
+  ];
 
   static List<Map<String, dynamic>>? _stored() {
-    final raw = _box.read<List<dynamic>>(_storageKey);
+    final raw = _box.read<List<dynamic>>(_regionKey);
     if (raw == null) return null;
     return [
       for (final entry in raw)
@@ -53,7 +40,7 @@ abstract final class MockSavedPlaces {
     ];
   }
 
-  static void _keep() => _box.write(_storageKey, _places);
+  static void _keep() => _box.write(_regionKey, _places);
 
   static String _iso(DateTime time) => time.toUtc().toIso8601String();
 

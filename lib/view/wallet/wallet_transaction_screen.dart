@@ -67,7 +67,8 @@ class _WalletTransactionScreenState extends State<WalletTransactionScreen> {
     if (tx.kind == TransactionKind.topUp && tx.status == TransactionStatus.failed) {
       return SangaButton.primary(
         label: WalletCopy.tryAgain,
-        onPressed: () => context.push(WalletRoutes.topUpOf(amount: tx.amount, groupId: widget.scope.groupId)),
+        onPressed: () =>
+            context.push(WalletRoutes.topUpOf(amount: tx.amount.wholeMajor, groupId: widget.scope.groupId)),
       );
     }
     return null;

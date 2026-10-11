@@ -1,9 +1,11 @@
+import 'package:sanga_ride/core/format/money_json.dart';
 import 'package:sanga_ride/model/groups/group_kind.dart';
 
 import 'dart:convert';
 
 import 'package:sanga_ride/model/location/place.dart';
 import 'package:sanga_ride_core/sanga_ride_core.dart';
+import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 class MemberPermissions {
   const MemberPermissions({required this.bookRides, required this.bookForOthers, required this.useGroupWallet});
@@ -122,7 +124,7 @@ class MemberLimits {
   factory MemberLimits.fromJson(Map<String, dynamic> json) {
     final reader = JsonReader(json);
     return MemberLimits(
-      monthlySpend: reader.intOrNull('monthlySpend'),
+      monthlySpend: reader.moneyOrNull('monthlySpend'),
       overLimit: OverLimitAction.fromCode(reader.strOrNull('overLimit')),
       ridesPerDay: reader.intOrNull('ridesPerDay'),
       timeWindow: TimeWindow.tryFromReader(reader.objectOrNull('timeWindow')),
@@ -131,7 +133,11 @@ class MemberLimits {
     );
   }
 
-  final int? monthlySpend;
+  static const Map<SangaRegion, int> _minimumSpendByRegion = {SangaRegion.ng: 1000, SangaRegion.us: 5};
+
+  static Money get minimumMonthlySpend => Money.major(_minimumSpendByRegion[SangaRegion.current] ?? 1);
+
+  final Money? monthlySpend;
   final OverLimitAction overLimit;
   final int? ridesPerDay;
   final TimeWindow? timeWindow;
@@ -139,7 +145,7 @@ class MemberLimits {
   final List<ApprovedPlace> approvedPlaces;
 
   MemberLimits copyWith({
-    int? Function()? monthlySpend,
+    Money? Function()? monthlySpend,
     OverLimitAction? overLimit,
     int? Function()? ridesPerDay,
     TimeWindow? Function()? timeWindow,
@@ -155,7 +161,7 @@ class MemberLimits {
   );
 
   Map<String, dynamic> toJson() => {
-    'monthlySpend': monthlySpend,
+    'monthlySpend': monthlySpend?.toJson(),
     'overLimit': overLimit.code,
     'ridesPerDay': ridesPerDay,
     'timeWindow': timeWindow?.toJson(),
@@ -192,7 +198,7 @@ class GroupMember {
       permissions: MemberPermissions.fromJson(reader.objectOrNull('permissions')?.raw ?? const {}),
       limits: MemberLimits.fromJson(reader.objectOrNull('limits')?.raw ?? const {}),
       alerts: MemberAlerts.fromJson(reader.objectOrNull('alerts')?.raw ?? const {}),
-      monthSpent: reader.intOr('monthSpent', 0),
+      monthSpent: reader.money('monthSpent'),
     );
   }
 
@@ -206,7 +212,7 @@ class GroupMember {
   final MemberPermissions permissions;
   final MemberLimits limits;
   final MemberAlerts alerts;
-  final int monthSpent;
+  final Money monthSpent;
 
   bool get isInvited => status == MemberStatus.invited;
 

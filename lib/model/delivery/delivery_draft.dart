@@ -1,5 +1,6 @@
 import 'package:sanga_ride/model/delivery/delivery_catalog.dart';
 import 'package:sanga_ride/model/ride/ride_for.dart';
+import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 class BookingRecipient {
   const BookingRecipient({required this.name, required this.phone, this.email, this.gender});
@@ -27,7 +28,7 @@ class BookingItem {
   final String sizeId;
   final String packageTypeId;
   final String? photoId;
-  final int? declaredValue;
+  final Money? declaredValue;
 
   Map<String, dynamic> toJson() => {
     'name': name,
@@ -35,7 +36,7 @@ class BookingItem {
     'size': sizeId,
     'packageType': packageTypeId,
     'photoId': photoId,
-    'declaredValue': declaredValue,
+    'declaredValue': declaredValue?.toJson(),
   };
 }
 
@@ -52,7 +53,7 @@ class DeliveryBooking {
   final String quoteId;
   final String tierId;
   final String kindId;
-  final int fare;
+  final Money fare;
   final BookingItem item;
   final BookingRecipient recipient;
 
@@ -82,7 +83,7 @@ class DeliveryDraft {
   final String description;
   final String? sizeId;
   final String? packageTypeId;
-  final int? declaredValue;
+  final Money? declaredValue;
   final String? tierId;
   final BookingRecipient? recipient;
 
@@ -92,7 +93,7 @@ class DeliveryDraft {
     String? description,
     String? sizeId,
     String? packageTypeId,
-    int? Function()? declaredValue,
+    Money? Function()? declaredValue,
     String? tierId,
     BookingRecipient? recipient,
   }) => DeliveryDraft(

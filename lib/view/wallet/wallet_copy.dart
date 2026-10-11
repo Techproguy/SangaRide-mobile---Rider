@@ -2,6 +2,7 @@ import 'package:sanga_ride/model/trip/wrapup/payment.dart';
 import 'package:sanga_ride/core/copy/common_copy.dart';
 import 'package:sanga_ride/model/wallet/wallet.dart';
 import 'package:sanga_ride/view/wallet/wallet_format.dart';
+import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 abstract final class WalletCopy {
   static const String processingTitle = 'Payment in progress';
@@ -84,31 +85,31 @@ abstract final class WalletCopy {
   static const String stillMissing = 'If it’s still missing';
   static const String checkBankApp = 'Check your bank app shows the transfer as successful';
 
-  static String currentBalance(int balance) => 'Current balance ${WalletFormat.money(balance)}';
+  static String currentBalance(Money balance) => 'Current balance ${WalletFormat.money(balance)}';
 
-  static String addAmount(int amount) => 'Add ${WalletFormat.money(amount)}';
+  static String addAmount(Money amount) => 'Add ${WalletFormat.money(amount)}';
 
   static String copied(String label) => '$label copied';
 
   static String copyReference(String reference) => 'Copy reference · $reference';
 
-  static String waitingForTransfer(int amount) => 'Waiting for your ${WalletFormat.money(amount)} transfer';
+  static String waitingForTransfer(Money amount) => 'Waiting for your ${WalletFormat.money(amount)} transfer';
 
   static String cardExpires(String expiry) => 'Expires $expiry';
 
-  static String sendExactly(int amount) => 'Open your bank app and send exactly ${WalletFormat.money(amount)}';
+  static String sendExactly(Money amount) => 'Open your bank app and send exactly ${WalletFormat.money(amount)}';
 
   static String copyLabel(String label) => 'Copy $label';
 
-  static String watching(int amount) =>
+  static String watching(Money amount) =>
       'We’re watching for ${WalletFormat.money(amount)} from your bank. This usually takes about a minute.';
 
-  static String checkSentExactly(int amount) => 'Check you sent exactly ${WalletFormat.money(amount)}';
+  static String checkSentExactly(Money amount) => 'Check you sent exactly ${WalletFormat.money(amount)}';
 
   static String checkAccountNumber(String number, String bank) => 'Check the account number is $number ($bank)';
 
-  static String resumeTitle(int amount) =>
-      amount > 0 ? 'Finish adding ${WalletFormat.money(amount)}' : 'Finish your top up';
+  static String resumeTitle(Money amount) =>
+      amount.isPositive ? 'Finish adding ${WalletFormat.money(amount)}' : 'Finish your top up';
 
   static String resumeSubtitle(TopUpMethod method) =>
       method == TopUpMethod.card ? 'Tap to pick up where you left off' : 'Tap to check on it';

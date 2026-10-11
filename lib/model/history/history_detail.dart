@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:sanga_ride/core/api/server_codes.dart';
 import 'package:sanga_ride/core/copy/common_copy.dart';
+import 'package:sanga_ride/core/format/money_json.dart';
 import 'package:sanga_ride/model/history/history_item.dart';
 import 'package:sanga_ride_core/sanga_ride_core.dart';
 import 'package:sanga_ride/model/ride/ride_match.dart';
 import 'package:sanga_ride/model/ride/ride_request.dart';
 import 'package:sanga_ride/model/trip/wrapup/receipt.dart';
+import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 enum HistoryEventType {
   driverAccepted('driver_accepted', 'Driver accepted your request', Icons.directions_car_rounded),
@@ -66,15 +68,15 @@ class HistoryCancellation {
     return HistoryCancellation(
       by: CancelledBy.fromCode(reader.strOrNull('by')),
       reason: reader.strOr('reason', ''),
-      fee: reader.intOr('fee', 0),
+      fee: reader.money('fee'),
     );
   }
 
   final CancelledBy by;
   final String reason;
-  final int fee;
+  final Money fee;
 
-  bool get hasFee => fee > 0;
+  bool get hasFee => fee.isPositive;
 }
 
 class HistoryDriver {
@@ -181,8 +183,8 @@ class HistoryDetail {
       requestedAt: reader.time('requestedAt').toLocal(),
       occurredAt: reader.time('occurredAt').toLocal(),
       route: HistoryRoute.fromJson(json),
-      fare: reader.intOr('fare', 0),
-      counterOffer: reader.intOrNull('counterOffer'),
+      fare: reader.money('fare'),
+      counterOffer: reader.moneyOrNull('counterOffer'),
       distanceKm: reader.doubleOrNull('distanceKm'),
       durationMinutes: reader.intOrNull('durationMinutes'),
       lines: reader.listOf('lines', (line) => ReceiptLine.fromJson(line.raw)),
@@ -193,7 +195,7 @@ class HistoryDetail {
       ratedStars: rating?.numOrNull('stars')?.toInt(),
       cancellation: attempt(cancellation, HistoryCancellation.fromJson),
       delivery: attempt(delivery, HistoryDelivery.fromJson),
-      returnFee: reader.intOrNull('returnFee'),
+      returnFee: reader.moneyOrNull('returnFee'),
     );
   }
 
@@ -205,8 +207,8 @@ class HistoryDetail {
   final DateTime requestedAt;
   final DateTime occurredAt;
   final HistoryRoute route;
-  final int fare;
-  final int? counterOffer;
+  final Money fare;
+  final Money? counterOffer;
   final double? distanceKm;
   final int? durationMinutes;
   final List<ReceiptLine> lines;
@@ -217,7 +219,7 @@ class HistoryDetail {
   final int? ratedStars;
   final HistoryCancellation? cancellation;
   final HistoryDelivery? delivery;
-  final int? returnFee;
+  final Money? returnFee;
 
   bool get isCompleted => status == HistoryStatus.completed;
 
@@ -229,9 +231,7 @@ class HistoryDetail {
 
   String? get distanceLabel {
     final km = distanceKm;
-    if (km == null) return null;
-    final rounded = km.toStringAsFixed(1);
-    return '${rounded.endsWith('.0') ? rounded.substring(0, rounded.length - 2) : rounded} km';
+    return km == null ? null : SangaDistance.fromKilometers(km);
   }
 
   String? get durationLabel {

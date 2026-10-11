@@ -5,6 +5,7 @@ import 'package:sanga_ride/core/api/mock/mock_delivery.dart';
 import 'package:sanga_ride/core/api/mock/mock_server.dart';
 import 'package:sanga_ride/core/api/mock/mock_trip.dart';
 import 'package:sanga_ride/core/api/mock/mock_verification.dart';
+import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 enum MockOnboardingStep {
   aboutYou('about_you'),
@@ -165,8 +166,9 @@ abstract final class MockAccount {
 
   static Object? _requestPhone(MockRequest request) {
     final phone = '${request.body['phone']}';
-    if (!RegExp(r'^\+234[789]\d{9}$').hasMatch(phone)) {
-      throw const MockFailure(422, 'Enter a valid Nigerian phone number.', code: 'invalid_phone');
+    if (!phone.startsWith('+') || !SangaPhoneNumber.isValid(phone)) {
+      final region = SangaPhoneNumber.regionOf(phone);
+      throw MockFailure(422, 'Enter a valid ${region.adjective} phone number.', code: 'invalid_phone');
     }
     if (_digits(phone) == _digits(_fields['phone'])) {
       throw const MockFailure(422, 'That’s the number you already use.', code: 'same_phone');

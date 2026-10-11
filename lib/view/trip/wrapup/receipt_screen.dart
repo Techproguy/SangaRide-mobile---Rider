@@ -69,9 +69,9 @@ class _ReceiptBody extends StatelessWidget {
         if (receipt.delivery case final ReceiptDelivery delivery) ReceiptDeliveryCard(delivery: delivery),
         SangaFareBreakdown(
           title: 'Fare breakdown',
-          lines: [for (final line in receipt.lines) SangaFareLine(line.label, SangaMoney.naira(line.amount))],
+          lines: [for (final line in receipt.lines) SangaFareLine(line.label, line.amount.format())],
           totalLabel: 'TOTAL PAID',
-          total: SangaMoney.naira(receipt.total),
+          total: receipt.total.format(),
         ),
         ReceiptPaidWith(paidWith: receipt.paidWith, paidAt: receipt.paidAt),
       ],

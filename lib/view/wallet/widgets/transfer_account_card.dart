@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sanga_ride/core/format/number_formats.dart';
 import 'package:sanga_ride/model/wallet/wallet.dart';
 import 'package:sanga_ride/view/wallet/wallet_copy.dart';
 import 'package:sanga_ride/view/wallet/wallet_format.dart';
@@ -15,7 +16,7 @@ class TransferAccountCard extends StatelessWidget {
   const TransferAccountCard({super.key, required this.account, required this.amount, required this.onCopy});
 
   final VirtualAccount account;
-  final int amount;
+  final Money amount;
   final ValueChanged<CopyableValue> onCopy;
 
   @override
@@ -35,7 +36,7 @@ class TransferAccountCard extends StatelessWidget {
         _AccountRow(
           label: WalletCopy.amountToSend,
           value: WalletFormat.money(amount),
-          copy: CopyableValue(label: WalletCopy.amount, value: '$amount'),
+          copy: CopyableValue(label: WalletCopy.amount, value: NumberFormats.plain(amount)),
           onCopy: onCopy,
         ),
       ],

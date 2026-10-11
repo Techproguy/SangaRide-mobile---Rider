@@ -4,12 +4,12 @@ import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 class FareChangeNote extends StatelessWidget {
   const FareChangeNote({super.key, required this.currentTotal, required this.newTotal});
 
-  final int currentTotal;
-  final int newTotal;
+  final Money currentTotal;
+  final Money newTotal;
 
   String get _message => newTotal == currentTotal
-      ? 'Your fare stays at ${SangaMoney.naira(currentTotal)}.'
-      : 'Your fare goes from ${SangaMoney.naira(currentTotal)} to ${SangaMoney.naira(newTotal)}.';
+      ? 'Your fare stays at ${currentTotal.format()}.'
+      : 'Your fare goes from ${currentTotal.format()} to ${newTotal.format()}.';
 
   @override
   Widget build(BuildContext context) {

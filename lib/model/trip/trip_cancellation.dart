@@ -1,7 +1,9 @@
 import 'package:sanga_ride/core/copy/common_copy.dart';
+import 'package:sanga_ride/core/format/money_json.dart';
 import 'package:sanga_ride/model/trip/trip.dart';
 import 'package:sanga_ride/model/trip/wrapup/payment.dart';
 import 'package:sanga_ride_core/sanga_ride_core.dart';
+import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 enum CancelReason {
   driverLate('driver_late', 'Driver is taking too long', 'Driver taking too long'),
@@ -59,12 +61,12 @@ class CancellationRefund {
   factory CancellationRefund.fromJson(Map<String, dynamic> json) {
     final reader = JsonReader.of(json);
     return CancellationRefund(
-      amount: reader.integer('amount'),
+      amount: reader.money('amount'),
       method: PaymentMethod.tryFromCode(reader.strOrNull('method')),
     );
   }
 
-  final int amount;
+  final Money amount;
   final PaymentMethod? method;
 
   String get destination => method == null ? 'original payment method' : method!.label.toLowerCase();
@@ -85,7 +87,7 @@ class CancellationReview {
     final refund = reader.objectOrNull('refund');
     return CancellationReview(
       reviewId: reader.strOrNull('reviewId'),
-      fee: reader.integer('fee'),
+      fee: reader.money('fee'),
       feeReason: CancelFeeReason.fromCode(reader.strOrNull('feeReason')),
       refund: refund == null ? null : CancellationRefund.fromJson(refund.raw),
       paymentMethod: PaymentMethod.tryFromCode(reader.strOrNull('paymentMethod')),
@@ -94,13 +96,13 @@ class CancellationReview {
   }
 
   final String? reviewId;
-  final int fee;
+  final Money fee;
   final CancelFeeReason feeReason;
   final CancellationRefund? refund;
   final PaymentMethod? paymentMethod;
   final String? message;
 
-  bool get hasFee => fee > 0;
+  bool get hasFee => fee.isPositive;
 
   String notice(String amount) => message ?? feeReason.notice(amount);
 }
@@ -112,13 +114,13 @@ class CancelOutcome {
     final reader = JsonReader.of(json);
     return CancelOutcome(
       tripId: reader.str('tripId'),
-      feeCharged: reader.intOr('feeCharged', 0),
+      feeCharged: reader.money('feeCharged'),
       message: reader.strOr('message', 'Your ride is cancelled.'),
     );
   }
 
   final String tripId;
-  final int feeCharged;
+  final Money feeCharged;
   final String message;
 }
 
@@ -227,7 +229,7 @@ final class CancelReviewing extends CancelState {
   final String note;
   final CancellationReview review;
   final bool isSubmitting;
-  final int? feeWas;
+  final Money? feeWas;
 
   CancelReviewing submitting() => CancelReviewing(reason, note, review, isSubmitting: true);
 }

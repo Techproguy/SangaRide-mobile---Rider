@@ -1,3 +1,4 @@
+import 'package:sanga_ride/core/api/mock/mock_money.dart';
 import 'package:sanga_ride/core/services/card_tokenizer.dart';
 import 'package:sanga_ride/model/trip/wrapup/card_details.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
@@ -17,7 +18,7 @@ class MockCardTokenizer implements CardTokenizer {
   static String brandOf(String digits) {
     if (digits.startsWith('4')) return 'visa';
     if (_mastercard.hasMatch(digits)) return 'mastercard';
-    if (digits.startsWith('506') || digits.startsWith('650')) return 'verve';
+    if (!MockMoney.isUnitedStates && (digits.startsWith('506') || digits.startsWith('650'))) return 'verve';
     return 'other';
   }
 

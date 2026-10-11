@@ -45,7 +45,9 @@ extension TopUpResume on TopUpController {
   }
 
   Future<void> resumeTransfer(String id) {
-    return resume(SavedTopUp(intentKey: '', method: TopUpMethod.transfer, amount: draft.amount ?? 0, topUpId: id));
+    return resume(
+      SavedTopUp(intentKey: '', method: TopUpMethod.transfer, amount: draft.amount ?? Money.zero(), topUpId: id),
+    );
   }
 
   Future<TopUp?> _lookup(SavedTopUp target) async {
@@ -77,7 +79,7 @@ extension TopUpResume on TopUpController {
       return SavedTopUp(
         intentKey: '',
         method: status == TopUpStatus.awaitingTransfer ? TopUpMethod.transfer : TopUpMethod.card,
-        amount: 0,
+        amount: Money.zero(),
         topUpId: item.id,
         status: status,
       );
@@ -85,7 +87,7 @@ extension TopUpResume on TopUpController {
     return null;
   }
 
-  Future<void> _persistIntent(Mutation<TopUp> mutation, TopUpMethod method, int amount, String? savedCardId) {
+  Future<void> _persistIntent(Mutation<TopUp> mutation, TopUpMethod method, Money amount, String? savedCardId) {
     final intent = SavedTopUp(intentKey: mutation.key.value, method: method, amount: amount, savedCardId: savedCardId);
     _saved.value = null;
     return SessionStorage.drafts.write(_draftKey, intent.toJson());
@@ -95,7 +97,11 @@ extension TopUpResume on TopUpController {
     final current = SavedTopUp.tryFromJson(SessionStorage.drafts.read(_draftKey));
     final base =
         current ??
-        SavedTopUp(intentKey: _creation?.key.value ?? '', method: method, amount: topUp.amount ?? draft.amount ?? 0);
+        SavedTopUp(
+          intentKey: _creation?.key.value ?? '',
+          method: method,
+          amount: topUp.amount ?? draft.amount ?? Money.zero(),
+        );
     final next = base.copyWith(topUpId: topUp.id, status: topUp.status);
     await SessionStorage.drafts.write(_draftKey, next.toJson());
     _saved.value = next;

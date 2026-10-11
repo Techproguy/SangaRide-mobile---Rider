@@ -1,20 +1,22 @@
 import 'package:sanga_ride/core/copy/common_copy.dart';
+import 'package:sanga_ride/core/format/money_json.dart';
 import 'package:sanga_ride/model/location/place.dart';
 import 'package:sanga_ride/model/trip/server_time.dart';
 import 'package:sanga_ride/model/trip/trip.dart';
 import 'package:sanga_ride_core/sanga_ride_core.dart';
+import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 class QuoteLine {
   const QuoteLine({required this.key, required this.label, required this.amount});
 
   factory QuoteLine.fromJson(Map<String, dynamic> json) {
     final reader = JsonReader.of(json);
-    return QuoteLine(key: reader.str('key'), label: reader.str('label'), amount: reader.integer('amount'));
+    return QuoteLine(key: reader.str('key'), label: reader.str('label'), amount: reader.money('amount'));
   }
 
   final String key;
   final String label;
-  final int amount;
+  final Money amount;
 }
 
 class StopQuote {
@@ -32,18 +34,18 @@ class StopQuote {
       id: reader.str('quoteId'),
       expiresAt: deviceDeadlineOf(reader.str('expiresAt')),
       lines: reader.listOf('lines', (line) => QuoteLine.fromJson(line.raw)),
-      total: reader.integer('total'),
-      currentTotal: reader.integer('currentTotal'),
+      total: reader.money('total'),
+      currentTotal: reader.money('currentTotal'),
     );
   }
 
   final String id;
   final DateTime expiresAt;
   final List<QuoteLine> lines;
-  final int total;
-  final int currentTotal;
+  final Money total;
+  final Money currentTotal;
 
-  int get difference => total - currentTotal;
+  Money get difference => total - currentTotal;
 
   bool get isExpired => !DateTime.now().isBefore(expiresAt);
 

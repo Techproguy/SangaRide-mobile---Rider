@@ -70,7 +70,7 @@ class _RidePricingScreenState extends State<RidePricingScreen> {
               leading: SangaIconBadge(child: Icon(_iconFor(option))),
               title: option.label,
               subtitle: option.description,
-              value: SangaMoney.naira(price),
+              value: price.format(),
               isSelected: _ride.pricing == option,
               onTap: () => _ride.selectPricing(option),
             ),

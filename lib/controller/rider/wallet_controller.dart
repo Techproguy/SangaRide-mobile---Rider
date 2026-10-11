@@ -6,6 +6,7 @@ import 'package:sanga_ride/core/api/wallet_endpoints.dart';
 import 'package:sanga_ride/model/account/load_problem.dart';
 import 'package:sanga_ride/model/wallet/wallet.dart';
 import 'package:sanga_ride_core/sanga_ride_core.dart';
+import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 class WalletController extends GetxController {
   WalletController(this.scope);
@@ -31,7 +32,7 @@ class WalletController extends GetxController {
     _ => null,
   };
 
-  int? get balance => overview?.balance;
+  Money? get balance => overview?.balance;
 
   @override
   void onClose() {

@@ -35,12 +35,11 @@ class _Form extends StatefulWidget {
 }
 
 class _FormState extends State<_Form> {
-  static const int minimum = 1000;
   static const int maxDigits = 8;
 
   final _amount = TextEditingController();
   late bool _hasLimit = widget.member.limits.monthlySpend != null;
-  late int? _value = widget.member.limits.monthlySpend;
+  late Money? _value = widget.member.limits.monthlySpend;
   late OverLimitAction _action = widget.member.limits.overLimit;
   bool _hasEdited = false;
 
@@ -48,7 +47,7 @@ class _FormState extends State<_Form> {
   void initState() {
     super.initState();
     final current = _value;
-    if (current != null) _amount.text = NumberFormats.groupedMoney.format(current);
+    if (current != null) _amount.text = NumberFormats.groupedWhole(current);
   }
 
   @override
@@ -60,11 +59,13 @@ class _FormState extends State<_Form> {
   String? get _error {
     final value = _value;
     if (!_hasLimit || !_hasEdited) return null;
-    if (value == null || value < minimum) return GroupCopy.setAtLeast(minimum);
+    if (value == null || value < MemberLimits.minimumMonthlySpend) {
+      return GroupCopy.setAtLeast(MemberLimits.minimumMonthlySpend);
+    }
     return null;
   }
 
-  bool get _canSave => !_hasLimit || ((_value ?? 0) >= minimum);
+  bool get _canSave => !_hasLimit || ((_value ?? Money.zero()) >= MemberLimits.minimumMonthlySpend);
 
   void _save() {
     saveMemberPatch(
@@ -113,7 +114,7 @@ class _FormState extends State<_Form> {
                       maxDigits: maxDigits,
                       errorText: _error,
                       onChanged: (value) => setState(() {
-                        _value = value;
+                        _value = NumberFormats.moneyOf(value);
                         _hasEdited = true;
                       }),
                     ),

@@ -1,7 +1,6 @@
 import 'package:intl/intl.dart';
 import 'package:sanga_ride/model/history/history_detail.dart';
 import 'package:sanga_ride/model/ride/ride_match.dart';
-import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 import 'package:share_plus/share_plus.dart';
 
 abstract final class ReceiptShare {
@@ -28,8 +27,8 @@ abstract final class ReceiptShare {
       if (driver != null) ..._driverLines(driver, vehicle),
       if (delivery != null) ...['', 'Package: ${delivery.itemName}', 'Recipient: ${delivery.recipientName}'],
       '',
-      for (final line in detail.lines) '${line.label}: ${SangaMoney.naira(line.amount)}',
-      'Total paid: ${SangaMoney.naira(detail.fare)}',
+      for (final line in detail.lines) '${line.label}: ${line.amount.format()}',
+      'Total paid: ${detail.fare.format()}',
       if (detail.paidWith != null) 'Paid with: ${detail.paidWith!.label}',
       '',
       'Thanks for riding with Sanga.',

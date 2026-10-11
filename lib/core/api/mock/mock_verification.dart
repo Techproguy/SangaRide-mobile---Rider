@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:sanga_ride/core/api/mock/mock_money.dart';
 import 'package:sanga_ride/core/api/mock/mock_server.dart';
 import 'package:sanga_ride/core/api/verification_endpoints.dart';
 
@@ -7,12 +8,9 @@ abstract final class MockVerification {
   static const Duration _reviewTime = Duration(seconds: 20);
   static const int _estimatedReviewHours = 24;
   static const int _maxUploadBytes = 5 * 1024 * 1024;
-  static const Set<String> _documentTypes = {
-    'national_id_card',
-    'drivers_license',
-    'voters_card',
-    'international_passport',
-  };
+  static Set<String> get _documentTypes => MockMoney.isUnitedStates
+      ? const {'national_id_card', 'drivers_license', 'international_passport'}
+      : const {'national_id_card', 'drivers_license', 'voters_card', 'international_passport'};
   static const Map<String, String> _reasonMessages = {
     'image_unclear': 'The photo was blurry. Upload a clear one in good light.',
     'expired': 'This document has expired. Upload a valid one.',

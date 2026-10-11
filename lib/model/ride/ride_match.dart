@@ -1,6 +1,8 @@
 import 'package:sanga_ride/core/copy/common_copy.dart';
+import 'package:sanga_ride/core/format/money_json.dart';
 import 'package:sanga_ride/model/ride/server_deadline.dart';
 import 'package:sanga_ride_core/sanga_ride_core.dart';
+import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 export 'package:sanga_ride/model/ride/ride_match_state.dart';
 
@@ -172,7 +174,7 @@ class DriverOffer {
   factory DriverOffer.fromJson(JsonReader json) => DriverOffer(
     id: json.str('id'),
     status: OfferStatus.fromCode(json.strOrNull('status')),
-    counterOffer: json.intOrNull('counterOffer'),
+    counterOffer: json.moneyOrNull('counterOffer'),
     etaMinutes: json.intOr('etaMinutes', 0),
     distanceKm: json.doubleOr('distanceKm', 0),
     driver: OfferDriver.fromJson(json.raw['driver']),
@@ -180,7 +182,7 @@ class DriverOffer {
 
   final String id;
   final OfferStatus status;
-  final int? counterOffer;
+  final Money? counterOffer;
   final int etaMinutes;
   final double distanceKm;
   final OfferDriver driver;
@@ -270,8 +272,8 @@ class DriverHold {
     return DriverHold(
       offerId: hold.str('offerId'),
       holdExpiresAt: deviceDeadlineAt(serverInstantOf(hold, 'holdExpiresAt')),
-      fare: hold.integer('fare'),
-      counterOffer: hold.intOrNull('counterOffer'),
+      fare: hold.money('fare'),
+      counterOffer: hold.moneyOrNull('counterOffer'),
       matchLabel: hold.strOrNull('matchLabel'),
       distanceAwayKm: card.doubleOr('distanceAwayKm', 0),
       driver: OfferDriver.fromJson(card),
@@ -282,8 +284,8 @@ class DriverHold {
 
   final String offerId;
   final DateTime holdExpiresAt;
-  final int fare;
-  final int? counterOffer;
+  final Money fare;
+  final Money? counterOffer;
   final String? matchLabel;
   final double distanceAwayKm;
   final OfferDriver driver;

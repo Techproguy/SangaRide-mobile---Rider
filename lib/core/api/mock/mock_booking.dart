@@ -1,5 +1,7 @@
 import 'package:sanga_ride/core/api/booking_endpoints.dart';
 import 'package:sanga_ride/core/api/mock/mock_airport.dart';
+import 'package:sanga_ride/core/api/mock/mock_money.dart';
+import 'package:sanga_ride/core/api/mock/mock_region.dart';
 import 'package:sanga_ride/core/api/mock/mock_server.dart';
 
 abstract final class MockBooking {
@@ -17,7 +19,15 @@ abstract final class MockBooking {
 
   static const Map<String, dynamic> rules = {'scheduleLeadMinutes': 15, 'returnGapMinutes': 30, 'windowDays': 30};
 
-  static const Map<String, dynamic> hourlyRates = {
+  static Map<String, dynamic> get hourlyRates => {
+    ..._hourlyRates,
+    'rates': [
+      for (final rate in hourlyRatesNaira)
+        {'category': rate['category'], 'hourlyRate': MockMoney.json(rate['hourlyRate'] as num)},
+    ],
+  };
+
+  static const Map<String, dynamic> _hourlyRates = {
     'minHours': 1,
     'maxHours': 12,
     'presets': [
@@ -28,27 +38,38 @@ abstract final class MockBooking {
     ],
     'includes': ['Your driver and car for the whole time', 'Waiting time between stops', 'Fuel'],
     'excludes': ['Tolls and parking fees'],
-    'rates': [
-      {'category': 'go', 'hourlyRate': 6500},
-      {'category': 'plus', 'hourlyRate': 8000},
-      {'category': 'xl', 'hourlyRate': 11000},
-      {'category': 'lux', 'hourlyRate': 18000},
-      {'category': 'moto', 'hourlyRate': 2500},
-      {'category': 'assist', 'hourlyRate': 11000},
-    ],
   };
 
-  static const Map<String, dynamic> cities = {
+  static const List<Map<String, dynamic>> hourlyRatesNaira = [
+    {'category': 'go', 'hourlyRate': 6500},
+    {'category': 'plus', 'hourlyRate': 8000},
+    {'category': 'xl', 'hourlyRate': 11000},
+    {'category': 'lux', 'hourlyRate': 18000},
+    {'category': 'moto', 'hourlyRate': 2500},
+    {'category': 'assist', 'hourlyRate': 11000},
+  ];
+
+  static Map<String, dynamic> get cities => {
     'departureLeadMinutes': 120,
     'windowDays': 30,
-    'cities': [
-      {'id': 'lagos', 'name': 'Lagos', 'lat': 6.5244, 'lng': 3.3792, 'radiusKm': 45},
-      {'id': 'ibadan', 'name': 'Ibadan', 'lat': 7.3775, 'lng': 3.9470, 'radiusKm': 25},
-      {'id': 'abuja', 'name': 'Abuja', 'lat': 9.0765, 'lng': 7.3986, 'radiusKm': 40},
-      {'id': 'benin', 'name': 'Benin', 'lat': 6.3350, 'lng': 5.6037, 'radiusKm': 25},
-      {'id': 'port-harcourt', 'name': 'Port Harcourt', 'lat': 4.8156, 'lng': 7.0498, 'radiusKm': 30},
-    ],
+    'cities': MockRegion.isUnitedStates ? _unitedStatesCities : _nigerianCities,
   };
+
+  static const List<Map<String, dynamic>> _nigerianCities = [
+    {'id': 'lagos', 'name': 'Lagos', 'lat': 6.5244, 'lng': 3.3792, 'radiusKm': 45},
+    {'id': 'ibadan', 'name': 'Ibadan', 'lat': 7.3775, 'lng': 3.9470, 'radiusKm': 25},
+    {'id': 'abuja', 'name': 'Abuja', 'lat': 9.0765, 'lng': 7.3986, 'radiusKm': 40},
+    {'id': 'benin', 'name': 'Benin', 'lat': 6.3350, 'lng': 5.6037, 'radiusKm': 25},
+    {'id': 'port-harcourt', 'name': 'Port Harcourt', 'lat': 4.8156, 'lng': 7.0498, 'radiusKm': 30},
+  ];
+
+  static const List<Map<String, dynamic>> _unitedStatesCities = [
+    {'id': 'houston', 'name': 'Houston', 'lat': 29.7604, 'lng': -95.3698, 'radiusKm': 45},
+    {'id': 'austin', 'name': 'Austin', 'lat': 30.2672, 'lng': -97.7431, 'radiusKm': 25},
+    {'id': 'dallas', 'name': 'Dallas', 'lat': 32.7767, 'lng': -96.7970, 'radiusKm': 40},
+    {'id': 'san-antonio', 'name': 'San Antonio', 'lat': 29.4241, 'lng': -98.4936, 'radiusKm': 25},
+    {'id': 'galveston', 'name': 'Galveston', 'lat': 29.3013, 'lng': -94.7977, 'radiusKm': 30},
+  ];
 
   static final List<_ScheduledRecord> _rides = _seed();
 
@@ -64,8 +85,8 @@ abstract final class MockBooking {
         tripType: 'oneWay',
         category: 'go',
         scheduledAt: ride,
-        pickup: const {'name': 'Chicken Republic', 'address': 'Allen Avenue, Ikeja, Lagos'},
-        dropoff: const {'name': 'Chicken Republic', 'address': 'Nnamdi Azikiwe Street, Idumota, Lagos'},
+        pickup: MockRegion.stop('mock_cr_ikeja'),
+        dropoff: MockRegion.stop('mock_cr_idumota'),
         fare: 4500,
       ),
       _ScheduledRecord(
@@ -74,8 +95,8 @@ abstract final class MockBooking {
         tripType: 'oneWay',
         category: 'plus',
         scheduledAt: ride.add(const Duration(days: 2, hours: -2)),
-        pickup: const {'name': 'Lekki Phase 1', 'address': 'Lekki Phase 1, Lagos'},
-        dropoff: const {'name': 'Ikeja City Mall', 'address': 'Obafemi Awolowo Way, Ikeja, Lagos'},
+        pickup: MockRegion.stop('mock_lekki'),
+        dropoff: MockRegion.stop('mock_icm'),
         fare: 6200,
         repeat: {
           'weekdays': [1, 3, 5],
@@ -107,7 +128,7 @@ abstract final class MockBooking {
       scheduledAt: decision.pickupAt,
       pickup: _stop(body['pickup']),
       dropoff: _stop(body['dropoff']),
-      fare: (body['proposedFare'] as num?) ?? 0,
+      fare: MockMoney.naira(body['proposedFare']),
     );
     MockAirport.register(record.id, body, decision.pickupAt);
     _rides.add(record);
@@ -129,7 +150,7 @@ abstract final class MockBooking {
       'scheduledAt': ride.scheduledAt.toUtc().toIso8601String(),
       'pickup': ride.pickup,
       'dropoff': ride.dropoff,
-      'fare': ride.fare,
+      'fare': MockMoney.json(ride.fare),
       'hours': ride.hours,
       'repeat': ride.repeat,
       'airport': ?MockAirport.display(ride.id),
@@ -184,7 +205,7 @@ abstract final class MockBooking {
       scheduledAt: scheduledAt,
       pickup: _stop(body['pickup']),
       dropoff: _stop(body['dropoff']),
-      fare: (body['proposedFare'] as num?) ?? 0,
+      fare: MockMoney.naira(body['proposedFare']),
       hours: (body['hours'] as num?)?.toInt(),
       repeat: repeat,
     );

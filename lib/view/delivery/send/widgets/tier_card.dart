@@ -20,7 +20,7 @@ class TierCard extends StatelessWidget {
   final String label;
   final String blurb;
   final String eta;
-  final int fare;
+  final Money fare;
   final bool isSelected;
   final bool isRecommended;
   final VoidCallback onTap;
@@ -34,7 +34,7 @@ class TierCard extends StatelessWidget {
           leading: SangaIconBadge(size: 40, child: Icon(icon)),
           title: label,
           subtitle: '$blurb\n$eta',
-          value: SangaMoney.naira(fare),
+          value: fare.format(),
           isSelected: isSelected,
           onTap: onTap,
         ),

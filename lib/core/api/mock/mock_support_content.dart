@@ -1,6 +1,8 @@
+import 'package:sanga_ride/core/api/mock/mock_region.dart';
+
 abstract final class MockSupportContent {
-  static const Map<String, dynamic> contact = {
-    'phone': '+2347000000000',
+  static Map<String, dynamic> get contact => {
+    'phone': MockRegion.supportPhone,
     'hours': '24/7',
     'chatAvailable': true,
     'chatWaitMinutes': 2,

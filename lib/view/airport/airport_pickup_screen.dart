@@ -33,7 +33,7 @@ class AirportPickupScreen extends StatelessWidget {
     context.push(BookingRoutes.afterAirportPickup);
   }
 
-  String _subtitle(PickupType type, num? fee) {
+  String _subtitle(PickupType type, Money? fee) {
     if (type != PickupType.meetGreet || fee != null) return type.description;
     return '${type.description}. Adds a fee, shown in your fare.';
   }
@@ -65,7 +65,7 @@ class AirportPickupScreen extends StatelessWidget {
                   leading: SangaIconBadge(child: Icon(_iconFor(type))),
                   title: type.label,
                   subtitle: _subtitle(type, fee),
-                  value: type == PickupType.meetGreet && fee != null ? SangaMoney.naira(fee) : null,
+                  value: type == PickupType.meetGreet && fee != null ? fee.format() : null,
                   isSelected: selected == type,
                   onTap: () => airport.setPickupType(type),
                 ),

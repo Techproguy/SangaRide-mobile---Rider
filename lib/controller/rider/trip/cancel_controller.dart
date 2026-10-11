@@ -10,6 +10,7 @@ import 'package:sanga_ride/core/api/idempotency_intents.dart';
 import 'package:sanga_ride/core/services/session_restore.dart';
 import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride_core/sanga_ride_core.dart';
+import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 class CancelController extends GetxController {
   final _api = Get.find<ApiService>();
@@ -152,7 +153,7 @@ class CancelController extends GetxController {
             'reason': reviewing.reason.code,
             if (note.isNotEmpty) 'note': note,
             'reviewId': reviewing.review.reviewId,
-            'fee': reviewing.review.fee,
+            'fee': reviewing.review.fee.toJson(),
           },
           key: key,
           suppressErrorToast: true,
@@ -163,7 +164,7 @@ class CancelController extends GetxController {
     );
   }
 
-  Future<Reconciled<CancelOutcome>> _reconcile(String id, int fee) async {
+  Future<Reconciled<CancelOutcome>> _reconcile(String id, Money fee) async {
     final trip = await _trip.pollNow();
     if (trip == null) return const ReconciledPending();
     if (trip.status != TripStatus.cancelled) return const ReconciledNotDone();

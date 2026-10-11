@@ -74,7 +74,7 @@ class _DeliveryReviewScreenState extends State<DeliveryReviewScreen> {
       title: 'Your price was refreshed',
       message: tier == null || info == null
           ? 'Have a look at the latest price, then go again.'
-          : '${info.label} is now ${SangaMoney.naira(tier.fare)}. Happy with that?',
+          : '${info.label} is now ${tier.fare.format()}. Happy with that?',
       actionLabel: 'Sounds good',
       dismissLabel: 'Change tier',
     );
@@ -174,7 +174,7 @@ class _DeliveryReviewScreenState extends State<DeliveryReviewScreen> {
         mainAxisSize: MainAxisSize.min,
         spacing: SangaSpacing.sm,
         children: [
-          Text(SangaMoney.naira(tier.fare), style: SangaTextStyles.cardValue),
+          Text(tier.fare.format(), style: SangaTextStyles.cardValue),
           ReviewEditButton(label: 'Edit delivery tier', onPressed: () => _edit(DeliveryRoutes.tier)),
         ],
       ),
@@ -200,7 +200,7 @@ class _DeliveryReviewScreenState extends State<DeliveryReviewScreen> {
           description: draft.description.trim(),
           facts: facts,
           photoLabel: photo is PhotoUploaded ? 'Added' : 'Add one',
-          valueLabel: value == null ? 'Add one' : SangaMoney.naira(value),
+          valueLabel: value == null ? 'Add one' : value.format(),
           onEditPhoto: () => _edit(DeliveryRoutes.photo),
           onEditValue: () => _edit(DeliveryRoutes.value),
         ),

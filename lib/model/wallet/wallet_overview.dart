@@ -1,6 +1,8 @@
+import 'package:sanga_ride/core/format/money_json.dart';
 import 'package:sanga_ride/model/account/load_problem.dart';
 import 'package:sanga_ride/model/wallet/wallet_transaction.dart';
 import 'package:sanga_ride_core/sanga_ride_core.dart';
+import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 class WalletLimits {
   const WalletLimits({required this.minTopUp, required this.maxTopUp});
@@ -8,17 +10,17 @@ class WalletLimits {
   factory WalletLimits.fromJson(Map<String, dynamic> json) {
     final reader = JsonReader(json);
     return WalletLimits(
-      minTopUp: reader.intOr('minTopUp', permissive.minTopUp),
-      maxTopUp: reader.intOr('maxTopUp', permissive.maxTopUp),
+      minTopUp: reader.moneyOr('minTopUp', permissive.minTopUp),
+      maxTopUp: reader.moneyOr('maxTopUp', permissive.maxTopUp),
     );
   }
 
-  static const WalletLimits permissive = WalletLimits(minTopUp: 1, maxTopUp: 10000000);
+  static WalletLimits get permissive => WalletLimits(minTopUp: Money.major(1), maxTopUp: Money.major(10000000));
 
-  final int minTopUp;
-  final int maxTopUp;
+  final Money minTopUp;
+  final Money maxTopUp;
 
-  bool contains(int amount) => amount >= minTopUp && amount <= maxTopUp;
+  bool contains(Money amount) => amount >= minTopUp && amount <= maxTopUp;
 }
 
 class VirtualAccount {
@@ -83,14 +85,14 @@ class WalletOverview {
   factory WalletOverview.fromJson(Map<String, dynamic> json) {
     final reader = JsonReader(json);
     return WalletOverview(
-      balance: reader.integer('balance'),
+      balance: reader.money('balance'),
       limits: WalletLimits.fromJson(reader.objectOrNull('limits')?.raw ?? const {}),
       virtualAccount: VirtualAccount.tryFromJson(reader.objectOrNull('virtualAccount')),
       savedCards: reader.listOf('savedCards', SavedCard.fromReader),
     );
   }
 
-  final int balance;
+  final Money balance;
   final WalletLimits limits;
   final VirtualAccount? virtualAccount;
   final List<SavedCard> savedCards;

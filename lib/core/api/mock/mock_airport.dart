@@ -1,4 +1,6 @@
 import 'package:sanga_ride/core/api/airport_endpoints.dart';
+import 'package:sanga_ride/core/api/mock/mock_money.dart';
+import 'package:sanga_ride/core/api/mock/mock_region.dart';
 import 'package:sanga_ride/core/api/mock/mock_server.dart';
 
 class MockAirportDecision {
@@ -29,7 +31,10 @@ class MockAirportSeed {
 abstract final class MockAirport {
   static final List<MockRoute> routes = _build();
 
-  static List<MockAirportSeed> get seeds => _seeds;
+  static List<MockAirportSeed> get seeds {
+    _ensureSeeded();
+    return _seedStore;
+  }
 
   static const num meetGreetFeeNaira = 3500;
 
@@ -41,9 +46,93 @@ abstract final class MockAirport {
   static const Duration _meetPointAfter = Duration(minutes: 4);
   static const Duration _delay = Duration(minutes: 40);
   static const int _windowDays = 30;
-  static const List<String> _happyFlights = ['BA75', 'P47120'];
 
-  static const List<Map<String, dynamic>> _airports = [
+  static List<String> get _happyFlights => MockMoney.isUnitedStates ? ['BA75', 'UA7120'] : ['BA75', 'P47120'];
+
+  static String get _seedDomesticCarrier => MockMoney.isUnitedStates ? 'UA' : 'P4';
+
+  static int get _centralOffsetMinutes => DateTime.now().month >= 3 && DateTime.now().month <= 10 ? -300 : -360;
+
+  static List<Map<String, dynamic>> get _airports =>
+      MockMoney.isUnitedStates ? _unitedStatesAirports : _nigerianAirports;
+
+  static List<Map<String, dynamic>> get _unitedStatesAirports => [
+    {
+      'id': 'iah',
+      'iata': 'IAH',
+      'utcOffsetMinutes': _centralOffsetMinutes,
+      'name': 'George Bush Intercontinental Airport',
+      'city': 'Houston',
+      'country': 'United States',
+      'lat': 29.9902,
+      'lng': -95.3368,
+      'terminals': [
+        {'id': 'iah_t1', 'name': 'Terminal D', 'kind': 'international'},
+        {'id': 'iah_t2', 'name': 'Terminal C', 'kind': 'domestic'},
+      ],
+      'meetPoint': 'Arrivals level, by the Sanga sign',
+    },
+    {
+      'id': 'hou',
+      'iata': 'HOU',
+      'utcOffsetMinutes': _centralOffsetMinutes,
+      'name': 'William P. Hobby Airport',
+      'city': 'Houston',
+      'country': 'United States',
+      'lat': 29.6454,
+      'lng': -95.2789,
+      'terminals': [
+        {'id': 'hou_t1', 'name': 'International Terminal', 'kind': 'international'},
+        {'id': 'hou_t2', 'name': 'Main Terminal', 'kind': 'domestic'},
+      ],
+      'meetPoint': 'Arrivals curb, by the Sanga sign',
+    },
+    {
+      'id': 'aus',
+      'iata': 'AUS',
+      'utcOffsetMinutes': _centralOffsetMinutes,
+      'name': 'Austin-Bergstrom International Airport',
+      'city': 'Austin',
+      'country': 'United States',
+      'lat': 30.1945,
+      'lng': -97.6699,
+      'terminals': [
+        {'id': 'aus_t1', 'name': 'Barbara Jordan Terminal', 'kind': 'international'},
+      ],
+      'meetPoint': 'Arrivals level, near the car park',
+    },
+    {
+      'id': 'dfw',
+      'iata': 'DFW',
+      'utcOffsetMinutes': _centralOffsetMinutes,
+      'name': 'Dallas Fort Worth International Airport',
+      'city': 'Dallas',
+      'country': 'United States',
+      'lat': 32.8998,
+      'lng': -97.0403,
+      'terminals': [
+        {'id': 'dfw_t1', 'name': 'Terminal D', 'kind': 'international'},
+        {'id': 'dfw_t2', 'name': 'Terminal A', 'kind': 'domestic'},
+      ],
+      'meetPoint': 'Arrivals level, by the Sanga sign',
+    },
+    {
+      'id': 'sat',
+      'iata': 'SAT',
+      'utcOffsetMinutes': _centralOffsetMinutes,
+      'name': 'San Antonio International Airport',
+      'city': 'San Antonio',
+      'country': 'United States',
+      'lat': 29.5337,
+      'lng': -98.4698,
+      'terminals': [
+        {'id': 'sat_t1', 'name': 'Terminal A', 'kind': 'international'},
+      ],
+      'meetPoint': 'Arrivals level, by the information desk',
+    },
+  ];
+
+  static const List<Map<String, dynamic>> _nigerianAirports = [
     {
       'id': 'los',
       'iata': 'LOS',
@@ -119,9 +208,26 @@ abstract final class MockAirport {
     },
   ];
 
-  static const List<String> _popular = ['los', 'abv', 'phc'];
+  static List<String> get _popular => MockMoney.isUnitedStates ? ['iah', 'hou', 'aus'] : ['los', 'abv', 'phc'];
 
-  static const List<Map<String, dynamic>> _airlines = [
+  static List<Map<String, dynamic>> get _airlines =>
+      MockMoney.isUnitedStates ? _unitedStatesAirlines : _nigerianAirlines;
+
+  static const List<Map<String, dynamic>> _unitedStatesAirlines = [
+    {'code': 'BA', 'name': 'British Airways'},
+    {'code': 'UA', 'name': 'United Airlines'},
+    {'code': 'AA', 'name': 'American Airlines'},
+    {'code': 'WN', 'name': 'Southwest Airlines'},
+    {'code': 'DL', 'name': 'Delta Air Lines'},
+    {'code': 'VS', 'name': 'Virgin Atlantic'},
+    {'code': 'LH', 'name': 'Lufthansa'},
+    {'code': 'TK', 'name': 'Turkish Airlines'},
+    {'code': 'EK', 'name': 'Emirates'},
+    {'code': 'QR', 'name': 'Qatar Airways'},
+    {'code': 'AM', 'name': 'Aeromexico'},
+  ];
+
+  static const List<Map<String, dynamic>> _nigerianAirlines = [
     {'code': 'BA', 'name': 'British Airways'},
     {'code': 'P4', 'name': 'Air Peace'},
     {'code': 'VS', 'name': 'Virgin Atlantic'},
@@ -135,9 +241,22 @@ abstract final class MockAirport {
     {'code': 'OJ', 'name': 'Overland Airways'},
   ];
 
-  static const Set<String> _domesticCarriers = {'P4', 'QI', 'VK', 'OJ'};
+  static Set<String> get _domesticCarriers =>
+      MockMoney.isUnitedStates ? const {'UA', 'AA', 'WN', 'DL'} : const {'P4', 'QI', 'VK', 'OJ'};
 
-  static const List<Map<String, dynamic>> _internationalOrigins = [
+  static List<Map<String, dynamic>> get _internationalOrigins =>
+      MockMoney.isUnitedStates ? _unitedStatesOrigins : _nigerianOrigins;
+
+  static const List<Map<String, dynamic>> _unitedStatesOrigins = [
+    {'city': 'London', 'iata': 'LHR'},
+    {'city': 'Dubai', 'iata': 'DXB'},
+    {'city': 'Istanbul', 'iata': 'IST'},
+    {'city': 'Mexico City', 'iata': 'MEX'},
+    {'city': 'Doha', 'iata': 'DOH'},
+    {'city': 'Frankfurt', 'iata': 'FRA'},
+  ];
+
+  static const List<Map<String, dynamic>> _nigerianOrigins = [
     {'city': 'London', 'iata': 'LHR'},
     {'city': 'Dubai', 'iata': 'DXB'},
     {'city': 'Istanbul', 'iata': 'IST'},
@@ -154,16 +273,28 @@ abstract final class MockAirport {
     'ET': {'city': 'Addis Ababa', 'iata': 'ADD'},
     'QR': {'city': 'Doha', 'iata': 'DOH'},
     'LH': {'city': 'Frankfurt', 'iata': 'FRA'},
+    'AM': {'city': 'Mexico City', 'iata': 'MEX'},
   };
 
   static final Map<String, _Flight> _flights = {};
-  static final Map<String, _AirportRide> _rides = {};
-  static final List<MockAirportSeed> _seeds = [];
+  static final Map<String, _AirportRide> _rideStore = {};
+  static final List<MockAirportSeed> _seedStore = [];
+  static bool _isSeeded = false;
+
+  static Map<String, _AirportRide> get _rides {
+    _ensureSeeded();
+    return _rideStore;
+  }
+
+  static void _ensureSeeded() {
+    if (_isSeeded) return;
+    _isSeeded = true;
+    _seed(DateTime.now());
+  }
 
   static String _iso(DateTime time) => time.toUtc().toIso8601String();
 
   static List<MockRoute> _build() {
-    _seed(DateTime.now());
     return [
       MockRoute.get(
         AirportEndpoints.airports,
@@ -196,8 +327,8 @@ abstract final class MockAirport {
     final key = '$code$number';
     if (date == _today(now)) {
       final base = switch (key) {
-        'P47120' => now.add(const Duration(minutes: 40)),
-        'BA75' => now.add(const Duration(hours: 3)),
+        _ when key == _happyFlights.last => now.add(const Duration(minutes: 40)),
+        _ when key == _happyFlights.first => now.add(const Duration(hours: 3)),
         _ when number % 10 == 6 => now.subtract(const Duration(hours: 3)),
         _ when number % 10 == 5 => now.subtract(const Duration(minutes: 30)),
         _ => now.add(Duration(hours: 2 + number % 7)),
@@ -205,8 +336,8 @@ abstract final class MockAirport {
       return _minute(base);
     }
     return switch (key) {
-      'BA75' => DateTime(date.year, date.month, date.day, 19, 15),
-      'P47120' => DateTime(date.year, date.month, date.day, 9, 40),
+      _ when key == _happyFlights.first => DateTime(date.year, date.month, date.day, 19, 15),
+      _ when key == _happyFlights.last => DateTime(date.year, date.month, date.day, 9, 40),
       _ => DateTime(date.year, date.month, date.day, 6 + number % 16, (number % 12) * 5),
     };
   }
@@ -448,14 +579,14 @@ abstract final class MockAirport {
 
   static void _seed(DateTime start) {
     final tomorrow = DateTime(start.year, start.month, start.day + 1);
-    final los = _airports[0];
-    final abv = _airports[1];
+    final primary = _airports[0];
+    final secondary = _airports[1];
     final plans = <_SeedPlan>[
       _SeedPlan(
         id: 'sched_air_1',
         code: 'BA',
         number: 75,
-        destination: los,
+        destination: primary,
         scheduled: _minute(start.add(const Duration(minutes: 3))),
         delay: Duration.zero,
         status: 'scheduled',
@@ -464,14 +595,14 @@ abstract final class MockAirport {
         luggageCount: 2,
         luggageSize: 'medium',
         category: 'plus',
-        dropoff: {'name': 'Eko Hotel and Suites', 'address': 'Adetokunbo Ademola Street, Victoria Island, Lagos'},
+        dropoff: MockRegion.stop('mock_eko'),
         fare: 9500,
       ),
       _SeedPlan(
         id: 'sched_air_2',
-        code: 'P4',
+        code: _seedDomesticCarrier,
         number: 7129,
-        destination: abv,
+        destination: secondary,
         scheduled: DateTime(tomorrow.year, tomorrow.month, tomorrow.day, 14),
         delay: _delay,
         status: 'delayed',
@@ -480,14 +611,14 @@ abstract final class MockAirport {
         luggageCount: 1,
         luggageSize: 'small',
         category: 'go',
-        dropoff: {'name': 'Wuse 2', 'address': 'Wuse 2, Abuja, FCT'},
+        dropoff: MockRegion.stop('mock_wuse'),
         fare: 7200,
       ),
       _SeedPlan(
         id: 'sched_air_3',
         code: 'VS',
         number: 408,
-        destination: los,
+        destination: primary,
         scheduled: DateTime(tomorrow.year, tomorrow.month, tomorrow.day + 1, 9, 30),
         delay: Duration.zero,
         status: 'cancelled',
@@ -496,14 +627,14 @@ abstract final class MockAirport {
         luggageCount: 3,
         luggageSize: 'large',
         category: 'xl',
-        dropoff: {'name': 'Lekki Phase 1', 'address': 'Lekki Phase 1, Lagos'},
+        dropoff: MockRegion.stop('mock_lekki'),
         fare: 11800,
       ),
       _SeedPlan(
         id: 'sched_air_4',
         code: 'TK',
         number: 617,
-        destination: los,
+        destination: primary,
         scheduled: DateTime(tomorrow.year, tomorrow.month, tomorrow.day + 2, 22, 10),
         delay: Duration.zero,
         status: 'diverted',
@@ -512,7 +643,7 @@ abstract final class MockAirport {
         luggageCount: 1,
         luggageSize: 'medium',
         category: 'go',
-        dropoff: {'name': 'Ikeja City Mall', 'address': 'Obafemi Awolowo Way, Ikeja, Lagos'},
+        dropoff: MockRegion.stop('mock_icm'),
         fare: 6900,
       ),
     ];
@@ -527,7 +658,7 @@ abstract final class MockAirport {
       );
       final lead = plan.pickupType == 'meet_greet' ? _meetGreetLead : _arrivalZoneLead;
       final pickupAt = flight.estimated.add(lead);
-      _rides[plan.id] = _AirportRide(
+      _rideStore[plan.id] = _AirportRide(
         flight: flight,
         pickupAt: pickupAt,
         pickupType: plan.pickupType,
@@ -536,7 +667,7 @@ abstract final class MockAirport {
         luggageSize: plan.luggageSize,
         assistance: 'none',
       );
-      _seeds.add(
+      _seedStore.add(
         MockAirportSeed(
           id: plan.id,
           pickupAt: pickupAt,

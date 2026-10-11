@@ -109,7 +109,7 @@ class _Details extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Fare ${SangaMoney.naira(fare.total)}', style: SangaTextStyles.cardValue),
+              Text('Fare ${fare.total.format()}', style: SangaTextStyles.cardValue),
               if (fare.counterOffer != null) Text('Counter offer accepted', style: SangaTextStyles.cardValue),
             ],
           ),

@@ -118,7 +118,7 @@ class _RideReviewScreenState extends State<RideReviewScreen> {
                       SangaFareLine('Driver language', ride.preferences.driverLanguage),
                   ],
                   totalLabel: ride.timing == RideTiming.repeat ? 'ESTIMATE PER RIDE' : 'TOTAL ESTIMATE',
-                  total: SangaMoney.naira(price),
+                  total: price.format(),
                 ),
             ],
           );

@@ -2,7 +2,9 @@ import 'dart:math' as math;
 
 import 'package:sanga_ride/core/api/delivery_endpoints.dart';
 import 'package:sanga_ride/core/api/mock/mock_delivery_live.dart';
+import 'package:sanga_ride/core/api/mock/mock_money.dart';
 import 'package:sanga_ride/core/api/mock/mock_server.dart';
+import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 abstract final class MockDelivery {
   static final List<MockRoute> routes = [
@@ -93,12 +95,15 @@ abstract final class MockDelivery {
         'etaMinutes': [30, 60],
       },
     ],
-    'highValueThreshold': _highValueThreshold,
-    'maxDeclaredValue': _maxDeclaredValue,
     'prohibitedNotice': 'Hazardous, illegal or restricted items are not allowed',
   };
 
-  static Map<String, dynamic> get catalog => {..._catalog, 'serverTime': _isoNow()};
+  static Map<String, dynamic> get catalog => {
+    ..._catalog,
+    'highValueThreshold': MockMoney.json(_highValueThreshold),
+    'maxDeclaredValue': MockMoney.json(_maxDeclaredValue),
+    'serverTime': _isoNow(),
+  };
 
   static final Map<String, _MockQuote> _quotes = {};
   static final Map<String, String> _uploadUrls = {};
@@ -133,7 +138,7 @@ abstract final class MockDelivery {
 
   static Object? _quote(MockRequest request) {
     final body = request.body;
-    final declaredValue = (body['declaredValue'] as num?)?.toInt();
+    final declaredValue = MockMoney.nairaOrNull(body['declaredValue'])?.toInt();
     if (declaredValue != null && declaredValue > _maxDeclaredValue) {
       throw const MockFailure(422, 'That value is too high.', code: 'declared_value_too_high');
     }
@@ -160,7 +165,7 @@ abstract final class MockDelivery {
         for (final tier in _tiers)
           {
             'id': tier['id'],
-            'fare': fares[tier['id']],
+            'fare': MockMoney.json(fares[tier['id']]!),
             'etaMinutes': [for (final minutes in tier['etaMinutes'] as List) (minutes as int) + extraMinutes],
             'recommended': tier['id'] == recommended,
           },
@@ -191,9 +196,8 @@ abstract final class MockDelivery {
   }
 
   static bool _isDeliverablePhone(String phone) {
-    final digits = phone.replaceAll(RegExp(r'\D'), '');
-    if (!RegExp(r'^234[789]\d{9}$').hasMatch(digits)) return false;
-    final national = digits.substring(3);
+    if (!SangaPhoneNumber.isValid(phone)) return false;
+    final national = SangaPhoneNumber.national(phone);
     return national.split('').toSet().length > 1 && !national.endsWith('000000');
   }
 

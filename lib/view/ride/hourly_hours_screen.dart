@@ -70,10 +70,7 @@ class _HourlyHoursScreenState extends State<HourlyHoursScreen> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       spacing: SangaSpacing.lg,
       children: [
-        Text(
-          '${_ride.option?.name ?? 'This ride'} costs ${SangaMoney.naira(rate)} an hour.',
-          style: SangaTextStyles.body,
-        ),
+        Text('${_ride.option?.name ?? 'This ride'} costs ${rate.format()} an hour.', style: SangaTextStyles.body),
         HourlyDurationOptions(
           catalog: catalog,
           hourlyRate: rate,

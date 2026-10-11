@@ -1,5 +1,6 @@
 import 'package:sanga_ride/core/api/delivery_live_endpoints.dart';
 import 'package:sanga_ride/core/api/mock/mock_delivery.dart';
+import 'package:sanga_ride/core/api/mock/mock_money.dart';
 import 'package:sanga_ride/core/api/mock/mock_server.dart';
 
 class MockDeliveryClock {
@@ -92,8 +93,8 @@ abstract final class MockDeliveryLive {
   };
 
   static const String _refusalNote = 'The contents didn’t match the description';
-  static const String _refusalMessage =
-      'Because the package didn’t match what you described, a ₦500 fee applies. You haven’t been charged for the delivery itself.';
+  static String get _refusalMessage =>
+      'Because the package didn’t match what you described, a ${MockMoney.label(500)} fee applies. You haven’t been charged for the delivery itself.';
 
   static final Map<String, Map<String, dynamic>> _deliveries = {};
   static final Map<String, ({DateTime at, String? photoId})> _confirmations = {};
@@ -178,7 +179,7 @@ abstract final class MockDeliveryLive {
       'weightLabel': size.weight,
       'packageType': item['packageType'] ?? 'not_fragile',
       'photoUrl': MockDelivery.uploadUrlOf(photoId),
-      'declaredValue': item['declaredValue'],
+      'declaredValue': MockMoney.jsonOrNull(MockMoney.nairaOrNull(item['declaredValue'])),
     };
   }
 

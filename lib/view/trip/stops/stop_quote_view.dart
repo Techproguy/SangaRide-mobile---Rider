@@ -48,9 +48,9 @@ class StopQuoteView extends StatelessWidget {
             FareChangeNote(currentTotal: quote.currentTotal, newTotal: quote.total),
             SangaFareBreakdown(
               title: 'Estimated fare',
-              lines: [for (final line in quote.lines) SangaFareLine(line.label, SangaMoney.naira(line.amount))],
+              lines: [for (final line in quote.lines) SangaFareLine(line.label, line.amount.format())],
               totalLabel: 'NEW TOTAL',
-              total: SangaMoney.naira(quote.total),
+              total: quote.total.format(),
             ),
           ],
         ),

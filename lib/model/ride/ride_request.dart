@@ -1,4 +1,6 @@
+import 'package:sanga_ride/core/format/money_json.dart';
 import 'package:sanga_ride_core/sanga_ride_core.dart';
+import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 enum TripType {
   oneWay('One way', 'Go to a destination'),
@@ -48,7 +50,7 @@ class RideOption {
       name: json.str('name'),
       description: json.strOr('description', ''),
       seats: json.strOr('seats', '1'),
-      pricePerKm: json.number('pricePerKm'),
+      pricePerKm: json.money('pricePerKm'),
     );
   }
 
@@ -57,7 +59,7 @@ class RideOption {
   final String name;
   final String description;
   final String seats;
-  final num pricePerKm;
+  final Money pricePerKm;
 
   int get maxSeats => int.tryParse(seats.split('-').last.trim()) ?? 1;
 }
@@ -170,42 +172,43 @@ class FareEstimate {
 
   factory FareEstimate.fromJson(Object? body) {
     final json = JsonReader.of(body);
-    final pricing = <PricingOption, num>{};
+    final pricing = <PricingOption, Money>{};
     final rawPricing = json.objectOrNull('pricing')?.raw ?? const <String, dynamic>{};
     for (final MapEntry(:key, :value) in rawPricing.entries) {
       final option = PricingOption.values.asNameMap()[key];
-      if (option != null && value is num) pricing[option] = value;
+      final amount = Money.tryParse(value);
+      if (option != null && amount != null) pricing[option] = amount;
     }
     return FareEstimate(
-      baseFare: json.numOrNull('baseFare') ?? 0,
+      baseFare: json.money('baseFare'),
       distanceKm: json.numOrNull('distanceKm') ?? 0,
-      distanceFare: json.numOrNull('distanceFare') ?? 0,
-      discount: json.numOrNull('discount') ?? 0,
-      boost: json.numOrNull('boost') ?? 0,
-      total: json.number('total'),
-      ratePerKm: json.numOrNull('ratePerKm'),
+      distanceFare: json.money('distanceFare'),
+      discount: json.money('discount'),
+      boost: json.money('boost'),
+      total: json.money('total'),
+      ratePerKm: json.moneyOrNull('ratePerKm'),
       hours: json.intOrNull('hours'),
-      hourlyRate: json.numOrNull('hourlyRate'),
-      meetGreetFee: json.numOrNull('meetGreetFee'),
+      hourlyRate: json.moneyOrNull('hourlyRate'),
+      meetGreetFee: json.moneyOrNull('meetGreetFee'),
       quoteId: json.strOrNull('quoteId'),
       pricing: pricing,
     );
   }
 
-  final num baseFare;
+  final Money baseFare;
   final num distanceKm;
-  final num distanceFare;
-  final num discount;
-  final num boost;
-  final num total;
-  final Map<PricingOption, num> pricing;
-  final num? ratePerKm;
+  final Money distanceFare;
+  final Money discount;
+  final Money boost;
+  final Money total;
+  final Map<PricingOption, Money> pricing;
+  final Money? ratePerKm;
   final int? hours;
-  final num? hourlyRate;
-  final num? meetGreetFee;
+  final Money? hourlyRate;
+  final Money? meetGreetFee;
   final String? quoteId;
 
-  num adjustmentFor(PricingOption option) => (pricing[option] ?? total) - total;
+  Money adjustmentFor(PricingOption option) => (pricing[option] ?? total) - total;
 }
 
 enum RoutePoint { pickup, stop, dropoff }

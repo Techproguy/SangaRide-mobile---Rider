@@ -56,7 +56,7 @@ class HistoryCard extends StatelessWidget {
         spacing: SangaSpacing.xs,
         children: [
           if (item.kind.isDelivery) _packageVisual() else Image(image: item.category.image, fit: BoxFit.contain),
-          Text(SangaMoney.naira(item.fare), style: SangaTextStyles.cardValue),
+          Text(item.fare.format(), style: SangaTextStyles.cardValue),
         ],
       ),
     );

@@ -4,8 +4,11 @@ import 'package:sanga_ride/core/api/group_endpoints.dart';
 import 'package:sanga_ride/core/api/mock/mock_data.dart';
 import 'package:sanga_ride/core/api/mock/mock_groups_seed.dart';
 import 'package:sanga_ride/core/api/mock/mock_history.dart';
+import 'package:sanga_ride/core/api/mock/mock_money.dart';
+import 'package:sanga_ride/core/api/mock/mock_region.dart';
 import 'package:sanga_ride/core/api/mock/mock_server.dart';
 import 'package:sanga_ride/core/api/mock/mock_wallet.dart';
+import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 abstract final class MockGroups {
   static final List<MockRoute> routes = [
@@ -86,7 +89,7 @@ abstract final class MockGroups {
     'name': group.name,
     'role': _myRole(group).code,
     'membersCount': group.activeCount,
-    'walletBalance': MockWallet.groupBalance(group.id),
+    'walletBalance': MockMoney.json(MockWallet.groupBalance(group.id)),
     'photoUrl': null,
   };
 
@@ -209,7 +212,10 @@ abstract final class MockGroups {
       'name': group.name,
       'role': _myRole(group).code,
       'inviteCode': group.inviteCode,
-      'wallet': {'balance': MockWallet.groupBalance(group.id), 'monthSpent': MockWallet.groupMonthSpent(group.id)},
+      'wallet': {
+        'balance': MockMoney.json(MockWallet.groupBalance(group.id)),
+        'monthSpent': MockMoney.json(MockWallet.groupMonthSpent(group.id)),
+      },
       'members': [for (final member in group.members) group.memberJson(member)],
       'recentRides': _ridesOf(group, status: 'completed').take(_recentRideCount).toList(),
       'company': group.company,
@@ -220,17 +226,16 @@ abstract final class MockGroups {
   static Object? _sendInvite(MockRequest request) {
     final group = _requireManaged(request);
     final phone = _digits(request.body['phone']);
-    if (!RegExp(r'^234[789]\d{9}$').hasMatch(phone)) {
+    if (!SangaPhoneNumber.isValid('+$phone')) {
       throw const MockFailure(422, 'We can’t text that number.', code: 'invalid_phone');
     }
     if (group.members.any((member) => _digits(member['phone']) == phone)) {
       throw const MockFailure(409, 'That number is already in this group.', code: 'phone_in_group');
     }
     final role = request.body['role'] == 'admin' ? 'admin' : 'member';
-    final local = '0${phone.substring(3)}';
     final member = MockGroupsSeed.member(
       id: _nextId('mem'),
-      name: '${local.substring(0, 4)} ${local.substring(4, 7)} ${local.substring(7)}',
+      name: MockRegion.displayPhone('+$phone'),
       phone: '+$phone',
       relation: (request.body['relation'] as String?)?.trim().isNotEmpty == true
           ? request.body['relation'] as String
@@ -273,9 +278,14 @@ abstract final class MockGroups {
     if (body['relation'] is String) member['relation'] = body['relation'];
     for (final key in const ['permissions', 'limits', 'alerts']) {
       final patch = body[key];
-      if (patch is Map) (member[key] as Map<String, dynamic>).addAll(Map<String, dynamic>.from(patch));
+      if (patch is Map) (member[key] as Map<String, dynamic>).addAll(_storable(key, Map<String, dynamic>.from(patch)));
     }
     return group.memberJson(member);
+  }
+
+  static Map<String, dynamic> _storable(String key, Map<String, dynamic> patch) {
+    if (key != 'limits' || !patch.containsKey('monthlySpend')) return patch;
+    return {...patch, 'monthlySpend': MockMoney.nairaOrNull(patch['monthlySpend'])};
   }
 
   static int _managerCount(MockGroup group) => group.members
@@ -471,7 +481,7 @@ abstract final class MockGroups {
     final approvalId = body['approvalId'] as String?;
     if (approvalId != null) return _checkApproval(approvalId);
     final cap = (limits['monthlySpend'] as num?)?.toInt();
-    final fare = (body['proposedFare'] as num?)?.toInt() ?? 0;
+    final fare = MockMoney.naira(body['proposedFare']).toInt();
     final spent = (subject['monthSpent'] as num?)?.toInt() ?? 0;
     if (cap == null || spent + fare <= cap) return;
     switch (limits['overLimit']) {

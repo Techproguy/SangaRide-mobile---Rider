@@ -11,6 +11,7 @@ import 'package:sanga_ride/core/api/mock/mock_me_state.dart';
 import 'package:sanga_ride/core/api/app_endpoints.dart';
 import 'package:sanga_ride/core/api/mock/mock_safety.dart';
 import 'package:sanga_ride/core/api/mock/mock_notifications.dart';
+import 'package:sanga_ride/core/api/mock/mock_region.dart';
 import 'package:sanga_ride/core/api/mock/mock_ride_requests.dart';
 import 'package:sanga_ride/core/api/mock/mock_saved_places.dart';
 import 'package:sanga_ride/core/api/mock/mock_server.dart';
@@ -19,6 +20,7 @@ import 'package:sanga_ride/core/api/mock/mock_trip.dart';
 import 'package:sanga_ride/core/api/mock/mock_trip_wrapup.dart';
 import 'package:sanga_ride/core/api/mock/mock_verification.dart';
 import 'package:sanga_ride/core/api/mock/mock_wallet.dart';
+import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 class MockRoutes {
   MockRoutes._();
@@ -58,7 +60,7 @@ class MockRoutes {
       _recentPlaces.removeWhere((place) => place['place_id'] == request.params['id']);
       return null;
     }),
-    MockRoute.get(AppEndpoints.weather, (_) => MockData.weather),
+    MockRoute.get(AppEndpoints.weather, (_) => MockRegion.weather),
   ];
 
   static void resetRideRequests() => MockRideRequests.reset();
@@ -67,7 +69,10 @@ class MockRoutes {
 
   static const int _maxRecentPlaces = 5;
 
-  static final List<Map<String, dynamic>> _recentPlaces = [...MockData.recentPlaces];
+  static final Map<SangaRegion, List<Map<String, dynamic>>> _recentPlacesByRegion = {};
+
+  static List<Map<String, dynamic>> get _recentPlaces =>
+      _recentPlacesByRegion.putIfAbsent(MockRegion.current, () => [...MockRegion.recentPlaces]);
 
   static Object? _addRecentPlace(MockRequest request) {
     final place = Map<String, dynamic>.from(request.body);

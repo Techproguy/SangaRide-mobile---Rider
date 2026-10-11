@@ -2,10 +2,12 @@ import 'package:sanga_ride/core/api/mock/mock_data.dart';
 import 'package:sanga_ride/core/api/mock/mock_card_tokenizer.dart';
 import 'package:sanga_ride/core/api/app_endpoints.dart';
 import 'package:sanga_ride/core/api/mock/mock_groups.dart';
+import 'package:sanga_ride/core/api/mock/mock_money.dart';
 import 'package:sanga_ride/core/api/mock/mock_server.dart';
 import 'package:sanga_ride/core/api/mock/mock_trip.dart';
 import 'package:sanga_ride/core/api/mock/mock_trip_state.dart';
 import 'package:sanga_ride/core/api/mock/mock_wallet.dart';
+import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 abstract final class MockTripWrapUp {
   static final List<MockRoute> routes = [
@@ -83,8 +85,8 @@ abstract final class MockTripWrapUp {
   }) => {
     'tripId': id,
     'status': status,
-    'amount': _fareOf(trip),
-    'currency': 'NGN',
+    'amount': MockMoney.json(_fareOf(trip)),
+    'currency': MockMoney.currency,
     'method': method,
     'last4': last4,
     'paidAt': paidAt?.toUtc().toIso8601String(),
@@ -235,12 +237,15 @@ abstract final class MockTripWrapUp {
       base += service;
       service = 0;
     }
-    final km = distanceKm.toStringAsFixed(1);
     return [
-      {'key': 'base_fare', 'label': 'Base fare', 'amount': base},
-      {'key': 'distance', 'label': 'Distance ($km km)', 'amount': distance},
-      {'key': 'time', 'label': 'Time ($durationMinutes mins)', 'amount': time},
-      {'key': 'service_fee', 'label': 'Service fee', 'amount': service},
+      {'key': 'base_fare', 'label': 'Base fare', 'amount': MockMoney.json(base)},
+      {
+        'key': 'distance',
+        'label': 'Distance (${SangaDistance.fromKilometers(distanceKm)})',
+        'amount': MockMoney.json(distance),
+      },
+      {'key': 'time', 'label': 'Time ($durationMinutes mins)', 'amount': MockMoney.json(time)},
+      {'key': 'service_fee', 'label': 'Service fee', 'amount': MockMoney.json(service)},
     ];
   }
 
@@ -295,7 +300,7 @@ abstract final class MockTripWrapUp {
       'distanceKm': distanceKm,
       'durationMinutes': durationMinutes,
       'lines': _fareLines(fare, distanceKm, durationMinutes),
-      'total': fare,
+      'total': MockMoney.json(fare),
       'paidWith': {
         'method': method,
         'last4': method == 'card' ? MockTripState.cardLast4[id] : null,
@@ -335,7 +340,7 @@ abstract final class MockTripWrapUp {
       if (isDelivery) 'itemName': item['name'],
       'reference': '${isDelivery ? 'DL' : 'SR'}-${id.hashCode.abs() % 90000000 + 10000000}',
       'requestedAt': MockTrip.createdAt(id).toUtc().toIso8601String(),
-      'counterOffer': trip['counterOffer'],
+      'counterOffer': MockMoney.jsonOrNull(trip['counterOffer'] as num?),
       'distanceKm': receipt['distanceKm'],
       'durationMinutes': receipt['durationMinutes'],
       'lines': receipt['lines'],

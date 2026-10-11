@@ -86,7 +86,7 @@ class TripEndedPanel extends StatelessWidget {
   final TripCancelReason reason;
   final VoidCallback onHome;
   final String? message;
-  final int? returnFee;
+  final Money? returnFee;
 
   @override
   Widget build(BuildContext context) {
@@ -101,12 +101,10 @@ class TripEndedPanel extends StatelessWidget {
         ),
         Text(reason.title, textAlign: TextAlign.center, style: SangaTextStyles.statusTitle),
         Text(message ?? reason.message, textAlign: TextAlign.center, style: SangaTextStyles.statusMessage),
-        if (fee != null && fee > 0)
+        if (fee != null && fee.isPositive)
           SangaDetailList(
             title: 'Return fee',
-            rows: [
-              SangaDetailRow(icon: Icons.undo_rounded, label: 'Charged for the way back', value: SangaMoney.naira(fee)),
-            ],
+            rows: [SangaDetailRow(icon: Icons.undo_rounded, label: 'Charged for the way back', value: fee.format())],
           ),
         SangaButton.primary(label: CommonCopy.backToHome, onPressed: onHome),
       ],

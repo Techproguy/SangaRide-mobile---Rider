@@ -2,10 +2,12 @@ import 'package:google_maps_flutter/google_maps_flutter.dart' show LatLng;
 import 'package:sanga_ride/core/api/server_codes.dart';
 import 'package:sanga_ride/core/copy/common_copy.dart';
 import 'package:sanga_ride/core/extensions/lat_lng.dart';
+import 'package:sanga_ride/core/format/money_json.dart';
 import 'package:sanga_ride/model/ride/ride_match.dart' show ScheduledBooking;
 import 'package:sanga_ride/model/ride/ride_load_problem.dart';
 import 'package:sanga_ride/model/ride/ride_request.dart';
 import 'package:sanga_ride_core/sanga_ride_core.dart';
+import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 class BookingRules {
   const BookingRules({required this.scheduleLeadTime, required this.returnGap, required this.bookingWindow});
@@ -194,10 +196,10 @@ class HourlyCatalog {
 
   factory HourlyCatalog.fromJson(Object? body) {
     final json = JsonReader.of(body);
-    final rates = <RideCategory, num>{};
+    final rates = <RideCategory, Money>{};
     for (final rate in json.listOf('rates', (item) => item)) {
       final category = RideCategory.values.asNameMap()[rate.strOrNull('category')];
-      final hourly = rate.numOrNull('hourlyRate');
+      final hourly = rate.moneyOrNull('hourlyRate');
       if (category != null && hourly != null) rates[category] = hourly;
     }
     return HourlyCatalog(
@@ -210,14 +212,14 @@ class HourlyCatalog {
     );
   }
 
-  final Map<RideCategory, num> rates;
+  final Map<RideCategory, Money> rates;
   final int minHours;
   final int maxHours;
   final List<HourlyPreset> presets;
   final List<String> includes;
   final List<String> excludes;
 
-  num? rateFor(RideCategory? category) => category == null ? null : rates[category];
+  Money? rateFor(RideCategory? category) => category == null ? null : rates[category];
 
   bool isPreset(int hours) => presets.any((preset) => preset.hours == hours);
 }

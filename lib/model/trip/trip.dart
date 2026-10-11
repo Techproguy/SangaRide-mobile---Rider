@@ -1,6 +1,7 @@
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:sanga_ride/core/api/error_handling.dart';
 import 'package:sanga_ride/core/copy/common_copy.dart';
+import 'package:sanga_ride/core/format/money_json.dart';
 import 'package:sanga_ride/model/location/place.dart';
 import 'package:sanga_ride/model/ride/airport.dart';
 import 'package:sanga_ride/model/ride/ride_match.dart';
@@ -8,6 +9,7 @@ import 'package:sanga_ride/model/ride/ride_request.dart';
 import 'package:sanga_ride/model/trip/server_time.dart';
 import 'package:sanga_ride/model/trip/trip_delivery.dart';
 import 'package:sanga_ride_core/sanga_ride_core.dart';
+import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 enum TripStatus {
   driverEnRoute('driver_en_route'),
@@ -181,11 +183,11 @@ class TripFare {
 
   factory TripFare.fromJson(Map<String, dynamic> json) {
     final reader = JsonReader.of(json);
-    return TripFare(total: reader.integer('total'), counterOffer: reader.intOrNull('counterOffer'));
+    return TripFare(total: reader.money('total'), counterOffer: reader.moneyOrNull('counterOffer'));
   }
 
-  final int total;
-  final int? counterOffer;
+  final Money total;
+  final Money? counterOffer;
 }
 
 class DriverPosition {
@@ -250,7 +252,7 @@ class Trip {
           ? TripCancelReason.fromCode(reader.strOrNull('cancellationReason'))
           : null,
       cancellationMessage: reader.strOrNull('cancellationMessage'),
-      returnFee: reader.intOrNull('returnFee'),
+      returnFee: reader.moneyOrNull('returnFee'),
       airport: reader.objectOrNull('airport') == null
           ? null
           : _tryRead(() => TripAirport.fromJson(reader.object('airport').raw)),
@@ -286,7 +288,7 @@ class Trip {
   final List<TripEvent> events;
   final TripCancelReason? cancellationReason;
   final String? cancellationMessage;
-  final int? returnFee;
+  final Money? returnFee;
   final TripAirport? airport;
   final TripDelivery? delivery;
 

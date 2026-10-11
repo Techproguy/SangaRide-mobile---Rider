@@ -21,9 +21,9 @@ class HistoryPaymentCards extends StatelessWidget {
         if (detail.lines.isNotEmpty)
           SangaFareBreakdown(
             title: 'Fare breakdown',
-            lines: [for (final line in detail.lines) SangaFareLine(line.label, SangaMoney.naira(line.amount))],
+            lines: [for (final line in detail.lines) SangaFareLine(line.label, line.amount.format())],
             totalLabel: 'TOTAL PAID',
-            total: SangaMoney.naira(detail.fare),
+            total: detail.fare.format(),
           ),
         SangaDetailList(
           title: 'Trip details',
@@ -35,11 +35,7 @@ class HistoryPaymentCards extends StatelessWidget {
                 value: paidWith.label,
               ),
             if (counterOffer != null)
-              SangaDetailRow(
-                icon: Icons.swap_horiz_rounded,
-                label: 'Counter offer',
-                value: SangaMoney.naira(counterOffer),
-              ),
+              SangaDetailRow(icon: Icons.swap_horiz_rounded, label: 'Counter offer', value: counterOffer.format()),
             SangaDetailRow(icon: Icons.event_rounded, label: 'Date', value: formatHistoryDate(detail.occurredAt)),
             if (distance != null) SangaDetailRow(icon: Icons.route_outlined, label: 'Distance', value: distance),
             if (duration != null) SangaDetailRow(icon: Icons.schedule_rounded, label: 'Duration', value: duration),

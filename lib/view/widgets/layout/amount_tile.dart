@@ -5,7 +5,7 @@ class AmountTile extends StatelessWidget {
   const AmountTile({super.key, required this.label, required this.amount});
 
   final String label;
-  final int amount;
+  final Money amount;
 
   @override
   Widget build(BuildContext context) {
@@ -18,7 +18,7 @@ class AmountTile extends StatelessWidget {
         spacing: SangaSpacing.xs,
         children: [
           Text(label, style: SangaTextStyles.cardSubtitle.copyWith(color: SangaColors.primary)),
-          Text(SangaMoney.naira(amount), style: SangaTextStyles.title.copyWith(color: SangaColors.primary)),
+          Text(amount.format(), style: SangaTextStyles.title.copyWith(color: SangaColors.primary)),
         ],
       ),
     );

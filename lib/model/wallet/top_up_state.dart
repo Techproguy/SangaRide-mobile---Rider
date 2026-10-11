@@ -1,15 +1,16 @@
 import 'package:sanga_ride/model/wallet/top_up.dart';
+import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 class TopUpDraft {
   const TopUpDraft({this.amount, this.method = TopUpMethod.card, this.savedCardId, this.saveCard = false});
 
-  final int? amount;
+  final Money? amount;
   final TopUpMethod method;
   final String? savedCardId;
   final bool saveCard;
 
   TopUpDraft copyWith({
-    int? Function()? amount,
+    Money? Function()? amount,
     TopUpMethod? method,
     String? Function()? savedCardId,
     bool? saveCard,
@@ -81,8 +82,8 @@ final class TopUpTransferDelayed extends TopUpState {
 final class TopUpSucceeded extends TopUpState {
   const TopUpSucceeded({required this.amount, required this.balance, required this.method});
 
-  final int amount;
-  final int? balance;
+  final Money amount;
+  final Money? balance;
   final TopUpMethod method;
 }
 

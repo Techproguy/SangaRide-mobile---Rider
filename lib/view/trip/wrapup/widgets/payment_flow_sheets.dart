@@ -55,7 +55,7 @@ Future<bool?> showCashWaitingSheet({required BuildContext context, required Trip
 }
 
 String _cashMessage(PaymentAwaitingDriver state) {
-  final amount = SangaMoney.naira(state.payment.amount);
+  final amount = state.payment.amount.format();
   return switch (state.link) {
     CashWaitLink.live => 'Hand $amount to your driver in cash. We’ll let you know once they confirm.',
     CashWaitLink.offline => 'You’re offline. We’ll keep checking as soon as you’re back.',

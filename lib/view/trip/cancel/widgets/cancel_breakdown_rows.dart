@@ -12,7 +12,7 @@ class CancelBreakdownRows extends StatelessWidget {
   String get _refundLabel {
     final refund = review.refund;
     if (refund == null) return CancelCopy.notApplicable;
-    return CancelCopy.refundTo(SangaMoney.naira(refund.amount), refund.destination);
+    return CancelCopy.refundTo(refund.amount.format(), refund.destination);
   }
 
   @override
@@ -27,7 +27,7 @@ class CancelBreakdownRows extends StatelessWidget {
         const SangaSectionHeader(CancelCopy.fareBreakdown),
         _Row(
           label: CancelCopy.cancellationFee,
-          value: review.hasFee ? SangaMoney.naira(review.fee) : CancelCopy.free,
+          value: review.hasFee ? review.fee.format() : CancelCopy.free,
           style: feeStyle,
         ),
         _Row(label: CancelCopy.paymentMethod, value: review.paymentMethod?.label ?? CancelCopy.notSetYet),

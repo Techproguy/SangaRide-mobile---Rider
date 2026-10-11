@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:sanga_ride/core/api/app_endpoints.dart';
+import 'package:sanga_ride/core/api/mock/mock_money.dart';
 import 'package:sanga_ride/core/api/mock/mock_server.dart';
 import 'package:sanga_ride/core/api/mock/mock_trip.dart';
 import 'package:sanga_ride/core/api/mock/mock_trip_state.dart';
@@ -128,17 +129,17 @@ abstract final class MockTripChanges {
       'expiresAt': _iso(now.add(_quoteWindow)),
       'serverTime': _iso(now),
       'lines': [
-        {'key': 'base_fare', 'label': 'Base fare', 'amount': base},
+        {'key': 'base_fare', 'label': 'Base fare', 'amount': MockMoney.json(base)},
         {
           'key': 'distance',
-          'label': 'Distance (${(distanceKm + extraKm).toStringAsFixed(1)} km)',
-          'amount': total - base - boost - stopFee,
+          'label': 'Distance (${SangaDistance.fromKilometers(distanceKm + extraKm)})',
+          'amount': MockMoney.json(total - base - boost - stopFee),
         },
-        {'key': 'boost', 'label': 'Boost', 'amount': boost},
-        {'key': 'added_stops', 'label': 'Added stop (${added.length})', 'amount': stopFee},
+        {'key': 'boost', 'label': 'Boost', 'amount': MockMoney.json(boost)},
+        {'key': 'added_stops', 'label': 'Added stop (${added.length})', 'amount': MockMoney.json(stopFee)},
       ],
-      'total': total,
-      'currentTotal': fare,
+      'total': MockMoney.json(total),
+      'currentTotal': MockMoney.json(fare),
     };
   }
 
@@ -205,9 +206,9 @@ abstract final class MockTripChanges {
     final fare = (trip['fare'] as num).toInt();
     return {
       'reviewId': 'rev_${id}_${fee.fee}_$reason',
-      'fee': fee.fee,
+      'fee': MockMoney.json(fee.fee),
       'feeReason': fee.feeReason,
-      'refund': isRefundable ? {'amount': math.max(0, fare - fee.fee), 'method': method} : null,
+      'refund': isRefundable ? {'amount': MockMoney.json(math.max(0, fare - fee.fee)), 'method': method} : null,
       'paymentMethod': method,
       'serverTime': _iso(DateTime.now()),
     };
@@ -221,13 +222,14 @@ abstract final class MockTripChanges {
   }
 
   static String _messageOf(Map<String, dynamic> review) {
-    final fee = review['fee'] as int;
+    final fee = MockMoney.naira(review['fee']);
     final refund = review['refund'] as Map<String, dynamic>?;
+    final refundAmount = refund == null ? 0 : MockMoney.naira(refund['amount']);
     final parts = [
       'Your ride has been cancelled.',
-      if (fee == 0) 'You won’t be charged.' else '${SangaMoney.naira(fee)} goes to your driver for their time.',
-      if (refund != null && (refund['amount'] as int) > 0)
-        'We’re refunding ${SangaMoney.naira(refund['amount'] as num)} to your ${refund['method']}.',
+      if (fee == 0) 'You won’t be charged.' else '${MockMoney.label(fee)} goes to your driver for their time.',
+      if (refund != null && refundAmount > 0)
+        'We’re refunding ${MockMoney.label(refundAmount)} to your ${refund['method']}.',
     ];
     return parts.join(' ');
   }
@@ -243,7 +245,7 @@ abstract final class MockTripChanges {
     }
     final review = _review(id, reason);
     final reviewedFee = request.body['fee'];
-    if (reviewedFee is num && reviewedFee.toInt() != review['fee']) {
+    if (reviewedFee != null && MockMoney.naira(reviewedFee) != MockMoney.naira(review['fee'])) {
       throw MockFailure(
         409,
         'The cancellation fee changed while you were looking.',

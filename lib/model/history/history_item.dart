@@ -1,7 +1,9 @@
+import 'package:sanga_ride/core/format/money_json.dart';
 import 'package:sanga_ride/model/location/place.dart';
 import 'package:sanga_ride/model/account/load_problem.dart';
 import 'package:sanga_ride/model/ride/ride_request.dart';
 import 'package:sanga_ride_core/sanga_ride_core.dart';
+import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 enum HistoryKind {
   ride('ride'),
@@ -74,7 +76,7 @@ class HistoryItem {
       category: RideCategory.values.asNameMap()[reader.strOrNull('category')] ?? RideCategory.go,
       occurredAt: reader.time('occurredAt').toLocal(),
       route: HistoryRoute.fromJson(json),
-      fare: reader.intOr('fare', 0),
+      fare: reader.money('fare'),
       itemName: reader.strOrNull('itemName'),
       memberName: reader.strOrNull('memberName'),
       purpose: reader.strOrNull('purpose'),
@@ -88,7 +90,7 @@ class HistoryItem {
   final RideCategory category;
   final DateTime occurredAt;
   final HistoryRoute route;
-  final int fare;
+  final Money fare;
   final String? itemName;
   final String? memberName;
   final String? purpose;

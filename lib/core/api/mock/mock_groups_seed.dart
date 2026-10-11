@@ -1,5 +1,7 @@
 import 'package:sanga_ride/core/api/mock/mock_account.dart';
 import 'package:sanga_ride/core/api/mock/mock_data.dart';
+import 'package:sanga_ride/core/api/mock/mock_money.dart';
+import 'package:sanga_ride/core/api/mock/mock_region.dart';
 
 class MockApproval {
   MockApproval({
@@ -49,7 +51,7 @@ class MockApproval {
     'id': id,
     'memberId': memberId,
     'memberName': memberName,
-    'fare': fare,
+    'fare': MockMoney.json(fare),
     'pickup': {'name': pickup['name'], 'address': pickup['address'] ?? pickup['name']},
     'dropoff': {'name': dropoff['name'], 'address': dropoff['address'] ?? dropoff['name']},
     'purpose': purpose,
@@ -92,12 +94,16 @@ class MockGroup {
     return null;
   }
 
-  Map<String, dynamic> memberJson(Map<String, dynamic> member) => {
-    ...member,
-    'permissions': Map<String, dynamic>.of(member['permissions'] as Map<String, dynamic>),
-    'limits': Map<String, dynamic>.of(member['limits'] as Map<String, dynamic>),
-    'alerts': Map<String, dynamic>.of(member['alerts'] as Map<String, dynamic>),
-  };
+  Map<String, dynamic> memberJson(Map<String, dynamic> member) {
+    final limits = Map<String, dynamic>.of(member['limits'] as Map<String, dynamic>);
+    return {
+      ...member,
+      'permissions': Map<String, dynamic>.of(member['permissions'] as Map<String, dynamic>),
+      'limits': limits..['monthlySpend'] = MockMoney.jsonOrNull(limits['monthlySpend'] as num?),
+      'alerts': Map<String, dynamic>.of(member['alerts'] as Map<String, dynamic>),
+      'monthSpent': MockMoney.json(member['monthSpent'] as num),
+    };
+  }
 }
 
 abstract final class MockGroupsSeed {
@@ -108,26 +114,13 @@ abstract final class MockGroupsSeed {
 
   static const List<String> purposes = ['Client meeting', 'Airport run', 'Site visit', 'Team lunch', 'Office commute'];
 
-  static const Map<String, Map<String, dynamic>> _places = {
-    'maryland': {
-      'place_id': 'mock_maryland',
-      'name': 'Maryland College',
-      'address': 'Iyana Ipaja, Lagos',
-      'coordinates': {'lat': 6.6126, 'lng': 3.2873},
-    },
-    'palms': {
-      'place_id': 'mock_palms',
-      'name': 'The Palms Mall',
-      'address': 'Lekki Phase 1, Lagos',
-      'coordinates': {'lat': 6.4352, 'lng': 3.4515},
-    },
-    'home': {
-      'place_id': 'mock_cr_ikeja',
-      'name': 'Chicken Republic',
-      'address': 'Allen Avenue, Ikeja, Lagos',
-      'coordinates': {'lat': 6.6018, 'lng': 3.3515},
-    },
+  static const Map<String, String> _placeIds = {
+    'maryland': 'mock_maryland',
+    'palms': 'mock_palms',
+    'home': 'mock_cr_ikeja',
   };
+
+  static Map<String, dynamic> _placeJson(String key) => MockRegion.place(_placeIds[key]!);
 
   static String relationOf(String kind, String? role) => switch ((kind, role)) {
     ('family', 'parent') => 'Parent',
@@ -195,8 +188,8 @@ abstract final class MockGroupsSeed {
 
   static Map<String, dynamic> _place(String key) => {
     'id': 'ap_$key',
-    'label': _places[key]!['name'],
-    'place': Map<String, dynamic>.of(_places[key]!),
+    'label': _placeJson(key)['name'],
+    'place': _placeJson(key),
   };
 
   static MockGroup johnsons() {
@@ -210,7 +203,7 @@ abstract final class MockGroupsSeed {
         member(
           id: 'mem_chidi',
           name: 'Chidi Johnson',
-          phone: '+2348052223344',
+          phone: MockRegion.phone('8052223344'),
           relation: 'Spouse',
           role: 'admin',
           permissions: {'bookForOthers': true},
@@ -218,7 +211,7 @@ abstract final class MockGroupsSeed {
         member(
           id: 'mem_tomi',
           name: 'Tomi Johnson',
-          phone: '+2348031112233',
+          phone: MockRegion.phone('8031112233'),
           relation: 'Son',
           limits: {
             'monthlySpend': 50000,
@@ -233,7 +226,7 @@ abstract final class MockGroupsSeed {
         member(
           id: 'mem_tife',
           name: 'Tife Johnson',
-          phone: '+2348064445566',
+          phone: MockRegion.phone('8064445566'),
           relation: 'Daughter',
           limits: {
             'monthlySpend': 30000,
@@ -243,7 +236,13 @@ abstract final class MockGroupsSeed {
           },
           monthSpent: 8800,
         ),
-        member(id: 'mem_mama', name: '0706 333 4455', phone: '+2347063334455', relation: 'Mother', status: 'invited'),
+        member(
+          id: 'mem_mama',
+          name: '0706 333 4455',
+          phone: MockRegion.phone('7063334455'),
+          relation: 'Mother',
+          status: 'invited',
+        ),
       ],
     );
     group.approvals.add(
@@ -252,8 +251,8 @@ abstract final class MockGroupsSeed {
         memberId: 'mem_tomi',
         memberName: 'Tomi Johnson',
         fare: 6500,
-        pickup: _places['home']!,
-        dropoff: _places['maryland']!,
+        pickup: _placeJson('home'),
+        dropoff: _placeJson('maryland'),
         requestedAt: DateTime.now().subtract(const Duration(minutes: 12)),
       ),
     );
@@ -263,8 +262,8 @@ abstract final class MockGroupsSeed {
         memberId: 'mem_tife',
         memberName: 'Tife Johnson',
         fare: 4800,
-        pickup: _places['maryland']!,
-        dropoff: _places['home']!,
+        pickup: _placeJson('maryland'),
+        dropoff: _placeJson('home'),
         requestedAt: DateTime.now().subtract(const Duration(minutes: 2)),
         cancelAt: DateTime.now().add(const Duration(seconds: 40)),
       ),
@@ -277,12 +276,14 @@ abstract final class MockGroupsSeed {
     kind: 'business',
     name: 'Ray Holdings Ltd',
     inviteCode: rayCode,
-    company: {'rcNumber': 'RC 1482930', 'address': '14 Adeola Odeku Street, Victoria Island, Lagos'},
+    company: MockRegion.isUnitedStates
+        ? {'rcNumber': 'EIN 84-1482930', 'address': '1400 Smith Street, Downtown, Houston, TX'}
+        : {'rcNumber': 'RC 1482930', 'address': '14 Adeola Odeku Street, Victoria Island, Lagos'},
     members: [
       member(
         id: 'mem_ray',
         name: 'Raymond Okoye',
-        phone: '+2348023334455',
+        phone: MockRegion.phone('8023334455'),
         relation: 'Owner',
         role: 'owner',
         permissions: {'bookForOthers': true},
@@ -290,7 +291,7 @@ abstract final class MockGroupsSeed {
       member(
         id: 'mem_funke',
         name: 'Funke Adeyemi',
-        phone: '+2348095556677',
+        phone: MockRegion.phone('8095556677'),
         relation: 'Manager',
         role: 'admin',
         permissions: {'bookForOthers': true},
@@ -298,7 +299,7 @@ abstract final class MockGroupsSeed {
       member(
         id: 'mem_geo',
         name: 'Georgina Bello',
-        phone: '+2348127778899',
+        phone: MockRegion.phone('8127778899'),
         relation: 'Marketing',
         limits: {'monthlySpend': 60000, 'overLimit': 'ask_approval'},
         monthSpent: 21000,
@@ -315,7 +316,7 @@ abstract final class MockGroupsSeed {
       member(
         id: 'mem_tunde',
         name: 'Tunde Bakare',
-        phone: '+2348031230987',
+        phone: MockRegion.phone('8031230987'),
         relation: 'Owner',
         role: 'owner',
         permissions: {'bookForOthers': true},
@@ -323,7 +324,7 @@ abstract final class MockGroupsSeed {
       member(
         id: 'mem_ngozi',
         name: 'Ngozi Eze',
-        phone: '+2348076541234',
+        phone: MockRegion.phone('8076541234'),
         relation: 'Operations',
         limits: {'monthlySpend': 40000, 'overLimit': 'block'},
         monthSpent: 12000,

@@ -1,7 +1,9 @@
 import 'package:sanga_ride/core/api/server_codes.dart';
+import 'package:sanga_ride/core/format/money_json.dart';
 import 'package:sanga_ride/model/groups/group_kind.dart';
 import 'package:sanga_ride/model/trip/server_time.dart';
 import 'package:sanga_ride_core/sanga_ride_core.dart';
+import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 enum PaymentMethod {
   cash('cash', 'Cash', 'Hand it to your driver', 'Payment confirmed', 'Your driver confirmed your cash payment.'),
@@ -124,7 +126,7 @@ class TripPayment {
     final group = reader.objectOrNull('group');
     return TripPayment(
       tripId: reader.str('tripId'),
-      amount: reader.integer('amount'),
+      amount: reader.money('amount'),
       status: PaymentStatus.fromCode(reader.strOrNull('status')),
       allowedMethods: [for (final code in reader.strings('allowedMethods')) ?PaymentMethod.tryFromCode(code)],
       method: PaymentMethod.tryFromCode(reader.strOrNull('method')),
@@ -147,7 +149,7 @@ class TripPayment {
   }
 
   final String tripId;
-  final int amount;
+  final Money amount;
   final PaymentStatus status;
   final List<PaymentMethod> allowedMethods;
   final PaymentMethod? method;

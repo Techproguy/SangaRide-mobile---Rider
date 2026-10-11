@@ -1,6 +1,8 @@
+import 'package:sanga_ride/core/format/money_json.dart';
 import 'package:sanga_ride/model/trip/wrapup/payment.dart';
 import 'package:sanga_ride/model/wallet/top_up.dart';
 import 'package:sanga_ride_core/sanga_ride_core.dart';
+import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 enum TransactionKind {
   rideEarning('ride_earning'),
@@ -72,7 +74,7 @@ class TransactionMeta {
     return TransactionMeta(
       tripId: reader.strOrNull('tripId'),
       route: reader.strOrNull('route'),
-      fare: reader.intOrNull('fare'),
+      fare: reader.moneyOrNull('fare'),
       paymentMethod: PaymentMethod.tryFromCode(reader.strOrNull('paymentMethod')),
       method: TopUpMethod.tryFromCode(reader.strOrNull('method')),
       cardLast4: reader.strOrNull('cardLast4'),
@@ -87,7 +89,7 @@ class TransactionMeta {
 
   final String? tripId;
   final String? route;
-  final int? fare;
+  final Money? fare;
   final PaymentMethod? paymentMethod;
   final TopUpMethod? method;
   final String? cardLast4;
@@ -119,7 +121,7 @@ class WalletTransaction {
       id: reader.str('id'),
       kind: TransactionKind.fromCode(reader.strOrNull('kind')),
       title: reader.strOr('title', ''),
-      amount: reader.integer('amount'),
+      amount: reader.money('amount'),
       status: TransactionStatus.fromCode(reader.strOrNull('status')),
       createdAt: reader.time('createdAt').toLocal(),
       reference: reader.strOr('reference', ''),
@@ -130,13 +132,13 @@ class WalletTransaction {
   final String id;
   final TransactionKind kind;
   final String title;
-  final int amount;
+  final Money amount;
   final TransactionStatus status;
   final DateTime createdAt;
   final String reference;
   final TransactionMeta meta;
 
-  bool get isCredit => amount > 0;
+  bool get isCredit => amount.isPositive;
 
   bool get isPending => status == TransactionStatus.pending;
 
