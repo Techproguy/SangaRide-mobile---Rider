@@ -483,6 +483,8 @@ abstract final class MockAirport {
 
   static bool hasRide(String id) => _rides.containsKey(id);
 
+  static DateTime? pickupAtOf(String id) => _rides[id]?.pickupAt;
+
   static Map<String, dynamic>? display(String id) {
     final ride = _rides[id];
     if (ride == null) return null;

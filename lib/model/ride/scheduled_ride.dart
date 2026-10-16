@@ -3,6 +3,7 @@ import 'package:sanga_ride/model/ride/airport.dart';
 import 'package:sanga_ride/model/ride/booking.dart';
 import 'package:sanga_ride/model/ride/ride_load_problem.dart';
 import 'package:sanga_ride/model/ride/ride_request.dart';
+import 'package:sanga_ride/model/trip/scheduled_wait.dart';
 import 'package:sanga_ride_core/sanga_ride_core.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
@@ -42,10 +43,12 @@ class ScheduledRide {
     this.hours,
     this.reminderAt,
     this.airport,
+    this.wait,
   });
 
   factory ScheduledRide.fromJson(JsonReader json) {
     final airport = json.objectOrNull('airport');
+    final scheduledAt = json.time('scheduledAt').toLocal();
     return ScheduledRide(
       id: json.str('id'),
       kind: ScheduledRideKind.fromCode(json.strOrNull('kind')),
@@ -56,7 +59,7 @@ class ScheduledRide {
         (category) => category.name,
         RideCategory.go,
       ),
-      scheduledAt: json.time('scheduledAt').toLocal(),
+      scheduledAt: scheduledAt,
       pickup: ScheduledStop.fromJson(json.object('pickup')),
       dropoff: ScheduledStop.fromJson(json.object('dropoff')),
       fare: json.money('fare'),
@@ -65,6 +68,7 @@ class ScheduledRide {
       hours: json.intOrNull('hours'),
       reminderAt: json.timeOrNull('reminderAt')?.toLocal(),
       airport: airport == null ? null : ScheduledAirport.fromJson(airport.raw),
+      wait: ScheduledWait.maybeFrom(json, pickupAt: scheduledAt),
     );
   }
 
@@ -81,6 +85,7 @@ class ScheduledRide {
   final int? hours;
   final DateTime? reminderAt;
   final ScheduledAirport? airport;
+  final ScheduledWait? wait;
 
   bool get isRepeat => kind == ScheduledRideKind.repeat;
 

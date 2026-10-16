@@ -7,6 +7,7 @@ import 'package:sanga_ride/model/location/place.dart';
 import 'package:sanga_ride/model/ride/airport.dart';
 import 'package:sanga_ride/model/ride/ride_match.dart';
 import 'package:sanga_ride/model/ride/ride_request.dart';
+import 'package:sanga_ride/model/trip/scheduled_wait.dart';
 import 'package:sanga_ride/model/trip/server_time.dart';
 import 'package:sanga_ride/model/trip/trip_delivery.dart';
 import 'package:sanga_ride_core/sanga_ride_core.dart';
@@ -226,6 +227,8 @@ class Trip {
     this.returnFee,
     this.airport,
     this.delivery,
+    this.freeWait = Duration.zero,
+    this.scheduledWait,
   });
 
   factory Trip.fromJson(Map<String, dynamic> json) {
@@ -260,6 +263,8 @@ class Trip {
       delivery: reader.objectOrNull('delivery') == null
           ? null
           : _tryRead(() => TripDelivery.fromJson(reader.object('delivery').raw)),
+      freeWait: Duration(seconds: reader.intOr('freeWaitSeconds', 0)),
+      scheduledWait: ScheduledWait.maybeFrom(reader, pickupAt: reader.timeOrNull('scheduledPickupAt')),
     );
   }
 
@@ -292,6 +297,8 @@ class Trip {
   final Money? returnFee;
   final TripAirport? airport;
   final TripDelivery? delivery;
+  final Duration freeWait;
+  final ScheduledWait? scheduledWait;
 
   static const int maxStops = 3;
 

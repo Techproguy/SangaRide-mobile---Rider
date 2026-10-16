@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:sanga_ride/core/api/mock/mock_airport.dart';
+import 'package:sanga_ride/core/api/mock/mock_booking.dart';
 import 'package:sanga_ride/core/api/mock/mock_data.dart';
 import 'package:sanga_ride/core/api/mock/mock_delivery_live.dart';
 import 'package:sanga_ride/core/api/app_endpoints.dart';
@@ -80,10 +81,12 @@ abstract final class MockTrip {
       routeKm += _distanceKm(points[i - 1], points[i]);
     }
     final distanceKm = double.parse((routeKm * _routeDetour).toStringAsFixed(1));
+    final scheduledAt = MockAirport.pickupAtOf(tripId) ?? DateTime.tryParse('${request['scheduledAt']}');
     MockTripState.trips[tripId] = {
       'id': tripId,
       'createdAt': _iso(now),
       'category': category,
+      'scheduledAt': scheduledAt == null ? null : _iso(scheduledAt),
       'rideFor': request['rideFor'],
       'driver': {...driverCard}
         ..remove('vehicle')
@@ -297,6 +300,7 @@ abstract final class MockTrip {
       'status': status,
       'serverTime': _iso(now),
       'rideType': trip['category'],
+      ..._waitBlock(id, trip),
       'driver': trip['driver'],
       'vehicle': trip['vehicle'],
       'pickup': _apiPlace(trip['pickup'] as Map<String, dynamic>),
@@ -319,6 +323,16 @@ abstract final class MockTrip {
       'returnFee': ?(_returnLegOf(id) == null ? null : MockMoney.json(MockDeliveryLive.returnFee)),
       'airport': ?MockAirport.tripBlock(id),
       'delivery': ?MockDeliveryLive.tripBlock(id, () => _deliveryClock(id)),
+    };
+  }
+
+  static Map<String, dynamic> _waitBlock(String id, Map<String, dynamic> trip) {
+    final scheduledAt = DateTime.tryParse('${trip['scheduledAt']}');
+    if (scheduledAt == null) return {'freeWaitSeconds': MockBooking.freeWaitSeconds(trip['category'] as String)};
+    return {
+      'freeWaitSeconds': 0,
+      'scheduledPickupAt': _iso(scheduledAt),
+      ...MockBooking.scheduledWaitJson(scheduledAt, isAirport: MockAirport.hasRide(id)),
     };
   }
 

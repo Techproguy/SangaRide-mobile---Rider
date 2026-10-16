@@ -11,6 +11,7 @@ import 'package:sanga_ride/view/ride/widgets/ride_option_review_cards.dart';
 import 'package:sanga_ride/view/ride/widgets/ride_option_schedule_format.dart';
 import 'package:sanga_ride/view/ride/widgets/trip_type_icon.dart';
 import 'package:sanga_ride/view/rides/widgets/scheduled_actions.dart';
+import 'package:sanga_ride/view/trip/trip_wait_copy.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 class ScheduledRideScreen extends StatefulWidget {
@@ -158,6 +159,14 @@ class _ScheduledRideScreenState extends State<ScheduledRideScreen> {
         label: airport == null ? 'When' : 'Pick up',
         value: formatRideSchedule(context, ride.scheduledAt),
       ),
+      if (ride.wait case final wait?) ...[
+        SangaDetailRow(
+          icon: Icons.directions_car_filled_outlined,
+          label: 'Driver arrives by',
+          value: wait.arriveByValue(context),
+        ),
+        SangaDetailRow(icon: Icons.timer_outlined, label: 'Free waiting', value: wait.freeWaitValue(context)),
+      ],
       if (ride.repeat case final rule?)
         SangaDetailRow(icon: Icons.event_repeat_rounded, label: 'Repeats', value: formatRepeatRule(context, rule)),
       if (airport != null) ..._airportRows(context, airport),

@@ -9,6 +9,7 @@ export 'ride/ride_request.dart';
 export 'ride/ride_match.dart';
 export 'ride/ride_for.dart';
 
+export 'trip/scheduled_wait.dart';
 export 'trip/trip.dart';
 export 'trip/trip_delivery.dart';
 export 'trip/delivery_issue.dart';

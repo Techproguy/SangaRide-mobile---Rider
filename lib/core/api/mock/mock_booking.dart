@@ -16,6 +16,20 @@ abstract final class MockBooking {
   ];
 
   static const Duration _reminderLead = Duration(minutes: 30);
+  static const int _defaultFreeWaitSeconds = 300;
+  static const Map<String, int> _freeWaitSecondsByCategory = {'lux': 900};
+  static const Duration _arriveEarly = Duration(minutes: 15);
+  static const Duration _airportArriveEarly = Duration(minutes: 30);
+  static const Duration _scheduledFreeWait = Duration(minutes: 30);
+  static const int _waitingFeePerMinute = 100;
+
+  static int freeWaitSeconds(String category) => _freeWaitSecondsByCategory[category] ?? _defaultFreeWaitSeconds;
+
+  static Map<String, dynamic> scheduledWaitJson(DateTime pickupAt, {required bool isAirport}) => {
+    'arriveByAt': pickupAt.subtract(isAirport ? _airportArriveEarly : _arriveEarly).toUtc().toIso8601String(),
+    'freeWaitUntil': pickupAt.add(_scheduledFreeWait).toUtc().toIso8601String(),
+    'waitingFeePerMinute': MockMoney.json(_waitingFeePerMinute),
+  };
 
   static const Map<String, dynamic> rules = {'scheduleLeadMinutes': 15, 'returnGapMinutes': 30, 'windowDays': 30};
 
@@ -148,6 +162,7 @@ abstract final class MockBooking {
       'tripType': ride.tripType,
       'category': ride.category,
       'scheduledAt': ride.scheduledAt.toUtc().toIso8601String(),
+      ...scheduledWaitJson(ride.scheduledAt, isAirport: ride.tripType == 'airport'),
       'pickup': ride.pickup,
       'dropoff': ride.dropoff,
       'fare': MockMoney.json(ride.fare),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:sanga_ride/model/models.dart';
+import 'package:sanga_ride/view/trip/trip_wait_copy.dart';
 import 'package:sanga_ride/view/trip/widgets/trip_action_tiles.dart';
 import 'package:sanga_ride/view/trip/widgets/trip_driver_header.dart';
 import 'package:sanga_ride/view/trip/widgets/trip_panel_body.dart';
@@ -29,6 +30,7 @@ class ArrivedPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final waitNotice = trip.arrivedWaitNotice(context);
     return TripPanelBody(
       children: [
         TripDriverHeader(driver: trip.driver),
@@ -42,6 +44,7 @@ class ArrivedPanel extends StatelessWidget {
           onAddStops: trip.canAddStops ? onAddStops : null,
           onCancel: trip.canChange ? onCancel : null,
         ),
+        if (waitNotice != null) SangaNotice(message: waitNotice, tone: SangaTone.neutral, icon: Icons.schedule_rounded),
         SangaButton.primary(label: 'Confirm details', onPressed: onConfirmDetails),
       ],
     );

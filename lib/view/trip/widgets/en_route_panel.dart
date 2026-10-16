@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:sanga_ride/model/models.dart';
+import 'package:sanga_ride/view/trip/trip_wait_copy.dart';
 import 'package:sanga_ride/view/trip/widgets/trip_action_tiles.dart';
 import 'package:sanga_ride/view/trip/widgets/trip_driver_header.dart';
 import 'package:sanga_ride/view/trip/widgets/trip_eta_line.dart';
@@ -41,8 +42,8 @@ class EnRoutePanel extends StatelessWidget {
           onAddStops: trip.canAddStops ? onAddStops : null,
           onCancel: trip.canChange ? onCancel : null,
         ),
-        const SangaNotice(
-          message: 'Your driver is heading to your pickup, please be ready',
+        SangaNotice(
+          message: trip.enRouteWaitNotice(context) ?? 'Your driver is heading to your pickup, please be ready',
           tone: SangaTone.neutral,
           icon: Icons.info_outline_rounded,
         ),
