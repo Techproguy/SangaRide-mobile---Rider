@@ -268,7 +268,7 @@ abstract final class MockRideRequests {
     final meetGreetFee = MockAirport.meetGreetFee(request.body);
     if (tripType == 'hourly') {
       final rate = MockBooking.hourlyRatesNaira.firstWhere((rate) => rate['category'] == optionId)['hourlyRate'] as num;
-      final hours = (request.body['hours'] as num?)?.toInt() ?? 2;
+      final hours = ((request.body['hourlyDurationMin'] as num?) ?? 120) ~/ 60;
       return _fare(
         baseFare: 0,
         distanceKm: 0,

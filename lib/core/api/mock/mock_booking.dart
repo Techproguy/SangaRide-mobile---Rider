@@ -9,7 +9,7 @@ abstract final class MockBooking {
     MockRoute.get(BookingEndpoints.scheduledRides, (_) => {'rides': _rides.map(_payload).toList()}),
     MockRoute.delete(BookingEndpoints.scheduledRide, _cancel),
     MockRoute.post(BookingEndpoints.scheduledRideReminder, _remind),
-    MockRoute.get(BookingEndpoints.hourlyRates, (_) => hourlyRates),
+    MockRoute.get(BookingEndpoints.hourlyTiers, _hourlyTiers),
     MockRoute.get(BookingEndpoints.cities, (_) => cities),
     MockRoute.get(BookingEndpoints.rules, (_) => rules),
   ];
@@ -32,26 +32,38 @@ abstract final class MockBooking {
 
   static const Map<String, dynamic> rules = {'scheduleLeadMinutes': 15, 'returnGapMinutes': 30, 'windowDays': 30};
 
-  static Map<String, dynamic> get hourlyRates => {
-    ..._hourlyRates,
-    'rates': [
-      for (final rate in hourlyRatesNaira)
-        {'category': rate['category'], 'hourlyRate': MockMoney.json(rate['hourlyRate'] as num)},
-    ],
-  };
+  static Object? _hourlyTiers(MockRequest request) {
+    final code = request.params['code'];
+    final rate = hourlyRatesNaira.where((rate) => rate['category'] == code).firstOrNull?['hourlyRate'] as num?;
+    if (rate == null) throw const MockFailure(404, 'We can’t find that ride class.', code: 'not_found');
+    return {
+      'tiers': [
+        for (final tier in _hourlyPresets)
+          {
+            'durationMin': (tier['hours'] as int) * Duration.minutesPerHour,
+            'label': '${tier['hours']} hours',
+            'sublabel': tier['blurb'],
+            'price': MockMoney.of(rate * (tier['hours'] as int)).major,
+          },
+      ],
+      'custom': {
+        'enabled': true,
+        'minMin': _minHourlyMinutes,
+        'maxMin': _maxHourlyMinutes,
+        'perHour': MockMoney.of(rate).major,
+      },
+    };
+  }
 
-  static const Map<String, dynamic> _hourlyRates = {
-    'minHours': 1,
-    'maxHours': 12,
-    'presets': [
-      {'hours': 2, 'blurb': 'Good for short errands'},
-      {'hours': 4, 'blurb': 'Ideal for meetings and events'},
-      {'hours': 6, 'blurb': 'Suitable for multiple stops'},
-      {'hours': 8, 'blurb': 'Full day flexibility'},
-    ],
-    'includes': ['Your driver and car for the whole time', 'Waiting time between stops', 'Fuel'],
-    'excludes': ['Tolls and parking fees'],
-  };
+  static const int _minHourlyMinutes = 60;
+  static const int _maxHourlyMinutes = 720;
+
+  static const List<Map<String, Object>> _hourlyPresets = [
+    {'hours': 2, 'blurb': 'Good for short errands'},
+    {'hours': 4, 'blurb': 'Ideal for meetings and events'},
+    {'hours': 6, 'blurb': 'Suitable for multiple stops'},
+    {'hours': 8, 'blurb': 'Full day flexibility'},
+  ];
 
   static const List<Map<String, dynamic>> hourlyRatesNaira = [
     {'category': 'go', 'hourlyRate': 6500},
@@ -210,6 +222,7 @@ abstract final class MockBooking {
     if (body['tripType'] == 'intercity' && body['fromCityId'] == body['toCityId']) {
       throw const MockFailure(422, 'Pick different cities.', code: 'same_city');
     }
+    final durationMinutes = (body['hourlyDurationMin'] as num?)?.toInt();
     final record = _ScheduledRecord(
       id: 'sched_${_nextId++}',
       kind: repeat == null ? 'one_time' : 'repeat',
@@ -219,7 +232,7 @@ abstract final class MockBooking {
       pickup: _stop(body['pickup']),
       dropoff: _stop(body['dropoff']),
       fare: MockMoney.naira(body['proposedFare']),
-      hours: (body['hours'] as num?)?.toInt(),
+      hours: durationMinutes == null ? null : durationMinutes ~/ Duration.minutesPerHour,
       repeat: repeat,
     );
     _rides.add(record);

@@ -33,9 +33,11 @@ enum ItemStatus {
 class ItemReason {
   const ItemReason({required this.code, required this.message});
 
-  static ItemReason? tryFromReader(JsonReader? reader) {
-    if (reader == null) return null;
-    return ItemReason(code: reader.strOr('code', ''), message: reader.strOr('message', ''));
+  static ItemReason? tryFromReader(JsonReader reader) {
+    final detail = reader.objectOrNull('reason');
+    if (detail != null) return ItemReason(code: detail.strOr('code', ''), message: detail.strOr('message', ''));
+    final message = reader.strOrNull('reason');
+    return message == null ? null : ItemReason(code: '', message: message);
   }
 
   final String code;
@@ -79,7 +81,7 @@ class VerificationItem {
     kind: VerificationItemKind.fromCode(reader.strOrNull('kind')),
     label: reader.strOr('label', ''),
     status: ItemStatus.fromCode(reader.strOrNull('status')),
-    reason: ItemReason.tryFromReader(reader.objectOrNull('reason')),
+    reason: ItemReason.tryFromReader(reader),
     expiresAt: reader.timeOrNull('expiresAt')?.toLocal(),
     uploadRules: UploadRules.tryFromReader(reader.objectOrNull('upload')),
     documentTypes: reader.strings('documentTypes'),
@@ -95,6 +97,17 @@ class VerificationItem {
   final List<String> documentTypes;
 
   bool get needsAction => status.needsAction;
+
+  VerificationItem withReason(ItemReason reason) => VerificationItem(
+    id: id,
+    kind: kind,
+    label: label,
+    status: status,
+    reason: reason,
+    expiresAt: expiresAt,
+    uploadRules: uploadRules,
+    documentTypes: documentTypes,
+  );
 }
 
 class Verification {
@@ -107,11 +120,23 @@ class Verification {
 
   factory Verification.fromJson(Map<String, dynamic> json) {
     final reader = JsonReader(json);
+    final submittedAt = reader.timeOrNull('submittedAt')?.toLocal();
+    final rejection = reader.strOrNull('rejectionReason');
+    final items = [
+      for (final item in reader.listOf('items', VerificationItem.fromReader))
+        if (rejection != null && item.status == ItemStatus.rejected && item.reason == null)
+          item.withReason(ItemReason(code: '', message: rejection))
+        else
+          item,
+    ];
+    final reported = VerificationStatus.fromCode(reader.strOrNull('status'));
+    final isUnsent =
+        reported == VerificationStatus.pending && submittedAt == null && items.any((item) => item.needsAction);
     return Verification(
-      status: VerificationStatus.fromCode(reader.strOrNull('status')),
-      submittedAt: reader.timeOrNull('submittedAt')?.toLocal(),
+      status: isUnsent ? VerificationStatus.unverified : reported,
+      submittedAt: submittedAt,
       estimatedReviewHours: reader.intOr('estimatedReviewHours', 24),
-      items: reader.listOf('items', VerificationItem.fromReader),
+      items: items,
     );
   }
 

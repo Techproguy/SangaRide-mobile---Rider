@@ -175,51 +175,62 @@ enum IntercityIssue {
 }
 
 class HourlyPreset {
-  const HourlyPreset({required this.hours, required this.blurb});
+  const HourlyPreset({required this.hours, required this.blurb, required this.price});
 
-  factory HourlyPreset.fromJson(JsonReader json) =>
-      HourlyPreset(hours: json.integer('hours'), blurb: json.strOr('blurb', ''));
+  factory HourlyPreset.fromJson(JsonReader json) {
+    final minutes = json.integer('durationMin');
+    if (minutes <= 0 || minutes % Duration.minutesPerHour != 0) {
+      throw JsonFormatError('Expected a whole number of hours at "durationMin"', json.raw['durationMin']);
+    }
+    return HourlyPreset(
+      hours: minutes ~/ Duration.minutesPerHour,
+      blurb: json.strOr('sublabel', ''),
+      price: json.money('price'),
+    );
+  }
 
   final int hours;
   final String blurb;
+  final Money price;
+
+  Money get perHour => Money((price.minor / hours).round(), price.currency);
 }
 
 class HourlyCatalog {
   const HourlyCatalog({
-    required this.rates,
+    required this.hourlyRate,
     required this.minHours,
     required this.maxHours,
     required this.presets,
-    required this.includes,
-    required this.excludes,
+    this.includes = const [],
+    this.excludes = const [],
   });
 
   factory HourlyCatalog.fromJson(Object? body) {
     final json = JsonReader.of(body);
-    final rates = <RideCategory, Money>{};
-    for (final rate in json.listOf('rates', (item) => item)) {
-      final category = RideCategory.values.asNameMap()[rate.strOrNull('category')];
-      final hourly = rate.moneyOrNull('hourlyRate');
-      if (category != null && hourly != null) rates[category] = hourly;
-    }
+    final presets = json.listOf('tiers', HourlyPreset.fromJson);
+    final custom = json.objectOrNull('custom');
+    final isCustomEnabled = custom?.boolOr('enabled', false) ?? false;
+    final firstPreset = presets.firstOrNull;
+    final rate = custom?.moneyOrNull('perHour') ?? firstPreset?.perHour;
     return HourlyCatalog(
-      rates: rates,
-      minHours: json.intOr('minHours', 1),
-      maxHours: json.intOr('maxHours', 12),
-      presets: json.listOf('presets', HourlyPreset.fromJson),
-      includes: json.strings('includes'),
-      excludes: json.strings('excludes'),
+      hourlyRate: rate,
+      minHours: isCustomEnabled
+          ? (custom!.intOr('minMin', Duration.minutesPerHour) / Duration.minutesPerHour).ceil()
+          : firstPreset?.hours ?? 1,
+      maxHours: isCustomEnabled
+          ? custom!.intOr('maxMin', 12 * Duration.minutesPerHour) ~/ Duration.minutesPerHour
+          : presets.lastOrNull?.hours ?? 12,
+      presets: presets,
     );
   }
 
-  final Map<RideCategory, Money> rates;
+  final Money? hourlyRate;
   final int minHours;
   final int maxHours;
   final List<HourlyPreset> presets;
   final List<String> includes;
   final List<String> excludes;
-
-  Money? rateFor(RideCategory? category) => category == null ? null : rates[category];
 
   bool isPreset(int hours) => presets.any((preset) => preset.hours == hours);
 }
@@ -244,7 +255,7 @@ class IntercityCatalog {
 class BookingCatalog {
   const BookingCatalog({required this.hourly, required this.intercity, required this.rules});
 
-  final HourlyCatalog hourly;
+  final Map<RideCategory, HourlyCatalog> hourly;
   final IntercityCatalog intercity;
   final BookingRules rules;
 }

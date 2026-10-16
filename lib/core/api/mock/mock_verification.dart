@@ -1,16 +1,20 @@
 import 'package:flutter/foundation.dart';
-import 'package:sanga_ride/core/api/mock/mock_money.dart';
 import 'package:sanga_ride/core/api/mock/mock_server.dart';
 import 'package:sanga_ride/core/api/verification_endpoints.dart';
 
 abstract final class MockVerification {
-  static const String rejectedDocumentType = 'voters_card';
+  static const String rejectedDocumentType = 'drivers_license';
   static const Duration _reviewTime = Duration(seconds: 20);
   static const int _estimatedReviewHours = 24;
   static const int _maxUploadBytes = 5 * 1024 * 1024;
-  static Set<String> get _documentTypes => MockMoney.isUnitedStates
-      ? const {'national_id_card', 'drivers_license', 'international_passport'}
-      : const {'national_id_card', 'drivers_license', 'voters_card', 'international_passport'};
+  static const Set<String> _documentTypes = {'national_id', 'drivers_license', 'passport'};
+  static const Set<String> _imageExtensions = {'jpg', 'jpeg', 'png', 'webp', 'heic', 'heif'};
+  static const Map<String, String> _mimeTypes = {
+    'png': 'image/png',
+    'webp': 'image/webp',
+    'heic': 'image/heic',
+    'heif': 'image/heif',
+  };
   static const Map<String, String> _reasonMessages = {
     'image_unclear': 'The photo was blurry. Upload a clear one in good light.',
     'expired': 'This document has expired. Upload a valid one.',
@@ -20,13 +24,18 @@ abstract final class MockVerification {
 
   static final List<MockRoute> routes = [
     MockRoute.get(VerificationEndpoints.status, (_) => _json(DateTime.now())),
-    MockRoute.post(VerificationEndpoints.submit, _submit),
+    MockRoute.post(VerificationEndpoints.documents, _submit),
+    MockRoute.post(VerificationEndpoints.documentFiles, _uploadFile),
+    MockRoute.delete(VerificationEndpoints.documentFile, _deleteFile),
   ];
 
   static final List<_Item> _items = [
-    _Item('national_id', 'document', 'ID document', 'missing'),
     _Item('selfie', 'selfie', 'Selfie', 'missing'),
+    _Item('document', 'document', 'Identity document', 'missing'),
   ];
+
+  static final Set<String> _fileIds = {};
+  static int _fileCounter = 0;
 
   static DateTime? _submittedAt;
   static bool _isReviewed = false;
@@ -59,12 +68,38 @@ abstract final class MockVerification {
     return {'status': 'verified'};
   }
 
+  static Object? _uploadFile(MockRequest request) {
+    if (!_documentTypes.contains(request.body['documentType'])) {
+      throw const MockFailure(422, 'Select a document type');
+    }
+    final file = request.body['file'];
+    final name = file is Map ? file['name'] as String? ?? 'document.jpg' : 'document.jpg';
+    final extension = name.split('.').last.toLowerCase();
+    if (!_imageExtensions.contains(extension)) {
+      throw const MockFailure(415, 'That file type isn’t supported.', code: 'unsupported_type');
+    }
+    final size = file is Map ? (file['length'] as num? ?? 0).toInt() : 0;
+    if (size > _maxUploadBytes) throw const MockFailure(413, 'That photo is too big.', code: 'file_too_large');
+    final id = 'file_${++_fileCounter}';
+    _fileIds.add(id);
+    return {'fileId': id, 'fileName': name, 'mimeType': _mimeTypes[extension] ?? 'image/jpeg', 'sizeBytes': size};
+  }
+
+  static Object? _deleteFile(MockRequest request) {
+    _fileIds.remove(request.params['id']);
+    return null;
+  }
+
   static Object? _submit(MockRequest request) {
     final now = DateTime.now();
     if (_status(now) == 'pending') return _json(now);
-    for (final document in (request.body['documents'] as List? ?? const [])) {
-      _attach(Map<String, dynamic>.from(document as Map));
+    final type = request.body['documentType'];
+    if (type is! String || type.isEmpty) throw const MockFailure(422, 'Select a document type');
+    final fileIds = request.body['fileIds'];
+    if (fileIds is! List || fileIds.isEmpty || fileIds.any((id) => !_fileIds.contains(id))) {
+      throw const MockFailure(422, 'Upload at least one document');
     }
+    _attach(type);
     final missing = [
       for (final item in _items)
         if (item.needsAction) item.id,
@@ -78,13 +113,12 @@ abstract final class MockVerification {
     return _json(now);
   }
 
-  static void _attach(Map<String, dynamic> document) {
-    final type = '${document['type']}';
+  static void _attach(String type) {
     if (!_documentTypes.contains(type)) {
       throw const MockFailure(422, 'We can’t accept that ID.', code: 'wrong_document');
     }
     _documentType = type;
-    _item('national_id')
+    _item('document')
       ..status = 'pending'
       ..reason = null;
   }
@@ -97,7 +131,7 @@ abstract final class MockVerification {
     _isReviewed = true;
     for (final item in _items) {
       if (item.status != 'pending') continue;
-      final isRejected = item.id == 'national_id' && _documentType == rejectedDocumentType;
+      final isRejected = item.id == 'document' && _documentType == rejectedDocumentType;
       item
         ..status = isRejected ? 'rejected' : 'verified'
         ..reason = isRejected ? 'image_unclear' : null;
@@ -120,8 +154,8 @@ abstract final class MockVerification {
       'status': status,
       'submittedAt': _submittedAt == null ? null : _iso(_submittedAt!),
       'estimatedReviewHours': _estimatedReviewHours,
+      'rejectionReason': _items.where((item) => item.status == 'rejected').firstOrNull?.reasonMessage,
       'items': [for (final item in _items) item.toJson()],
-      'serverTime': _iso(now),
     };
   }
 
@@ -139,19 +173,7 @@ class _Item {
 
   bool get needsAction => const {'missing', 'rejected', 'expired'}.contains(status);
 
-  Map<String, dynamic> toJson() => {
-    'id': id,
-    'kind': kind,
-    'label': label,
-    'status': status,
-    'reason': reason == null ? null : {'code': reason, 'message': MockVerification._reasonMessages[reason]},
-    'expiresAt': null,
-    if (kind == 'document') ...{
-      'upload': {
-        'maxBytes': MockVerification._maxUploadBytes,
-        'formats': ['jpg', 'png'],
-      },
-      'documentTypes': MockVerification._documentTypes.toList(),
-    },
-  };
+  String? get reasonMessage => MockVerification._reasonMessages[reason];
+
+  Map<String, dynamic> toJson() => {'id': id, 'kind': kind, 'label': label, 'status': status, 'reason': reasonMessage};
 }

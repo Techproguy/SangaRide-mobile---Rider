@@ -1,10 +1,9 @@
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 enum IdDocumentType {
-  nationalId('national_id_card', 'National identity card', 'Front and back of your card', hasBack: true),
+  nationalId('national_id', 'National identity card', 'Front and back of your card', hasBack: true),
   driversLicense('drivers_license', 'Driver’s license', 'Front and back of your license', hasBack: true),
-  votersCard('voters_card', 'Voter’s card', 'Front and back of your card', hasBack: true),
-  passport('international_passport', 'International passport', 'The page with your photo', hasBack: false);
+  passport('passport', 'International passport', 'The page with your photo', hasBack: false);
 
   const IdDocumentType(this.code, this._label, this.hint, {required this.hasBack});
 

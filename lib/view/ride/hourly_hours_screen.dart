@@ -63,7 +63,7 @@ class _HourlyHoursScreenState extends State<HourlyHoursScreen> {
   }
 
   Widget _buildContent(BuildContext context) {
-    final catalog = _ride.readyCatalog?.hourly;
+    final catalog = _ride.hourlyCatalog;
     final rate = _ride.hourlyRate;
     if (catalog == null || rate == null) return const SizedBox.shrink();
     return Column(
@@ -80,7 +80,7 @@ class _HourlyHoursScreenState extends State<HourlyHoursScreen> {
           onCustom: () => setState(() => _customChosen = true),
           onHoursChanged: _ride.setHours,
         ),
-        _covers(catalog),
+        if (catalog.includes.isNotEmpty) _covers(catalog),
         SangaToggleRow(
           leading: const SangaIconBadge(child: Icon(Icons.person_pin_circle_outlined)),
           title: 'Stay with me',

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:developer';
 import 'dart:io';
 
 import 'package:get/get.dart';
@@ -115,6 +116,7 @@ class VerificationController extends GetxController {
         return;
       }
       await ImageCompressionService.discard(before.localPath);
+      unawaited(_deleteUploaded(before));
       await _upload(side, path, epoch);
     } on PhotoException catch (error) {
       if (_isCurrent(side, epoch)) _setSide(side, PhotoFailed(failure: error.failure));
@@ -131,9 +133,10 @@ class VerificationController extends GetxController {
 
   Future<void> removePhoto(DocumentSide side) async {
     _nextEpoch(side);
-    final path = draft.sideOf(side).localPath;
+    final photo = draft.sideOf(side);
     _setSide(side, const PhotoNone());
-    await ImageCompressionService.discard(path);
+    unawaited(_deleteUploaded(photo));
+    await ImageCompressionService.discard(photo.localPath);
   }
 
   void clearPermissionFailures() {
@@ -155,22 +158,11 @@ class VerificationController extends GetxController {
     final type = current.type;
     final front = current.front;
     final back = current.back;
-    final itemId = documentItem?.id;
     if (!current.isReady || type == null || front is! PhotoUploaded || isSubmitting) return false;
-    if (itemId == null) {
-      _draft.value = current.copyWith(problem: VerificationProblem.unknown);
-      return false;
-    }
     _draft.value = current.copyWith(isSubmitting: true, clearProblem: true, missing: const []);
     return _submit({
-      'documents': [
-        {
-          'itemId': itemId,
-          'type': type.code,
-          'frontUploadId': front.id,
-          if (type.hasBack && back is PhotoUploaded) 'backUploadId': back.id,
-        },
-      ],
+      'documentType': type.code,
+      'fileIds': [front.id, if (type.hasBack && back is PhotoUploaded) back.id],
     });
   }
 
@@ -201,12 +193,11 @@ class VerificationController extends GetxController {
     return _submission = Mutation<Verification>(
       intent: IdempotencyIntent.verificationSubmit,
       run: (key) async {
-        final response = await _api.post(VerificationEndpoints.submit, data: body, key: key, suppressErrorToast: true);
-        return Verification.fromJson(response.dataMapOrEmpty);
+        await _api.post(VerificationEndpoints.documents, data: body, key: key, suppressErrorToast: true);
+        return _readStatus();
       },
       reconcile: () async {
-        final response = await _api.get(VerificationEndpoints.status, suppressErrorToast: true);
-        final verification = Verification.fromJson(response.dataMapOrEmpty);
+        final verification = await _readStatus();
         final accepted =
             verification.status == VerificationStatus.pending || verification.status == VerificationStatus.verified;
         return accepted ? ReconciledDone(verification) : const ReconciledNotDone<Verification>();
@@ -239,9 +230,10 @@ class VerificationController extends GetxController {
     _setSide(side, PhotoUploading(path: path, progress: 0));
     try {
       final ref = await _api.upload(
-        VerificationEndpoints.uploads,
+        VerificationEndpoints.documentFiles,
         file: File(path),
         purpose: UploadPurposes.idDocument,
+        fields: {'documentType': ?draft.type?.code},
         suppressErrorToast: true,
         onProgress: (sent, total) {
           if (_isCurrent(side, epoch) && total > 0) _setSide(side, PhotoUploading(path: path, progress: sent / total));
@@ -254,10 +246,12 @@ class VerificationController extends GetxController {
     }
   }
 
-  Future<void> _fetchStatus() async {
+  Future<Verification> _readStatus() async {
     final response = await _api.get(VerificationEndpoints.status, suppressErrorToast: true);
-    _applyVerification(Verification.fromJson(response.dataMapOrEmpty));
+    return Verification.fromJson(response.dataMapOrEmpty);
   }
+
+  Future<void> _fetchStatus() async => _applyVerification(await _readStatus());
 
   void _applyVerification(Verification verification) {
     _state.value = VerificationLoaded(verification);
@@ -285,9 +279,19 @@ class VerificationController extends GetxController {
 
   void _clearSide(DocumentSide side) {
     _nextEpoch(side);
-    final path = draft.sideOf(side).localPath;
+    final photo = draft.sideOf(side);
     _setSide(side, const PhotoNone());
-    ImageCompressionService.discard(path);
+    unawaited(_deleteUploaded(photo));
+    ImageCompressionService.discard(photo.localPath);
+  }
+
+  Future<void> _deleteUploaded(PackagePhotoState photo) async {
+    if (photo is! PhotoUploaded) return;
+    try {
+      await _api.delete(VerificationEndpoints.documentFileOf(photo.id), suppressErrorToast: true);
+    } on Object catch (error) {
+      log('deleteDocumentFile failed: $error');
+    }
   }
 
   void _setSide(DocumentSide side, PackagePhotoState state) {

@@ -163,7 +163,7 @@ abstract final class DevScenarios {
     ),
     DevScenario(
       area: 'Verification',
-      trigger: 'ID type voters_card',
+      trigger: 'ID type drivers_license',
       effect: 'The review rejects the document (image_unclear) after about 20 seconds. Other types are verified.',
     ),
     DevScenario(

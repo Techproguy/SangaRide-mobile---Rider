@@ -150,7 +150,7 @@ class RideRequestController extends GetxController {
   bool _isFresh(DateTime? loadedAt) => loadedAt != null && DateTime.now().difference(loadedAt) < catalogLifetime;
 
   String rateLabel(RideOption option) {
-    final hourly = tripType == TripType.hourly ? readyCatalog?.hourly.rates[option.category] : null;
+    final hourly = tripType == TripType.hourly ? readyCatalog?.hourly[option.category]?.hourlyRate : null;
     return hourly == null ? SangaMoney.perDistance(option.pricePerKm) : SangaMoney.perHourOf(hourly);
   }
 
@@ -173,7 +173,12 @@ class RideRequestController extends GetxController {
     return null;
   }
 
-  Money? get hourlyRate => readyCatalog?.hourly.rateFor(option?.category);
+  HourlyCatalog? get hourlyCatalog {
+    final category = option?.category;
+    return category == null ? null : readyCatalog?.hourly[category];
+  }
+
+  Money? get hourlyRate => hourlyCatalog?.hourlyRate;
 
   bool get isScheduledBooking => timing.isScheduled || tripType.isAlwaysScheduled;
 
@@ -266,7 +271,7 @@ class RideRequestController extends GetxController {
   void setDeliveryBooking(DeliveryBooking booking) => _delivery.value = booking;
 
   void setHours(int value) {
-    final limits = readyCatalog?.hourly;
+    final limits = hourlyCatalog;
     final clamped = limits == null ? value : value.clamp(limits.minHours, limits.maxHours);
     if (clamped == hours) return;
     _hours.value = clamped;
@@ -325,20 +330,48 @@ class RideRequestController extends GetxController {
     if (earliest != null && (returnAt?.isBefore(earliest) ?? false)) _returnAt.value = null;
   }
 
-  Future<void> loadCatalog({bool force = false}) async {
-    if (catalog is CatalogReady && !force && _isFresh(_catalogLoadedAt)) return;
-    if (catalog is! CatalogReady) _catalog.value = const CatalogLoading();
+  bool get _hasHourlyCatalog {
+    final category = option?.category;
+    return tripType != TripType.hourly || category == null || (readyCatalog?.hourly.containsKey(category) ?? false);
+  }
+
+  Future<MapEntry<RideCategory, HourlyCatalog>?> _loadHourlyCatalog(
+    RideOption option, {
+    required bool isRequired,
+  }) async {
     try {
-      final responses = await Future.wait([
-        _api.get(BookingEndpoints.hourlyRates),
-        _api.get(BookingEndpoints.cities),
-        _api.get(BookingEndpoints.rules),
-      ]);
+      final response = await _api.get(
+        BookingEndpoints.hourlyTiersOf(option.category.name),
+        suppressErrorToast: !isRequired,
+      );
+      return MapEntry(option.category, HourlyCatalog.fromJson(response.dataMap));
+    } catch (e) {
+      log('loadHourlyCatalog failed: $e');
+      if (isRequired) rethrow;
+      return null;
+    }
+  }
+
+  Future<Map<RideCategory, HourlyCatalog>> _loadHourlyCatalogs() async {
+    if (tripType != TripType.hourly) return readyCatalog?.hourly ?? const {};
+    final selected = option?.id;
+    final loaded = await Future.wait([
+      for (final option in options) _loadHourlyCatalog(option, isRequired: option.id == selected),
+    ]);
+    return Map.fromEntries([for (final entry in loaded) ?entry]);
+  }
+
+  Future<void> loadCatalog({bool force = false}) async {
+    if (catalog is CatalogReady && !force && _isFresh(_catalogLoadedAt) && _hasHourlyCatalog) return;
+    if (catalog is! CatalogReady || !_hasHourlyCatalog) _catalog.value = const CatalogLoading();
+    try {
+      final responses = await Future.wait([_api.get(BookingEndpoints.cities), _api.get(BookingEndpoints.rules)]);
+      final hourly = await _loadHourlyCatalogs();
       _catalog.value = CatalogReady(
         BookingCatalog(
-          hourly: HourlyCatalog.fromJson(responses[0].dataMap),
-          intercity: IntercityCatalog.fromJson(responses[1].dataMap),
-          rules: BookingRules.fromJson(responses[2].dataMap),
+          hourly: hourly,
+          intercity: IntercityCatalog.fromJson(responses[0].dataMap),
+          rules: BookingRules.fromJson(responses[1].dataMap),
         ),
       );
       _catalogLoadedAt = DateTime.now();

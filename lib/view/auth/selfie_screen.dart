@@ -7,6 +7,7 @@ import 'package:sanga_ride/core/api/mock/mock_capture.dart';
 import 'package:sanga_ride/core/router/routes.dart';
 import 'package:sanga_ride/core/services/permission_center.dart';
 import 'package:sanga_ride/view/auth/sign_up_steps.dart';
+import 'package:sanga_ride/view/verification/verification_copy.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 class SelfieScreen extends StatefulWidget {
@@ -42,6 +43,7 @@ class _SelfieScreenState extends State<SelfieScreen> {
       verify: _signUp.verifySelfie,
       fallbackCapture: kDebugMode ? () => MockCapture.photo('Selfie') : null,
       onOpenSettings: _permissions.openSettings,
+      passedMessage: VerificationCopy.selfiePassed,
       onPassed: () => context.push(SangaRoutes.homeLocation),
     );
   }

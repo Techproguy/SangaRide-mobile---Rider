@@ -34,7 +34,7 @@ class HourlyDurationOptions extends StatelessWidget {
             leading: const SangaIconBadge(child: Icon(Icons.schedule_rounded)),
             title: hoursLabel(preset.hours),
             subtitle: preset.blurb,
-            value: (hourlyRate * preset.hours).format(),
+            value: preset.price.format(),
             isSelected: !isCustom && hours == preset.hours,
             onTap: () => onPreset(preset.hours),
           ),
