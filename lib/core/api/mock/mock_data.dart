@@ -21,8 +21,20 @@ class MockData {
 
   static List<Map<String, dynamic>> get rideOptions => [
     for (final option in _rideOptions)
-      {...option, 'pricePerKm': MockMoney.perDistanceJson(option['pricePerKm'] as num)},
+      {
+        'id': option['id'],
+        'code': option['category'],
+        'name': option['name'],
+        'tagline': option['description'],
+        'seatsMin': int.parse((option['seats'] as String).split('-').first),
+        'seatsMax': int.parse((option['seats'] as String).split('-').last),
+        'perKmRate': MockMoney.perDistanceJson(option['pricePerKm'] as num),
+        'available': true,
+      },
   ];
+
+  static num perKmRateNaira(String rideClassId) =>
+      _rideOptions.firstWhere((option) => option['id'] == rideClassId)['pricePerKm'] as num;
 
   static const List<Map<String, dynamic>> _rideOptions = [
     {

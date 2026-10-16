@@ -3,17 +3,20 @@ import 'package:sanga_ride_core/sanga_ride_core.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 enum TripType {
-  oneWay('One way', 'Go to a destination'),
-  roundTrip('Round trip', 'Go there and come back'),
-  hourly('Hourly', 'Keep a driver for a set time'),
-  intercity('Intercity', 'Travel between cities'),
-  airport('Airport', 'Get picked up from the airport'),
-  delivery('Delivery', 'Send a package across town');
+  oneWay('one_way', 'One way', 'Go to a destination'),
+  roundTrip('round_trip', 'Round trip', 'Go there and come back'),
+  hourly('hourly', 'Hourly', 'Keep a driver for a set time'),
+  intercity('intercity', 'Intercity', 'Travel between cities'),
+  airport('airport', 'Airport', 'Get picked up from the airport'),
+  delivery('delivery', 'Delivery', 'Send a package across town');
 
-  const TripType(this.label, this.description);
+  const TripType(this.code, this.label, this.description);
 
+  final String code;
   final String label;
   final String description;
+
+  static TripType fromCode(String? code) => enumByCode(values, code, (type) => type.code, oneWay);
 
   static List<TripType> get selectable => [
     for (final type in values)
@@ -42,15 +45,17 @@ class RideOption {
   });
 
   factory RideOption.fromJson(JsonReader json) {
-    final category = RideCategory.values.asNameMap()[json.strOrNull('category')];
-    if (category == null) throw JsonFormatError('Unknown ride category', json.raw['category']);
+    final category = RideCategory.values.asNameMap()[json.strOrNull('code')];
+    if (category == null) throw JsonFormatError('Unknown ride class', json.raw['code']);
+    final seatsMin = json.intOr('seatsMin', 1);
+    final seatsMax = json.intOr('seatsMax', seatsMin);
     return RideOption(
       id: json.str('id'),
       category: category,
       name: json.str('name'),
-      description: json.strOr('description', ''),
-      seats: json.strOr('seats', '1'),
-      pricePerKm: json.money('pricePerKm'),
+      description: json.strOr('tagline', ''),
+      seats: seatsMin == seatsMax ? '$seatsMax' : '$seatsMin-$seatsMax',
+      pricePerKm: json.money('perKmRate'),
     );
   }
 
@@ -73,6 +78,13 @@ enum PricingOption {
   bool get isNegotiated => this == fairFare;
 
   const PricingOption(this.label, this.description, this.adjustmentLabel);
+
+  String get code => switch (this) {
+    fairFare => 'fair',
+    _ => name,
+  };
+
+  static PricingOption? fromCode(String? code) => values.where((option) => option.code == code).firstOrNull;
 
   final String label;
   final String description;
@@ -175,30 +187,29 @@ class FareEstimate {
 
   factory FareEstimate.fromJson(Object? body) {
     final json = JsonReader.of(body);
-    final pricing = <PricingOption, Money>{};
-    final rawPricing = json.objectOrNull('pricing')?.raw ?? const <String, dynamic>{};
-    for (final MapEntry(:key, :value) in rawPricing.entries) {
-      final option = PricingOption.values.asNameMap()[key];
-      final amount = Money.tryParse(value);
-      if (option != null && amount != null) pricing[option] = amount;
-    }
+    final pricing = <PricingOption, Money>{
+      for (final card in json.listOf('pricingOptions', (item) => item))
+        if ((PricingOption.fromCode(card.strOrNull('code')), card.moneyOrNull('price')) case (final option?, final price?))
+          option: price,
+    };
+    final lines = {for (final line in json.listOf('lines', (item) => item)) line.strOr('code', ''): line};
+    Money lineAmount(String code) => lines[code]?.moneyOrNull('amount') ?? Money.zero();
+    final minimumOffer = json.moneyOrNull('minimumOffer');
+    final maximumOffer = json.moneyOrNull('maximumOffer');
     return FareEstimate(
-      baseFare: json.money('baseFare'),
+      baseFare: lineAmount('base_fare'),
       distanceKm: json.numOrNull('distanceKm') ?? 0,
-      distanceFare: json.money('distanceFare'),
-      discount: json.money('discount'),
-      boost: json.money('boost'),
+      distanceFare: lineAmount('distance'),
+      discount: lineAmount('discount'),
+      boost: lineAmount('boost'),
       total: json.money('total'),
-      ratePerKm: json.moneyOrNull('ratePerKm'),
+      ratePerKm: json.objectOrNull('rideClass')?.moneyOrNull('perKmRate'),
       hours: json.intOrNull('hours'),
       hourlyRate: json.moneyOrNull('hourlyRate'),
-      meetGreetFee: json.moneyOrNull('meetGreetFee'),
+      meetGreetFee: lines['meet_greet']?.moneyOrNull('amount'),
       quoteId: json.strOrNull('quoteId'),
       pricing: pricing,
-      fairFare: switch (json.objectOrNull('fairFareRange')) {
-        final range? => FairFareRange.fromJson(range),
-        null => null,
-      },
+      fairFare: minimumOffer == null || maximumOffer == null ? null : FairFareRange(min: minimumOffer, max: maximumOffer),
     );
   }
 

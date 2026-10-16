@@ -386,11 +386,10 @@ class RideRequestController extends GetxController {
       final response = await _api.post(
         AppEndpoints.rideEstimate,
         data: {
-          'pickup': pickup.toJson(),
-          'dropoff': dropoff.toJson(),
-          'stops': [for (final stop in stops) stop.toJson()],
-          'optionId': option.id,
-          'pricePerKm': option.pricePerKm.toJson(),
+          'rideClassId': option.id,
+          'pickup': pickup.toLocationJson(),
+          'dropoff': dropoff.toLocationJson(),
+          'stops': [for (final stop in stops) stop.toLocationJson()],
           'preferences': preferences.toJson(),
           ...bookingJson,
         },

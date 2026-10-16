@@ -27,6 +27,14 @@ class Place {
     );
   }
 
+  Map<String, dynamic> toLocationJson() => {
+    'latitude': ?coordinates?.latitude,
+    'longitude': ?coordinates?.longitude,
+    'address': address,
+    'name': name,
+    if (placeId.isNotEmpty) 'placeId': placeId,
+  };
+
   static const double _sameSpotMeters = 50;
 
   bool isSameAs(Place other) {
