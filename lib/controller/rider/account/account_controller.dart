@@ -52,7 +52,7 @@ class AccountController extends GetxController {
     final epoch = _loadEpoch.next();
     if (_state.value is! AccountLoaded) _state.value = const AccountLoading();
     try {
-      final response = await _api.get(AccountEndpoints.me, suppressErrorToast: true);
+      final response = await _api.get(AccountEndpoints.profile, suppressErrorToast: true);
       if (!_loadEpoch.isCurrent(epoch)) return;
       _loadedAt = DateTime.now();
       await apply(response.dataMapOrEmpty);
@@ -210,7 +210,7 @@ class AccountController extends GetxController {
   }
 
   Future<Reconciled<DateTime?>> _reconcileDeletion() async {
-    final response = await _api.get(AccountEndpoints.me, suppressErrorToast: true);
+    final response = await _api.get(AccountEndpoints.profile, suppressErrorToast: true);
     final deletesAt = JsonReader(response.dataMapOrEmpty).timeOrNull('deletesAt');
     if (deletesAt == null) return const ReconciledNotDone<DateTime?>();
     return ReconciledDone<DateTime?>(deletesAt.toLocal());

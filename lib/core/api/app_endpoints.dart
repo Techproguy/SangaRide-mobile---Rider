@@ -5,23 +5,24 @@ class AppEndpoints {
   AppEndpoints._();
 
   static const String _auth = '/auth';
-  static const String _users = '/users';
 
-  static const String signUp = '$_auth/sign-up';
+  static const String authConfig = '$_auth/config';
+  static const String signUp = '$_auth/register';
   static const String checkExistence = '$_auth/check-existence';
-  static const String requestOtp = '$_auth/otp/request';
+  static const String requestOtp = '$_auth/otp/resend';
   static const String verifyOtp = '$_auth/otp/verify';
-  static const String googleSignIn = '$_auth/google';
-  static const String appleSignIn = '$_auth/apple';
+  static const String googleSignIn = '$_auth/oauth/google';
+  static const String appleSignIn = '$_auth/oauth/apple';
   static const String refreshToken = '$_auth/refresh';
   static const String logout = '$_auth/logout';
 
   static const String me = AccountEndpoints.me;
+  static const String profile = AccountEndpoints.profile;
   static const String meState = '/me/state';
   static const String health = '/health';
 
-  static const String recentPlaces = '$_users/me/places/recent';
-  static const String recentPlace = '$_users/me/places/recent/:id';
+  static const String recentPlaces = '/places/recent';
+  static const String recentPlace = '/places/recent/:id';
   static const String weather = '/weather';
 
   static String recentPlaceOf(String id) => fillPath(recentPlace, {'id': id});

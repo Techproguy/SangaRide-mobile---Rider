@@ -57,7 +57,7 @@ class _VerifyOtpScreenState extends State<VerifyOtpScreen> {
 
   Future<void> _verify() async {
     if (!_canVerify || _auth.isVerifying) return;
-    final verified = await _auth.verifyOtp(phone: widget.phone, code: _code.text);
+    final verified = await _auth.verifyOtp(phone: widget.phone, code: _code.text, purpose: widget.purpose);
     if (!mounted) return;
     if (!verified) return _code.clear();
     await _land();

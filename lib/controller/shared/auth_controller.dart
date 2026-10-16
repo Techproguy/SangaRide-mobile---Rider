@@ -8,6 +8,7 @@ import 'package:sanga_ride/core/api/api_environment.dart';
 import 'package:sanga_ride/core/api/app_endpoints.dart';
 import 'package:sanga_ride/core/api/idempotency_intents.dart';
 import 'package:sanga_ride/core/constants.dart';
+import 'package:sanga_ride/core/services/auth_config.dart';
 import 'package:sanga_ride/core/services/session_restore.dart';
 import 'package:sanga_ride/core/services/session_storage.dart';
 import 'package:sanga_ride/model/auth/otp_session.dart';
@@ -23,7 +24,7 @@ enum OtpPurpose { login, registration }
 typedef ProviderTokenSource = Future<String?> Function(AuthProvider provider);
 
 class AuthController extends GetxController {
-  static const otpLength = 4;
+  static int get otpLength => AuthConfig.current.otpLength;
   static const Duration logoutRevokeCap = Duration(seconds: 3);
 
   static ProviderTokenSource? providerTokens;
@@ -101,7 +102,7 @@ class AuthController extends GetxController {
     return OtpNotSent(message);
   }
 
-  Future<bool> verifyOtp({required String phone, required String code}) async {
+  Future<bool> verifyOtp({required String phone, required String code, required OtpPurpose purpose}) async {
     if (_isVerifying.value) return false;
     _otpError.value = null;
     if (_isOffline) {
@@ -112,7 +113,7 @@ class AuthController extends GetxController {
     try {
       final response = await _api.post(
         AppEndpoints.verifyOtp,
-        data: {'phone': phone, 'code': code},
+        data: {'phone': phone, 'code': code, 'purpose': purpose.name},
         suppressErrorToast: true,
       );
       await _startSession(response.dataMap);

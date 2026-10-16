@@ -30,7 +30,7 @@ class UserController extends GetxController {
 
   Future<void> fetchMe() async {
     try {
-      final response = await _api.get(AppEndpoints.me, suppressErrorToast: true);
+      final response = await _api.get(AppEndpoints.profile, suppressErrorToast: true);
       await setUser(UserModel.fromJson(response.dataMap));
     } catch (e) {
       log('fetchMe failed: $e');

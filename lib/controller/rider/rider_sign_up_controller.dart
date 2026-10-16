@@ -8,12 +8,13 @@ import 'package:sanga_ride/core/api/api.dart';
 import 'package:sanga_ride/core/api/app_endpoints.dart';
 import 'package:sanga_ride/core/api/idempotency_intents.dart';
 import 'package:sanga_ride/core/api/places_endpoints.dart';
+import 'package:sanga_ride/core/constants.dart';
 import 'package:sanga_ride/core/services/selfie_verifier.dart';
 import 'package:sanga_ride/model/auth/otp_session.dart';
 import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride/model/places/saved_place.dart';
 import 'package:sanga_ride_core/sanga_ride_core.dart' show ConnectionMonitor;
-import 'package:sanga_ride_ui/sanga_ride_ui.dart' show SangaSelfieOutcome;
+import 'package:sanga_ride_ui/sanga_ride_ui.dart' show SangaRegion, SangaSelfieOutcome;
 
 class RiderSignUpController extends GetxController {
   static const String homeStepCode = 'home';
@@ -58,7 +59,13 @@ class RiderSignUpController extends GetxController {
         _phoneError.value = 'This number already has an account.';
         return null;
       }
-      final body = {'firstName': firstName, 'lastName': lastName, 'phone': phone};
+      final body = {
+        'role': SangaConstants.userType,
+        'firstName': firstName,
+        'lastName': lastName,
+        'country': (SangaRegion.ofPhone(phone) ?? SangaRegion.current).isoCode,
+        'phone': phone,
+      };
       final response = await _api.post(
         AppEndpoints.signUp,
         data: body,
@@ -79,8 +86,13 @@ class RiderSignUpController extends GetxController {
   Future<bool> saveProfile({required String email, DateTime? birthday, String? referralCode}) {
     return _save(
       () => _api.patch(
-        AppEndpoints.me,
-        data: {'email': email, 'birthday': ?birthday?.toIso8601String(), 'referralCode': ?referralCode},
+        AccountEndpoints.onboardingDetails,
+        data: {
+          'email': email,
+          'birthday': ?birthday?.toIso8601String(),
+          'referralCode': ?referralCode,
+          'termsAccepted': true,
+        },
         suppressErrorToast: true,
       ),
     );

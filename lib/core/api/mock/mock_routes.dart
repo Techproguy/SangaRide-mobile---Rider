@@ -9,6 +9,7 @@ import 'package:sanga_ride/core/api/mock/mock_data.dart';
 import 'package:sanga_ride/core/api/mock/mock_history.dart';
 import 'package:sanga_ride/core/api/mock/mock_me_state.dart';
 import 'package:sanga_ride/core/api/app_endpoints.dart';
+import 'package:sanga_ride/core/constants.dart';
 import 'package:sanga_ride/core/api/mock/mock_safety.dart';
 import 'package:sanga_ride/core/api/mock/mock_notifications.dart';
 import 'package:sanga_ride/core/api/mock/mock_region.dart';
@@ -44,7 +45,8 @@ class MockRoutes {
     ...MockGroups.routes,
     MockRoute.get(AppEndpoints.meState, MockMeState.handle),
     MockRoute.post(AppEndpoints.signUp, _signUp),
-    MockRoute.post(AppEndpoints.checkExistence, (request) => {'exists': request.body['phone'] == MockAccount.phone}),
+    MockRoute.get(AppEndpoints.authConfig, (_) => _authConfig),
+    MockRoute.post(AppEndpoints.checkExistence, _checkExistence),
     MockRoute.post(AppEndpoints.requestOtp, _requestOtp),
     MockRoute.post(AppEndpoints.verifyOtp, _verifyOtp),
     MockRoute.post(AppEndpoints.googleSignIn, (_) => _session),
@@ -84,6 +86,22 @@ class MockRoutes {
   }
 
   static Map<String, dynamic> get _session => {'tokens': MockServer.engine.issueTokens(), 'user': MockAccount.user};
+
+  static Map<String, dynamic> get _authConfig => {
+    'otp': {'length': MockData.otpCode.length, 'expiresInSec': 300, 'resendCooldownSec': 60, 'maxAttempts': 5},
+    'defaultCountry': 'NG',
+  };
+
+  static Object? _checkExistence(MockRequest request) {
+    final exists = request.body['phone'] == MockAccount.phone;
+    return {
+      'exists': exists,
+      'phoneExists': exists,
+      'emailExists': false,
+      'userType': exists ? SangaConstants.userType : null,
+      'onboardingComplete': exists,
+    };
+  }
 
   static Object? _signUp(MockRequest request) {
     MockAccount.startSignUp(request);

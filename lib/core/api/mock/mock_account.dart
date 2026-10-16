@@ -29,8 +29,9 @@ abstract final class MockAccount {
   static DateTime? _deletesAt;
 
   static final List<MockRoute> routes = [
-    MockRoute.get(AccountEndpoints.me, (_) => _json()),
+    MockRoute.get(AccountEndpoints.profile, (_) => _json()),
     MockRoute.patch(AccountEndpoints.me, _update),
+    MockRoute.patch(AccountEndpoints.onboardingDetails, _update),
     MockRoute.delete(AccountEndpoints.me, _delete),
     MockRoute.post(AccountEndpoints.onboardingSkip, _skipOnboarding),
     MockRoute.post(AccountEndpoints.photo, _photo),

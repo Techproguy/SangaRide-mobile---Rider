@@ -30,6 +30,7 @@ import 'package:sanga_ride/core/api/api_environment.dart';
 import 'package:sanga_ride/core/api/mock/mock_card_tokenizer.dart';
 import 'package:sanga_ride/core/assets.dart';
 import 'package:sanga_ride/core/constants.dart';
+import 'package:sanga_ride/core/services/auth_config.dart';
 import 'package:sanga_ride/core/services/card_tokenizer.dart';
 import 'package:sanga_ride/core/services/connectivity_service.dart';
 import 'package:sanga_ride/core/services/permission_center.dart';
@@ -64,6 +65,7 @@ Future<void> initializeSanga() async {
   ]);
 
   final api = Get.put(ApiService(), permanent: true);
+  unawaited(AuthConfig.load(api));
   final monitor = _startRuntime(api);
   Get.put(ConnectivityService(monitor), permanent: true);
   Get.put(SessionRestore(api), permanent: true);
