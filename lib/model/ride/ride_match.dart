@@ -22,7 +22,10 @@ enum RideRequestStatus {
 
   bool get isSearching => this == searching || this == checking || this == sending;
 
-  static RideRequestStatus fromCode(String? code) => enumByCode(values, code, (status) => status.code, unknown);
+  static RideRequestStatus fromCode(String? code) =>
+      enumByCode(values, code == _liveSearching ? searching.code : code, (status) => status.code, unknown);
+
+  static const String _liveSearching = 'requested';
 }
 
 enum OfferStatus {
@@ -87,7 +90,7 @@ class MatchStep {
   const MatchStep({required this.key, required this.label, required this.isDone});
 
   factory MatchStep.fromJson(JsonReader json) =>
-      MatchStep(key: json.str('key'), label: json.str('label'), isDone: json.boolOr('done', false));
+      MatchStep(key: json.str('code'), label: json.str('label'), isDone: json.strOrNull('state') == 'done');
 
   final String key;
   final String label;
@@ -99,13 +102,17 @@ class MatchRequest {
 
   factory MatchRequest.fromJson(Object? body) {
     final json = JsonReader.of(body);
+    final matching = json.objectOrNull('matching');
     return MatchRequest(
       id: json.str('id'),
       status: RideRequestStatus.fromCode(json.strOrNull('status')),
-      steps: json.listOf('steps', MatchStep.fromJson),
-      searchDeadline: serverInstantOrNull(json, 'searchExpiresAt') ?? ServerClock.instance.now(),
+      steps: matching?.listOf('steps', MatchStep.fromJson) ?? const [],
+      searchDeadline: (matching == null ? null : serverInstantOrNull(matching, 'expiresAt')) ?? ServerClock.instance.now(),
     );
   }
+
+  MatchRequest withOffers() =>
+      MatchRequest(id: id, status: RideRequestStatus.offers, steps: steps, searchDeadline: searchDeadline);
 
   final String id;
   final RideRequestStatus status;
@@ -173,12 +180,14 @@ class DriverOffer {
 
   factory DriverOffer.fromJson(JsonReader json) => DriverOffer(
     id: json.str('id'),
-    status: OfferStatus.fromCode(json.strOrNull('status')),
-    counterOffer: json.moneyOrNull('counterOffer'),
+    status: OfferStatus.fromCode(json.strOr('status', OfferStatus.pending.code)),
+    counterOffer: json.strOrNull('type') == _counter ? json.moneyOrNull('amount') : json.moneyOrNull('counterOffer'),
     etaMinutes: json.intOr('etaMinutes', 0),
     distanceKm: json.doubleOr('distanceKm', 0),
     driver: OfferDriver.fromJson(json.raw['driver']),
   );
+
+  static const String _counter = 'counter';
 
   final String id;
   final OfferStatus status;
@@ -265,22 +274,25 @@ class DriverHold {
     this.etaMinutes = 0,
   });
 
-  factory DriverHold.fromJson(Object? body, {int etaMinutes = 0}) {
+  factory DriverHold.fromJson(Object? body, {required DriverOffer offer, required Money fare}) {
     final json = JsonReader.of(body);
-    final hold = json.object('hold');
-    final card = json.object('driver');
+    final hold = json.objectOrNull('hold') ?? json;
+    final card = json.objectOrNull('driver');
+    final expiresAt = serverInstantOrNull(hold, 'holdExpiresAt') ?? serverInstantOrNull(hold, 'expiresAt');
     return DriverHold(
-      offerId: hold.str('offerId'),
-      holdExpiresAt: deviceDeadlineAt(serverInstantOf(hold, 'holdExpiresAt')),
-      fare: hold.money('fare'),
-      counterOffer: hold.moneyOrNull('counterOffer'),
+      offerId: hold.strOr('offerId', offer.id),
+      holdExpiresAt: expiresAt == null ? DateTime.now().add(confirmWindow) : deviceDeadlineAt(expiresAt),
+      fare: hold.moneyOr('fare', offer.counterOffer ?? fare),
+      counterOffer: hold.moneyOrNull('counterOffer') ?? offer.counterOffer,
       matchLabel: hold.strOrNull('matchLabel'),
-      distanceAwayKm: card.doubleOr('distanceAwayKm', 0),
-      driver: OfferDriver.fromJson(card),
-      vehicle: DriverVehicle.fromJson(card.raw['vehicle']),
-      etaMinutes: etaMinutes,
+      distanceAwayKm: card?.doubleOr('distanceAwayKm', offer.distanceKm) ?? offer.distanceKm,
+      driver: card == null ? offer.driver : OfferDriver.fromJson(card.raw),
+      vehicle: DriverVehicle.fromJson(card?.raw['vehicle']),
+      etaMinutes: offer.etaMinutes,
     );
   }
+
+  static const Duration confirmWindow = Duration(seconds: 120);
 
   final String offerId;
   final DateTime holdExpiresAt;
@@ -299,7 +311,7 @@ class ConfirmedTrip {
   factory ConfirmedTrip.fromJson(Object? body) {
     final json = JsonReader.of(body);
     return ConfirmedTrip(
-      tripId: json.str('tripId'),
+      tripId: json.strOrNull('tripId') ?? json.str('id'),
       etaMinutes: json.intOr('etaMinutes', 0),
       driver: OfferDriver.fromJson(json.raw['driver']),
     );
@@ -315,7 +327,7 @@ class ScheduledBooking {
 
   factory ScheduledBooking.fromJson(Object? body) {
     final json = JsonReader.of(body);
-    return ScheduledBooking(id: json.str('id'), scheduledAt: json.time('scheduledAt').toLocal());
+    return ScheduledBooking(id: json.str('id'), scheduledAt: json.time('scheduledFor').toLocal());
   }
 
   final String id;

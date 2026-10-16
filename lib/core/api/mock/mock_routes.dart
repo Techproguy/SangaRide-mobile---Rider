@@ -57,7 +57,6 @@ class MockRoutes {
     }),
     MockRoute.post(VerificationEndpoints.selfie, _selfie),
     MockRoute.get(AppEndpoints.recentPlaces, (_) => _recentPlaces),
-    MockRoute.post(AppEndpoints.recentPlaces, _addRecentPlace),
     MockRoute.delete(AppEndpoints.recentPlace, (request) {
       _recentPlaces.removeWhere((place) => place['place_id'] == request.params['id']);
       return null;
@@ -69,21 +68,10 @@ class MockRoutes {
 
   static ({String id, String status})? activeRideRequest() => MockRideRequests.activeRideRequest();
 
-  static const int _maxRecentPlaces = 5;
-
   static final Map<SangaRegion, List<Map<String, dynamic>>> _recentPlacesByRegion = {};
 
   static List<Map<String, dynamic>> get _recentPlaces =>
       _recentPlacesByRegion.putIfAbsent(MockRegion.current, () => [...MockRegion.recentPlaces]);
-
-  static Object? _addRecentPlace(MockRequest request) {
-    final place = Map<String, dynamic>.from(request.body);
-    _recentPlaces
-      ..removeWhere((recent) => recent['place_id'] == place['place_id'])
-      ..insert(0, place);
-    if (_recentPlaces.length > _maxRecentPlaces) _recentPlaces.removeRange(_maxRecentPlaces, _recentPlaces.length);
-    return place;
-  }
 
   static Map<String, dynamic> get _session => {'tokens': MockServer.engine.issueTokens(), 'user': MockAccount.user};
 

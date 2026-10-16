@@ -48,11 +48,11 @@ class ScheduledRide {
 
   factory ScheduledRide.fromJson(JsonReader json) {
     final airport = json.objectOrNull('airport');
-    final scheduledAt = json.time('scheduledAt').toLocal();
+    final scheduledAt = json.time('scheduledFor').toLocal();
     return ScheduledRide(
       id: json.str('id'),
       kind: ScheduledRideKind.fromCode(json.strOrNull('kind')),
-      tripType: enumByCode(TripType.values, json.strOrNull('tripType'), (type) => type.name, TripType.oneWay),
+      tripType: TripType.fromCode(json.strOrNull('tripType')),
       category: enumByCode(
         RideCategory.values,
         json.strOrNull('category'),

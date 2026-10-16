@@ -52,6 +52,13 @@ abstract final class MockGroups {
 
   static String nameOf(String groupId) => _groups[groupId]?.name ?? 'Group';
 
+  static String? groupIdOfMember(String? memberId) {
+    for (final id in _mine) {
+      if (_groups[id]?.memberById(memberId) != null) return id;
+    }
+    return null;
+  }
+
   static bool canTopUp(String groupId) => _myRole(_groups[groupId]).isManager;
 
   static MockGroup? _groupOfKind(String kind) {

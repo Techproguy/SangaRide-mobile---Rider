@@ -1,12 +1,15 @@
 part of 'ride_match_controller.dart';
 
 extension RideMatchCancels on RideMatchController {
+  static const String noLongerNeeded = 'no_longer_needed';
+
   Future<bool> _cancelOnServer(String id) async {
     _cancels.add(id);
     if (ConnectionMonitor.current?.isOnline == false) return false;
     try {
       await _api.post(
         AppEndpoints.rideRequestCancelOf(id),
+        data: const {'reasonCode': RideMatchCancels.noLongerNeeded},
         key: IdempotencyKey(IdempotencyIntent.cancelRideRequestKey(id)),
         suppressErrorToast: true,
       );

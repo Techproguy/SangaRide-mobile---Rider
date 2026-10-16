@@ -149,8 +149,11 @@ class RideMatchController extends GetxController {
       run: (key) async {
         final response = await _api.post(AppEndpoints.rideRequests, data: payload, key: key, suppressErrorToast: true);
         final data = response.dataMap;
-        final status = RideRequestStatus.fromCode(JsonReader.of(data).strOrNull('status'));
-        if (status == RideRequestStatus.scheduled) return RequestScheduled(ScheduledBooking.fromJson(data));
+        final json = JsonReader.of(data);
+        final isScheduled =
+            RideRequestStatus.fromCode(json.strOrNull('status')) == RideRequestStatus.scheduled ||
+            json.strOrNull('scheduledFor') != null;
+        if (isScheduled) return RequestScheduled(ScheduledBooking.fromJson(data));
         return RequestCreated(MatchRequest.fromJson(data));
       },
       reconcile: _reconcileCreate,
@@ -463,7 +466,7 @@ class RideMatchController extends GetxController {
     final MatchRequest request;
     try {
       final response = await _api.get(AppEndpoints.rideRequestOf(id), suppressErrorToast: true);
-      request = MatchRequest.fromJson(response.dataMap);
+      request = await _withOffersSeen(MatchRequest.fromJson(response.dataMap));
     } on ApiException catch (e) {
       if (_epoch.isCurrent(epoch) && e.kind == ApiFailureKind.rejected && e.isNotFound) {
         _finishSearch(const MatchCancelled());
@@ -472,6 +475,13 @@ class RideMatchController extends GetxController {
       rethrow;
     }
     if (_epoch.isCurrent(epoch)) _applyRequest(request);
+  }
+
+  Future<MatchRequest> _withOffersSeen(MatchRequest request) async {
+    final stillSearching = request.status.isSearching || request.status == RideRequestStatus.unknown;
+    if (!stillSearching || request.hasSearchExpired) return request;
+    final offers = await _fetchOffers(request.id);
+    return offers.isEmpty ? request : request.withOffers();
   }
 
   void _onLink(int epoch, LivePoller poller) {

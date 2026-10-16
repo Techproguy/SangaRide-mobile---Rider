@@ -177,17 +177,12 @@ class RiderHomeController extends GetxController {
 
   bool _isSaved(Place place) => _saved.isSaved(place);
 
-  Future<void> rememberPlace(Place place) async {
+  void rememberPlace(Place place) {
     if (place.coordinates == null || _isSaved(place)) return;
     _recent
       ..removeWhere((recent) => recent.isSameAs(place))
       ..insert(0, place);
     if (_recent.length > _maxRecent) _recent.removeRange(_maxRecent, _recent.length);
-    try {
-      await _api.post(AppEndpoints.recentPlaces, data: place.toJson(), suppressErrorToast: true);
-    } catch (e) {
-      log('remember place failed: $e');
-    }
   }
 
   Future<void> forgetPlace(Place place) async {

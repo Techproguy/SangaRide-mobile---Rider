@@ -27,19 +27,19 @@ class AppEndpoints {
 
   static String recentPlaceOf(String id) => fillPath(recentPlace, {'id': id});
 
-  static const String rideOptions = '/rides/options';
+  static const String rideOptions = '/ride-classes';
   static const String rideEstimate = '/rides/estimate';
 
-  static const String rideRequests = '/rides/requests';
-  static const String _rideRequest = '/rides/requests/:id';
-  static const String _rideOffer = '/rides/requests/:id/offers/:offerId';
+  static const String rideRequests = '/rides';
+  static const String _rideRequest = '/rides/:id';
+  static const String _rideOffer = '/rides/:id/offers/:offerId';
 
   static const String rideRequest = _rideRequest;
   static const String rideRequestOffers = '$_rideRequest/offers';
-  static const String rideRequestHold = '$_rideRequest/hold';
+  static const String rideRequestHold = '$_rideRequest/offers/selected';
   static const String rideRequestCancel = '$_rideRequest/cancel';
   static const String rideOfferIgnore = '$_rideOffer/ignore';
-  static const String rideOfferHold = '$_rideOffer/hold';
+  static const String rideOfferHold = '$_rideOffer/accept';
   static const String rideOfferConfirm = '$_rideOffer/confirm';
 
   static String rideRequestOf(String id) => fillPath(rideRequest, {'id': id});
@@ -59,7 +59,7 @@ class AppEndpoints {
   static String _offerPath(String template, String id, String offerId) =>
       fillPath(template, {'id': id, 'offerId': offerId});
 
-  static const String activeTrip = '/trips/active';
+  static const String activeTrip = '/rides/active';
   static const String _liveTrip = '/trips/:id';
 
   static const String liveTrip = _liveTrip;

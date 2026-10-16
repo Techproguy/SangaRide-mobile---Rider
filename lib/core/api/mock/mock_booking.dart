@@ -7,7 +7,6 @@ import 'package:sanga_ride/core/api/mock/mock_server.dart';
 abstract final class MockBooking {
   static final List<MockRoute> routes = [
     MockRoute.get(BookingEndpoints.scheduledRides, (_) => {'rides': _rides.map(_payload).toList()}),
-    MockRoute.post(BookingEndpoints.scheduledRides, _schedule),
     MockRoute.delete(BookingEndpoints.scheduledRide, _cancel),
     MockRoute.post(BookingEndpoints.scheduledRideReminder, _remind),
     MockRoute.get(BookingEndpoints.hourlyRates, (_) => hourlyRates),
@@ -96,7 +95,7 @@ abstract final class MockBooking {
       _ScheduledRecord(
         id: 'sched_1',
         kind: 'one_time',
-        tripType: 'oneWay',
+        tripType: 'one_way',
         category: 'go',
         scheduledAt: ride,
         pickup: MockRegion.stop('mock_cr_ikeja'),
@@ -106,7 +105,7 @@ abstract final class MockBooking {
       _ScheduledRecord(
         id: 'sched_2',
         kind: 'repeat',
-        tripType: 'oneWay',
+        tripType: 'one_way',
         category: 'plus',
         scheduledAt: ride.add(const Duration(days: 2, hours: -2)),
         pickup: MockRegion.stop('mock_lekki'),
@@ -161,7 +160,7 @@ abstract final class MockBooking {
       'kind': ride.kind,
       'tripType': ride.tripType,
       'category': ride.category,
-      'scheduledAt': ride.scheduledAt.toUtc().toIso8601String(),
+      'scheduledFor': ride.scheduledAt.toUtc().toIso8601String(),
       ...scheduledWaitJson(ride.scheduledAt, isAirport: ride.tripType == 'airport'),
       'pickup': ride.pickup,
       'dropoff': ride.dropoff,
@@ -200,8 +199,7 @@ abstract final class MockBooking {
     return null;
   }
 
-  static Object? _schedule(MockRequest request) {
-    final body = request.body;
+  static Object? schedule(Map<String, dynamic> body) {
     final repeat = body['repeat'] == null ? null : Map<String, dynamic>.from(body['repeat'] as Map);
     final scheduledAt = repeat != null
         ? _firstRide(repeat)

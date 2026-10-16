@@ -90,7 +90,7 @@ class _AddStopScreenState extends State<AddStopScreen> {
 
   void _confirmPlace(Place place) {
     _add.confirmPlace();
-    unawaited(Get.find<RiderHomeController>().rememberPlace(place));
+    Get.find<RiderHomeController>().rememberPlace(place);
   }
 
   void _handleBack(AddStopState state) {

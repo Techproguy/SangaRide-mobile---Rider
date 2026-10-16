@@ -18,7 +18,11 @@ extension RideMatchOffers on RideMatchController {
 
   Future<List<OfferRow>> _fetchOffers(String id) async {
     final response = await _api.get(AppEndpoints.rideRequestOffersOf(id), suppressErrorToast: true);
-    return JsonReader.of(response.dataMap).listOf('offers', (item) => OfferRow(DriverOffer.fromJson(item)));
+    final offers = (response.data as Map)['data'];
+    return [
+      if (offers is List)
+        for (final item in offers.whereType<Map>()) OfferRow(DriverOffer.fromJson(JsonReader.of(item))),
+    ];
   }
 
   void startOffersRefresh() {
@@ -110,7 +114,7 @@ extension RideMatchOffers on RideMatchController {
       if (!_epoch.isCurrent(epoch)) return false;
       _state.value = MatchHolding(
         current.rows,
-        hold: DriverHold.fromJson(response.dataMap, etaMinutes: offer.etaMinutes),
+        hold: DriverHold.fromJson((response.data as Map)['data'], offer: offer, fare: _trip.price ?? Money.zero()),
       );
       return true;
     } catch (e) {

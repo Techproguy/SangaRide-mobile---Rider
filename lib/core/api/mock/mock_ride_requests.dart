@@ -28,12 +28,14 @@ abstract final class MockRideRequests {
 
   static final Map<String, _MockRideRequest> _rideRequests = {};
   static final Map<String, DateTime> _quotes = {};
+  static final Map<String, Map<String, num>> _quotePrices = {};
   static int _rideRequestCount = 0;
   static int _quoteCount = 0;
 
   static void reset() {
     _rideRequests.clear();
     _quotes.clear();
+    _quotePrices.clear();
   }
 
   static ({String id, String status})? activeRideRequest() {
@@ -45,7 +47,7 @@ abstract final class MockRideRequests {
     return null;
   }
 
-  static const Set<String> _liveRequestStatuses = {'searching', 'checking', 'sending', 'offers'};
+  static const Set<String> _liveRequestStatuses = {'requested'};
 
   static const Duration _searchWindow = Duration(seconds: 60);
   static const Duration _holdWindow = Duration(seconds: 120);
@@ -58,17 +60,28 @@ abstract final class MockRideRequests {
 
   static String _isoNow() => _now().toIso8601String();
 
+  static const List<String> _matchStepCodes = ['searching', 'availability', 'sending', 'matching'];
+
+  static String _stepState(int index, int done) => switch (index - done) {
+    < 0 => 'done',
+    0 => 'active',
+    _ => 'pending',
+  };
+
   static List<Map<String, dynamic>> _matchSteps(int done) => [
     for (final (index, label) in MockData.matchStepLabels.indexed)
-      {'key': 'step_${index + 1}', 'label': label, 'done': index < done},
+      {'code': _matchStepCodes[index % _matchStepCodes.length], 'label': label, 'state': _stepState(index, done)},
   ];
 
   static Map<String, dynamic> _requestPayload(String id, String status, int stepsDone) => {
     'id': id,
     'status': status,
-    'searchExpiresAt': _now().add(_searchWindow).toIso8601String(),
-    'serverTime': _isoNow(),
-    'steps': _matchSteps(stepsDone),
+    'kind': 'ride',
+    'matching': {
+      'round': 1,
+      'expiresAt': _now().add(_searchWindow).toIso8601String(),
+      'steps': _matchSteps(stepsDone),
+    },
   };
 
   static _MockRideRequest _requireRideRequest(MockRequest request) {
@@ -93,47 +106,87 @@ abstract final class MockRideRequests {
   }
 
   static Object? _createRideRequest(MockRequest request) {
-    MockGroups.guardRide(request.body);
-    _checkQuote(request.body);
-    if (request.body['airport'] != null) {
-      final decision = MockAirport.decide(request.body);
-      if (!decision.isLive) return MockBooking.scheduleAirport(request.body, decision);
+    final body = request.body['delivery'] != null ? request.body : _fixtureBody(request.body);
+    MockGroups.guardRide(body);
+    _checkQuote(body);
+    if (body['airport'] != null) {
+      final decision = MockAirport.decide(body);
+      if (!decision.isLive) return MockBooking.scheduleAirport(body, decision);
     }
-    if (request.body['delivery'] != null) MockDelivery.validateRequest(request.body);
+    if (body['scheduledAt'] != null || body['repeat'] != null) return MockBooking.schedule(body);
+    if (body['delivery'] != null) MockDelivery.validateRequest(body);
     final id = 'req_${++_rideRequestCount}';
-    MockTrip.requests[id] = request.body;
+    MockTrip.requests[id] = body;
     _rideRequests[id] = _MockRideRequest(
       createdAt: DateTime.now(),
-      pricingMode: request.body['pricingMode'] as String?,
-      proposedFare: MockMoney.naira(request.body['proposedFare']).toInt(),
-      isFixedFare: request.body['delivery'] != null,
+      pricingMode: body['pricingMode'] as String?,
+      proposedFare: MockMoney.naira(body['proposedFare']).toInt(),
+      isFixedFare: body['delivery'] != null,
     );
-    return {..._requestPayload(id, 'searching', 1), 'createdAt': _isoNow()};
+    return {..._requestPayload(id, 'requested', 0), 'createdAt': _isoNow()};
+  }
+
+  static Map<String, dynamic> _fixtureBody(Map<String, dynamic> body) {
+    final pricing = body['pricingOption'] as String?;
+    final fare = body['offeredFare'] ?? _quotePrices[body['quoteId']]?[pricing] ?? 0;
+    return {
+      ...body,
+      'optionId': body['rideClassId'],
+      'pickup': _fixturePlace(body['pickup']),
+      'stops': [for (final stop in body['stops'] as List? ?? const []) _fixturePlace(stop)],
+      'dropoff': _fixturePlace(body['dropoff']),
+      'rideFor': _fixtureRideFor(body),
+      'pricingMode': pricing,
+      'proposedFare': MockMoney.json(fare as num),
+      'scheduledAt': body['scheduledFor'],
+    };
+  }
+
+  static Map<String, dynamic>? _fixturePlace(Object? place) {
+    if (place is! Map) return null;
+    return {
+      'place_id': place['placeId'] ?? '',
+      'name': place['name'],
+      'address': place['address'],
+      'coordinates': {'lat': place['latitude'], 'lng': place['longitude']},
+    };
+  }
+
+  static Map<String, dynamic> _fixtureRideFor(Map<String, dynamic> body) {
+    final business = body['business'];
+    return switch (body['bookedFor']) {
+      'family' => {
+        'type': 'family',
+        'groupId': MockGroups.groupIdOfMember(body['familyMemberId'] as String?),
+        'memberId': body['familyMemberId'],
+      },
+      'business' when business is Map => {'type': 'business', ...business},
+      'other' => {'type': 'someone', 'passenger': body['passenger']},
+      _ => {'type': 'me'},
+    };
   }
 
   static Object? _rideRequestStatus(MockRequest request) {
     final record = _requireRideRequest(request);
     final id = request.params['id']!;
-    final status = _requestStatus(record);
-    return _requestPayload(id, status, _stepsDoneFor(status));
+    return _requestPayload(id, _requestStatus(record), _stepsDone(record));
   }
 
   static String _requestStatus(_MockRideRequest record) {
     if (record.isCancelled) return 'cancelled';
-    final elapsed = DateTime.now().difference(record.createdAt);
-    if (elapsed < _checkingAfter) return 'searching';
-    if (elapsed < _sendingAfter) return 'checking';
-    if (elapsed < _resolvedAfter) return 'sending';
-    return record.pricingMode == 'saver' ? 'no_driver_found' : 'offers';
+    if (_hasResolved(record) && record.pricingMode == 'saver') return 'no_driver_found';
+    return 'requested';
   }
 
-  static int _stepsDoneFor(String status) => switch (status) {
-    'searching' => 1,
-    'checking' => 2,
-    'sending' || 'no_driver_found' => 3,
-    'offers' => 4,
-    _ => 0,
-  };
+  static bool _hasResolved(_MockRideRequest record) => DateTime.now().difference(record.createdAt) >= _resolvedAfter;
+
+  static int _stepsDone(_MockRideRequest record) {
+    final elapsed = DateTime.now().difference(record.createdAt);
+    if (elapsed < _checkingAfter) return 0;
+    if (elapsed < _sendingAfter) return 1;
+    if (elapsed < _resolvedAfter) return 2;
+    return record.pricingMode == 'saver' ? 3 : 4;
+  }
 
   static int? _counterOffer(Map<String, dynamic> offer, num fare, {bool isFixed = false}) {
     final markup = isFixed ? null : offer['counterMarkup'] as num?;
@@ -147,12 +200,10 @@ abstract final class MockRideRequests {
 
   static Object? _rideOffers(MockRequest request) {
     final record = _requireRideRequest(request);
-    return {
-      'offers': [
-        for (final offer in MockData.driverOffers)
-          _priced(Map.of(offer), record.proposedFare, isFixed: record.isFixedFare),
-      ],
-    };
+    if (!_hasResolved(record) || _requestStatus(record) != 'requested') return const <Object>[];
+    return [
+      for (final offer in MockData.driverOffers) _priced(Map.of(offer), record.proposedFare, isFixed: record.isFixedFare),
+    ];
   }
 
   static Map<String, dynamic> _driverCard(Map<String, dynamic> offer) => {
@@ -212,7 +263,7 @@ abstract final class MockRideRequests {
 
   static Object? _rideEstimate(MockRequest request) {
     final tripType = request.body['tripType'];
-    final optionId = request.body['optionId'] as String;
+    final optionId = request.body['rideClassId'] as String;
     final boost = tripType == 'hourly' ? 0 : 500;
     final meetGreetFee = MockAirport.meetGreetFee(request.body);
     if (tripType == 'hourly') {
@@ -231,16 +282,16 @@ abstract final class MockRideRequests {
       request.body['pickup'],
       ...request.body['stops'] as List,
       request.body['dropoff'],
-    ].map((place) => (place as Map)['coordinates'] as Map).toList();
+    ].map((place) => {'lat': (place as Map)['latitude'], 'lng': place['longitude']}).toList();
     var km = 0.0;
     for (var i = 1; i < points.length; i++) {
       km += _distanceKm(points[i - 1], points[i]);
     }
     final isIntercity = tripType == 'intercity';
     km = (km * 1.3).clamp(1, isIntercity ? 700 : 200).toDouble();
-    final pricePerKm = MockMoney.nairaPerKilometer(request.body['pricePerKm']);
+    final pricePerKm = MockData.perKmRateNaira(optionId);
     final rate = isIntercity ? pricePerKm * 0.35 : pricePerKm;
-    final legs = tripType == 'roundTrip' ? 2 : 1;
+    final legs = tripType == 'round_trip' ? 2 : 1;
     final baseFare = isIntercity ? 5000 : 500;
     final distanceFare = (km * rate / 10).round() * 10 * legs;
     return _fare(
@@ -249,7 +300,9 @@ abstract final class MockRideRequests {
       distanceFare: distanceFare,
       boost: boost,
       fee: meetGreetFee,
-      extra: {'ratePerKm': MockMoney.perDistanceJson(rate)},
+      extra: {
+        'rideClass': {'id': optionId, 'perKmRate': MockMoney.perDistanceJson(rate)},
+      },
     );
   }
 
@@ -265,25 +318,42 @@ abstract final class MockRideRequests {
     final quoteId = 'quote_${++_quoteCount}';
     final expiresAt = _now().add(_quoteLifetime);
     _quotes[quoteId] = expiresAt;
+    num rounded(num amount) => (amount / 10).round() * 10;
+    final minimumOffer = rounded(total * 0.6);
+    _quotePrices[quoteId] = {
+      'standard': total,
+      'fair': minimumOffer,
+      'saver': rounded(total * 0.75),
+      'priority': rounded(total * 1.4),
+    };
     return {
       'quoteId': quoteId,
       'expiresAt': expiresAt.toIso8601String(),
-      'baseFare': MockMoney.json(baseFare),
       'distanceKm': distanceKm,
-      'distanceFare': MockMoney.json(distanceFare),
-      'discount': MockMoney.json(0),
-      'boost': MockMoney.json(boost),
+      'lines': [
+        {'code': 'base_fare', 'label': 'Base fare', 'amount': MockMoney.json(baseFare)},
+        {'code': 'distance', 'label': 'Distance', 'amount': MockMoney.json(distanceFare)},
+        {'code': 'discount', 'label': 'Discount', 'amount': MockMoney.json(0)},
+        {'code': 'boost', 'label': 'Boost', 'amount': MockMoney.json(boost)},
+        if (fee > 0) {'code': 'meet_greet', 'label': 'Meet and greet', 'amount': MockMoney.json(fee)},
+      ],
       'total': MockMoney.json(total),
-      if (fee > 0) 'meetGreetFee': MockMoney.json(fee),
       ...extra,
-      'fairFareRange': {'min': MockMoney.json((total * 0.6 / 10).round() * 10), 'max': MockMoney.json(total)},
-      'pricing': {
-        'standard': MockMoney.json(total),
-        'saver': MockMoney.json((total * 0.75 / 10).round() * 10),
-        'priority': MockMoney.json((total * 1.4 / 10).round() * 10),
-      },
+      'minimumOffer': MockMoney.json(minimumOffer),
+      'maximumOffer': MockMoney.json(total),
+      'pricingOptions': [
+        for (final MapEntry(key: code, value: price) in _quotePrices[quoteId]!.entries)
+          {'code': code, 'label': _pricingLabels[code], 'price': MockMoney.json(price)},
+      ],
     };
   }
+
+  static const Map<String, String> _pricingLabels = {
+    'standard': 'Standard',
+    'fair': 'Fair Fare',
+    'saver': 'Saver',
+    'priority': 'Priority',
+  };
 
   static double _distanceKm(Map a, Map b) {
     const earthRadiusKm = 6371.0;

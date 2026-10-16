@@ -2,9 +2,9 @@ part of 'ride_request_controller.dart';
 
 extension RideRequestPayload on RideRequestController {
   Map<String, dynamic> get bookingJson => {
-    'tripType': tripType.name,
+    'tripType': tripType.code,
     'timing': timing.name,
-    if (scheduledAt case final at?) ...{'scheduledAt': at.toUtc().toIso8601String(), 'timezone': BookingZone.of(at)},
+    if (scheduledAt case final at?) ...{'scheduledFor': at.toUtc().toIso8601String(), 'timezone': BookingZone.of(at)},
     if (repeatRule case final rule?) 'repeat': rule.toJson(),
     if (tripType == TripType.hourly) ...{'hours': hours, 'stayWithMe': staysWithRider},
     if (tripType == TripType.intercity) ...{'fromCityId': fromCity?.id, 'toCityId': toCity?.id},
@@ -38,18 +38,28 @@ extension RideRequestPayload on RideRequestController {
     final price = this.price;
     if (pickup == null || dropoff == null || option == null || pricing == null || price == null) return null;
     return {
-      'optionId': option.id,
-      'pickup': pickup.toJson(),
-      'stops': [for (final stop in stops) stop.toJson()],
-      'dropoff': dropoff.toJson(),
-      'preferences': preferences.toJson(),
-      'rideFor': Get.find<RideForController>().rideFor.toJson(),
-      'pricingMode': pricing.name,
-      'proposedFare': price.toJson(),
       'quoteId': ?estimate?.quoteId,
+      'rideClassId': option.id,
+      'pickup': pickup.toLocationJson(),
+      'stops': [for (final stop in stops) stop.toLocationJson()],
+      'dropoff': dropoff.toLocationJson(),
+      'preferences': preferences.toJson(),
+      'pricingOption': pricing.code,
+      if (pricing == PricingOption.fairFare) 'offeredFare': price.major,
+      ..._whoForJson(Get.find<RideForController>().rideFor),
       ...bookingJson,
     };
   }
+
+  Map<String, dynamic> _whoForJson(RideFor rideFor) => switch (rideFor) {
+    RideForMe() => {'bookedFor': 'self'},
+    RideForSomeone(:final passenger) => {'bookedFor': 'other', 'passenger': passenger.toJson()},
+    RideForFamily(:final member) => {'bookedFor': 'family', 'familyMemberId': member.id},
+    RideForBusiness(:final profile, :final purpose, :final note) => {
+      'bookedFor': 'business',
+      'business': {'groupId': profile.id, 'purpose': purpose, 'note': ?note},
+    },
+  };
 
   Future<ScheduleOutcome?> scheduleBooking() async {
     if (isScheduling || !isScheduledBooking) return null;
@@ -89,7 +99,7 @@ extension RideRequestPayload on RideRequestController {
       intent: IdempotencyIntent.scheduleRide,
       run: (key) async {
         final response = await _api.post(
-          BookingEndpoints.scheduledRides,
+          AppEndpoints.rideRequests,
           data: payload,
           key: key,
           suppressErrorToast: true,
