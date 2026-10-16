@@ -15,7 +15,7 @@ import 'package:sanga_ride/model/auth/otp_session.dart';
 import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride_core/sanga_ride_core.dart'
     show ConnectionMonitor, ResponseData, SessionEndReason, SessionHub;
-import 'package:sanga_ride_ui/sanga_ride_ui.dart' show SangaToast, SangaToastTone;
+import 'package:sanga_ride_ui/sanga_ride_ui.dart' show SangaRegion, SangaToast, SangaToastTone;
 
 enum AuthProvider { google, apple }
 
@@ -78,7 +78,11 @@ class AuthController extends GetxController {
     try {
       final response = await _api.post(
         AppEndpoints.requestOtp,
-        data: {'phone': phone, 'purpose': purpose.name},
+        data: {
+          'phone': phone,
+          'country': (SangaRegion.ofPhone(phone) ?? SangaRegion.current).isoCode,
+          'purpose': purpose.name,
+        },
         key: IdempotencyKey.newFor(IdempotencyIntent.requestOtp),
         suppressErrorToast: true,
       );
