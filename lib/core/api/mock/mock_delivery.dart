@@ -44,7 +44,7 @@ abstract final class MockDelivery {
     'premium_care': 2.4,
   };
   static const Map<String, int> _sizeSurcharges = {'small': 0, 'medium': 500, 'large': 1500};
-  static const Map<String, int> _packageTypeSurcharges = {'fragile': 300, 'perishable': 200, 'not_fragile': 0};
+  static const Map<String, int> _packageTypeSurcharges = {'fragile': 300, 'not_fragile': 0};
   static const Map<String, String> _prohibited = {
     'weapon': 'Weapons can’t be sent on Sanga.',
     'gun': 'Weapons can’t be sent on Sanga.',
@@ -67,7 +67,6 @@ abstract final class MockDelivery {
     'packageTypes': [
       {'id': 'fragile', 'label': 'Fragile'},
       {'id': 'not_fragile', 'label': 'Not fragile'},
-      {'id': 'perishable', 'label': 'Perishable'},
     ],
     'tiers': [
       {

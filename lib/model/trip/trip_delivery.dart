@@ -102,8 +102,7 @@ enum DeliveryKind {
 
 enum DeliveryPackageType {
   fragile('fragile', 'Fragile'),
-  notFragile('not_fragile', 'Not fragile'),
-  perishable('perishable', 'Perishable');
+  notFragile('not_fragile', 'Not fragile');
 
   const DeliveryPackageType(this.code, this.label);
 
