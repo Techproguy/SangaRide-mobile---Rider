@@ -125,6 +125,10 @@ class NotificationsController extends GetxController {
       queryParameters: {'page': page},
       suppressErrorToast: true,
     );
-    return NotificationsPage.fromJson(response.dataMapOrEmpty);
+    final meta = (response.data as Map)['meta'];
+    return NotificationsPage.fromJson(
+      response.dataMapOrEmpty,
+      meta: meta is Map ? Map<String, dynamic>.from(meta) : null,
+    );
   }
 }

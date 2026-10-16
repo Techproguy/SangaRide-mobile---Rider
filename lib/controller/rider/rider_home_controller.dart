@@ -19,7 +19,7 @@ import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride_core/sanga_ride_core.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
-enum HomeRefreshProblem { weather, places }
+enum HomeRefreshProblem { places }
 
 class RiderHomeController extends GetxController {
   static const int _maxRecent = 5;
@@ -208,7 +208,6 @@ class RiderHomeController extends GetxController {
       _weather.value = Weather.fromJson((response.data as Map)['data']);
     } catch (e) {
       log('weather failed: $e');
-      _problems.add(HomeRefreshProblem.weather);
     }
   }
 

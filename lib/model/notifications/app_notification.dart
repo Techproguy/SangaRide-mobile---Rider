@@ -90,13 +90,13 @@ class AppNotification {
 class NotificationsPage {
   const NotificationsPage({required this.items, required this.unreadCount, required this.hasMore});
 
-  factory NotificationsPage.fromJson(Map<String, dynamic> json) {
+  factory NotificationsPage.fromJson(Map<String, dynamic> json, {Map<String, dynamic>? meta}) {
     final reader = JsonReader(json);
-    final items = reader.listOf('items', AppNotification.fromReader);
+    final items = reader.listOf('notifications', AppNotification.fromReader);
     return NotificationsPage(
       items: items,
       unreadCount: reader.intOr('unreadCount', items.where((item) => !item.isRead).length),
-      hasMore: reader.boolOr('hasMore', false),
+      hasMore: JsonReader(meta ?? json).boolOr('hasMore', false),
     );
   }
 

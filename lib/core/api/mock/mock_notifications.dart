@@ -116,7 +116,7 @@ abstract final class MockNotifications {
     final start = (page - 1) * _pageSize;
     final all = _all();
     return {
-      'items': all.skip(start).take(_pageSize).toList(),
+      'notifications': all.skip(start).take(_pageSize).toList(),
       'unreadCount': all.where((item) => item['readAt'] == null).length,
       'hasMore': start + _pageSize < all.length,
       'page': page,
