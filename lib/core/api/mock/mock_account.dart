@@ -32,6 +32,7 @@ abstract final class MockAccount {
     MockRoute.get(AccountEndpoints.profile, (_) => _json()),
     MockRoute.patch(AccountEndpoints.me, _update),
     MockRoute.patch(AccountEndpoints.onboardingDetails, _update),
+    MockRoute.put(AccountEndpoints.onboardingLocation, (request) => request.body),
     MockRoute.delete(AccountEndpoints.me, _delete),
     MockRoute.post(AccountEndpoints.onboardingSkip, _skipOnboarding),
     MockRoute.post(AccountEndpoints.photo, _photo),

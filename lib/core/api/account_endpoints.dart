@@ -7,4 +7,5 @@ abstract final class AccountEndpoints {
   static const String uploads = '/uploads';
   static const String onboardingSkip = '/me/onboarding/skip';
   static const String onboardingDetails = '/auth/onboarding/details';
+  static const String onboardingLocation = '/auth/onboarding/location';
 }

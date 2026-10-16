@@ -100,13 +100,26 @@ class RiderSignUpController extends GetxController {
 
   Future<SangaSelfieOutcome> verifySelfie(String photoPath) => _selfie.verify(photoPath);
 
-  Future<bool> saveHome(Place place) {
-    final body = {'kind': SavedPlaceKind.home.code, 'label': 'Home', 'place': place.toJson()};
-    return _save(
-      () => _api.post(PlacesEndpoints.saved, data: body, key: _keyFor(body, isHome: true), suppressErrorToast: true),
-      onDone: () => _homeKey = null,
-    );
+  Future<bool> saveHome(Place place, {required bool isFromGps}) {
+    final body = SavedPlace.requestBody(kind: SavedPlaceKind.home, label: SavedPlaceKind.home.label, place: place);
+    return _save(() async {
+      await _api.put(
+        AccountEndpoints.onboardingLocation,
+        data: _locationOf(place, isFromGps: isFromGps),
+        suppressErrorToast: true,
+      );
+      return _api.post(PlacesEndpoints.saved, data: body, key: _keyFor(body, isHome: true), suppressErrorToast: true);
+    }, onDone: () => _homeKey = null);
   }
+
+  static Map<String, dynamic> _locationOf(Place place, {required bool isFromGps}) => {
+    'source': isFromGps ? 'current_location' : 'search',
+    'placeId': place.placeId,
+    'name': place.name,
+    'address': place.address,
+    'latitude': ?place.coordinates?.latitude,
+    'longitude': ?place.coordinates?.longitude,
+  };
 
   void skipHome() {
     if (_isOffline) return;

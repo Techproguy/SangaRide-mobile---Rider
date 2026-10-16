@@ -32,6 +32,7 @@ class _HomeLocationScreenState extends State<HomeLocationScreen> {
   Timer? _searchTimer;
   List<Place> _results = const [];
   Place? _home;
+  var _isHomeFromGps = false;
   var _isSearching = false;
   var _isLocating = false;
 
@@ -61,11 +62,12 @@ class _HomeLocationScreenState extends State<HomeLocationScreen> {
     });
   }
 
-  void _choose(Place place) {
+  void _choose(Place place, {bool isFromGps = false}) {
     FocusScope.of(context).unfocus();
     _query.text = place.address;
     setState(() {
       _home = place;
+      _isHomeFromGps = isFromGps;
       _results = const [];
     });
   }
@@ -92,7 +94,7 @@ class _HomeLocationScreenState extends State<HomeLocationScreen> {
     final place = position == null ? null : await _places.placeAt(position);
     if (!mounted) return;
     setState(() => _isLocating = false);
-    if (place != null) return _choose(place);
+    if (place != null) return _choose(place, isFromGps: true);
     SangaToast.show(switch (result.status) {
       LocationStatus.serviceDisabled => 'Turn on location services to use where you are.',
       LocationStatus.denied || LocationStatus.deniedForever => 'Allow location access to use where you are.',
@@ -103,7 +105,7 @@ class _HomeLocationScreenState extends State<HomeLocationScreen> {
   Future<void> _save() async {
     final home = _home;
     if (home == null || _signUp.isSaving) return;
-    if (await _signUp.saveHome(home)) await _finish();
+    if (await _signUp.saveHome(home, isFromGps: _isHomeFromGps)) await _finish();
   }
 
   Future<void> _skip() async {
