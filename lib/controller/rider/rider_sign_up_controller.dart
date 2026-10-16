@@ -89,9 +89,9 @@ class RiderSignUpController extends GetxController {
         AccountEndpoints.onboardingDetails,
         data: {
           'email': email,
-          'birthday': ?birthday?.toIso8601String(),
+          'birthday': ?birthday?.toIso8601String().substring(0, 10),
           'referralCode': ?referralCode,
-          'termsAccepted': true,
+          'acceptTerms': true,
         },
         suppressErrorToast: true,
       ),
