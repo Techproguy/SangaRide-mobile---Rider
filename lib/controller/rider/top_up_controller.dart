@@ -232,7 +232,7 @@ class TopUpController extends GetxController {
       intent: IdempotencyIntent.topUp(method.code),
       run: (key) async {
         final response = await _api.post(
-          WalletEndpoints.topUpsOf(scope.groupId),
+          WalletEndpoints.topUpCreateOf(scope.groupId),
           data: method == TopUpMethod.card
               ? SensitiveBody({
                   'amount': amount.toJson(),
