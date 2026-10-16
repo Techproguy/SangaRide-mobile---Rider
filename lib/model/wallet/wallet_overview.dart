@@ -10,12 +10,14 @@ class WalletLimits {
   factory WalletLimits.fromJson(Map<String, dynamic> json) {
     final reader = JsonReader(json);
     return WalletLimits(
-      minTopUp: reader.moneyOr('minTopUp', permissive.minTopUp),
-      maxTopUp: reader.moneyOr('maxTopUp', permissive.maxTopUp),
+      minTopUp: reader.moneyOr('minTopUp', standard.minTopUp),
+      maxTopUp: reader.moneyOr('maxTopUp', standard.maxTopUp),
     );
   }
 
-  static WalletLimits get permissive => WalletLimits(minTopUp: Money.major(1), maxTopUp: Money.major(10000000));
+  static WalletLimits get standard => SangaRegion.current == SangaRegion.us
+      ? WalletLimits(minTopUp: Money.major(5), maxTopUp: Money.major(500))
+      : WalletLimits(minTopUp: Money.major(500), maxTopUp: Money.major(500000));
 
   final Money minTopUp;
   final Money maxTopUp;

@@ -260,6 +260,7 @@ class RideRequestController extends GetxController {
     if (wasAlwaysScheduled || (!type.allowsRepeat && timing == RideTiming.repeat)) setTiming(RideTiming.now);
     if (!type.needsReturn) _returnAt.value = null;
     _clearQuote();
+    _loadHourlyIfMissing();
   }
 
   void setAirportBooking(AirportBooking booking) {
@@ -331,8 +332,14 @@ class RideRequestController extends GetxController {
   }
 
   bool get _hasHourlyCatalog {
+    if (tripType != TripType.hourly) return true;
+    final hourly = readyCatalog?.hourly ?? const {};
     final category = option?.category;
-    return tripType != TripType.hourly || category == null || (readyCatalog?.hourly.containsKey(category) ?? false);
+    return hourly.isNotEmpty && (category == null || hourly.containsKey(category));
+  }
+
+  void _loadHourlyIfMissing() {
+    if (tripType == TripType.hourly && _options.isNotEmpty && !_hasHourlyCatalog) unawaited(loadCatalog());
   }
 
   Future<MapEntry<RideCategory, HourlyCatalog>?> _loadHourlyCatalog(
@@ -391,6 +398,7 @@ class RideRequestController extends GetxController {
       final loaded = JsonReader.of({'options': (response.data as Map)['data']}).listOf('options', RideOption.fromJson);
       _options.assignAll(loaded);
       _optionsLoadedAt = DateTime.now();
+      _loadHourlyIfMissing();
       final preferred = _preferredCategory;
       if (preferred != null && _optionId.value == null) {
         _optionId.value = _options.firstWhereOrNull((o) => o.category == preferred)?.id;
