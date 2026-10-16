@@ -1,3 +1,4 @@
+import 'package:google_maps_flutter/google_maps_flutter.dart' show LatLng;
 import 'package:sanga_ride/core/api/server_codes.dart';
 import 'package:sanga_ride/core/copy/common_copy.dart';
 import 'package:sanga_ride/model/location/place.dart';
@@ -5,34 +6,56 @@ import 'package:sanga_ride/model/ride/ride_load_problem.dart';
 import 'package:sanga_ride_core/sanga_ride_core.dart';
 
 enum SavedPlaceKind {
-  home('home', 'Home'),
-  work('work', 'Work'),
-  other('other', 'Other');
+  home('home', 'home', 'Home'),
+  work('work', 'work', 'Work'),
+  other('other', 'custom', 'Other');
 
-  const SavedPlaceKind(this.code, this.label);
+  const SavedPlaceKind(this.code, this.apiLabel, this.label);
 
   final String code;
+  final String apiLabel;
   final String label;
 
   bool get isSlot => this != other;
 
   static SavedPlaceKind fromCode(String? code) => enumByCode(values, code, (kind) => kind.code, other);
+
+  static SavedPlaceKind fromApiLabel(String? apiLabel) => enumByCode(values, apiLabel, (kind) => kind.apiLabel, other);
 }
 
 class SavedPlace {
   const SavedPlace({required this.id, required this.kind, required this.label, required this.place});
 
-  factory SavedPlace.fromJson(JsonReader json) => SavedPlace(
-    id: json.str('id'),
-    kind: SavedPlaceKind.fromCode(json.strOrNull('kind')),
-    label: json.strOr('label', ''),
-    place: Place.fromJson(json.object('place').raw),
-  );
+  factory SavedPlace.fromJson(JsonReader json) {
+    final name = json.strOr('name', '');
+    final latitude = json.doubleOrNull('latitude');
+    final longitude = json.doubleOrNull('longitude');
+    return SavedPlace(
+      id: json.str('id'),
+      kind: SavedPlaceKind.fromApiLabel(json.strOrNull('label')),
+      label: name,
+      place: Place(
+        placeId: json.strOr('placeId', ''),
+        name: name,
+        address: json.strOr('address', ''),
+        coordinates: latitude == null || longitude == null ? null : LatLng(latitude, longitude),
+      ),
+    );
+  }
 
   final String id;
   final SavedPlaceKind kind;
   final String label;
   final Place place;
+
+  static Map<String, dynamic> requestBody({required SavedPlaceKind kind, required String label, required Place place}) => {
+    'label': kind.apiLabel,
+    'name': label.trim(),
+    'address': place.address,
+    if (place.placeId.isNotEmpty) 'placeId': place.placeId,
+    'latitude': ?place.coordinates?.latitude,
+    'longitude': ?place.coordinates?.longitude,
+  };
 
   SavedPlace copyWith({String? label, Place? place}) =>
       SavedPlace(id: id, kind: kind, label: label ?? this.label, place: place ?? this.place);
@@ -42,9 +65,17 @@ class SavedPlaceBook {
   const SavedPlaceBook({required this.places, required this.maxOthers});
 
   factory SavedPlaceBook.fromJson(Object? body) {
-    final json = JsonReader.of(body);
-    return SavedPlaceBook(places: json.listOf('places', SavedPlace.fromJson), maxOthers: json.intOr('maxOthers', 5));
+    final items = body is List ? body : const [];
+    return SavedPlaceBook(
+      places: [
+        for (final item in items)
+          if (item is Map) SavedPlace.fromJson(JsonReader.of(item)),
+      ],
+      maxOthers: defaultMaxOthers,
+    );
   }
+
+  static const int defaultMaxOthers = 10;
 
   static const int maxLabelLength = 24;
 

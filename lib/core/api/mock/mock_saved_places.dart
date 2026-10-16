@@ -42,13 +42,8 @@ abstract final class MockSavedPlaces {
 
   static void _keep() => _box.write(_regionKey, _places);
 
-  static String _iso(DateTime time) => time.toUtc().toIso8601String();
 
-  static Map<String, dynamic> _payload() => {
-    'places': [for (final place in _places) Map<String, dynamic>.of(place)],
-    'maxOthers': _maxOthers,
-    'serverTime': _iso(DateTime.now()),
-  };
+  static List<Map<String, dynamic>> _payload() => [for (final place in _places) _out(place)];
 
   static List<Map<String, dynamic>> get _others => [
     for (final place in _places)
@@ -82,14 +77,42 @@ abstract final class MockSavedPlaces {
     return label;
   }
 
+  static Map<String, dynamic> _out(Map<String, dynamic> saved) {
+    final place = Map<String, dynamic>.from(saved['place'] as Map);
+    final coordinates = place['coordinates'] as Map?;
+    return {
+      'id': saved['id'],
+      'label': saved['kind'] == 'other' ? 'custom' : saved['kind'],
+      'name': saved['label'],
+      'address': place['address'] ?? '',
+      if ('${place['place_id'] ?? ''}'.isNotEmpty) 'placeId': place['place_id'],
+      'latitude': coordinates?['lat'],
+      'longitude': coordinates?['lng'],
+    };
+  }
+
+  static String? _kindOf(Object? apiLabel) => switch (apiLabel) {
+    'home' => 'home',
+    'work' => 'work',
+    'custom' => 'other',
+    _ => null,
+  };
+
+  static Map<String, dynamic> _placeOf(Map<String, dynamic> body) => {
+    'place_id': body['placeId'] ?? '',
+    'name': body['name'],
+    'address': body['address'] ?? '',
+    'coordinates': {'lat': body['latitude'], 'lng': body['longitude']},
+  };
+
   static Object? _create(MockRequest request) {
-    final kind = request.body['kind'] as String?;
-    if (kind != 'home' && kind != 'work' && kind != 'other') {
+    final kind = _kindOf(request.body['label']);
+    if (kind == null) {
       throw const MockFailure(422, 'Pick what kind of place this is.', code: 'invalid_kind');
     }
-    final place = _validPlace(request.body['place']);
-    if (kind != 'other') return _setSlot(kind!, place);
-    final label = _validLabel(request.body['label']);
+    final place = _validPlace(_placeOf(request.body));
+    if (kind != 'other') return _setSlot(kind, place);
+    final label = _validLabel(request.body['name']);
     if (_others.length >= _maxOthers) {
       throw const MockFailure(
         409,
@@ -106,7 +129,7 @@ abstract final class MockSavedPlaces {
     };
     _places.add(saved);
     _keep();
-    return Map<String, dynamic>.of(saved);
+    return _out(saved);
   }
 
   static Map<String, dynamic> _setSlot(String kind, Map<String, dynamic> place) {
@@ -115,12 +138,12 @@ abstract final class MockSavedPlaces {
     if (existing != null) {
       existing['place'] = place;
       _keep();
-      return Map<String, dynamic>.of(existing);
+      return _out(existing);
     }
     final saved = {'id': 'sp_$kind', 'kind': kind, 'label': kind == 'home' ? 'Home' : 'Work', 'place': place};
     _places.add(saved);
     _keep();
-    return Map<String, dynamic>.of(saved);
+    return _out(saved);
   }
 
   static Map<String, dynamic> _require(MockRequest request) {
@@ -132,15 +155,15 @@ abstract final class MockSavedPlaces {
   static Object? _update(MockRequest request) {
     final saved = _require(request);
     final isSlot = saved['kind'] != 'other';
-    final label = isSlot || !request.body.containsKey('label')
+    final label = isSlot || !request.body.containsKey('name')
         ? saved['label']
-        : _validLabel(request.body['label'], exceptId: saved['id'] as String);
-    final place = request.body.containsKey('place') ? _validPlace(request.body['place']) : saved['place'];
+        : _validLabel(request.body['name'], exceptId: saved['id'] as String);
+    final place = request.body.containsKey('latitude') ? _validPlace(_placeOf(request.body)) : saved['place'];
     saved
       ..['label'] = label
       ..['place'] = place;
     _keep();
-    return Map<String, dynamic>.of(saved);
+    return _out(saved);
   }
 
   static Object? _delete(MockRequest request) {

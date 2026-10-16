@@ -67,7 +67,7 @@ class SavedPlacesController extends GetxController {
   }) {
     final key = id ?? (kind.isSlot ? kind.code : SavedPlacesLoaded.newPlaceKey);
     return _mutate(key, () async {
-      final body = {'label': label.trim(), 'place': place.toJson(), if (id == null) 'kind': kind.code};
+      final body = SavedPlace.requestBody(kind: kind, label: label, place: place);
       final response = id == null
           ? await _api.post(PlacesEndpoints.saved, data: body, key: _keyFor(body), suppressErrorToast: true)
           : await _api.patch(PlacesEndpoints.savedOf(id), data: body, suppressErrorToast: true);
