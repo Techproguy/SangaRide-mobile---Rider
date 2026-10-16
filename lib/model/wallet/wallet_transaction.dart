@@ -20,7 +20,9 @@ enum TransactionKind {
   final String code;
 
   static TransactionKind fromCode(String? code) =>
-      enumByCode(values, code, (kind) => kind.code, TransactionKind.adjustment);
+      enumByCode(values, _liveAliases[code] ?? code, (kind) => kind.code, TransactionKind.adjustment);
+
+  static const Map<String, String> _liveAliases = {'topup': 'top_up'};
 }
 
 enum TransactionStatus {
@@ -117,17 +119,21 @@ class WalletTransaction {
 
   factory WalletTransaction.fromJson(Map<String, dynamic> json) {
     final reader = JsonReader(json);
+    final amount = reader.money('amount');
+    final isDebit = reader.strOrNull('direction') == _debit;
     return WalletTransaction(
       id: reader.str('id'),
-      kind: TransactionKind.fromCode(reader.strOrNull('kind')),
-      title: reader.strOr('title', ''),
-      amount: reader.money('amount'),
+      kind: TransactionKind.fromCode(reader.strOrNull('type')),
+      title: reader.strOr('description', ''),
+      amount: isDebit && amount.isPositive ? -amount : amount,
       status: TransactionStatus.fromCode(reader.strOrNull('status')),
       createdAt: reader.time('createdAt').toLocal(),
       reference: reader.strOr('reference', ''),
-      meta: TransactionMeta.fromJson(reader.objectOrNull('meta')?.raw ?? const {}),
+      meta: TransactionMeta.fromJson({...?reader.objectOrNull('meta')?.raw, 'tripId': ?reader.strOrNull('rideId')}),
     );
   }
+
+  static const String _debit = 'debit';
 
   final String id;
   final TransactionKind kind;

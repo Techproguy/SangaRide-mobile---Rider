@@ -446,9 +446,11 @@ class _Entry {
 
   Map<String, dynamic> toJson() => {
     'id': id,
-    'kind': kind,
-    'title': title,
-    'amount': MockWallet._naira(amount),
+    'type': kind == 'top_up' ? 'topup' : kind,
+    'direction': amount < 0 ? 'debit' : 'credit',
+    'description': title,
+    'amount': MockWallet._naira(amount.abs()),
+    'rideId': meta['tripId'],
     'status': status,
     'createdAt': MockWallet._iso(createdAt),
     'reference': reference,
