@@ -72,7 +72,7 @@ class DeliveryTripPanel extends StatelessWidget {
         DeliveryPackageLine(delivery: delivery),
         _status(),
         _tiles(),
-        if (DeliveryProgressBar.isShownFor(phase)) DeliveryProgressBar(phase: phase),
+        if (DeliveryProgressBar.isShownFor(phase)) DeliveryProgressBar(phase: phase, legProgress: trip.legProgress),
         ..._buttons(),
       ],
     );

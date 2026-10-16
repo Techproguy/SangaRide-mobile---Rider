@@ -121,12 +121,12 @@ class _Details extends StatelessWidget {
         if (trip.deliveryPhase case final DeliveryPhase phase when DeliveryProgressBar.isShownFor(phase))
           Padding(
             padding: _cell,
-            child: DeliveryProgressBar(phase: phase),
+            child: DeliveryProgressBar(phase: phase, legProgress: trip.legProgress),
           )
         else if (!trip.isDelivery && TripProgressBar.isShownFor(trip.status))
           Padding(
             padding: _cell,
-            child: TripProgressBar(status: trip.status, nextStop: trip.nextStopNumber),
+            child: TripProgressBar(status: trip.status, nextStop: trip.nextStopNumber, legProgress: trip.legProgress),
           ),
         if (!trip.isDelivery)
           Padding(

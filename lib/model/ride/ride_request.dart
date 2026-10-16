@@ -65,10 +65,12 @@ class RideOption {
 }
 
 enum PricingOption {
-  standard('Standard', 'Our usual price for this trip', null),
-  fairFare('Fair Fare', 'A little under the usual price', 'Fair Fare discount'),
-  saver('Saver', 'The lowest price we offer', 'Saver discount'),
-  priority('Priority', 'A bit above the usual price', 'Priority extra');
+  standard('Standard', 'Best balance of price and speed', null),
+  fairFare('Fair Fare', 'You set the price', null),
+  saver('Saver', 'Lowest price, longest wait', 'Saver discount'),
+  priority('Priority', 'Faster matching', 'Priority extra');
+
+  bool get isNegotiated => this == fairFare;
 
   const PricingOption(this.label, this.description, this.adjustmentLabel);
 
@@ -168,6 +170,7 @@ class FareEstimate {
     this.hourlyRate,
     this.meetGreetFee,
     this.quoteId,
+    this.fairFare,
   });
 
   factory FareEstimate.fromJson(Object? body) {
@@ -192,6 +195,10 @@ class FareEstimate {
       meetGreetFee: json.moneyOrNull('meetGreetFee'),
       quoteId: json.strOrNull('quoteId'),
       pricing: pricing,
+      fairFare: switch (json.objectOrNull('fairFareRange')) {
+        final range? => FairFareRange.fromJson(range),
+        null => null,
+      },
     );
   }
 
@@ -207,8 +214,34 @@ class FareEstimate {
   final Money? hourlyRate;
   final Money? meetGreetFee;
   final String? quoteId;
+  final FairFareRange? fairFare;
 
   Money adjustmentFor(PricingOption option) => (pricing[option] ?? total) - total;
+}
+
+enum FairFareProblem {
+  tooLow,
+  tooHigh;
+
+  String messageFor(FairFareRange range) => switch (this) {
+    tooLow => 'Offer at least ${range.min.format()} so drivers say yes',
+    tooHigh => 'That’s above Standard. Offer up to ${range.max.format()}',
+  };
+}
+
+class FairFareRange {
+  const FairFareRange({required this.min, required this.max});
+
+  factory FairFareRange.fromJson(JsonReader json) => FairFareRange(min: json.money('min'), max: json.money('max'));
+
+  final Money min;
+  final Money max;
+
+  FairFareProblem? problemFor(Money offer) {
+    if (offer < min) return FairFareProblem.tooLow;
+    if (offer > max) return FairFareProblem.tooHigh;
+    return null;
+  }
 }
 
 enum RoutePoint { pickup, stop, dropoff }

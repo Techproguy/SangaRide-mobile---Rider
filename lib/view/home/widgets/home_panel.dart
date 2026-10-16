@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:sanga_ride/core/assets.dart';
 import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride/model/places/saved_place.dart';
+import 'package:sanga_ride/view/home/widgets/home_place_tile.dart';
+import 'package:sanga_ride/view/home/widgets/home_service_row.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 class HomePanel extends StatelessWidget {
@@ -19,6 +21,8 @@ class HomePanel extends StatelessWidget {
     required this.onPromo,
     this.isLocked = false,
   });
+
+  static const double _tallImageInset = 14;
 
   final Place? home;
   final Place? work;
@@ -46,37 +50,42 @@ class HomePanel extends StatelessWidget {
         SangaSearchTrigger(hint: 'Where are you going?', onTap: onSearch),
         const SizedBox(height: SangaSpacing.md),
         Row(
-          spacing: SangaSpacing.md,
+          spacing: SangaSpacing.sm,
           children: [
-            Expanded(child: _placeTile(SangaAssets.placeHome, 'Home', home, SavedPlaceKind.home)),
-            Expanded(child: _placeTile(SangaAssets.placeWork, 'Work', work, SavedPlaceKind.work)),
+            Expanded(child: _placeTile(SangaAssets.placeHome, 28, 'Home', home, SavedPlaceKind.home)),
+            Expanded(child: _placeTile(SangaAssets.placeWork, 26, 'Work', work, SavedPlaceKind.work)),
             Expanded(
-              child: SangaShortcutTile(icon: SangaAssets.placeSaved, label: 'Saved places', onTap: onSavedPlaces),
+              child: HomePlaceTile(
+                icon: SangaAssets.placeSaved,
+                iconSize: 32,
+                label: 'Saved places',
+                onTap: onSavedPlaces,
+              ),
             ),
           ],
         ),
         const SizedBox(height: SangaSpacing.md),
         const Divider(height: 1, thickness: 1, color: SangaColors.cardBorder),
         const SizedBox(height: SangaSpacing.md),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            SangaServiceTile(
+        HomeServiceRow(
+          services: [
+            HomeService(
               image: const AssetImage(AppAssets.serviceRide),
               label: 'Ride',
               isSelected: true,
               onTap: onSearch,
             ),
-            SangaServiceTile(image: const AssetImage(AppAssets.serviceDelivery), label: 'Delivery', onTap: onDelivery),
-            SangaServiceTile(
-              image: const AssetImage(AppAssets.serviceAirport),
-              label: 'Airport rides',
-              onTap: onAirport,
+            HomeService(
+              image: const AssetImage(AppAssets.serviceDelivery),
+              label: 'Delivery',
+              imageInset: _tallImageInset,
+              onTap: onDelivery,
             ),
-            SangaServiceTile(
+            HomeService(image: const AssetImage(AppAssets.serviceAirport), label: 'Airport rides', onTap: onAirport),
+            HomeService(
               image: const AssetImage(AppAssets.serviceSomeone),
               label: 'Book for someone',
+              imageInset: _tallImageInset,
               onTap: onBookForSomeone,
             ),
           ],
@@ -91,9 +100,10 @@ class HomePanel extends StatelessWidget {
     );
   }
 
-  Widget _placeTile(String icon, String label, Place? place, SavedPlaceKind kind) {
-    return SangaShortcutTile(
+  Widget _placeTile(String icon, double iconSize, String label, Place? place, SavedPlaceKind kind) {
+    return HomePlaceTile(
       icon: icon,
+      iconSize: iconSize,
       label: label,
       caption: place == null ? 'Add+' : null,
       onTap: place == null ? () => onAddPlace(kind) : () => onRideTo(place),

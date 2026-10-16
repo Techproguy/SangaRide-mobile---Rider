@@ -276,9 +276,9 @@ abstract final class MockRideRequests {
       'total': MockMoney.json(total),
       if (fee > 0) 'meetGreetFee': MockMoney.json(fee),
       ...extra,
+      'fairFareRange': {'min': MockMoney.json((total * 0.6 / 10).round() * 10), 'max': MockMoney.json(total)},
       'pricing': {
         'standard': MockMoney.json(total),
-        'fairFare': MockMoney.json((total * 0.9 / 10).round() * 10),
         'saver': MockMoney.json((total * 0.75 / 10).round() * 10),
         'priority': MockMoney.json((total * 1.4 / 10).round() * 10),
       },

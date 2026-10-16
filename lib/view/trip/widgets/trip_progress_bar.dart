@@ -3,7 +3,7 @@ import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 class TripProgressBar extends StatelessWidget {
-  const TripProgressBar({super.key, required this.status, this.nextStop});
+  const TripProgressBar({super.key, required this.status, this.nextStop, this.legProgress = 0});
 
   static List<SangaTripStage> stagesFor(int? nextStop) => [
     SangaTripStage(
@@ -26,7 +26,9 @@ class TripProgressBar extends StatelessWidget {
 
   final TripStatus status;
   final int? nextStop;
+  final double legProgress;
 
   @override
-  Widget build(BuildContext context) => SangaTripProgress(stages: stagesFor(nextStop), current: stageOf(status));
+  Widget build(BuildContext context) =>
+      SangaTripProgress(stages: stagesFor(nextStop), current: stageOf(status), legProgress: legProgress);
 }

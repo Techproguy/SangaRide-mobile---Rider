@@ -117,7 +117,11 @@ class _RideReviewScreenState extends State<RideReviewScreen> {
                     if (ride.preferences.driverLanguage != const RidePreferences().driverLanguage)
                       SangaFareLine('Driver language', ride.preferences.driverLanguage),
                   ],
-                  totalLabel: ride.timing == RideTiming.repeat ? 'ESTIMATE PER RIDE' : 'TOTAL ESTIMATE',
+                  totalLabel: switch ((pricing.isNegotiated, ride.timing)) {
+                    (true, _) => 'YOUR FAIR FARE OFFER',
+                    (false, RideTiming.repeat) => 'ESTIMATE PER RIDE',
+                    (false, _) => 'TOTAL ESTIMATE',
+                  },
                   total: price.format(),
                 ),
             ],

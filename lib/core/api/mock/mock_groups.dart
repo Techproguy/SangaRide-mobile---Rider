@@ -36,8 +36,8 @@ abstract final class MockGroups {
   static const Duration _autoDeclineAfter = Duration(seconds: 5);
   static const String _expiredCode = 'OLDCODE1';
 
-  static final Map<String, MockGroup> _groups = {MockGroupsSeed.johnsonsId: MockGroupsSeed.johnsons()};
-  static final List<String> _mine = [MockGroupsSeed.johnsonsId];
+  static final Map<String, MockGroup> _groups = {};
+  static final List<String> _mine = [];
   static final List<Map<String, dynamic>> _invites = [MockGroupsSeed.kudiInvite()];
   static final Map<String, int> _requestsToday = {};
   static int _sequence = 0;

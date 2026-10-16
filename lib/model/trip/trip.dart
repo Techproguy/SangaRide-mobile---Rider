@@ -1,6 +1,7 @@
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:sanga_ride/core/api/error_handling.dart';
 import 'package:sanga_ride/core/copy/common_copy.dart';
+import 'package:sanga_ride/core/extensions/lat_lng.dart';
 import 'package:sanga_ride/core/format/money_json.dart';
 import 'package:sanga_ride/model/location/place.dart';
 import 'package:sanga_ride/model/ride/airport.dart';
@@ -316,6 +317,20 @@ class Trip {
       TripStatus.arrivedDropoff || TripStatus.paymentPending => DeliveryPhase.atDropoffOf(delivery.stage),
       TripStatus.completed || TripStatus.cancelled || TripStatus.unknown => null,
     };
+  }
+
+  static const double _unknownLegProgress = 0.5;
+  static const double _minLegProgress = 0.1;
+  static const double _maxLegProgress = 0.9;
+
+  double get legProgress {
+    if (status != TripStatus.inProgress) return 0;
+    final remaining = distanceRemainingKm;
+    final legStart = stops.lastWhere((stop) => stop.isReached, orElse: () => pickup);
+    final legEnd = stops.firstWhere((stop) => !stop.isReached, orElse: () => dropoff);
+    final legKm = legStart.position.metersTo(legEnd.position) / 1000;
+    if (remaining == null || legKm <= 0) return _unknownLegProgress;
+    return (1 - remaining / legKm).clamp(_minLegProgress, _maxLegProgress);
   }
 
   int? get nextStopNumber {

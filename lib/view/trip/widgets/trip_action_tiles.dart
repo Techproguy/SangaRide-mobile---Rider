@@ -12,12 +12,9 @@ class TripActionTiles extends StatelessWidget {
     this.onAddStops,
     this.onReportIssue,
     this.onCancel,
-    this.alignment = MainAxisAlignment.start,
   });
 
-  static const int fittingCount = 4;
-  static const double _tileWidth = 60;
-  static const double _narrowestTileWidth = 52;
+  static const double _minGap = SangaSpacing.xs;
 
   final int unreadCount;
   final VoidCallback? onCall;
@@ -27,7 +24,6 @@ class TripActionTiles extends StatelessWidget {
   final VoidCallback? onAddStops;
   final VoidCallback? onReportIssue;
   final VoidCallback? onCancel;
-  final MainAxisAlignment alignment;
 
   List<Widget> get _tiles => [
     if (onCall != null) SangaActionTile(icon: Icons.phone_rounded, label: 'Call', onPressed: onCall),
@@ -52,29 +48,17 @@ class TripActionTiles extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tiles = _tiles;
-    if (tiles.length <= fittingCount) {
-      return Row(mainAxisAlignment: alignment, spacing: SangaSpacing.sm, children: tiles);
-    }
     return LayoutBuilder(
       builder: (context, constraints) {
-        final gaps = SangaSpacing.sm * (tiles.length - 1);
-        final fittedWidth = ((constraints.maxWidth - gaps) / tiles.length).clamp(0.0, _tileWidth);
-        final row = Row(
-          spacing: SangaSpacing.sm,
-          children: [
-            for (final tile in tiles)
-              SizedBox(
-                width: fittedWidth >= _narrowestTileWidth ? fittedWidth : _tileWidth,
-                child: Center(child: tile),
-              ),
-          ],
-        );
-        if (fittedWidth >= _narrowestTileWidth) return row;
+        final needed = tiles.length * SangaActionTile.slotWidth + _minGap * (tiles.length - 1);
+        if (needed <= constraints.maxWidth) {
+          return Row(mainAxisAlignment: MainAxisAlignment.spaceEvenly, children: tiles);
+        }
         return SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           physics: SangaMotion.pagePhysics,
           clipBehavior: Clip.hardEdge,
-          child: row,
+          child: Row(spacing: _minGap, children: tiles),
         );
       },
     );

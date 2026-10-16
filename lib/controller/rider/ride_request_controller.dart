@@ -38,6 +38,7 @@ class RideRequestController extends GetxController {
   final RxnString _optionId = RxnString();
   final Rx<RidePreferences> _preferences = const RidePreferences().obs;
   final Rxn<PricingOption> _pricing = Rxn<PricingOption>();
+  final Rxn<Money> _fairFareOffer = Rxn<Money>();
   final Rxn<FareEstimate> _estimate = Rxn<FareEstimate>();
   final Rx<RideTiming> _timing = RideTiming.now.obs;
   final Rxn<DateTime> _scheduledAt = Rxn<DateTime>();
@@ -71,6 +72,14 @@ class RideRequestController extends GetxController {
   RidePreferences get preferences => _preferences.value;
 
   PricingOption? get pricing => _pricing.value;
+
+  Money? get fairFareOffer => _fairFareOffer.value;
+
+  FairFareProblem? get fairFareProblem {
+    final offer = fairFareOffer;
+    final range = estimate?.fairFare;
+    return offer == null || range == null ? null : range.problemFor(offer);
+  }
 
   FareEstimate? get estimate => _estimate.value;
 
@@ -189,7 +198,11 @@ class RideRequestController extends GetxController {
     for (final place in [pickup, ...stops, dropoff]) ?place?.coordinates,
   ];
 
-  Money? get price => pricing == null ? null : estimate?.pricing[pricing];
+  Money? get price => switch (pricing) {
+    null => null,
+    PricingOption.fairFare => fairFareProblem == null ? fairFareOffer : null,
+    final option => estimate?.pricing[option],
+  };
 
   void start({Place? pickup, Place? dropoff, RideCategory? category}) {
     _pickup.value = pickup;
@@ -198,6 +211,7 @@ class RideRequestController extends GetxController {
     _tripType.value = TripType.oneWay;
     _preferences.value = const RidePreferences();
     _pricing.value = null;
+    _fairFareOffer.value = null;
     _estimate.value = null;
     _timing.value = RideTiming.now;
     _scheduledAt.value = null;
@@ -290,6 +304,7 @@ class RideRequestController extends GetxController {
     _estimate.value = null;
     _estimateProblem.value = null;
     _pricing.value = null;
+    _fairFareOffer.value = null;
   }
 
   void updatePreferences(RidePreferences preferences) {
@@ -299,6 +314,8 @@ class RideRequestController extends GetxController {
   }
 
   void selectPricing(PricingOption option) => _pricing.value = option;
+
+  void setFairFareOffer(Money? offer) => _fairFareOffer.value = offer;
 
   void setTiming(RideTiming timing, {DateTime? scheduledAt}) {
     _timing.value = timing;

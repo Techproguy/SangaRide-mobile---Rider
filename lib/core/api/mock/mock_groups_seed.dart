@@ -107,20 +107,11 @@ class MockGroup {
 }
 
 abstract final class MockGroupsSeed {
-  static const String johnsonsId = 'grp_johnsons';
   static const String rayId = 'grp_ray';
   static const String kudiId = 'grp_kudi';
   static const String rayCode = 'JOIN2026';
 
   static const List<String> purposes = ['Client meeting', 'Airport run', 'Site visit', 'Team lunch', 'Office commute'];
-
-  static const Map<String, String> _placeIds = {
-    'maryland': 'mock_maryland',
-    'palms': 'mock_palms',
-    'home': 'mock_cr_ikeja',
-  };
-
-  static Map<String, dynamic> _placeJson(String key) => MockRegion.place(_placeIds[key]!);
 
   static String relationOf(String kind, String? role) => switch ((kind, role)) {
     ('family', 'parent') => 'Parent',
@@ -184,91 +175,6 @@ abstract final class MockGroupsSeed {
           : null,
       monthSpent: isBusinessMember ? 36500 : 0,
     );
-  }
-
-  static Map<String, dynamic> _place(String key) => {
-    'id': 'ap_$key',
-    'label': _placeJson(key)['name'],
-    'place': _placeJson(key),
-  };
-
-  static MockGroup johnsons() {
-    final group = MockGroup(
-      id: johnsonsId,
-      kind: 'family',
-      name: 'The Johnsons',
-      inviteCode: 'JOHN2026',
-      members: [
-        me(role: 'owner', relation: 'Parent'),
-        member(
-          id: 'mem_chidi',
-          name: 'Chidi Johnson',
-          phone: MockRegion.phone('8052223344'),
-          relation: 'Spouse',
-          role: 'admin',
-          permissions: {'bookForOthers': true},
-        ),
-        member(
-          id: 'mem_tomi',
-          name: 'Tomi Johnson',
-          phone: MockRegion.phone('8031112233'),
-          relation: 'Son',
-          limits: {
-            'monthlySpend': 50000,
-            'overLimit': 'ask_approval',
-            'ridesPerDay': 3,
-            'timeWindow': {'from': '06:00', 'to': '21:00'},
-            'rideTypes': ['go', 'plus'],
-            'approvedPlaces': [_place('maryland'), _place('palms')],
-          },
-          monthSpent: 48200,
-        ),
-        member(
-          id: 'mem_tife',
-          name: 'Tife Johnson',
-          phone: MockRegion.phone('8064445566'),
-          relation: 'Daughter',
-          limits: {
-            'monthlySpend': 30000,
-            'overLimit': 'block',
-            'ridesPerDay': 2,
-            'rideTypes': ['go'],
-          },
-          monthSpent: 8800,
-        ),
-        member(
-          id: 'mem_mama',
-          name: '0706 333 4455',
-          phone: MockRegion.phone('7063334455'),
-          relation: 'Mother',
-          status: 'invited',
-        ),
-      ],
-    );
-    group.approvals.add(
-      MockApproval(
-        id: 'apr_seed_1',
-        memberId: 'mem_tomi',
-        memberName: 'Tomi Johnson',
-        fare: 6500,
-        pickup: _placeJson('home'),
-        dropoff: _placeJson('maryland'),
-        requestedAt: DateTime.now().subtract(const Duration(minutes: 12)),
-      ),
-    );
-    group.approvals.add(
-      MockApproval(
-        id: 'apr_seed_2',
-        memberId: 'mem_tife',
-        memberName: 'Tife Johnson',
-        fare: 4800,
-        pickup: _placeJson('maryland'),
-        dropoff: _placeJson('home'),
-        requestedAt: DateTime.now().subtract(const Duration(minutes: 2)),
-        cancelAt: DateTime.now().add(const Duration(seconds: 40)),
-      ),
-    );
-    return group;
   }
 
   static MockGroup ray() => MockGroup(

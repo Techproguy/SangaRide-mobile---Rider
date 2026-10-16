@@ -68,13 +68,7 @@ class TripUpdatingPanel extends StatelessWidget {
           textAlign: TextAlign.center,
           style: SangaTextStyles.statusMessage,
         ),
-        TripActionTiles(
-          unreadCount: unreadCount,
-          onCall: onCall,
-          onMessage: onMessage,
-          onSafety: onSafety,
-          alignment: MainAxisAlignment.center,
-        ),
+        TripActionTiles(unreadCount: unreadCount, onCall: onCall, onMessage: onMessage, onSafety: onSafety),
       ],
     );
   }

@@ -10,7 +10,7 @@ class HistoryCard extends StatelessWidget {
   const HistoryCard({super.key, required this.item, required this.whenLabel, required this.onTap, this.onRebook});
 
   static const double _visualWidth = 84;
-  static const double _packageSize = 56;
+  static const double _imageHeight = 56;
 
   final HistoryItem item;
   final String whenLabel;
@@ -34,6 +34,7 @@ class HistoryCard extends StatelessWidget {
             padding: const EdgeInsets.all(SangaSpacing.md),
             child: IntrinsicHeight(
               child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 spacing: SangaSpacing.md,
                 children: [
                   _visual(),
@@ -52,10 +53,13 @@ class HistoryCard extends StatelessWidget {
     return SizedBox(
       width: _visualWidth,
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
         spacing: SangaSpacing.xs,
         children: [
-          if (item.kind.isDelivery) _packageVisual() else Image(image: item.category.image, fit: BoxFit.contain),
+          SizedBox(
+            width: _visualWidth,
+            height: _imageHeight,
+            child: item.kind.isDelivery ? _packageVisual() : Image(image: item.category.image, fit: BoxFit.contain),
+          ),
           Text(item.fare.format(), style: SangaTextStyles.cardValue),
         ],
       ),
@@ -69,12 +73,12 @@ class HistoryCard extends StatelessWidget {
       child: Image(
         image: photo == null ? const AssetImage(AppAssets.serviceDelivery) : HistoryDeliveryCards.proofImage(photo),
         width: _visualWidth,
-        height: _packageSize,
+        height: _imageHeight,
         fit: photo == null ? BoxFit.contain : BoxFit.cover,
         errorBuilder: (context, error, stack) => const Image(
           image: AssetImage(AppAssets.serviceDelivery),
           width: _visualWidth,
-          height: _packageSize,
+          height: _imageHeight,
           fit: BoxFit.contain,
         ),
       ),
@@ -87,28 +91,24 @@ class HistoryCard extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       spacing: SangaSpacing.sm,
       children: [
-        Row(
+        Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          spacing: SangaSpacing.xs,
+          spacing: SangaSpacing.xxs,
           children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                spacing: SangaSpacing.xxs,
-                children: [
-                  Text(whenLabel, maxLines: 1, overflow: TextOverflow.ellipsis, style: SangaTextStyles.cardTitle),
-                  if (isCancelled) const SangaTag.urgent(label: 'Cancelled', icon: Icons.close_rounded),
-                  if (item.status == HistoryStatus.unknown)
-                    const SangaTag.scheduled(label: 'Updating', icon: Icons.sync_rounded),
-                  if (item.memberName case final name?) _who(name),
-                ],
-              ),
-            ),
-            if (onRebook != null) RebookButton(onPressed: onRebook!),
+            Text(whenLabel, maxLines: 1, overflow: TextOverflow.ellipsis, style: SangaTextStyles.cardTitle),
+            if (isCancelled) const SangaTag.urgent(label: 'Cancelled', icon: Icons.close_rounded),
+            if (item.status == HistoryStatus.unknown)
+              const SangaTag.scheduled(label: 'Updating', icon: Icons.sync_rounded),
+            if (item.memberName case final name?) _who(name),
           ],
         ),
         _stop(SangaStopKind.pickup, item.route.pickup.name, item.route.pickup.address),
         _stop(SangaStopKind.dropoff, item.route.dropoff.name, item.route.dropoff.address),
+        if (onRebook != null)
+          Align(
+            alignment: Alignment.centerRight,
+            child: RebookButton(onPressed: onRebook!),
+          ),
       ],
     );
   }
