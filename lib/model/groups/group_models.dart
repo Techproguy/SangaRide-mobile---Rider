@@ -144,6 +144,8 @@ class GroupDetail {
 
   GroupMember? memberOf(String id) => members.where((member) => member.id == id).firstOrNull;
 
+  GroupMember? memberOfUser(String userId) => members.where((member) => member.userId == userId).firstOrNull;
+
   GroupDetail withMember(GroupMember updated) => GroupDetail(
     id: id,
     kind: kind,

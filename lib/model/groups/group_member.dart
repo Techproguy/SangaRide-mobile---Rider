@@ -8,31 +8,41 @@ import 'package:sanga_ride_core/sanga_ride_core.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 class MemberPermissions {
-  const MemberPermissions({required this.bookRides, required this.bookForOthers, required this.useGroupWallet});
+  const MemberPermissions({
+    required this.bookRides,
+    required this.bookForOthers,
+    required this.useGroupWallet,
+    this.viewHistory = true,
+  });
 
   factory MemberPermissions.fromJson(Map<String, dynamic> json) {
     final reader = JsonReader(json);
     return MemberPermissions(
       bookRides: reader.boolOr('bookRides', true),
       bookForOthers: reader.boolOr('bookForOthers', false),
-      useGroupWallet: reader.boolOr('useGroupWallet', true),
+      useGroupWallet: reader.boolOr('useWallet', true),
+      viewHistory: reader.boolOr('viewHistory', true),
     );
   }
 
   final bool bookRides;
   final bool bookForOthers;
   final bool useGroupWallet;
+  final bool viewHistory;
 
-  MemberPermissions copyWith({bool? bookRides, bool? bookForOthers, bool? useGroupWallet}) => MemberPermissions(
-    bookRides: bookRides ?? this.bookRides,
-    bookForOthers: bookForOthers ?? this.bookForOthers,
-    useGroupWallet: useGroupWallet ?? this.useGroupWallet,
-  );
+  MemberPermissions copyWith({bool? bookRides, bool? bookForOthers, bool? useGroupWallet, bool? viewHistory}) =>
+      MemberPermissions(
+        bookRides: bookRides ?? this.bookRides,
+        bookForOthers: bookForOthers ?? this.bookForOthers,
+        useGroupWallet: useGroupWallet ?? this.useGroupWallet,
+        viewHistory: viewHistory ?? this.viewHistory,
+      );
 
   Map<String, dynamic> toJson() => {
     'bookRides': bookRides,
     'bookForOthers': bookForOthers,
-    'useGroupWallet': useGroupWallet,
+    'useWallet': useGroupWallet,
+    'viewHistory': viewHistory,
   };
 }
 
@@ -121,15 +131,15 @@ class MemberLimits {
     required this.approvedPlaces,
   });
 
-  factory MemberLimits.fromJson(Map<String, dynamic> json) {
-    final reader = JsonReader(json);
+  factory MemberLimits.fromMember(JsonReader member) {
+    final extras = JsonReader.of(member.raw['limits']);
     return MemberLimits(
-      monthlySpend: reader.moneyOrNull('monthlySpend'),
-      overLimit: OverLimitAction.fromCode(reader.strOrNull('overLimit')),
-      ridesPerDay: reader.intOrNull('ridesPerDay'),
-      timeWindow: TimeWindow.tryFromReader(reader.objectOrNull('timeWindow')),
-      rideTypes: reader.raw['rideTypes'] is List ? reader.strings('rideTypes') : null,
-      approvedPlaces: reader.listOf('approvedPlaces', ApprovedPlace.fromReader),
+      monthlySpend: member.moneyOrNull('monthlySpendLimit'),
+      overLimit: OverLimitAction.fromCode(member.strOrNull('overLimitAction')),
+      ridesPerDay: extras.intOrNull('ridesPerDay'),
+      timeWindow: TimeWindow.tryFromReader(extras.objectOrNull('timeWindow')),
+      rideTypes: extras.raw['rideTypes'] is List ? extras.strings('rideTypes') : null,
+      approvedPlaces: extras.listOf('approvedPlaces', ApprovedPlace.fromReader),
     );
   }
 
@@ -160,9 +170,7 @@ class MemberLimits {
     approvedPlaces: approvedPlaces ?? this.approvedPlaces,
   );
 
-  Map<String, dynamic> toJson() => {
-    'monthlySpend': monthlySpend?.toJson(),
-    'overLimit': overLimit.code,
+  Map<String, dynamic> extrasJson() => {
     'ridesPerDay': ridesPerDay,
     'timeWindow': timeWindow?.toJson(),
     'rideTypes': rideTypes,
@@ -173,6 +181,7 @@ class MemberLimits {
 class GroupMember {
   const GroupMember({
     required this.id,
+    this.userId = '',
     required this.name,
     required this.phone,
     required this.photoUrl,
@@ -189,20 +198,24 @@ class GroupMember {
     final reader = JsonReader(json);
     return GroupMember(
       id: reader.str('id'),
-      name: reader.strOr('name', ''),
+      userId: reader.strOr('userId', ''),
+      name: reader.strOr('name', fallbackName),
       phone: reader.strOr('phone', ''),
       photoUrl: reader.strOrNull('photoUrl'),
       relation: reader.strOr('relation', 'Member'),
       role: GroupRole.fromCode(reader.strOrNull('role')),
       status: MemberStatus.fromCode(reader.strOrNull('status')),
       permissions: MemberPermissions.fromJson(reader.objectOrNull('permissions')?.raw ?? const {}),
-      limits: MemberLimits.fromJson(reader.objectOrNull('limits')?.raw ?? const {}),
+      limits: MemberLimits.fromMember(reader),
       alerts: MemberAlerts.fromJson(reader.objectOrNull('alerts')?.raw ?? const {}),
       monthSpent: reader.money('monthSpent'),
     );
   }
 
+  static const String fallbackName = 'Member';
+
   final String id;
+  final String userId;
   final String name;
   final String phone;
   final String? photoUrl;
@@ -235,10 +248,16 @@ class MemberPatch {
       if (role != null && role != member.role) 'role': role!.code,
       if (relation != null && relation != member.relation) 'relation': relation,
       if (permissions != null) ..._section('permissions', permissions!.toJson(), member.permissions.toJson()),
-      if (limits != null) ..._section('limits', limits!.toJson(), member.limits.toJson()),
+      if (limits != null) ..._limitChanges(limits!, member.limits),
       if (alerts != null) ..._section('alerts', alerts!.toJson(), member.alerts.toJson()),
     };
   }
+
+  static Map<String, dynamic> _limitChanges(MemberLimits wanted, MemberLimits current) => {
+    if (wanted.monthlySpend != current.monthlySpend) 'monthlySpendLimit': wanted.monthlySpend?.major,
+    if (wanted.overLimit != current.overLimit) 'overLimitAction': wanted.overLimit.code,
+    ..._section('limits', wanted.extrasJson(), current.extrasJson()),
+  };
 
   static Map<String, dynamic> _section(String key, Map<String, dynamic> wanted, Map<String, dynamic> current) {
     final changed = {

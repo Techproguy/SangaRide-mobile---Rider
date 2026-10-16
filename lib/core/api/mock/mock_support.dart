@@ -19,9 +19,9 @@ abstract final class MockSupport {
     MockRoute.get(SupportEndpoints.articles, _articles),
     MockRoute.get(SupportEndpoints.article, _article),
     MockRoute.post(SupportEndpoints.articleFeedback, _feedback),
-    MockRoute.get(SupportEndpoints.issueTypes, _issueTypes),
+    MockRoute.get(SupportEndpoints.issueCategories, _issueCategories),
+    MockRoute.post(SupportEndpoints.issues, _createTicket),
     MockRoute.get(SupportEndpoints.tickets, _tickets),
-    MockRoute.post(SupportEndpoints.tickets, _createTicket),
     MockRoute.get(SupportEndpoints.ticket, _ticket),
     MockRoute.post(SupportEndpoints.ticketResolution, _resolve),
     MockRoute.post(SupportEndpoints.chats, _startChat),
@@ -42,7 +42,6 @@ abstract final class MockSupport {
       id: 'tkt_1987',
       reference: 'SR-1987',
       typeId: 'wrong_location',
-      context: 'trip',
       createdAt: _seededAt.subtract(const Duration(days: 3)),
       chosen: 'resend_pin',
       chosenAt: _seededAt.subtract(const Duration(days: 3, minutes: -2)),
@@ -50,8 +49,7 @@ abstract final class MockSupport {
     _Ticket(
       id: 'tkt_1874',
       reference: 'SR-1874',
-      typeId: 'wrong_fare',
-      context: 'payment',
+      typeId: 'extra_payment_requested',
       createdAt: _seededAt.subtract(const Duration(days: 12)),
       isClosed: true,
     ),
@@ -131,39 +129,42 @@ abstract final class MockSupport {
     return _articleJson(article);
   }
 
-  static Object? _issueTypes(MockRequest request) {
-    final context = '${request.query['context'] ?? 'trip'}';
-    return {
-      'types': [
-        for (final type in MockSupportContent.issueTypes)
-          if (type['context'] == context)
-            {'id': type['id'], 'label': type['label'], 'hint': type['hint'], 'icon': type['icon']},
-      ],
-    };
+  static Object? _issueCategories(MockRequest request) {
+    return [
+      for (final category in MockSupportContent.issueCategories)
+        {
+          'code': category['code'],
+          'title': category['title'],
+          'subtitle': category['subtitle'],
+          'icon': category['icon'],
+          'appliesTo': category['appliesTo'],
+          'requiresDescription': category['requiresDescription'],
+        },
+    ];
   }
 
-  static Map<String, dynamic>? _typeOf(String id, String context) {
-    final types = MockSupportContent.issueTypes.where((type) => type['id'] == id);
-    return types.where((type) => type['context'] == context).firstOrNull ?? types.firstOrNull;
-  }
+  static Map<String, dynamic>? _typeOf(String id) =>
+      MockSupportContent.issueCategories.where((category) => category['code'] == id).firstOrNull;
 
   static Object? _createTicket(MockRequest request) {
-    final typeId = request.body['type'];
-    final context = '${request.body['context'] ?? 'trip'}';
-    if (typeId == null || _typeOf('$typeId', context) == null) {
+    final typeId = request.body['category'];
+    final type = typeId == null ? null : _typeOf('$typeId');
+    if (type == null) {
       throw const MockFailure(422, 'Pick what happened.', code: 'type_required');
     }
-    final note = request.body['note'];
-    if (note != null && '$note'.length > _maxNoteLength) {
+    final description = request.body['description'];
+    if (type['requiresDescription'] == true && (description == null || '$description'.trim().isEmpty)) {
+      throw const MockFailure(422, 'Tell us a little more.', code: 'description_required');
+    }
+    if (description != null && '$description'.length > _maxNoteLength) {
       throw const MockFailure(422, 'That note is a bit long.', code: 'note_too_long');
     }
     final ticket = _Ticket(
       id: 'tkt_${_firstReference + _created.length}',
       reference: 'SR-${_firstReference + _created.length}',
       typeId: '$typeId',
-      context: context,
       createdAt: DateTime.now(),
-      tripId: request.body['tripId'] as String?,
+      tripId: request.body['rideId'] as String?,
       intentKey: request.headers['Idempotency-Key'] as String?,
     );
     _created.add(ticket);
@@ -185,7 +186,7 @@ abstract final class MockSupport {
           {
             'id': ticket.id,
             'reference': ticket.reference,
-            'typeLabel': _typeOf(ticket.typeId, ticket.context)!['label'],
+            'typeLabel': _typeOf(ticket.typeId)!['title'],
             'status': ticket.status(now),
             'createdAt': _iso(ticket.createdAt),
           },
@@ -223,7 +224,8 @@ abstract final class MockSupport {
       'id': ticket.id,
       'reference': ticket.reference,
       'type': ticket.typeId,
-      'typeLabel': _typeOf(ticket.typeId, ticket.context)!['label'],
+      'category': ticket.typeId,
+      'typeLabel': _typeOf(ticket.typeId)!['title'],
       'status': status,
       'events': ticket.events(now),
       'resolutionOptions': status == 'action_needed' ? ticket.options : null,
@@ -296,7 +298,6 @@ class _Ticket {
     required this.id,
     required this.reference,
     required this.typeId,
-    required this.context,
     required this.createdAt,
     this.tripId,
     this.intentKey,
@@ -308,7 +309,6 @@ class _Ticket {
   final String id;
   final String reference;
   final String typeId;
-  final String context;
   final DateTime createdAt;
   final String? tripId;
   final String? intentKey;
@@ -316,7 +316,7 @@ class _Ticket {
   String? chosen;
   DateTime? chosenAt;
 
-  Map<String, dynamic> get _type => MockSupport._typeOf(typeId, context)!;
+  Map<String, dynamic> get _type => MockSupport._typeOf(typeId)!;
 
   bool get _needsAction => _type['needsAction'] == true;
 

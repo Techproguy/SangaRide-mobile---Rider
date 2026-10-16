@@ -86,7 +86,12 @@ class GroupsController extends GetxController {
     required String role,
     GroupCompany? company,
   }) {
-    final body = {'kind': kind.code, 'name': name.trim(), 'role': role, 'company': company?.toJson()};
+    final body = {
+      'kind': kind.code,
+      'name': name.trim(),
+      if (kind == GroupKind.business) 'role': role,
+      if (kind == GroupKind.business && company != null) 'company': company.toJson(),
+    };
     return _submit(
       signature: 'create:${kind.code}:${name.trim()}:$role',
       intent: IdempotencyIntent.groupCreate,

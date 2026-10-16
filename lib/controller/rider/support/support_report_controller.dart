@@ -36,15 +36,17 @@ class SupportReportController extends GetxController {
     final epoch = _epoch.next();
     _state.value = const SupportReportLoading();
     try {
-      final response = await _api.get(
-        SupportEndpoints.issueTypes,
-        queryParameters: {'context': context.code},
-        suppressErrorToast: true,
-      );
+      final response = await _api.get(SupportEndpoints.issueCategories, suppressErrorToast: true);
       final rides = _rides ??= await _recentRides();
       if (!_epoch.isCurrent(epoch)) return;
       _state.value = SupportReportDraft(
-        types: JsonReader(response.dataMapOrEmpty).listOf('types', IssueType.fromReader),
+        types: [
+          for (final type in JsonReader.of({'categories': (response.data as Map)['data']}).listOf(
+            'categories',
+            IssueType.fromReader,
+          ))
+            if (type.isOffered(context)) type,
+        ],
         recentRides: _ridesFor(context, rides),
         tripId: tripId,
       );
@@ -78,6 +80,10 @@ class SupportReportController extends GetxController {
     final typeId = draft?.typeId;
     if (draft == null || typeId == null || draft.isSubmitting) return null;
     final trimmed = note?.trim() ?? '';
+    if (draft.type?.requiresDescription == true && trimmed.isEmpty) {
+      _state.value = draft.copyWith(problem: SupportProblem.descriptionRequired);
+      return null;
+    }
     final mutation = _submissionFor(draft, typeId, trimmed);
     _state.value = draft.copyWith(isSubmitting: true, clearProblem: true);
     final result = await (mutation.state.value is MutationUnknown<SupportTicket>
@@ -110,39 +116,19 @@ class SupportReportController extends GetxController {
     existing?.dispose();
     _submissionSignature = signature;
     final tripId = draft.tripId;
-    final context = _context;
     return _submission = Mutation<SupportTicket>(
       intent: IdempotencyIntent.supportTicket,
       run: (key) async {
         final response = await _api.post(
-          SupportEndpoints.tickets,
-          data: {
-            'type': typeId,
-            'context': context.code,
-            'tripId': tripId,
-            'note': note.isEmpty ? null : note,
-            'attachmentIds': const <String>[],
-          },
+          SupportEndpoints.issues,
+          data: {'category': typeId, 'rideId': ?tripId, if (note.isNotEmpty) 'description': note},
           key: key,
           suppressErrorToast: true,
         );
         return SupportTicket.fromJson(response.dataMapOrEmpty);
       },
-      reconcile: () => _reconcileTicket(_submission?.key.value),
+      reconcile: () async => const ReconciledNotDone<SupportTicket>(),
     );
-  }
-
-  Future<Reconciled<SupportTicket>> _reconcileTicket(String? key) async {
-    if (key == null) return const ReconciledPending<SupportTicket>();
-    final response = await _api.get(
-      SupportEndpoints.tickets,
-      queryParameters: {'idempotencyKey': key},
-      suppressErrorToast: true,
-    );
-    final found = TicketsPage.fromJson(response.dataMapOrEmpty).items.firstOrNull;
-    if (found == null) return const ReconciledNotDone<SupportTicket>();
-    final detail = await _api.get(SupportEndpoints.of(SupportEndpoints.ticket, found.id), suppressErrorToast: true);
-    return ReconciledDone(SupportTicket.fromJson(detail.dataMapOrEmpty));
   }
 
   SupportReportDraft? get _draft => switch (_state.value) {

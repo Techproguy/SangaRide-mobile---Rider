@@ -14,6 +14,11 @@ enum GroupFailure {
   phoneInGroup('phone_in_group', 'They’re already in', 'That number is already part of this group.'),
   invalidPhone(ServerCode.invalidPhone, 'We can’t text that number', 'Check the number and try again.'),
   lastAdmin('last_admin', 'Someone has to stay in charge', 'Make another person an admin first, then try again.'),
+  adminCannotLeave(
+    'admin_cannot_leave',
+    'Admins can’t leave',
+    'Admins stay in charge of the group, so this one can’t be left.',
+  ),
   notAllowed('not_allowed', 'Only admins can do that', 'Ask an admin of the group to do it for you.'),
   groupNotFound('group_not_found', 'We can’t find that group', 'It may have been removed. Head back and try again.'),
   inviteNotFound('invite_not_found', 'That invite is gone', 'It may have expired or been taken back.'),
@@ -44,7 +49,7 @@ enum GroupFailure {
   bool get isGone => this == groupNotFound || this == notAllowed;
 
   static GroupFailure fromCode(String? code) =>
-      enumByCode(values, code, (failure) => failure.code, GroupFailure.unknown);
+      enumByCode(values, code?.toLowerCase(), (failure) => failure.code, GroupFailure.unknown);
 
   static GroupFailure of(Object error) => switch (ProblemKind.of(error)) {
     ProblemOffline() => connection,

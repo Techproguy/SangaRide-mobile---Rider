@@ -95,13 +95,16 @@ class MockGroup {
   }
 
   Map<String, dynamic> memberJson(Map<String, dynamic> member) {
-    final limits = Map<String, dynamic>.of(member['limits'] as Map<String, dynamic>);
+    final limits = member['limits'] as Map<String, dynamic>;
+    final monthlySpend = limits['monthlySpend'] as num?;
     return {
-      ...member,
+      'id': member['id'],
+      'userId': member['userId'],
+      'role': member['role'],
       'permissions': Map<String, dynamic>.of(member['permissions'] as Map<String, dynamic>),
-      'limits': limits..['monthlySpend'] = MockMoney.jsonOrNull(limits['monthlySpend'] as num?),
-      'alerts': Map<String, dynamic>.of(member['alerts'] as Map<String, dynamic>),
-      'monthSpent': MockMoney.json(member['monthSpent'] as num),
+      'monthlySpendLimit': monthlySpend == null ? null : MockMoney.of(monthlySpend).major,
+      'overLimitAction': limits['overLimit'],
+      'joinedAt': member['joinedAt'],
     };
   }
 }
@@ -133,15 +136,18 @@ abstract final class MockGroupsSeed {
     Map<String, dynamic>? permissions,
     Map<String, dynamic>? limits,
     int monthSpent = 0,
+    String? userId,
   }) => {
     'id': id,
+    'userId': userId ?? 'usr_$id',
+    'joinedAt': DateTime.now().subtract(const Duration(days: 30)).toUtc().toIso8601String(),
     'name': name,
     'phone': phone,
     'photoUrl': null,
     'relation': relation,
     'role': role,
     'status': status,
-    'permissions': {'bookRides': true, 'bookForOthers': false, 'useGroupWallet': true, ...?permissions},
+    'permissions': {'bookRides': true, 'bookForOthers': false, 'useWallet': true, 'viewHistory': true, ...?permissions},
     'limits': {
       'monthlySpend': null,
       'overLimit': 'block',
@@ -159,11 +165,12 @@ abstract final class MockGroupsSeed {
     final isBusinessMember = forKind == 'business' && role == 'member';
     return member(
       id: MockData.user['id'] as String,
+      userId: MockData.user['id'] as String,
       name: '${MockAccount.firstName} ${MockAccount.lastName}',
       phone: MockAccount.phone,
       relation: relation,
       role: role,
-      permissions: role == 'owner' ? {'bookForOthers': true} : null,
+      permissions: role == 'admin' ? {'bookForOthers': true} : null,
       limits: isBusinessMember
           ? {
               'monthlySpend': 40000,
@@ -191,7 +198,7 @@ abstract final class MockGroupsSeed {
         name: 'Raymond Okoye',
         phone: MockRegion.phone('8023334455'),
         relation: 'Owner',
-        role: 'owner',
+        role: 'admin',
         permissions: {'bookForOthers': true},
       ),
       member(
@@ -224,7 +231,7 @@ abstract final class MockGroupsSeed {
         name: 'Tunde Bakare',
         phone: MockRegion.phone('8031230987'),
         relation: 'Owner',
-        role: 'owner',
+        role: 'admin',
         permissions: {'bookForOthers': true},
       ),
       member(

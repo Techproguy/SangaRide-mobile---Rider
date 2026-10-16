@@ -7,7 +7,8 @@ abstract final class SupportEndpoints {
   static const String articles = '$_support/articles';
   static const String article = '$_support/articles/:id';
   static const String articleFeedback = '$_support/articles/:id/feedback';
-  static const String issueTypes = '$_support/issue-types';
+  static const String issueCategories = '/issues/categories';
+  static const String issues = '/issues';
   static const String tickets = '$_support/tickets';
   static const String ticket = '$_support/tickets/:id';
   static const String ticketResolution = '$_support/tickets/:id/resolution';

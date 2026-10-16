@@ -9,6 +9,7 @@ enum SupportProblem {
   articleNotFound('We couldn’t find that article. It may have moved.'),
   ticketNotFound('We couldn’t find that report.'),
   typeRequired('Pick what happened so we know how to help.'),
+  descriptionRequired('Tell us a little about what happened so we can help.'),
   noteTooLong('That note is a bit long. Keep it under 500 characters.'),
   invalidOption('That option isn’t available anymore. Pick another one.'),
   chatEnded('This chat has ended.'),

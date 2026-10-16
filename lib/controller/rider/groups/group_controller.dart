@@ -39,7 +39,7 @@ class GroupController extends GetxController {
 
   GroupMember? get me {
     final userId = Get.find<UserController>().user?.id;
-    return userId == null ? null : detail?.memberOf(userId);
+    return userId == null ? null : detail?.memberOfUser(userId);
   }
 
   bool canManageMember(GroupMember member) {
@@ -118,13 +118,9 @@ class GroupController extends GetxController {
         signature: 'member:$memberId:${changes.toString()}',
         intent: IdempotencyIntent.memberUpdate,
         send: (key) async {
-          final response = await _api.patch(
-            GroupEndpoints.memberOf(groupId, memberId),
-            data: changes,
-            key: key,
-            suppressErrorToast: true,
-          );
-          return GroupMember.fromJson(response.dataMapOrEmpty);
+          await _api.patch(GroupEndpoints.memberOf(groupId, memberId), data: changes, key: key, suppressErrorToast: true);
+          await reloadQuietly();
+          return detail?.memberOf(memberId) ?? member;
         },
         reconcile: () async {
           await reloadQuietly();
@@ -172,44 +168,25 @@ class GroupController extends GetxController {
     if (isBusy) return const GroupRejected(GroupFailure.connection);
     _isBusy.value = true;
     try {
-      final result = await _mutations.run<GroupMember>(
+      final result = await _mutations.run<void>(
         signature: 'invite:$phone',
         intent: IdempotencyIntent.groupInvite,
         send: (key) async {
-          final response = await _api.post(
+          await _api.post(
             GroupEndpoints.invitesOf(groupId),
             data: {'phone': phone, 'relation': relation, 'role': role.code},
             key: key,
             suppressErrorToast: true,
           );
-          return GroupMember.fromJson(response.dataMapOrEmpty);
         },
         reconcile: () async {
           await reloadQuietly();
-          final invited = detail?.members
-              .where(
-                (member) => member.phone.replaceAll(RegExp(r'\D'), '').endsWith(phone.replaceAll(RegExp(r'\D'), '')),
-              )
-              .firstOrNull;
-          return invited == null ? const ReconciledNotDone<GroupMember>() : ReconciledDone<GroupMember>(invited);
+          final digits = phone.replaceAll(RegExp(r'\D'), '');
+          final invited = detail?.members.any((member) => member.phone.replaceAll(RegExp(r'\D'), '').endsWith(digits));
+          return invited == true ? const ReconciledDone<void>(null) : const ReconciledNotDone<void>();
         },
       );
-      final member = result.value;
-      final latest = detail;
-      if (member != null && latest != null && latest.memberOf(member.id) == null) {
-        _state.value = GroupDetailLoaded(
-          GroupDetail(
-            id: latest.id,
-            kind: latest.kind,
-            name: latest.name,
-            role: latest.role,
-            inviteCode: latest.inviteCode,
-            members: [...latest.members, member],
-            recentRides: latest.recentRides,
-            company: latest.company,
-          ),
-        );
-      }
+      if (result.isDone) unawaited(reloadQuietly());
       final failure = result.failure;
       return failure == null ? const GroupDone() : GroupRejected(failure);
     } finally {

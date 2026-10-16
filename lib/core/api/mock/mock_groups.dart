@@ -75,7 +75,7 @@ abstract final class MockGroups {
   }
 
   static MockGroup _requireGroup(MockRequest request) {
-    final group = _groups[request.params['id']];
+    final group = _groups[request.params['groupId']];
     if (group == null || !_mine.contains(group.id)) {
       throw const MockFailure(404, 'We can’t find that group.', code: 'group_not_found');
     }
@@ -96,8 +96,7 @@ abstract final class MockGroups {
     'name': group.name,
     'role': _myRole(group).code,
     'membersCount': group.activeCount,
-    'walletBalance': MockMoney.json(MockWallet.groupBalance(group.id)),
-    'photoUrl': null,
+    'walletBalance': MockMoney.of(MockWallet.groupBalance(group.id)).major,
   };
 
   static Object? _list(MockRequest request) {
@@ -110,12 +109,14 @@ abstract final class MockGroups {
               if (entry.key != 'groupId') entry.key: entry.value,
           },
       ],
-      'serverTime': _iso(DateTime.now()),
     };
   }
 
   static Object? _create(MockRequest request) {
-    final kind = request.body['kind'] as String? ?? 'family';
+    final kind = request.body['kind'];
+    if (kind is! String || !const ['family', 'business'].contains(kind)) {
+      throw const MockFailure(422, 'Pick the kind of group.', code: 'kind_required');
+    }
     final name = (request.body['name'] as String? ?? '').trim();
     if (name.isEmpty) throw const MockFailure(422, 'Give your group a name.', code: 'name_required');
     if (_groupOfKind(kind) != null) {
@@ -131,7 +132,7 @@ abstract final class MockGroups {
       inviteCode: '${kind == 'family' ? 'FAM' : 'BIZ'}${seq.toString().padLeft(5, '0')}',
       company: company is Map ? Map<String, dynamic>.from(company) : null,
       members: [
-        MockGroupsSeed.me(role: 'owner', relation: MockGroupsSeed.relationOf(kind, request.body['role'] as String?)),
+        MockGroupsSeed.me(role: 'admin', relation: MockGroupsSeed.relationOf(kind, request.body['role'] as String?)),
       ],
     );
     _groups[id] = group;
@@ -213,25 +214,28 @@ abstract final class MockGroups {
 
   static Object? _detail(MockRequest request) {
     final group = _requireGroup(request);
+    final me = group.memberJson(group.memberById(_meId)!);
     return {
       'id': group.id,
       'kind': group.kind,
       'name': group.name,
       'role': _myRole(group).code,
-      'inviteCode': group.inviteCode,
-      'wallet': {
-        'balance': MockMoney.json(MockWallet.groupBalance(group.id)),
-        'monthSpent': MockMoney.json(MockWallet.groupMonthSpent(group.id)),
+      'inviteCode': null,
+      'me': {
+        'role': me['role'],
+        'permissions': me['permissions'],
+        'monthlySpendLimit': me['monthlySpendLimit'],
+        'overLimitAction': me['overLimitAction'],
       },
-      'members': [for (final member in group.members) group.memberJson(member)],
+      'wallet': {'balance': MockMoney.of(MockWallet.groupBalance(group.id)).major},
+      'members': [for (final member in group.activeMembers) group.memberJson(member)],
       'recentRides': _ridesOf(group, status: 'completed').take(_recentRideCount).toList(),
-      'company': group.company,
-      'serverTime': _iso(DateTime.now()),
     };
   }
 
   static Object? _sendInvite(MockRequest request) {
     final group = _requireManaged(request);
+    if (request.body['phone'] == null) return {'code': group.inviteCode};
     final phone = _digits(request.body['phone']);
     if (!SangaPhoneNumber.isValid('+$phone')) {
       throw const MockFailure(422, 'We can’t text that number.', code: 'invalid_phone');
@@ -251,7 +255,7 @@ abstract final class MockGroups {
       status: 'invited',
     );
     group.members.add(member);
-    return group.memberJson(member);
+    return {'id': member['id'], 'status': 'invited'};
   }
 
   static Map<String, dynamic> _memberOf(MockGroup group, MockRequest request) {
@@ -264,7 +268,7 @@ abstract final class MockGroups {
     final actor = _myRole(group);
     final targetRole = _Role(target['role'] as String?);
     final isSelf = target['id'] == _meId;
-    final allowed = isSelf || actor.isOwner || (actor.isManager && !targetRole.isManager);
+    final allowed = isSelf || (actor.isManager && !targetRole.isManager);
     if (!allowed) throw const MockFailure(403, 'Only admins can do that.', code: 'not_allowed');
   }
 
@@ -275,25 +279,25 @@ abstract final class MockGroups {
     final body = request.body;
     final role = body['role'] as String?;
     if (role != null && role != member['role']) {
-      final actor = _myRole(group);
-      final isDemotion = member['role'] == 'admin' && role == 'member';
-      if (member['id'] == _meId || member['role'] == 'owner' || role == 'owner' || (isDemotion && !actor.isOwner)) {
-        throw const MockFailure(403, 'Only the owner can do that.', code: 'not_allowed');
+      if (member['id'] == _meId || !const ['admin', 'member'].contains(role)) {
+        throw const MockFailure(403, 'Only admins can do that.', code: 'not_allowed');
       }
       member['role'] = role;
     }
     if (body['relation'] is String) member['relation'] = body['relation'];
-    for (final key in const ['permissions', 'limits', 'alerts']) {
-      final patch = body[key];
-      if (patch is Map) (member[key] as Map<String, dynamic>).addAll(_storable(key, Map<String, dynamic>.from(patch)));
-    }
+    final permissions = body['permissions'];
+    if (permissions is Map) (member['permissions'] as Map<String, dynamic>).addAll(_storable(permissions));
+    final limits = member['limits'] as Map<String, dynamic>;
+    if (body.containsKey('monthlySpendLimit')) limits['monthlySpend'] = MockMoney.nairaOrNull(body['monthlySpendLimit']);
+    if (body['overLimitAction'] is String) limits['overLimit'] = body['overLimitAction'];
+    final extras = body['limits'];
+    if (extras is Map) limits.addAll(_storable(extras));
+    final alerts = body['alerts'];
+    if (alerts is Map) (member['alerts'] as Map<String, dynamic>).addAll(_storable(alerts));
     return group.memberJson(member);
   }
 
-  static Map<String, dynamic> _storable(String key, Map<String, dynamic> patch) {
-    if (key != 'limits' || !patch.containsKey('monthlySpend')) return patch;
-    return {...patch, 'monthlySpend': MockMoney.nairaOrNull(patch['monthlySpend'])};
-  }
+  static Map<String, dynamic> _storable(Map patch) => Map<String, dynamic>.from(patch);
 
   static int _managerCount(MockGroup group) => group.members
       .where((member) => _Role(member['role'] as String?).isManager && member['status'] == 'active')
@@ -314,15 +318,10 @@ abstract final class MockGroups {
   static Object? _leave(MockRequest request) {
     final group = _requireGroup(request);
     final me = group.memberById(_meId)!;
-    final role = _myRole(group);
-    if (role.isManager && _managerCount(group) <= 1 && group.activeCount > 1) {
-      throw const MockFailure(409, 'Make someone else an admin first.', code: 'last_admin');
+    if (_myRole(group).isManager) {
+      throw const MockFailure(400, 'Admins can’t leave a group.', code: 'ADMIN_CANNOT_LEAVE');
     }
     group.members.remove(me);
-    if (role.isOwner) {
-      final next = group.members.where((member) => member['role'] == 'admin').firstOrNull;
-      next?['role'] = 'owner';
-    }
     _mine.remove(group.id);
     if (group.activeCount == 0) _groups.remove(group.id);
     return {'left': true};
@@ -543,7 +542,7 @@ abstract final class MockGroups {
     if (rideFor == null || group == null || !_mine.contains(group.id)) return false;
     if (_myRole(group).isManager) return true;
     final subject = _subjectOf(group, rideFor);
-    if (subject == null || (subject['permissions'] as Map)['useGroupWallet'] != true) return false;
+    if (subject == null || (subject['permissions'] as Map)['useWallet'] != true) return false;
     final limits = subject['limits'] as Map;
     final cap = (limits['monthlySpend'] as num?)?.toInt();
     final spent = (subject['monthSpent'] as num?)?.toInt() ?? 0;
@@ -587,7 +586,5 @@ class _Role {
 
   final String? code;
 
-  bool get isOwner => code == 'owner';
-
-  bool get isManager => code == 'owner' || code == 'admin';
+  bool get isManager => code == 'admin';
 }

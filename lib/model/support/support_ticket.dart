@@ -2,14 +2,15 @@ import 'package:sanga_ride/model/support/support_problem.dart';
 import 'package:sanga_ride_core/sanga_ride_core.dart';
 
 enum IssueContext {
-  trip('trip'),
-  delivery('delivery'),
-  account('account'),
-  payment('payment');
+  trip('trip', 'ride'),
+  delivery('delivery', 'delivery'),
+  account('account', null),
+  payment('payment', null);
 
-  const IssueContext(this.code);
+  const IssueContext(this.code, this.appliesToCode);
 
   final String code;
+  final String? appliesToCode;
 
   static IssueContext fromCode(String? code) => codedEnum(values, (value) => value.code, code, orElse: trip);
 }
@@ -31,22 +32,54 @@ enum IssueIcon {
   final String code;
 
   static IssueIcon fromCode(Object? code) => codedEnum(values, (icon) => icon.code, code, orElse: other);
+
+  static IssueIcon ofCategory(String category) => switch (category) {
+    'driver_not_moving' => notMoving,
+    'cannot_reach_driver' || 'cannot_reach_passenger' || 'recipient_unavailable' => unreachable,
+    'wrong_location' => location,
+    'extra_payment_requested' => payment,
+    'unable_to_complete_delivery' => incomplete,
+    'lost_item' => package,
+    'safety_concern' => safety,
+    _ => other,
+  };
 }
 
 class IssueType {
-  const IssueType({required this.id, required this.label, required this.hint, required this.icon});
+  const IssueType({
+    required this.id,
+    required this.label,
+    required this.hint,
+    required this.icon,
+    required this.appliesTo,
+    required this.requiresDescription,
+  });
 
-  factory IssueType.fromReader(JsonReader reader) => IssueType(
-    id: reader.str('id'),
-    label: reader.str('label'),
-    hint: reader.strOr('hint', ''),
-    icon: IssueIcon.fromCode(reader.strOrNull('icon')),
-  );
+  static const String otherId = 'other';
+
+  factory IssueType.fromReader(JsonReader reader) {
+    final id = reader.str('code');
+    return IssueType(
+      id: id,
+      label: reader.str('title'),
+      hint: reader.strOr('subtitle', ''),
+      icon: IssueIcon.ofCategory(id),
+      appliesTo: reader.strings('appliesTo'),
+      requiresDescription: reader.boolOr('requiresDescription', false),
+    );
+  }
 
   final String id;
   final String label;
   final String hint;
   final IssueIcon icon;
+  final List<String> appliesTo;
+  final bool requiresDescription;
+
+  bool isOffered(IssueContext context) {
+    final scope = context.appliesToCode;
+    return scope == null ? id == otherId : appliesTo.isEmpty || appliesTo.contains(scope);
+  }
 }
 
 enum TicketStatus {
@@ -126,15 +159,16 @@ class SupportTicket {
 
   factory SupportTicket.fromJson(Map<String, dynamic> json) {
     final reader = JsonReader(json);
+    final id = reader.strOr('id', '');
     return SupportTicket(
-      id: reader.str('id'),
-      reference: reader.strOr('reference', ''),
-      type: reader.strOr('type', ''),
+      id: id,
+      reference: reader.strOrNull('reference') ?? id,
+      type: reader.strOrNull('type') ?? reader.strOr('category', ''),
       typeLabel: reader.strOr('typeLabel', ''),
       status: TicketStatus.fromCode(reader.strOrNull('status')),
       events: [for (final event in reader.listOf('events', TicketEvent.tryFromReader)) ?event],
       resolutionOptions: reader.listOf('resolutionOptions', ResolutionOption.fromReader),
-      tripId: reader.strOrNull('tripId'),
+      tripId: reader.strOrNull('tripId') ?? reader.strOrNull('rideId'),
     );
   }
 
