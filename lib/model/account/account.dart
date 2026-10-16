@@ -24,13 +24,27 @@ class Account {
       lastName: reader.strOr('lastName', ''),
       phone: reader.str('phone'),
       email: reader.strOrNull('email'),
-      dateOfBirth: _dayOf(reader.strOrNull('dateOfBirth')),
-      photoUrl: reader.strOrNull('photoUrl'),
+      dateOfBirth: _dayOf(reader.strOrNull('birthday')),
+      photoUrl: reader.strOrNull('avatarUrl'),
       rating: reader.doubleOrNull('rating'),
       ridesCount: reader.intOr('ridesCount', 0),
-      memberSince: reader.timeOrNull('memberSince')?.toLocal(),
-      verification: VerificationStatus.fromCode(reader.objectOrNull('verification')?.strOrNull('status')),
+      memberSince: reader.timeOrNull('createdAt')?.toLocal(),
+      verification: _verificationOf(reader.objectOrNull('verification')),
     );
+  }
+
+  static VerificationStatus _verificationOf(JsonReader? json) {
+    if (json == null) return VerificationStatus.unverified;
+    if (json.boolOr('isVerified', false)) return VerificationStatus.verified;
+    final parts = [
+      VerificationStatus.fromCode(json.objectOrNull('selfie')?.strOrNull('status')),
+      VerificationStatus.fromCode(json.objectOrNull('documents')?.strOrNull('status')),
+    ];
+    if (parts.any((part) => part.needsAction)) return VerificationStatus.rejected;
+    if (parts.every((part) => part == VerificationStatus.pending || part == VerificationStatus.verified)) {
+      return VerificationStatus.pending;
+    }
+    return VerificationStatus.unverified;
   }
 
   static DateTime? _dayOf(String? raw) => raw == null ? null : DateTime.tryParse(raw);

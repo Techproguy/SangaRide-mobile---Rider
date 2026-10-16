@@ -113,11 +113,18 @@ abstract final class MockAccount {
 
   static Map<String, dynamic> _json() => {
     ..._fields,
-    'memberSince': _memberSince.toUtc().toIso8601String(),
-    'verification': {'status': MockVerification.accountStatus(DateTime.now())},
+    'birthday': _fields['dateOfBirth'],
+    'avatarUrl': _fields['photoUrl'],
+    'createdAt': _memberSince.toUtc().toIso8601String(),
+    'verification': _verificationJson(MockVerification.accountStatus(DateTime.now())),
     if (_deletesAt != null) 'deletesAt': _deletesAt!.toUtc().toIso8601String(),
     'serverTime': DateTime.now().toUtc().toIso8601String(),
   };
+
+  static Map<String, dynamic> _verificationJson(String status) {
+    final part = {'status': status, 'verifiedAt': null};
+    return {'isVerified': status == 'verified', 'selfie': part, 'documents': part};
+  }
 
   static Object? _update(MockRequest request) {
     final body = request.body;
