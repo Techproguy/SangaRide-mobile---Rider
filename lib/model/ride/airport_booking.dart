@@ -58,7 +58,15 @@ class ArrivalDetails {
     return '$luggageCount ${luggageSize.label.toLowerCase()} $bags';
   }
 
-  String get passengersLabel => passengers == 1 ? '1 passenger' : '$passengers passengers';
+  String get passengersLabel => passengersLabelOf(passengers);
+
+  static String passengersLabelOf(int count) => count == 1 ? '1 passenger' : '$count passengers';
+
+  static String bagsLabel(int count) => switch (count) {
+    0 => 'No luggage',
+    1 => '1 bag',
+    _ => '$count bags',
+  };
 
   ArrivalDetails copyWith({int? luggageCount, LuggageSize? luggageSize, int? passengers, Assistance? assistance}) =>
       ArrivalDetails(
@@ -147,7 +155,15 @@ class ScheduledAirport {
   final String meetPoint;
   final FlightStatus status;
 
-  String get passengersLabel => passengers == 1 ? '1 passenger' : '$passengers passengers';
+  String get passengersLabel => passengersLabelOf(passengers);
+
+  static String passengersLabelOf(int count) => count == 1 ? '1 passenger' : '$count passengers';
+
+  static String bagsLabel(int count) => switch (count) {
+    0 => 'No luggage',
+    1 => '1 bag',
+    _ => '$count bags',
+  };
 }
 
 class TripAirport {

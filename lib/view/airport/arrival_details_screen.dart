@@ -36,34 +36,32 @@ class ArrivalDetailsScreen extends StatelessWidget {
             spacing: SangaSpacing.lg,
             children: [
               if (flight != null) FlightSummaryCard(flight: flight, airportName: airport.draft.airport?.name),
-              SangaCounterField(
+              SangaSelectField<int>(
                 label: 'Luggage',
                 icon: Icons.luggage_rounded,
-                valueLabel: details.luggageLabel,
                 value: details.luggageCount,
-                max: AirportRules.maxLuggage,
+                options: [
+                  for (var count = 0; count <= AirportRules.maxLuggage; count++)
+                    SangaSelectOption(count, ArrivalDetails.bagsLabel(count)),
+                ],
                 onChanged: airport.setLuggageCount,
               ),
               if (details.luggageCount > 0)
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  spacing: SangaSpacing.xs,
-                  children: [
-                    const SangaFieldLabel('Bag size'),
-                    SangaChoiceChips<LuggageSize>(
-                      options: [for (final size in LuggageSize.values) SangaSelectOption(size, size.label)],
-                      value: details.luggageSize,
-                      onChanged: airport.setLuggageSize,
-                    ),
-                  ],
+                SangaSelectField<LuggageSize>(
+                  label: 'Bag size',
+                  icon: Icons.work_rounded,
+                  value: details.luggageSize,
+                  options: [for (final size in LuggageSize.values) SangaSelectOption(size, size.label)],
+                  onChanged: airport.setLuggageSize,
                 ),
-              SangaCounterField(
+              SangaSelectField<int>(
                 label: 'Passengers',
                 icon: Icons.person_rounded,
-                valueLabel: passengers == 1 ? '1 passenger' : '$passengers passengers',
                 value: passengers,
-                min: 1,
-                max: limit,
+                options: [
+                  for (var count = 1; count <= limit; count++)
+                    SangaSelectOption(count, ArrivalDetails.passengersLabelOf(count)),
+                ],
                 onChanged: airport.setPassengers,
               ),
               SangaSelectField<Assistance>(
