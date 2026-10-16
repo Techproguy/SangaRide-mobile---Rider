@@ -7,12 +7,17 @@ import 'package:sanga_ride_core/sanga_ride_core.dart';
 class TransactionPage {
   const TransactionPage({required this.entries, required this.page, required this.hasMore});
 
-  factory TransactionPage.fromJson(Map<String, dynamic> json) {
-    final reader = JsonReader(json);
+  factory TransactionPage.fromBody(Object? body, {required int page, required int limit}) {
+    final envelope = JsonReader.of(body);
+    final entries = JsonReader.of(envelope.raw['data']).listOf(
+      'transactions',
+      (item) => WalletTransaction.fromJson(item.raw),
+    );
+    final meta = JsonReader.of(envelope.raw['meta']);
     return TransactionPage(
-      entries: reader.listOf('transactions', (item) => WalletTransaction.fromJson(item.raw)),
-      page: reader.intOr('page', 1),
-      hasMore: reader.boolOr('hasMore', false),
+      entries: entries,
+      page: meta.intOr('page', page),
+      hasMore: meta.boolOr('hasMore', entries.length >= limit),
     );
   }
 

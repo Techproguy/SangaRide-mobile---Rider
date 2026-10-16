@@ -40,7 +40,7 @@ class ContactsController extends GetxController {
   Future<void> reloadContacts() async {
     try {
       final response = await _api.get(SafetyEndpoints.contacts, suppressErrorToast: true);
-      _centre.applyContacts(_contactsOf(response.dataMapOrEmpty));
+      _centre.applyContacts(EmergencyContact.listFromBody(response.data));
     } catch (e) {
       log('contacts refresh failed: $e');
     }
@@ -95,7 +95,7 @@ class ContactsController extends GetxController {
       },
       reconcile: () async {
         final response = await _api.get(SafetyEndpoints.contacts, suppressErrorToast: true);
-        final found = _contactsOf(response.dataMapOrEmpty).where((contact) => contact.phone == phone).firstOrNull;
+        final found = EmergencyContact.listFromBody(response.data).where((contact) => contact.phone == phone).firstOrNull;
         return found == null ? const ReconciledNotDone() : ReconciledDone(found);
       },
     );
@@ -134,7 +134,4 @@ class ContactsController extends GetxController {
       return false;
     }
   }
-
-  List<EmergencyContact> _contactsOf(Map<String, dynamic> data) =>
-      JsonReader.of(data).listOf('contacts', (contact) => EmergencyContact.fromJson(contact.raw));
 }

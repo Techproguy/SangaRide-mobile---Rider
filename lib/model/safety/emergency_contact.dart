@@ -9,6 +9,14 @@ class EmergencyContact {
     return EmergencyContact(id: reader.str('id'), name: reader.str('name'), phone: reader.str('phone'));
   }
 
+  static List<EmergencyContact> listFromBody(Object? body) {
+    final envelope = JsonReader.of(body);
+    return JsonReader.of({'contacts': envelope.raw['data']}).listOf(
+      'contacts',
+      (contact) => EmergencyContact.fromJson(contact.raw),
+    );
+  }
+
   final String id;
   final String name;
   final String phone;

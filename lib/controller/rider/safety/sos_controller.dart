@@ -184,8 +184,7 @@ class SosController extends GetxController {
           SafetyEndpoints.sos,
           data: {
             'tripId': tripId,
-            if (coordinates != null) 'lat': coordinates.latitude,
-            if (coordinates != null) 'lng': coordinates.longitude,
+            if (coordinates != null) 'location': {'latitude': coordinates.latitude, 'longitude': coordinates.longitude},
           },
           key: key,
           suppressErrorToast: true,

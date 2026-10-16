@@ -101,7 +101,7 @@ class WalletController extends GetxController {
         queryParameters: {'page': 1, 'limit': recentCount},
         suppressErrorToast: true,
       );
-      return RecentLoaded(TransactionPage.fromJson(response.dataMapOrEmpty).entries);
+      return RecentLoaded(TransactionPage.fromBody(response.data, page: 1, limit: recentCount).entries);
     } on Object catch (error) {
       return RecentFailed(LoadProblem.of(error));
     }
@@ -142,7 +142,7 @@ class WalletController extends GetxController {
       queryParameters: {'page': 1, 'limit': recentCount},
       suppressErrorToast: true,
     );
-    return RecentLoaded(TransactionPage.fromJson(response.dataMapOrEmpty).entries);
+    return RecentLoaded(TransactionPage.fromBody(response.data, page: 1, limit: recentCount).entries);
   }
 
   void _stopWatching() {

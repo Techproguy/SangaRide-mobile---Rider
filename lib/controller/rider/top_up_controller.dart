@@ -6,7 +6,6 @@ import 'package:sanga_ride/core/api/api.dart';
 import 'package:sanga_ride/core/api/idempotency_intents.dart';
 import 'package:sanga_ride/core/api/server_codes.dart';
 import 'package:sanga_ride/core/api/wallet_endpoints.dart';
-import 'package:sanga_ride/core/services/card_tokenizer.dart';
 import 'package:sanga_ride/core/services/me_state.dart';
 import 'package:sanga_ride/core/services/session_restore.dart';
 import 'package:sanga_ride/core/services/session_storage.dart';
@@ -25,11 +24,11 @@ class TopUpController extends GetxController {
   static const Duration transferPollInterval = Duration(seconds: 3);
   static const Duration confirmPollInterval = Duration(seconds: 2);
   static const Duration transferDelayedAfter = Duration(seconds: 90);
+  static const Duration creationClockSkew = Duration(seconds: 5);
 
   final WalletScope scope;
   final _api = Get.find<ApiService>();
   late final _wallet = Get.find<WalletController>(tag: scope.tag);
-  final _tokenizer = Get.find<CardTokenizer>();
 
   final Rx<TopUpState> _state = Rx<TopUpState>(const TopUpEditing());
   final Rx<TopUpDraft> _draft = Rx<TopUpDraft>(const TopUpDraft());
@@ -38,6 +37,7 @@ class TopUpController extends GetxController {
 
   Mutation<TopUp>? _creation;
   Money? _creationAmount;
+  DateTime? _creationStartedAt;
   Mutation<TopUp>? _authorization;
   LivePoller? _poller;
   DateTime? _watchStartedAt;
@@ -91,23 +91,14 @@ class TopUpController extends GetxController {
     _state.value = const TopUpEditing();
   }
 
-  Future<void> submitCard(CardDetails? details) async {
+  Future<void> submitCard(CardDetails? _) async {
     final amount = draft.amount;
-    final savedCardId = draft.savedCardId;
-    if (state is! TopUpEditing || amount == null || (savedCardId == null && details == null)) return;
+    if (state is! TopUpEditing || amount == null) return;
     if (_isOffline) return _failBeforeSending(TopUpMethod.card);
     final epoch = _epoch.next();
     _state.value = const TopUpSubmitting(TopUpMethod.card);
-    final String? token;
-    try {
-      token = savedCardId == null ? await _tokenizer.tokenize(details!) : null;
-    } catch (_) {
-      if (_epoch.isCurrent(epoch)) _state.value = const TopUpFailed(TopUpFailure.unknown, method: TopUpMethod.card);
-      return;
-    }
-    if (!_epoch.isCurrent(epoch)) return;
-    final mutation = _newCreation(TopUpMethod.card, amount, cardToken: token);
-    await _persistIntent(mutation, TopUpMethod.card, amount, savedCardId);
+    final mutation = _newCreation(TopUpMethod.card, amount);
+    await _persistIntent(mutation, TopUpMethod.card, amount, draft.savedCardId);
     await _runCreation(mutation, TopUpMethod.card, amount, epoch);
   }
 
@@ -223,25 +214,16 @@ class TopUpController extends GetxController {
     _state.value = TopUpFailed(TopUpFailure.connection, method: method, canRetryAsIs: _creation != null);
   }
 
-  Mutation<TopUp> _newCreation(TopUpMethod method, Money amount, {String? cardToken}) {
+  Mutation<TopUp> _newCreation(TopUpMethod method, Money amount) {
     _disposeCreation();
     _creationAmount = amount;
-    final savedCardId = draft.savedCardId;
-    final saveCard = draft.saveCard;
+    _creationStartedAt = ServerClock.instance.now().subtract(creationClockSkew);
     final mutation = Mutation<TopUp>(
       intent: IdempotencyIntent.topUp(method.code),
       run: (key) async {
         final response = await _api.post(
           WalletEndpoints.topUpCreateOf(scope.groupId),
-          data: method == TopUpMethod.card
-              ? SensitiveBody({
-                  'amount': amount.toJson(),
-                  'method': method.code,
-                  'cardId': savedCardId,
-                  'card': cardToken == null ? null : SensitiveBody({'token': cardToken}),
-                  'saveCard': savedCardId == null && saveCard,
-                })
-              : {'method': method.code, 'amount': amount.toJson()},
+          data: {'amount': amount.major},
           key: key,
           suppressErrorToast: true,
         );
@@ -293,14 +275,23 @@ class TopUpController extends GetxController {
 
   Future<Reconciled<TopUp>> _reconcileByKey() async {
     final key = _creation?.key.value;
-    if (key == null) return const ReconciledPending<TopUp>();
+    final amount = _creationAmount;
+    final since = _creationStartedAt;
+    if (key == null || amount == null || since == null) return const ReconciledPending<TopUp>();
+    final found = (await _listTopUps(key)).where((topUp) {
+      final createdAt = topUp.createdAt;
+      return topUp.amount?.minor == amount.minor && (createdAt == null || !createdAt.isBefore(since));
+    });
+    return found.isEmpty ? const ReconciledNotDone<TopUp>() : ReconciledDone<TopUp>(found.first);
+  }
+
+  Future<List<TopUp>> _listTopUps(String intentKey) async {
     final response = await _api.get(
       WalletEndpoints.topUpsOf(scope.groupId),
-      queryParameters: {'idempotencyKey': key},
+      queryParameters: {'idempotencyKey': intentKey},
       suppressErrorToast: true,
     );
-    final found = JsonReader(response.dataMapOrEmpty).listOf('topUps', (item) => TopUp.fromJson(item.raw));
-    return found.isEmpty ? const ReconciledNotDone<TopUp>() : ReconciledDone<TopUp>(found.first);
+    return JsonReader(response.dataMapOrEmpty).listOf('topUps', (item) => TopUp.fromJson(item.raw));
   }
 
   Future<Reconciled<TopUp>> _reconcileById(String id, {required TopUpStatus whileStill}) async {
@@ -371,6 +362,7 @@ class TopUpController extends GetxController {
     _creation?.dispose();
     _creation = null;
     _creationAmount = null;
+    _creationStartedAt = null;
   }
 
   void _disposeMutations() {

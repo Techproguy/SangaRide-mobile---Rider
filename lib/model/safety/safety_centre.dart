@@ -70,9 +70,9 @@ class SafetyCentre {
   factory SafetyCentre.fromJson(Map<String, dynamic> json) {
     final reader = JsonReader.of(json);
     final activeSos = reader.objectOrNull('activeSos');
-    final trip = reader.objectOrNull('trip');
+    final trip = reader.objectOrNull('ride');
     return SafetyCentre(
-      contacts: reader.listOf('contacts', (contact) => EmergencyContact.fromJson(contact.raw)),
+      contacts: reader.listOf('emergencyContacts', (contact) => EmergencyContact.fromJson(contact.raw)),
       maxContacts: reader.intOr('maxContacts', defaultMaxContacts),
       sosGrace: Duration(seconds: reader.intOr('sosGraceSeconds', SafetyConfig.sosGrace.inSeconds)),
       emergencyNumber: SafetyConfig.numberOr(reader.strOrNull('emergencyNumber')),

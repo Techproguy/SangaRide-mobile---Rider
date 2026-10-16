@@ -119,6 +119,6 @@ class WalletTransactionsController extends GetxController {
       queryParameters: {'page': page, 'limit': pageSize, 'kind': ?target.query},
       suppressErrorToast: true,
     );
-    return TransactionPage.fromJson(response.dataMapOrEmpty);
+    return TransactionPage.fromBody(response.data, page: page, limit: pageSize);
   }
 }

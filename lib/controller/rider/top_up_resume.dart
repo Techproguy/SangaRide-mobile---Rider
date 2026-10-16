@@ -61,13 +61,8 @@ extension TopUpResume on TopUpController {
       }
     }
     if (target.intentKey.isEmpty) return null;
-    final response = await _api.get(
-      WalletEndpoints.topUpsOf(scope.groupId),
-      queryParameters: {'idempotencyKey': target.intentKey},
-      suppressErrorToast: true,
-    );
-    final found = JsonReader(response.dataMapOrEmpty).listOf('topUps', (item) => TopUp.fromJson(item.raw));
-    return found.firstOrNull;
+    final found = await _listTopUps(target.intentKey);
+    return found.where((topUp) => topUp.amount?.minor == target.amount.minor).firstOrNull;
   }
 
   SavedTopUp? _fromMeState() {

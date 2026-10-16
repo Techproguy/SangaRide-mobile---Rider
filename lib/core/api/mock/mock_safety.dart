@@ -19,38 +19,52 @@ abstract final class MockSafety {
   ];
 
   static const int _maxContacts = 5;
-  static const int _graceSeconds = 5;
+  static const List<String> _tools = ['share_trip', 'report_issue'];
   static const Duration _alertedFor = Duration(seconds: 10);
   static const int _minDetailsLength = 10;
   static const List<String> _reportCategories = ['driving', 'harassment', 'vehicle', 'route', 'other'];
 
   static final List<Map<String, dynamic>> _contacts = [
-    {'id': 'ct_1', 'name': 'Alex Johnson', 'phone': MockRegion.phone('8031234567')},
-    {'id': 'ct_2', 'name': 'Ebuka Samson', 'phone': MockRegion.phone('8052345678')},
+    _contact(id: 'ct_1', name: 'Alex Johnson', phone: MockRegion.phone('8031234567'), createdAt: _anchor),
+    _contact(id: 'ct_2', name: 'Ebuka Samson', phone: MockRegion.phone('8052345678'), createdAt: _anchor),
   ];
   static final Map<String, _MockSos> _sosRecords = {};
   static int _contactCount = 2;
   static int _reportCount = 0;
 
+  static final DateTime _anchor = DateTime.now();
+
   static String _iso(DateTime time) => time.toUtc().toIso8601String();
+
+  static Map<String, dynamic> _contact({
+    required String id,
+    required String name,
+    required String phone,
+    required DateTime createdAt,
+  }) => {
+    'id': id,
+    'name': name,
+    'phone': phone,
+    'status': 'pending',
+    'verifiedAt': null,
+    'createdAt': _iso(createdAt),
+    'updatedAt': _iso(createdAt),
+  };
 
   static String _digits(Object? phone) => (phone as String? ?? '').replaceAll(RegExp(r'\D'), '');
 
-  static Map<String, dynamic> _contactsPayload() => {
-    'contacts': [for (final contact in _contacts) Map<String, dynamic>.of(contact)],
-    'maxContacts': _maxContacts,
-  };
+  static List<Map<String, dynamic>> _contactsPayload() => [
+    for (final contact in _contacts) Map<String, dynamic>.of(contact),
+  ];
 
   static Object? _centre(MockRequest request) {
     final trip = _tripBlock(request.query['tripId'] as String?);
     final active = _activeSos();
     return {
-      ..._contactsPayload(),
-      'sosGraceSeconds': _graceSeconds,
-      'emergencyNumber': MockRegion.current.emergencyNumber,
+      'emergencyContacts': _contactsPayload(),
       'activeSos': active == null ? null : _sosPayload(active),
-      'trip': trip,
-      'serverTime': _iso(DateTime.now()),
+      'ride': trip,
+      'tools': _tools,
     };
   }
 
@@ -144,9 +158,10 @@ abstract final class MockSafety {
         data: {'sos': _sosPayload(running)},
       );
     }
-    final lat = request.body['lat'];
-    final lng = request.body['lng'];
-    final hasCoordinates = lat != null || lng != null;
+    final location = request.body['location'];
+    final lat = location is Map ? location['latitude'] : null;
+    final lng = location is Map ? location['longitude'] : null;
+    final hasCoordinates = location != null;
     if (hasCoordinates && !_isValidCoordinate(lat, lng)) {
       throw const MockFailure(422, 'We couldn’t find your location.', code: 'location_unavailable');
     }
@@ -182,7 +197,7 @@ abstract final class MockSafety {
     if (_contacts.length >= _maxContacts) {
       throw const MockFailure(409, 'You’ve reached the contacts limit.', code: 'contacts_limit');
     }
-    final contact = {'id': 'ct_${++_contactCount}', 'name': name, 'phone': phone};
+    final contact = _contact(id: 'ct_${++_contactCount}', name: name, phone: phone, createdAt: DateTime.now());
     _contacts.add(contact);
     return Map<String, dynamic>.of(contact);
   }
@@ -192,7 +207,7 @@ abstract final class MockSafety {
     final index = _contacts.indexWhere((contact) => contact['id'] == id);
     if (index < 0) throw const MockFailure(404, 'We can’t find that contact.');
     _contacts.removeAt(index);
-    return {'id': id, 'deleted': true};
+    return {'id': id};
   }
 
   static Object? _report(MockRequest request) {

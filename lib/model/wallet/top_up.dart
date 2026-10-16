@@ -81,6 +81,8 @@ class TopUp {
     this.createdAt,
     this.failureCode,
     this.balance,
+    this.reference,
+    this.instructions,
   });
 
   factory TopUp.fromJson(Map<String, dynamic> json) {
@@ -95,6 +97,8 @@ class TopUp {
       createdAt: reader.timeOrNull('createdAt'),
       failureCode: reader.strOrNull('failureCode'),
       balance: reader.moneyOrNull('balance'),
+      reference: reader.strOrNull('reference'),
+      instructions: reader.strOrNull('instructions'),
     );
   }
 
@@ -107,6 +111,8 @@ class TopUp {
   final DateTime? createdAt;
   final String? failureCode;
   final Money? balance;
+  final String? reference;
+  final String? instructions;
 }
 
 class TransferExpectation {
