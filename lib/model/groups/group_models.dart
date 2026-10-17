@@ -53,9 +53,15 @@ class GroupInvite {
     id: reader.str('id'),
     groupName: reader.strOr('groupName', ''),
     kind: GroupKind.fromCode(reader.strOrNull('kind')),
-    invitedBy: reader.strOr('invitedBy', ''),
+    invitedBy: _inviterOf(reader),
     expiresAt: reader.time('expiresAt').toLocal(),
   );
+
+  static String _inviterOf(JsonReader reader) {
+    final person = reader.objectOrNull('invitedBy');
+    if (person == null) return reader.strOr('invitedBy', '');
+    return [person.strOrNull('firstName'), person.strOrNull('lastName')].nonNulls.join(' ');
+  }
 
   final String id;
   final String groupName;

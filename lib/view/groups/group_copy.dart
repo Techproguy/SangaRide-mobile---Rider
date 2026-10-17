@@ -197,6 +197,7 @@ abstract final class GroupCopy {
       1 => 'ends tomorrow',
       _ => 'ends in $days days',
     };
+    if (invite.invitedBy.isEmpty) return '${expiry[0].toUpperCase()}${expiry.substring(1)}';
     return 'Invited by ${invite.invitedBy} · $expiry';
   }
 
