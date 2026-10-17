@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sanga_ride/controller/rider/support/support_help_controller.dart';
+import 'package:sanga_ride/core/copy/common_copy.dart';
 import 'package:sanga_ride/core/router/support_routes.dart';
 import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride/view/support/support_copy.dart';
@@ -29,15 +30,23 @@ class _SupportHomeScreenState extends State<SupportHomeScreen> {
     });
   }
 
-  Widget _contactGroup() {
+  Widget _contactGroup(SupportHome home) {
     return SangaListGroup(
       children: [
-        SangaListRow(
-          leading: const SangaIconBadge(size: 36, child: Icon(Icons.headset_mic_outlined)),
-          title: SupportCopy.contactSupport,
-          subtitle: SupportCopy.contactSubtitle,
-          onTap: () => context.push(SupportRoutes.contact),
-        ),
+        if (home.contact == null)
+          SangaListRow(
+            leading: const SangaIconBadge(size: 36, child: Icon(Icons.report_gmailerrorred_rounded)),
+            title: CommonCopy.reportIssue,
+            subtitle: SupportCopy.sendDetailedReport,
+            onTap: () => context.push(SupportRoutes.reportOf()),
+          )
+        else
+          SangaListRow(
+            leading: const SangaIconBadge(size: 36, child: Icon(Icons.headset_mic_outlined)),
+            title: SupportCopy.contactSupport,
+            subtitle: SupportCopy.contactSubtitle,
+            onTap: () => context.push(SupportRoutes.contact),
+          ),
         SangaListRow(
           leading: const SangaIconBadge(size: 36, child: Icon(Icons.assignment_outlined)),
           title: SupportCopy.myReports,
@@ -53,10 +62,11 @@ class _SupportHomeScreenState extends State<SupportHomeScreen> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       spacing: SangaSpacing.lg,
       children: [
-        SangaSearchTrigger(
-          hint: SupportCopy.searchArticles,
-          onTap: () => context.push(SupportRoutes.articlesOf(focusSearch: true)),
-        ),
+        if (home.hasArticles)
+          SangaSearchTrigger(
+            hint: SupportCopy.searchArticles,
+            onTap: () => context.push(SupportRoutes.articlesOf(focusSearch: true)),
+          ),
         if (home.topics.isNotEmpty)
           Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -83,7 +93,7 @@ class _SupportHomeScreenState extends State<SupportHomeScreen> {
               ),
             ],
           ),
-        _contactGroup(),
+        _contactGroup(home),
       ],
     );
   }

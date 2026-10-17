@@ -23,7 +23,11 @@ class SupportHelpController extends GetxController {
       final response = await _api.get(SupportEndpoints.home, suppressErrorToast: true);
       _home.value = SupportHomeLoaded(SupportHome.fromJson(response.dataMapOrEmpty));
     } on Object catch (error) {
-      if (_home.value is! SupportHomeLoaded) _home.value = SupportHomeFailed(SupportProblem.of(error));
+      if (error is ApiException && error.isNotFound) {
+        _home.value = const SupportHomeLoaded(SupportHome.ticketsOnly);
+      } else if (_home.value is! SupportHomeLoaded) {
+        _home.value = SupportHomeFailed(SupportProblem.of(error));
+      }
     }
   }
 

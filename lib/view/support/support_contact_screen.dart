@@ -73,7 +73,7 @@ class _SupportContactScreenState extends State<SupportContactScreen> {
             ),
           ],
         ),
-        if (contact == null || !contact.chatAvailable) Text(SupportCopy.chatResting, style: SangaTextStyles.caption),
+        if (contact != null && !contact.chatAvailable) Text(SupportCopy.chatResting, style: SangaTextStyles.caption),
       ],
     );
   }

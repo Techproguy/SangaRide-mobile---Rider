@@ -74,6 +74,8 @@ class SupportContact {
 class SupportHome {
   const SupportHome({required this.topics, required this.popular, required this.contact});
 
+  static const SupportHome ticketsOnly = SupportHome(topics: [], popular: [], contact: null);
+
   factory SupportHome.fromJson(Map<String, dynamic> json) {
     final reader = JsonReader(json);
     return SupportHome(
@@ -88,6 +90,8 @@ class SupportHome {
   final SupportContact? contact;
 
   SupportTopic? topicById(String id) => topics.where((topic) => topic.id == id).firstOrNull;
+
+  bool get hasArticles => topics.isNotEmpty || popular.isNotEmpty;
 }
 
 sealed class SupportHomeState {

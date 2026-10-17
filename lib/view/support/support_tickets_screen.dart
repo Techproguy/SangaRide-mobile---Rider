@@ -43,8 +43,6 @@ class _SupportTicketsScreenState extends State<SupportTicketsScreen> {
         icon: Icons.assignment_outlined,
         title: SupportCopy.noReports,
         message: SupportCopy.noReportsMessage,
-        actionLabel: CommonCopy.reportIssue,
-        onAction: () => context.push(SupportRoutes.reportOf()),
       );
     }
     return Column(
