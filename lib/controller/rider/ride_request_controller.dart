@@ -40,6 +40,8 @@ class RideRequestController extends GetxController {
   final Rxn<PricingOption> _pricing = Rxn<PricingOption>();
   final Rxn<Money> _fairFareOffer = Rxn<Money>();
   final Rxn<FareEstimate> _estimate = Rxn<FareEstimate>();
+  final RxMap<String, Money> _optionFares = <String, Money>{}.obs;
+  String? _optionFaresKey;
   final Rx<RideTiming> _timing = RideTiming.now.obs;
   final Rxn<DateTime> _scheduledAt = Rxn<DateTime>();
   final RxBool _isLoadingOptions = false.obs;
@@ -148,6 +150,44 @@ class RideRequestController extends GetxController {
   }
 
   bool _isFresh(DateTime? loadedAt) => loadedAt != null && DateTime.now().difference(loadedAt) < catalogLifetime;
+
+  String priceLabel(RideOption option) => _optionFares[option.id]?.format() ?? rateLabel(option);
+
+  String get _fareRouteKey => [
+    for (final place in [pickup, ...stops, dropoff]) place?.coordinates?.toString() ?? '',
+    tripType.name,
+  ].join('|');
+
+  Future<void> loadOptionFares() async {
+    final pickup = this.pickup;
+    final dropoff = this.dropoff;
+    if (pickup == null || dropoff == null || tripType == TripType.hourly || _options.isEmpty) return;
+    final key = _fareRouteKey;
+    if (key == _optionFaresKey) return;
+    _optionFaresKey = key;
+    _optionFares.clear();
+    await Future.wait([
+      for (final option in _options)
+        _api
+            .post(
+              AppEndpoints.rideEstimate,
+              data: {
+                'rideClassId': option.id,
+                'pickup': pickup.toLocationJson(),
+                'dropoff': dropoff.toLocationJson(),
+                'stops': [for (final stop in stops) stop.toLocationJson()],
+                'preferences': preferences.toJson(),
+                ...bookingJson,
+              },
+              suppressErrorToast: true,
+            )
+            .then((response) {
+              if (_optionFaresKey != key) return;
+              _optionFares[option.id] = FareEstimate.fromJson((response.data as Map)['data']).total;
+            })
+            .catchError((Object e) => log('option fare failed: $e')),
+    ]);
+  }
 
   String rateLabel(RideOption option) {
     final hourly = tripType == TripType.hourly ? readyCatalog?.hourly[option.category]?.hourlyRate : null;
@@ -403,6 +443,8 @@ class RideRequestController extends GetxController {
       if (preferred != null && _optionId.value == null) {
         _optionId.value = _options.firstWhereOrNull((o) => o.category == preferred)?.id;
       }
+      _optionId.value ??= _options.firstWhereOrNull(fitsGroup)?.id;
+      unawaited(loadOptionFares());
       if (_optionId.value != null && _options.every((option) => option.id != _optionId.value)) {
         _optionId.value = null;
         _clearQuote();

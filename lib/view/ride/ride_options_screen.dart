@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
@@ -23,7 +25,7 @@ class _RideOptionsScreenState extends State<RideOptionsScreen> {
   @override
   void initState() {
     super.initState();
-    _ride.loadOptions();
+    unawaited(_ride.loadOptions().then((_) => _ride.loadOptionFares()));
   }
 
   @override
@@ -84,7 +86,7 @@ class _RideOptionsScreenState extends State<RideOptionsScreen> {
               name: option.name,
               description: option.description,
               seats: option.seats,
-              price: _ride.rateLabel(option),
+              price: _ride.priceLabel(option),
               isSelected: _ride.option?.id == option.id,
               onTap: _ride.fitsGroup(option) ? () => _ride.selectOption(option) : null,
             ),

@@ -11,7 +11,7 @@ class Place {
 
   factory Place.fromJson(Map<String, dynamic> json) {
     LatLng? coords;
-    final loc = json['location'] ?? json['coordinates'];
+    final loc = json['location'] ?? json['coordinates'] ?? json;
     if (loc is Map) {
       final lat = loc['latitude'] ?? loc['lat'];
       final lng = loc['longitude'] ?? loc['lng'];
