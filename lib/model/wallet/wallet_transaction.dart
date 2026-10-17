@@ -22,7 +22,7 @@ enum TransactionKind {
   static TransactionKind fromCode(String? code) =>
       enumByCode(values, _liveAliases[code] ?? code, (kind) => kind.code, TransactionKind.adjustment);
 
-  static const Map<String, String> _liveAliases = {'topup': 'top_up'};
+  static const Map<String, String> _liveAliases = {'topup': 'top_up', 'payment': 'ride_payment'};
 }
 
 enum TransactionStatus {
