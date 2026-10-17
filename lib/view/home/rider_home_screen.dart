@@ -13,6 +13,7 @@ import 'package:sanga_ride/controller/shared/map_controller.dart';
 import 'package:sanga_ride/controller/shared/user_controller.dart';
 import 'package:sanga_ride/core/router/menu_routes.dart';
 import 'package:sanga_ride/core/router/places_routes.dart';
+import 'package:sanga_ride/core/router/router.dart';
 import 'package:sanga_ride/core/router/routes.dart';
 import 'package:sanga_ride/core/router/who_for_routes.dart';
 import 'package:sanga_ride/core/services/location_service.dart';
@@ -59,6 +60,7 @@ class _RiderHomeScreenState extends State<RiderHomeScreen> {
   @override
   void dispose() {
     _placeWorker?.dispose();
+    SangaRouter.router.routerDelegate.removeListener(_askOnceOnTop);
     super.dispose();
   }
 
@@ -80,9 +82,18 @@ class _RiderHomeScreenState extends State<RiderHomeScreen> {
     _map.camera.moveTo(position, zoom: 15);
   }
 
+  bool get _isOnTop => ModalRoute.of(context)?.isCurrent ?? true;
+
   Future<void> _askForLocation() async {
     if (!mounted) return;
+    if (!_isOnTop) return SangaRouter.router.routerDelegate.addListener(_askOnceOnTop);
     await _home.askForLocation(context);
+  }
+
+  void _askOnceOnTop() {
+    if (!mounted || !_isOnTop) return;
+    SangaRouter.router.routerDelegate.removeListener(_askOnceOnTop);
+    unawaited(_home.askForLocation(context));
   }
 
   Future<void> _retryRestore() async {
