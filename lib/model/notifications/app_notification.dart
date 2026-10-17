@@ -33,6 +33,12 @@ enum NotificationKind {
 
   static NotificationKind fromCode(Object? code) =>
       codedEnum(values, (kind) => kind.code, code, orElse: NotificationKind.general);
+
+  static NotificationKind fromType(String? type) => switch (type?.split('.').first) {
+    'wallet' => payment,
+    'chat' => message,
+    final family => fromCode(family),
+  };
 }
 
 class NotificationAction {
@@ -40,6 +46,20 @@ class NotificationAction {
 
   factory NotificationAction.fromReader(JsonReader? reader) =>
       NotificationAction(route: NotificationRoute.fromCode(reader?.strOrNull('route')), id: reader?.strOrNull('id'));
+
+  factory NotificationAction.fromData(NotificationKind kind, JsonReader? data) {
+    final rideId = data?.strOrNull('rideId') ?? data?.strOrNull('deliveryId');
+    if (rideId != null) return NotificationAction(route: NotificationRoute.trip, id: rideId);
+    final ticketId = data?.strOrNull('ticketId');
+    if (ticketId != null) return NotificationAction(route: NotificationRoute.supportTicket, id: ticketId);
+    return NotificationAction(
+      route: switch (kind) {
+        NotificationKind.payment => NotificationRoute.wallet,
+        NotificationKind.verification => NotificationRoute.verification,
+        _ => NotificationRoute.none,
+      },
+    );
+  }
 
   final NotificationRoute route;
   final String? id;
@@ -56,15 +76,25 @@ class AppNotification {
     required this.action,
   });
 
-  factory AppNotification.fromReader(JsonReader reader) => AppNotification(
-    id: reader.str('id'),
-    kind: NotificationKind.fromCode(reader.strOrNull('kind')),
-    title: reader.strOr('title', ''),
-    body: reader.strOr('body', ''),
-    createdAt: reader.time('createdAt').toLocal(),
-    readAt: reader.timeOrNull('readAt')?.toLocal(),
-    action: NotificationAction.fromReader(reader.objectOrNull('action')),
-  );
+  factory AppNotification.fromReader(JsonReader reader) {
+    final kindCode = reader.strOrNull('kind');
+    final kind = kindCode == null
+        ? NotificationKind.fromType(reader.strOrNull('type'))
+        : NotificationKind.fromCode(kindCode);
+    final createdAt = reader.time('createdAt').toLocal();
+    final action = reader.objectOrNull('action');
+    return AppNotification(
+      id: reader.str('id'),
+      kind: kind,
+      title: reader.strOr('title', ''),
+      body: reader.strOr('body', ''),
+      createdAt: createdAt,
+      readAt: reader.timeOrNull('readAt')?.toLocal() ?? (reader.boolOr('read', false) ? createdAt : null),
+      action: action == null
+          ? NotificationAction.fromData(kind, reader.objectOrNull('data'))
+          : NotificationAction.fromReader(action),
+    );
+  }
 
   final String id;
   final NotificationKind kind;
