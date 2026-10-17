@@ -65,6 +65,14 @@ class _TripScreenState extends State<TripScreen> {
 
   bool _isLeaving = false;
 
+  final GlobalKey<SangaMapSheetState> _sheet = GlobalKey();
+
+  Timer? _settleTimer;
+
+  bool _sheetTouched = false;
+
+  static const Duration _settleDelay = Duration(seconds: 4);
+
   @override
   void initState() {
     super.initState();
@@ -74,6 +82,7 @@ class _TripScreenState extends State<TripScreen> {
 
   @override
   void dispose() {
+    _settleTimer?.cancel();
     _reframeTimer?.cancel();
     _worker.dispose();
     _trip.close(onlyTripId: widget.tripId);
@@ -97,6 +106,7 @@ class _TripScreenState extends State<TripScreen> {
     _previous = next;
     _phase = next is TripLoaded ? next.trip.deliveryPhase : null;
     if (!mounted || _isLeaving) return;
+    if (next.runtimeType != previous.runtimeType) _settleSheetFor(next);
     if (next is TripLoaded && _hasRouteChanged(previous, next)) {
       _scheduleReframe();
     }
@@ -122,6 +132,24 @@ class _TripScreenState extends State<TripScreen> {
         break;
     }
     if (_phase == DeliveryPhase.payment && previousPhase != DeliveryPhase.payment) unawaited(_showPickedUp());
+  }
+
+  void _settleSheetFor(TripState state) {
+    _settleTimer?.cancel();
+    _sheetTouched = false;
+    final isRiding = state is TripEnRoute || state is TripInProgress;
+    if (!isRiding) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _sheet.currentState?.expand());
+      return;
+    }
+    _settleTimer = Timer(_settleDelay, () {
+      if (mounted && !_sheetTouched) _sheet.currentState?.collapse();
+    });
+  }
+
+  void _onSheetTouched() {
+    _sheetTouched = true;
+    _settleTimer?.cancel();
   }
 
   bool _hasRouteChanged(TripState previous, TripLoaded next) {
@@ -209,10 +237,14 @@ class _TripScreenState extends State<TripScreen> {
                   ),
                   _overlays(state),
                   Positioned.fill(
-                    child: SangaMapSheet(
-                      onVisibleHeightChanged: _onSheetHeight,
-                      peek: _peek(state),
-                      child: SangaMapPanel(children: [_flightLine(state), _panel(state)]),
+                    child: Listener(
+                      onPointerDown: (_) => _onSheetTouched(),
+                      child: SangaMapSheet(
+                        key: _sheet,
+                        onVisibleHeightChanged: _onSheetHeight,
+                        peek: _peek(state),
+                        child: SangaMapPanel(children: [_flightLine(state), _panel(state)]),
+                      ),
                     ),
                   ),
                 ],
