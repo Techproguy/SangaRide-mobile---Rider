@@ -11,18 +11,21 @@ class SafetyTools extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      spacing: SangaSpacing.sm,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      spacing: SangaSpacing.xs,
       children: [
         const SangaSectionHeader('Safety tools'),
-        Row(
-          spacing: SangaSpacing.lg,
+        SangaListGroup(
           children: [
-            if (onShare != null)
-              SangaActionTile(icon: Icons.ios_share_rounded, label: 'Share trip', onPressed: onShare),
-            if (onTripDetails != null)
-              SangaActionTile(icon: Icons.description_outlined, label: 'Trip details', onPressed: onTripDetails),
-            SangaActionTile(icon: Icons.report_gmailerrorred_rounded, label: 'Report issue', onPressed: onReport),
+            if (onShare case final onShare?)
+              SangaListRow.badge(icon: Icons.ios_share_rounded, title: 'Share trip', onTap: onShare),
+            if (onTripDetails case final onTripDetails?)
+              SangaListRow.badge(icon: Icons.description_outlined, title: 'Trip details', onTap: onTripDetails),
+            SangaListRow.badge(
+              icon: Icons.report_gmailerrorred_rounded,
+              title: 'Report a safety issue',
+              onTap: onReport,
+            ),
           ],
         ),
       ],
