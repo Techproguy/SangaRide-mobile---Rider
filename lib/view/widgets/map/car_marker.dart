@@ -1,14 +1,10 @@
-import 'dart:ui' as ui;
-
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 abstract final class CarMarker {
-  static const double _scale = 3;
-  static const double _width = 28;
-  static const double _height = 46;
-  static const double _bodyRadius = 8;
+  static const Size _size = Size(28, 60);
+  static const String _asset = 'assets/images/map_car.webp';
+  static const String _uiPackage = 'sanga_ride_ui';
 
   static BitmapDescriptor? _icon;
 
@@ -35,30 +31,11 @@ abstract final class CarMarker {
     );
   }
 
-  static Future<BitmapDescriptor> _paint() async {
-    final recorder = ui.PictureRecorder();
-    final canvas = Canvas(recorder)..scale(_scale);
-    final body = RRect.fromRectAndRadius(const Rect.fromLTWH(4, 4, 20, 38), const Radius.circular(_bodyRadius));
-    canvas
-      ..drawRRect(
-        body.shift(const Offset(0, 1.5)),
-        Paint()
-          ..color = SangaColors.sheetShadow
-          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2.5),
-      )
-      ..drawRRect(body.inflate(1.5), Paint()..color = SangaColors.surface)
-      ..drawRRect(body, Paint()..color = SangaColors.primary);
-    final glass = Paint()..color = SangaColors.textPrimary.withValues(alpha: 0.78);
-    canvas
-      ..drawRRect(RRect.fromRectAndRadius(const Rect.fromLTWH(7, 11, 14, 9), const Radius.circular(3)), glass)
-      ..drawRRect(RRect.fromRectAndRadius(const Rect.fromLTWH(7, 30, 14, 6), const Radius.circular(2.5)), glass);
-    final lights = Paint()..color = SangaColors.star;
-    canvas
-      ..drawCircle(const Offset(8.5, 6.5), 1.7, lights)
-      ..drawCircle(const Offset(19.5, 6.5), 1.7, lights);
-    final image = await recorder.endRecording().toImage((_width * _scale).ceil(), (_height * _scale).ceil());
-    final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
-    if (bytes == null) return BitmapDescriptor.defaultMarker;
-    return BitmapDescriptor.bytes(bytes.buffer.asUint8List(), imagePixelRatio: _scale);
-  }
+  static Future<BitmapDescriptor> _paint() => BitmapDescriptor.asset(
+    const ImageConfiguration(size: _size),
+    _asset,
+    package: _uiPackage,
+    width: _size.width,
+    height: _size.height,
+  );
 }
