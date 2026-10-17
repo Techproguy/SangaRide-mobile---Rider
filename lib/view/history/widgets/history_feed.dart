@@ -112,6 +112,7 @@ class _HistoryFeedState extends State<HistoryFeed> {
     if (widget.scope.isGroup) return _groupEmpty();
     return switch (widget.status) {
       HistoryStatus.completed || HistoryStatus.unknown => SangaEmptyMessage(
+        isPageBody: true,
         icon: Icons.history_rounded,
         title: 'No trips yet',
         message: 'Your finished rides and deliveries will show up here.',
@@ -119,6 +120,7 @@ class _HistoryFeedState extends State<HistoryFeed> {
         onAction: () => context.go(SangaRoutes.home),
       ),
       HistoryStatus.cancelled => const SangaEmptyMessage(
+        isPageBody: true,
         icon: Icons.event_busy_rounded,
         title: 'Nothing cancelled',
         message: 'Trips you or your driver cancel will show up here.',
@@ -129,11 +131,13 @@ class _HistoryFeedState extends State<HistoryFeed> {
   Widget _groupEmpty() {
     return switch (widget.status) {
       HistoryStatus.completed || HistoryStatus.unknown => const SangaEmptyMessage(
+        isPageBody: true,
         icon: Icons.history_rounded,
         title: 'No group rides yet',
         message: 'Rides taken on the group’s tab show up here.',
       ),
       HistoryStatus.cancelled => const SangaEmptyMessage(
+        isPageBody: true,
         icon: Icons.event_busy_rounded,
         title: 'Nothing cancelled',
         message: 'Group rides that get cancelled show up here.',

@@ -102,8 +102,8 @@ class HistoryCard extends StatelessWidget {
             if (item.memberName case final name?) _who(name),
           ],
         ),
-        _stop(SangaStopKind.pickup, item.route.pickup.name, item.route.pickup.address),
-        _stop(SangaStopKind.dropoff, item.route.dropoff.name, item.route.dropoff.address),
+        _stop(SangaStopKind.pickup, item.route.pickup.title, item.route.pickup.subtitle),
+        _stop(SangaStopKind.dropoff, item.route.dropoff.title, item.route.dropoff.subtitle),
         if (onRebook != null)
           Align(
             alignment: Alignment.centerRight,

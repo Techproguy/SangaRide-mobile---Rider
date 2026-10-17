@@ -39,6 +39,7 @@ class _SupportTicketsScreenState extends State<SupportTicketsScreen> {
   Widget _list(TicketsLoaded state) {
     if (state.items.isEmpty) {
       return SangaEmptyMessage(
+        isPageBody: true,
         icon: Icons.assignment_outlined,
         title: SupportCopy.noReports,
         message: SupportCopy.noReportsMessage,

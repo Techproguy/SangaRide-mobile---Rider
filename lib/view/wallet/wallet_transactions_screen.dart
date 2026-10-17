@@ -84,6 +84,7 @@ class _WalletTransactionsScreenState extends State<WalletTransactionsScreen> {
     ],
     TransactionsLoaded(:final entries) when entries.isEmpty => [
       SangaEmptyMessage(
+        isPageBody: true,
         icon: Icons.history_rounded,
         title: WalletCopy.emptyTransactionsTitle(_transactions.filter),
         message: WalletCopy.emptyTransactionsMessage(_transactions.filter),

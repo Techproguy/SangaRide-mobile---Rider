@@ -74,6 +74,7 @@ class _GroupApprovalsScreenState extends State<GroupApprovalsScreen> {
     ],
     ApprovalsUnavailable() => [
       SangaEmptyMessage(
+        isPageBody: true,
         icon: Icons.lock_outline_rounded,
         title: GroupCopy.requestsUnavailableTitle,
         message: GroupCopy.requestsUnavailableMessage,
@@ -83,6 +84,7 @@ class _GroupApprovalsScreenState extends State<GroupApprovalsScreen> {
     ],
     ApprovalsLoaded(:final approvals) when approvals.isEmpty => [
       const SangaEmptyMessage(
+        isPageBody: true,
         icon: Icons.check_circle_outline_rounded,
         title: GroupCopy.allCaughtUp,
         message: GroupCopy.allCaughtUpMessage,

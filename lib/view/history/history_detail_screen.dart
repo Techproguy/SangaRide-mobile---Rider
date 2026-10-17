@@ -104,7 +104,7 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
               'REG NO: ${vehicle.plateLabel}',
             ],
           ),
-        if (detail.isCompleted) HistoryRatingCard(stars: detail.ratedStars),
+        if (detail.ratedStars case final stars?) HistoryRatingCard(stars: stars),
         if (actions.isNotEmpty)
           SangaSafetyChannelRow(
             icon: Icons.more_horiz_rounded,

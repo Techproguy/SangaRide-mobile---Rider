@@ -52,6 +52,7 @@ class _ScheduledRidesBodyState extends State<ScheduledRidesBody> {
     if (state is! ScheduledLoaded) return const SizedBox.shrink();
     if (state.rides.isEmpty) {
       return SangaEmptyMessage(
+        isPageBody: true,
         icon: Icons.event_available_rounded,
         title: 'Nothing scheduled yet',
         message: 'Plan a ride ahead and it will show up here.',

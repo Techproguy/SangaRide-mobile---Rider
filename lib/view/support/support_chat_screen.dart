@@ -144,6 +144,7 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
     final isQueued = live.chat.status == ChatStatus.queued;
     return Center(
       child: SangaEmptyMessage(
+        isPageBody: true,
         icon: Icons.chat_bubble_outline_rounded,
         title: isQueued ? SupportCopy.hangTight : SupportCopy.sayHi,
         message: isQueued ? SupportCopy.agentJoining : SupportCopy.tellUsWhatsGoingOn,

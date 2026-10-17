@@ -96,6 +96,7 @@ class _SupportArticlesScreenState extends State<SupportArticlesScreen> {
   Widget _empty() {
     final hasText = _text.isNotEmpty;
     return SangaEmptyMessage(
+      isPageBody: true,
       icon: Icons.search_off_rounded,
       title: hasText ? SupportCopy.nothingFound(_text) : SupportCopy.noArticles,
       message: hasText ? SupportCopy.tryDifferentWords : SupportCopy.checkBackSoon,

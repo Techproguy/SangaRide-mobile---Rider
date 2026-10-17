@@ -20,9 +20,9 @@ class HistoryTripCard extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.all(SangaSpacing.md),
           child: SangaRouteSummary(
-            pickup: route.pickup.name,
-            stops: [for (final stop in route.stops) stop.name],
-            dropoff: route.dropoff.name,
+            pickup: route.pickup.title,
+            stops: [for (final stop in route.stops) stop.title],
+            dropoff: route.dropoff.title,
           ),
         ),
         Padding(

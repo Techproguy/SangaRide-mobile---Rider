@@ -100,6 +100,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         onRefresh: _controller.reload,
         children: const [
           SangaEmptyMessage(
+            isPageBody: true,
             icon: Icons.notifications_none_rounded,
             title: NotificationCopy.allQuiet,
             message: NotificationCopy.allQuietMessage,
