@@ -64,7 +64,9 @@ class _RiderHomeScreenState extends State<RiderHomeScreen> {
     super.dispose();
   }
 
-  void _onSheetHeight(double height) => _map.camera.visibleInsets = EdgeInsets.only(top: 120, bottom: height);
+  void _onSheetHeight(double height) {
+    if (_isOnTop) _map.camera.visibleInsets = EdgeInsets.only(top: 120, bottom: height);
+  }
 
   Future<void> _showCurrentPlace() async {
     final place = _home.currentPlace;
@@ -79,7 +81,7 @@ class _RiderHomeScreenState extends State<RiderHomeScreen> {
     );
     if (!mounted) return;
     setState(() => _markers = {marker});
-    _map.camera.moveTo(position, zoom: 15);
+    if (_isOnTop) _map.camera.moveTo(position, zoom: 15);
   }
 
   bool get _isOnTop => ModalRoute.of(context)?.isCurrent ?? true;

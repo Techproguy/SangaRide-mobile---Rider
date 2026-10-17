@@ -6,6 +6,13 @@ import 'package:sanga_ride/core/extensions/lat_lng.dart';
 
 class MapCamera {
   static const double _samePlaceMeters = 200;
+  static const double _tileSize = 256;
+
+  static double _log2(double value) => math.log(value) / math.ln2;
+
+  static double _mercatorY(double latitude) => math.log(math.tan(math.pi / 4 + latitude * math.pi / 360));
+
+  static double _latitudeOf(double mercatorY) => (2 * math.atan(math.exp(mercatorY)) - math.pi / 2) * 180 / math.pi;
 
   GoogleMapController? _controller;
   EdgeInsets visibleInsets = EdgeInsets.zero;
@@ -63,26 +70,23 @@ class MapCamera {
       }
 
       final ins = visibleInsets;
-      final visH = mapSize.height - ins.top - ins.bottom - padding * 2;
       final visW = mapSize.width - ins.left - ins.right - padding * 2;
-      if (visH > 0) {
-        final latSpan = (maxLat - minLat).abs();
-        maxLat += latSpan * (ins.top / visH);
-        minLat -= latSpan * (ins.bottom / visH);
+      final visH = mapSize.height - ins.top - ins.bottom - padding * 2;
+      if (visW <= 0 || visH <= 0) {
+        final bounds = LatLngBounds(southwest: LatLng(minLat, minLng), northeast: LatLng(maxLat, maxLng));
+        return await controller.animateCamera(CameraUpdate.newLatLngBounds(bounds, padding));
       }
-      if (visW > 0) {
-        final lngSpan = (maxLng - minLng).abs();
-        minLng -= lngSpan * (ins.left / visW);
-        maxLng += lngSpan * (ins.right / visW);
-      }
-
-      final bounds = LatLngBounds(southwest: LatLng(minLat, minLng), northeast: LatLng(maxLat, maxLng));
-      await controller.animateCamera(CameraUpdate.newLatLngBounds(bounds, padding));
-      if (await controller.getZoomLevel() > maxZoom) {
-        await controller.animateCamera(
-          CameraUpdate.newLatLngZoom(LatLng((minLat + maxLat) / 2, (minLng + maxLng) / 2), maxZoom),
-        );
-      }
+      final yTop = _mercatorY(maxLat), yBottom = _mercatorY(minLat);
+      final zoomForWidth = _log2(visW * 360 / (math.max(maxLng - minLng, 1e-9) * _tileSize));
+      final zoomForHeight = _log2(visH * 2 * math.pi / (math.max(yTop - yBottom, 1e-9) * _tileSize));
+      final zoom = math.min(maxZoom, math.min(zoomForWidth, zoomForHeight));
+      final worldPx = _tileSize * math.pow(2, zoom);
+      final shiftX = (ins.right - ins.left) / 2;
+      final shiftY = (ins.bottom - ins.top) / 2;
+      final centerLng = (minLng + maxLng) / 2 + shiftX * 360 / worldPx;
+      final centerY = (yTop + yBottom) / 2 - shiftY * 2 * math.pi / worldPx;
+      final target = LatLng(_latitudeOf(centerY), centerLng);
+      await controller.animateCamera(CameraUpdate.newCameraPosition(CameraPosition(target: target, zoom: zoom)));
     } on StateError {
       return;
     }
