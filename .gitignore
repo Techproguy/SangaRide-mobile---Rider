@@ -51,3 +51,4 @@ dart_defines/*.json
 !dart_defines/*.example.json
 android/secrets.properties
 ios/Flutter/Secrets.xcconfig
+ios/Flutter/Secrets-dev.xcconfig
