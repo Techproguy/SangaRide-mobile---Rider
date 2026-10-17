@@ -20,6 +20,7 @@ class DeliveryCatalogGate extends StatelessWidget {
         isLoading: state is DeliveryCatalogLoading,
         hasFailed: state is DeliveryCatalogFailed,
         errorTitle: 'We couldn’t load delivery options',
+        failureMessage: state is DeliveryCatalogFailed ? state.problem.message : null,
         onRetry: delivery.loadCatalog,
         skeletonCount: skeletonCount,
         skeletonHeight: skeletonHeight,

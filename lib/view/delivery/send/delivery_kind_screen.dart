@@ -56,7 +56,7 @@ class _DeliveryKindScreenState extends State<DeliveryKindScreen> {
                       SangaOptionCard(
                         leading: SangaIconBadge(child: Icon(deliveryKindIcon(kind.id))),
                         title: kind.label,
-                        subtitle: kind.hint,
+                        subtitle: deliveryKindHint(kind),
                         isSelected: _delivery.draft.kindId == kind.id,
                         onTap: () => _delivery.selectKind(kind.id),
                       ),

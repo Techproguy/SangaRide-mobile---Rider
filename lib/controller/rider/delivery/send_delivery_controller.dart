@@ -12,6 +12,7 @@ import 'package:sanga_ride/core/services/package_photo_service.dart';
 import 'package:sanga_ride/core/services/session_storage.dart';
 import 'package:sanga_ride/core/storage/draft_keys.dart';
 import 'package:sanga_ride/model/models.dart';
+import 'package:sanga_ride/model/ride/ride_load_problem.dart';
 import 'package:sanga_ride_core/sanga_ride_core.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
@@ -164,7 +165,7 @@ class SendDeliveryController extends GetxController {
       _catalog.value = DeliveryCatalogReady(DeliveryCatalog.fromJson(response.dataMapOrEmpty));
     } catch (e) {
       log('loadCatalog failed: $e');
-      _catalog.value = const DeliveryCatalogFailed();
+      _catalog.value = DeliveryCatalogFailed(RideLoadProblem.of(e));
     }
   }
 
@@ -289,15 +290,39 @@ class SendDeliveryController extends GetxController {
     _quoteSignature = signature;
     _quote.value = const QuoteLoading();
     try {
-      final response = await _api.post(DeliveryEndpoints.quote, data: _quoteBody(catalog), suppressErrorToast: true);
+      final results = await Future.wait([for (final tier in catalog.tiers) _estimateTier(catalog, tier)]);
       if (!_quoteEpoch.isCurrent(epoch)) return;
-      final quote = DeliveryQuote.fromJson(response.dataMapOrEmpty);
+      final tiers = results.nonNulls.toList();
+      if (tiers.isEmpty) throw _lastQuoteError ?? StateError('No delivery tier could be priced');
+      final quote = DeliveryQuote.ofTiers(tiers, recommendedTier: _recommendedTierOf(catalog));
       _chooseTier(quote);
       _quote.value = QuoteReady(quote, signature: signature);
     } catch (e) {
       log('quote failed: $e');
       if (_quoteEpoch.isCurrent(epoch)) _quote.value = QuoteFailed(DeliveryFailure.of(e));
     }
+  }
+
+  Object? _lastQuoteError;
+
+  Future<QuoteTier?> _estimateTier(DeliveryCatalog catalog, DeliveryTierInfo tier) async {
+    try {
+      final response = await _api.post(
+        DeliveryEndpoints.quote,
+        data: _quoteBody(catalog, tier.id),
+        suppressErrorToast: true,
+      );
+      return QuoteTier.fromEstimate(tier.id, response.dataMapOrEmpty, fallbackEta: tier.etaMinutes);
+    } catch (e) {
+      _lastQuoteError = e;
+      log('estimate for ${tier.id} failed: $e');
+      return null;
+    }
+  }
+
+  String? _recommendedTierOf(DeliveryCatalog catalog) {
+    if (catalog.isHighValue(draft.declaredValue)) return DeliveryRules.premiumTierId;
+    return catalog.tiers.firstOrNull?.id;
   }
 
   Future<SubmitCheck> prepareSubmit() async {
@@ -317,12 +342,13 @@ class SendDeliveryController extends GetxController {
     final sizeId = draft.effectiveSizeId(catalog);
     final typeId = draft.effectivePackageTypeId(catalog);
     final kindId = draft.kindId;
-    if (current is! QuoteReady || tier == null || sizeId == null || typeId == null || kindId == null) {
+    final needsType = catalog.hasPackageTypes;
+    if (current is! QuoteReady || tier == null || sizeId == null || (needsType && typeId == null) || kindId == null) {
       return SubmitCheck.incomplete;
     }
     _ride.setDeliveryBooking(
       DeliveryBooking(
-        quoteId: current.quote.quoteId,
+        quoteId: tier.quoteId ?? current.quote.quoteId,
         tierId: tier.id,
         kindId: kindId,
         fare: tier.fare,
@@ -330,7 +356,7 @@ class SendDeliveryController extends GetxController {
           name: draft.name.trim(),
           description: draft.description.trim(),
           sizeId: sizeId,
-          packageTypeId: typeId,
+          packageTypeId: typeId ?? kindId,
           photoId: photo.uploadId,
           declaredValue: draft.declaredValue,
         ),
@@ -362,13 +388,11 @@ class SendDeliveryController extends GetxController {
     ].join('|');
   }
 
-  Map<String, dynamic> _quoteBody(DeliveryCatalog catalog) => {
-    'pickup': _ride.pickup?.toJson(),
-    'dropoff': _ride.dropoff?.toJson(),
-    'stops': [for (final stop in _ride.stops) stop.toJson()],
-    'kind': draft.kindId,
-    'size': draft.effectiveSizeId(catalog),
-    'packageType': draft.effectivePackageTypeId(catalog),
-    'declaredValue': draft.declaredValue?.toJson(),
+  Map<String, dynamic> _quoteBody(DeliveryCatalog catalog, String tierId) => {
+    'pickup': _ride.pickup?.toLocationJson(),
+    'dropoff': _ride.dropoff?.toLocationJson(),
+    if (_ride.stops.isNotEmpty) 'stops': [for (final stop in _ride.stops) stop.toLocationJson()],
+    'tier': tierId,
+    'packageSize': draft.effectiveSizeId(catalog),
   };
 }

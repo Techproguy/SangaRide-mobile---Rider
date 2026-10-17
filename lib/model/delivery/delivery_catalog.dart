@@ -1,8 +1,9 @@
+import 'package:sanga_ride/model/ride/ride_load_problem.dart';
 import 'package:sanga_ride_core/sanga_ride_core.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 abstract final class DeliveryRules {
-  static const String documentsKindId = 'documents';
+  static const Set<String> documentsKindIds = {'document', 'documents'};
   static const String defaultPackageTypeId = 'not_fragile';
   static const String premiumTierId = 'premium_care';
   static const int itemNameMaxLength = 60;
@@ -20,54 +21,74 @@ String deliveryEtaLabel(List<int> minutes) {
 class DeliveryKindOption {
   const DeliveryKindOption({required this.id, required this.label, required this.hint});
 
-  factory DeliveryKindOption.fromReader(JsonReader reader) =>
-      DeliveryKindOption(id: reader.str('id'), label: reader.str('label'), hint: reader.str('hint'));
+  factory DeliveryKindOption.fromReader(JsonReader reader) => DeliveryKindOption(
+    id: _codeOf(reader),
+    label: reader.str('label'),
+    hint: reader.strOrNull('hint') ?? reader.strOr('subtitle', ''),
+  );
 
   final String id;
   final String label;
   final String hint;
 
-  bool get isDocuments => id == DeliveryRules.documentsKindId;
+  bool get isDocuments => DeliveryRules.documentsKindIds.contains(id);
 }
 
 class PackageSize {
-  const PackageSize({required this.id, required this.label, required this.maxKg});
+  const PackageSize({required this.id, required this.label, required this.weightLabel});
 
-  factory PackageSize.fromReader(JsonReader reader) =>
-      PackageSize(id: reader.str('id'), label: reader.str('label'), maxKg: reader.number('maxKg').toInt());
+  factory PackageSize.fromReader(JsonReader reader) {
+    final maxKg = reader.raw['maxKg'];
+    return PackageSize(
+      id: _codeOf(reader),
+      label: reader.str('label'),
+      weightLabel: maxKg is num ? 'up to ${maxKg.toInt()}kg' : reader.strOr('subtitle', ''),
+    );
+  }
 
   final String id;
   final String label;
-  final int maxKg;
+  final String weightLabel;
 
-  String get weightLabel => 'up to ${maxKg}kg';
-
-  String get chipLabel => '$label · $weightLabel';
+  String get chipLabel => weightLabel.isEmpty ? label : '$label · $weightLabel';
 }
 
 class PackageType {
   const PackageType({required this.id, required this.label});
 
-  factory PackageType.fromReader(JsonReader reader) => PackageType(id: reader.str('id'), label: reader.str('label'));
+  factory PackageType.fromReader(JsonReader reader) => PackageType(id: _codeOf(reader), label: reader.str('label'));
 
   final String id;
   final String label;
 }
 
 class DeliveryTierInfo {
-  const DeliveryTierInfo({required this.id, required this.label, required this.blurb, required this.etaMinutes});
+  const DeliveryTierInfo({
+    required this.id,
+    required this.label,
+    required this.blurb,
+    required this.etaMinutes,
+    this.basePrice,
+  });
 
-  factory DeliveryTierInfo.fromReader(JsonReader reader) => DeliveryTierInfo(
-    id: reader.str('id'),
-    label: reader.str('label'),
-    blurb: reader.str('blurb'),
-    etaMinutes: [for (final minutes in _requiredList(reader, 'etaMinutes')) (minutes as num).toInt()],
-  );
+  factory DeliveryTierInfo.fromReader(JsonReader reader) {
+    final etas = reader.raw['etaMinutes'];
+    return DeliveryTierInfo(
+      id: _codeOf(reader),
+      label: reader.str('label'),
+      blurb: reader.strOrNull('blurb') ?? reader.strOr('subtitle', ''),
+      etaMinutes: etas is List
+          ? [for (final minutes in etas) (minutes as num).toInt()]
+          : [?reader.intOrNull('etaMinMinutes'), ?reader.intOrNull('etaMaxMinutes')],
+      basePrice: Money.tryParse(reader.raw['price']),
+    );
+  }
 
   final String id;
   final String label;
   final String blurb;
   final List<int> etaMinutes;
+  final Money? basePrice;
 }
 
 class DeliveryCatalog {
@@ -84,13 +105,17 @@ class DeliveryCatalog {
   factory DeliveryCatalog.fromJson(Map<String, dynamic> json) {
     final reader = JsonReader.of(json);
     return DeliveryCatalog(
-      kinds: _parseAll(reader, 'kinds', DeliveryKindOption.fromReader),
+      kinds: reader.raw.containsKey('kinds')
+          ? _parseAll(reader, 'kinds', DeliveryKindOption.fromReader)
+          : _parseAll(reader, 'packageTypes', DeliveryKindOption.fromReader),
       sizes: _parseAll(reader, 'sizes', PackageSize.fromReader),
-      packageTypes: _parseAll(reader, 'packageTypes', PackageType.fromReader),
+      packageTypes: reader.raw.containsKey('kinds')
+          ? _parseAll(reader, 'packageTypes', PackageType.fromReader)
+          : const [],
       tiers: _parseAll(reader, 'tiers', DeliveryTierInfo.fromReader),
       highValueThreshold: _requiredMoney(reader, 'highValueThreshold'),
-      maxDeclaredValue: _requiredMoney(reader, 'maxDeclaredValue'),
-      prohibitedNotice: reader.str('prohibitedNotice'),
+      maxDeclaredValue: Money.tryParse(reader.raw['maxDeclaredValue']),
+      prohibitedNotice: reader.strOrNull('prohibitedNotice') ?? reader.str('prohibitedNote'),
     );
   }
 
@@ -103,7 +128,7 @@ class DeliveryCatalog {
   final List<PackageType> packageTypes;
   final List<DeliveryTierInfo> tiers;
   final Money highValueThreshold;
-  final Money maxDeclaredValue;
+  final Money? maxDeclaredValue;
   final String prohibitedNotice;
 
   DeliveryKindOption? kindOf(String? id) => kinds.where((kind) => kind.id == id).firstOrNull;
@@ -114,14 +139,23 @@ class DeliveryCatalog {
 
   DeliveryTierInfo? tierOf(String? id) => tiers.where((tier) => tier.id == id).firstOrNull;
 
-  PackageSize? get smallestSize => sizes.isEmpty ? null : sizes.reduce((a, b) => a.maxKg <= b.maxKg ? a : b);
+  PackageSize? get smallestSize => sizes.firstOrNull;
 
   PackageType? get defaultPackageType => packageTypeOf(DeliveryRules.defaultPackageTypeId) ?? packageTypes.firstOrNull;
+
+  bool get hasPackageTypes => packageTypes.isNotEmpty;
+
+  bool isTooValuable(Money value) => switch (maxDeclaredValue) {
+    final max? => value > max,
+    null => false,
+  };
 
   String get premiumTierLabel => tierOf(DeliveryRules.premiumTierId)?.label ?? 'a premium tier';
 
   bool isHighValue(Money? value) => value != null && value >= highValueThreshold;
 }
+
+String _codeOf(JsonReader reader) => reader.strOrNull('id') ?? reader.str('value');
 
 Money _requiredMoney(JsonReader reader, String key) =>
     Money.tryParse(reader.raw[key]) ?? (throw JsonFormatError('Expected an amount at "$key"', reader.raw[key]));
@@ -141,7 +175,9 @@ final class DeliveryCatalogLoading extends DeliveryCatalogState {
 }
 
 final class DeliveryCatalogFailed extends DeliveryCatalogState {
-  const DeliveryCatalogFailed();
+  const DeliveryCatalogFailed(this.problem);
+
+  final RideLoadProblem problem;
 }
 
 final class DeliveryCatalogReady extends DeliveryCatalogState {

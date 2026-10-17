@@ -1,8 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:sanga_ride/model/models.dart';
 
 IconData deliveryKindIcon(String id) => switch (id) {
-  'documents' => Icons.description_outlined,
+  'documents' || 'document' => Icons.description_outlined,
   _ => Icons.inventory_2_outlined,
+};
+
+String deliveryKindHint(DeliveryKindOption kind) => switch (kind.id) {
+  _ when kind.hint.isNotEmpty => kind.hint,
+  'document' || 'documents' => 'Letters, contracts and envelopes',
+  _ => 'Boxes, bags and everything else',
 };
 
 IconData deliveryTierIcon(String id) => switch (id) {

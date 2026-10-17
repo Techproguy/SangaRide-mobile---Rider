@@ -110,7 +110,7 @@ class DeliveryDraft {
   bool isItemComplete(DeliveryCatalog catalog) {
     if (kindId == null || name.trim().isEmpty || description.trim().isEmpty) return false;
     if (catalog.kindOf(kindId)?.isDocuments ?? false) return true;
-    return catalog.sizeOf(sizeId) != null && catalog.packageTypeOf(packageTypeId) != null;
+    return catalog.sizeOf(sizeId) != null && (!catalog.hasPackageTypes || catalog.packageTypeOf(packageTypeId) != null);
   }
 
   String? effectiveSizeId(DeliveryCatalog catalog) {

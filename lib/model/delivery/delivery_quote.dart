@@ -5,7 +5,14 @@ import 'package:sanga_ride_core/sanga_ride_core.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 class QuoteTier {
-  const QuoteTier({required this.id, required this.fare, required this.etaMinutes, required this.isRecommended});
+  const QuoteTier({
+    required this.id,
+    required this.fare,
+    required this.etaMinutes,
+    required this.isRecommended,
+    this.quoteId,
+    this.expiresAt,
+  });
 
   factory QuoteTier.fromJson(Map<String, dynamic> json) {
     final reader = JsonReader.of(json);
@@ -22,10 +29,39 @@ class QuoteTier {
     );
   }
 
+  factory QuoteTier.fromEstimate(String tierId, Map<String, dynamic> json, {required List<int> fallbackEta}) {
+    final reader = JsonReader.of(json);
+    final quote = reader.objectOrNull('quote') ?? reader;
+    final fare = _firstMoney(quote, const ['fare', 'price', 'total', 'amount', 'estimatedFare', 'tierPrice']);
+    if (fare == null) throw JsonFormatError('Expected a fare in the delivery estimate', json);
+    final etaMin = quote.intOrNull('etaMinMinutes');
+    final etaMax = quote.intOrNull('etaMaxMinutes');
+    final expiresAt = quote.strOrNull('expiresAt');
+    return QuoteTier(
+      id: tierId,
+      quoteId: quote.strOrNull('quoteId') ?? quote.strOrNull('id'),
+      fare: fare,
+      etaMinutes: etaMin == null ? fallbackEta : [etaMin, ?etaMax],
+      isRecommended: false,
+      expiresAt: expiresAt == null ? null : deviceDeadlineOf(expiresAt),
+    );
+  }
+
+  static Money? _firstMoney(JsonReader reader, List<String> keys) {
+    for (final key in keys) {
+      final value = reader.raw[key];
+      final money = value is Map ? Money.tryParse(value['amount'] ?? value) : Money.tryParse(value);
+      if (money != null) return money;
+    }
+    return null;
+  }
+
   final String id;
+  final String? quoteId;
   final Money fare;
   final List<int> etaMinutes;
   final bool isRecommended;
+  final DateTime? expiresAt;
 }
 
 class DeliveryQuote {
@@ -35,6 +71,20 @@ class DeliveryQuote {
     required this.tiers,
     required this.recommendedTier,
   });
+
+  factory DeliveryQuote.ofTiers(List<QuoteTier> tiers, {String? recommendedTier}) {
+    final deadlines = [for (final tier in tiers) ?tier.expiresAt];
+    return DeliveryQuote(
+      quoteId: tiers.firstOrNull?.quoteId ?? '',
+      expiresAt: deadlines.isEmpty
+          ? DateTime.now().add(_defaultLifetime)
+          : deadlines.reduce((a, b) => a.isBefore(b) ? a : b),
+      tiers: tiers,
+      recommendedTier: recommendedTier,
+    );
+  }
+
+  static const Duration _defaultLifetime = Duration(minutes: 10);
 
   factory DeliveryQuote.fromJson(Map<String, dynamic> json) {
     final reader = JsonReader.of(json);

@@ -48,7 +48,8 @@ class _DeliveryItemScreenState extends State<DeliveryItemScreen> {
       if (draft.name.trim().isEmpty) _Field.name: 'Tell us what you’re sending',
       if (draft.description.trim().isEmpty) _Field.description: 'Add a few words about it',
       if (!isDocuments && draft.sizeId == null) _Field.size: 'Pick the closest size',
-      if (!isDocuments && draft.packageTypeId == null) _Field.packageType: 'Tell us how careful we should be',
+      if (!isDocuments && (_delivery.catalog?.hasPackageTypes ?? false) && draft.packageTypeId == null)
+        _Field.packageType: 'Tell us how careful we should be',
     };
   }
 
@@ -130,18 +131,19 @@ class _DeliveryItemScreenState extends State<DeliveryItemScreen> {
               SangaFieldError(_errors[_Field.size]),
             ],
           ),
-          SangaSelectField<String>(
-            label: 'Package type',
-            isRequired: true,
-            hintText: 'Choose type',
-            value: draft.packageTypeId,
-            errorText: _errors[_Field.packageType],
-            options: [for (final type in catalog.packageTypes) SangaSelectOption(type.id, type.label)],
-            onChanged: (id) {
-              _delivery.selectPackageType(id);
-              _clearError(_Field.packageType);
-            },
-          ),
+          if (catalog.hasPackageTypes)
+            SangaSelectField<String>(
+              label: 'Package type',
+              isRequired: true,
+              hintText: 'Choose type',
+              value: draft.packageTypeId,
+              errorText: _errors[_Field.packageType],
+              options: [for (final type in catalog.packageTypes) SangaSelectOption(type.id, type.label)],
+              onChanged: (id) {
+                _delivery.selectPackageType(id);
+                _clearError(_Field.packageType);
+              },
+            ),
         ],
         SangaNotice(message: catalog.prohibitedNotice),
       ],
