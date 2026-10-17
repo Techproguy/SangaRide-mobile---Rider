@@ -37,6 +37,7 @@ class _RideRouteScreenState extends State<RideRouteScreen> {
   Worker? _currentPlaceWorker;
   Timer? _frameTimer;
   int _drawRequest = 0;
+  SangaRoute? _framedRoute;
 
   @override
   void initState() {
@@ -44,14 +45,24 @@ class _RideRouteScreenState extends State<RideRouteScreen> {
     _currentPlaceWorker = ever(_home.currentPlaceObs, (_) {
       if (_ride.pickup == null) _draw();
     });
+    _routeLines.addListener(_frameRoadRoute);
     WidgetsBinding.instance.addPostFrameCallback((_) => _draw());
+  }
+
+  void _frameRoadRoute() {
+    final route = _routeLines.route;
+    if (route == null || route.isEstimate || identical(route, _framedRoute)) return;
+    _framedRoute = route;
+    _frame();
   }
 
   @override
   void dispose() {
     _currentPlaceWorker?.dispose();
     _frameTimer?.cancel();
-    _routeLines.dispose();
+    _routeLines
+      ..removeListener(_frameRoadRoute)
+      ..dispose();
     super.dispose();
   }
 
@@ -64,7 +75,8 @@ class _RideRouteScreenState extends State<RideRouteScreen> {
   }
 
   List<LatLng> get _framePoints {
-    final points = _ride.routePoints;
+    final road = _routeLines.route;
+    final points = [..._ride.routePoints, if (road != null && !road.isEstimate) ...road.points];
     final current = _home.currentPlace?.coordinates;
     if (_ride.pickup == null && current != null) return [current, ...points];
     return points;
