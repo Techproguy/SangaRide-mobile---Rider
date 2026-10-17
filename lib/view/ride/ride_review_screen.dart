@@ -180,7 +180,7 @@ class _RideReviewScreenState extends State<RideReviewScreen> {
     name: option.name,
     description: option.description,
     seats: option.seats,
-    price: ride.rateLabel(option),
+    price: ride.priceLabel(option),
     isSelected: true,
   );
 
