@@ -70,6 +70,7 @@ class SessionRestore extends GetxService {
       final state = await _fetch(bootCap);
       if (state == null) {
         _restoreFailed.value = true;
+        _isAwaitingLateBoot = true;
         return const [SangaRoutes.home];
       }
       return _stackFor(state);
@@ -113,6 +114,7 @@ class SessionRestore extends GetxService {
     _cancelToken = null;
     _inFlight = null;
     _lastAppliedAt = null;
+    _isAwaitingLateBoot = false;
     _meState.value = null;
     _restoreFailed.value = false;
     _isRestoring.value = false;
@@ -158,11 +160,21 @@ class SessionRestore extends GetxService {
     }
   }
 
+  bool _isAwaitingLateBoot = false;
+
+  void _openLateBoot(MeState state) {
+    if (!_isAwaitingLateBoot) return;
+    _isAwaitingLateBoot = false;
+    final stack = _stackFor(state);
+    if (stack.length > 1 && SangaRouter.currentPath == SangaRoutes.home) unawaited(open(stack));
+  }
+
   void _apply(MeState state) {
     _lastAppliedAt = DateTime.now();
     _meState.value = state;
     _restoreFailed.value = false;
     _pendingRideRequestId.value = state.activeRideRequest?.id;
+    _openLateBoot(state);
   }
 
   List<String> _stackFor(MeState state) {
