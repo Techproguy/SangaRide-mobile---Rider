@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:sanga_ride/core/api/api_environment.dart';
 import 'package:sanga_ride/core/constants.dart';
 import 'package:sanga_ride/core/router/router.dart';
 import 'package:sanga_ride/core/services/crash_reporter.dart';
@@ -12,6 +13,7 @@ import 'package:sanga_ride_core/sanga_ride_core.dart' show SessionEndReason, Ses
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 void main() {
+  ApiEnvironment.verify();
   runZonedGuarded(_start, CrashReporting.recordZoneError);
 }
 

@@ -27,8 +27,8 @@ class SangaMapsKeys {
     final key = Platform.isIOS ? _ios : _android;
     assert(
       key.isNotEmpty,
-      'Maps key missing. Copy dart_defines/ride.example.json to dart_defines/ride.json, '
-      'fill it in, and run with --dart-define-from-file=dart_defines/ride.json',
+      'Maps key missing. Copy dart_defines/<env>.example.json to dart_defines/<env>.json, '
+      'fill it in, and run with --flavor <flavor> --dart-define-from-file=dart_defines/<env>.json',
     );
     return key;
   }

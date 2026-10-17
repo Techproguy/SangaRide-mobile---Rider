@@ -48,7 +48,6 @@ Future<void> initializeSanga() async {
   await GetStorage.init();
   RegionMemory.restore();
   SangaCountdown.serverClock = ServerClock.instance.now;
-  ApiEnvironment.verify();
   SangaRouteService.configure(
     SangaRouteConfig(
       apiKey: SangaConstants.googleMapsApiKey,

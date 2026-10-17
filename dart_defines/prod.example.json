@@ -1,7 +1,7 @@
 {
-  "BASE_URL": "http://3.16.48.250",
+  "APP_ENV": "prod",
+  "BASE_URL": "https://replace-with-the-production-api",
   "MAPS_API_KEY_ANDROID": "replace-with-the-android-maps-key",
   "MAPS_API_KEY_IOS": "replace-with-the-ios-maps-key",
-  "ROAD_ROUTES": "false",
-  "SANGA_API": "live"
+  "ROAD_ROUTES": "false"
 }
