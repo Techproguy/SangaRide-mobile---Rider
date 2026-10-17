@@ -6,7 +6,6 @@ import 'package:sanga_ride/core/api/mock/mock_server.dart';
 
 abstract final class MockBooking {
   static final List<MockRoute> routes = [
-    MockRoute.get(BookingEndpoints.scheduledRides, (_) => {'rides': _rides.map(_payload).toList()}),
     MockRoute.delete(BookingEndpoints.scheduledRide, _cancel),
     MockRoute.post(BookingEndpoints.scheduledRideReminder, _remind),
     MockRoute.get(BookingEndpoints.hourlyTiers, _hourlyTiers),
@@ -164,6 +163,60 @@ abstract final class MockBooking {
   static String _date(DateTime date) =>
       '${date.year.toString().padLeft(4, '0')}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
 
+  static List<Map<String, dynamic>> liveRides() => _rides.map(_liveRide).toList();
+
+  static Map<String, dynamic> _livePlace(Map<String, dynamic> place) {
+    final fallback = MockRegion.fallbackPickup;
+    return {
+      'latitude': place['latitude'] ?? fallback['lat'],
+      'longitude': place['longitude'] ?? fallback['lng'],
+      'address': place['address'],
+    };
+  }
+
+  static Map<String, dynamic> _liveRide(_ScheduledRecord ride) {
+    final fare = MockMoney.of(ride.fare).major;
+    final category = ride.category;
+    return {
+      'id': ride.id,
+      'ref': 'SR-${10000000 + ride.id.hashCode.abs() % 90000000}',
+      'status': 'scheduled',
+      'kind': 'ride',
+      'rideClass': {
+        'id': category,
+        'code': category,
+        'name': 'Sanga ${category[0].toUpperCase()}${category.substring(1)}',
+      },
+      'pickup': _livePlace(ride.pickup),
+      'dropoff': _livePlace(ride.dropoff),
+      'stops': const [],
+      'pricingOption': 'standard',
+      'tripType': ride.tripType,
+      'recommendedFare': fare,
+      'riderFare': fare,
+      'agreedFare': fare,
+      'finalFare': null,
+      'distanceKm': null,
+      'durationMin': null,
+      'hourlyDurationMin': ride.hours == null ? null : ride.hours! * Duration.minutesPerHour,
+      'scheduledFor': ride.scheduledAt.toUtc().toIso8601String(),
+      'bookedFor': 'self',
+      'paymentMethod': 'cash',
+      'driver': null,
+      'airport': ?MockAirport.display(ride.id),
+      'tipAmount': 0,
+      'waiting': {'freeWaitSeconds': 0, ...scheduledWaitJson(ride.scheduledAt, isAirport: ride.tripType == 'airport')},
+      'timestamps': {
+        'acceptedAt': null,
+        'arrivedAt': null,
+        'startedAt': null,
+        'arrivedDropoffAt': null,
+        'completedAt': null,
+      },
+      'createdAt': ride.createdAt.toUtc().toIso8601String(),
+    };
+  }
+
   static Map<String, dynamic> _payload(_ScheduledRecord ride) {
     final remindAt = ride.scheduledAt.subtract(_reminderLead);
     return {
@@ -194,7 +247,12 @@ abstract final class MockBooking {
 
   static Map<String, dynamic> _stop(Object? place) {
     final json = place as Map;
-    return {'name': json['name'], 'address': json['address']};
+    return {
+      'name': json['name'],
+      'address': json['address'],
+      'latitude': json['latitude'],
+      'longitude': json['longitude'],
+    };
   }
 
   static DateTime? _firstRide(Map<String, dynamic> repeat) {
@@ -279,5 +337,6 @@ class _ScheduledRecord {
   final num fare;
   final int? hours;
   final Map<String, dynamic>? repeat;
+  final DateTime createdAt = DateTime.now();
   DateTime? reminderAt;
 }

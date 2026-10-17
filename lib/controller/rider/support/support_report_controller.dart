@@ -41,10 +41,9 @@ class SupportReportController extends GetxController {
       if (!_epoch.isCurrent(epoch)) return;
       _state.value = SupportReportDraft(
         types: [
-          for (final type in JsonReader.of({'categories': (response.data as Map)['data']}).listOf(
-            'categories',
-            IssueType.fromReader,
-          ))
+          for (final type in JsonReader.of({
+            'categories': (response.data as Map)['data'],
+          }).listOf('categories', IssueType.fromReader))
             if (type.isOffered(context)) type,
         ],
         recentRides: _ridesFor(context, rides),
@@ -152,10 +151,10 @@ class SupportReportController extends GetxController {
     try {
       final response = await _api.get(
         HistoryEndpoints.rides,
-        queryParameters: {'status': HistoryStatus.completed.code, 'page': 1, 'pageSize': recentRidesLimit},
+        queryParameters: {'status': HistoryStatus.completed.code, 'page': 1, 'limit': recentRidesLimit},
         suppressErrorToast: true,
       );
-      return HistoryPage.fromJson(response.dataMapOrEmpty).items;
+      return HistoryPage.fromRides(response.dataMapOrEmpty, page: 1, limit: recentRidesLimit).items;
     } on Object {
       return const [];
     }

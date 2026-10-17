@@ -1,10 +1,12 @@
 import 'dart:math' as math;
 
 import 'package:sanga_ride/core/api/history_endpoints.dart';
+import 'package:sanga_ride/core/api/mock/mock_booking.dart';
 import 'package:sanga_ride/core/api/mock/mock_data.dart';
 import 'package:sanga_ride/core/api/mock/mock_money.dart';
 import 'package:sanga_ride/core/api/mock/mock_region.dart';
 import 'package:sanga_ride/core/api/mock/mock_server.dart';
+import 'package:sanga_ride/core/api/mock/mock_trip.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 abstract final class MockHistory {
@@ -16,8 +18,19 @@ abstract final class MockHistory {
   ];
 
   static const int _count = 30;
-  static const int _defaultPageSize = 10;
-  static const int _maxPageSize = 50;
+  static const int _defaultLimit = 20;
+  static const int _maxLimit = 50;
+  static const Set<String> _listStatuses = {
+    'scheduled',
+    'requested',
+    'accepted',
+    'driver_arrived',
+    'in_progress',
+    'arrived_at_dropoff',
+    'completed',
+    'cancelled',
+    'no_driver_found',
+  };
   static const int _minutesBetweenTrips = 1290;
   static const int _cancellationFee = 300;
   static const String _proofAsset = 'assets/images/service_delivery.webp';
@@ -189,25 +202,116 @@ abstract final class MockHistory {
       if (_isCancelled(i) == (status == 'cancelled')) _summary(i),
   ];
 
+  static String _referenceOf(int i) => '${_isDelivery(i) ? 'DL' : 'SR'}-${10000000 + (i * 7919) % 90000000}';
+
+  static Map<String, dynamic> _livePlace(Map<String, dynamic> place) {
+    final coordinates = place['coordinates'] as Map;
+    final address = place['address'] as String? ?? '';
+    return {
+      'latitude': coordinates['lat'],
+      'longitude': coordinates['lng'],
+      'address': address.isEmpty ? place['name'] : address,
+    };
+  }
+
+  static Map<String, dynamic> _liveDriver(int i) {
+    final driver = _driverOf(i);
+    final vehicle = _vehicleOf(i);
+    return {
+      for (final key in const ['id', 'firstName', 'lastName', 'displayName', 'photoUrl', 'rating', 'ridesCompleted'])
+        key: driver[key],
+      'vehicle': {
+        'make': vehicle['make'],
+        'model': vehicle['model'],
+        'year': vehicle['year'],
+        'colour': vehicle['colour'],
+        'plateNumber': vehicle['plate'],
+        'features': vehicle['features'],
+        'featureLabels': vehicle['features'],
+      },
+    };
+  }
+
+  static Map<String, dynamic> _liveRide(int i) {
+    final isCancelled = _isCancelled(i);
+    final isDelivery = _isDelivery(i);
+    final hasDriver = !isCancelled || _cancelledBy(i) != 'system';
+    final category = _categoryOf(i);
+    final minutes = _minutesOf(i);
+    final occurredAt = _occurredAt(i);
+    final requestedAt = occurredAt.subtract(Duration(minutes: minutes + 14));
+    final fare = MockMoney.of(_fareOf(i)).major;
+    final item = _items[i % _items.length];
+    return {
+      'id': _idOf(i),
+      'ref': _referenceOf(i),
+      'status': isCancelled ? 'cancelled' : 'completed',
+      'kind': isDelivery ? 'delivery' : 'ride',
+      'rideClass': {
+        'id': category,
+        'code': category,
+        'name': 'Sanga ${category[0].toUpperCase()}${category.substring(1)}',
+      },
+      'pickup': _livePlace(_pickup(i)),
+      'dropoff': _livePlace(_dropoff(i)),
+      'stops': [for (final stop in _stopsOf(i)) _livePlace(stop)],
+      'pricingOption': 'standard',
+      'tripType': 'one_way',
+      'recommendedFare': fare,
+      'riderFare': fare,
+      'agreedFare': fare,
+      'finalFare': isCancelled ? null : fare,
+      'distanceKm': isCancelled ? null : _km(i),
+      'durationMin': isCancelled ? null : minutes,
+      'scheduledFor': null,
+      'bookedFor': 'self',
+      'paymentMethod': _paidWith(i, i % 2 == 1)['method'],
+      'driver': hasDriver ? _liveDriver(i) : null,
+      'tipAmount': 0,
+      'timestamps': {
+        'acceptedAt': hasDriver ? _iso(requestedAt.add(const Duration(minutes: 1))) : null,
+        'arrivedAt': isCancelled ? null : _iso(requestedAt.add(const Duration(minutes: 9))),
+        'startedAt': isCancelled ? null : _iso(requestedAt.add(const Duration(minutes: 12))),
+        'arrivedDropoffAt': isCancelled ? null : _iso(occurredAt.subtract(const Duration(minutes: 1))),
+        'completedAt': isCancelled ? null : _iso(occurredAt),
+        'cancelledAt': isCancelled ? _iso(occurredAt) : null,
+      },
+      'createdAt': _iso(requestedAt),
+      if (isDelivery)
+        'delivery': {
+          'item': {'name': item['name'], 'photoUrl': i % 2 == 0 ? _packagePhotoAsset : null},
+        },
+    };
+  }
+
+  static List<Map<String, dynamic>> _recordedRides(String status) => [
+    for (final id in _recorded.keys.toList().reversed)
+      if (MockTrip.ridePayload(id) case final ride when ride['status'] == status) ride,
+  ];
+
+  static List<Map<String, dynamic>> _liveRides(String status) => switch (status) {
+    'scheduled' => MockBooking.liveRides(),
+    'completed' || 'cancelled' => [
+      ..._recordedRides(status),
+      for (var i = 0; i < _count; i++)
+        if (_isCancelled(i) == (status == 'cancelled')) _liveRide(i),
+    ],
+    _ => const [],
+  };
+
   static Object? _list(MockRequest request) {
     final status = request.query['status'] as String?;
-    if (status != 'completed' && status != 'cancelled') {
-      throw const MockFailure(422, 'Pick completed or cancelled.', code: 'invalid_status');
+    if (status != null && !_listStatuses.contains(status)) {
+      throw const MockFailure(422, 'Pick a ride status we know.', code: 'invalid_status');
     }
     final page = math.max(1, int.tryParse('${request.query['page'] ?? 1}') ?? 1);
-    final pageSize = (int.tryParse('${request.query['pageSize'] ?? _defaultPageSize}') ?? _defaultPageSize).clamp(
-      1,
-      _maxPageSize,
-    );
-    final matching = summaries(status!);
-    final start = (page - 1) * pageSize;
-    final end = math.min(start + pageSize, matching.length);
-    return {
-      'items': start >= matching.length ? const [] : matching.sublist(start, end),
-      'page': page,
-      'hasMore': end < matching.length,
-      'serverTime': _iso(DateTime.now()),
-    };
+    final limit = (int.tryParse('${request.query['limit'] ?? _defaultLimit}') ?? _defaultLimit).clamp(1, _maxLimit);
+    final matching = [
+      for (final listed in status == null ? _listStatuses : {status}) ..._liveRides(listed),
+    ];
+    final start = (page - 1) * limit;
+    final end = math.min(start + limit, matching.length);
+    return {'rides': start >= matching.length ? const [] : matching.sublist(start, end)};
   }
 
   static List<Map<String, dynamic>> _lines(int fare, double km, int minutes, {required bool isDelivery}) {
@@ -293,7 +397,7 @@ abstract final class MockHistory {
     final isCard = i % 2 == 1;
     return {
       ..._summary(i),
-      'reference': '${isDelivery ? 'DL' : 'SR'}-${10000000 + (i * 7919) % 90000000}',
+      'reference': _referenceOf(i),
       'requestedAt': _iso(requestedAt),
       'counterOffer': counter ? MockMoney.json(fare) : null,
       'distanceKm': isCancelled ? null : km,

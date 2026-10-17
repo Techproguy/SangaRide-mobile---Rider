@@ -21,7 +21,7 @@ class MockPlaceSpec {
     'coordinates': {'lat': lat, 'lng': lng},
   };
 
-  Map<String, dynamic> get stop => {'name': name, 'address': address};
+  Map<String, dynamic> get stop => {'name': name, 'address': address, 'latitude': lat, 'longitude': lng};
 }
 
 abstract final class MockRegion {

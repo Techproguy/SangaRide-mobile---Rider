@@ -2,6 +2,7 @@ import 'package:sanga_ride/core/format/money_json.dart';
 import 'package:sanga_ride/model/location/place.dart';
 import 'package:sanga_ride/model/account/load_problem.dart';
 import 'package:sanga_ride/model/ride/ride_request.dart';
+import 'package:sanga_ride/model/trip/trip.dart';
 import 'package:sanga_ride_core/sanga_ride_core.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
@@ -32,7 +33,7 @@ enum HistoryStatus {
   static const List<HistoryStatus> tabs = [completed, cancelled];
 
   static HistoryStatus fromCode(String? code) =>
-      enumByCode(values, code, (status) => status.code, HistoryStatus.unknown);
+      code == 'no_driver_found' ? cancelled : enumByCode(values, code, (status) => status.code, HistoryStatus.unknown);
 }
 
 class HistoryRoute {
@@ -46,6 +47,12 @@ class HistoryRoute {
       dropoff: Place.fromJson(reader.object('dropoff').raw),
     );
   }
+
+  factory HistoryRoute.fromRide(JsonReader json) => HistoryRoute(
+    pickup: TripPlace.fromJson(json.object('pickup').raw).toPlace(),
+    stops: json.listOf('stops', (stop) => TripPlace.fromJson(stop.raw).toPlace()),
+    dropoff: TripPlace.fromJson(json.object('dropoff').raw).toPlace(),
+  );
 
   final Place pickup;
   final List<Place> stops;
@@ -84,6 +91,21 @@ class HistoryItem {
     );
   }
 
+  factory HistoryItem.fromRide(JsonReader ride) {
+    final item = ride.objectOrNull('delivery')?.objectOrNull('item');
+    return HistoryItem(
+      id: ride.str('id'),
+      kind: HistoryKind.fromCode(ride.strOrNull('kind')),
+      status: HistoryStatus.fromCode(ride.strOrNull('status')),
+      category: RideCategory.values.asNameMap()[ride.objectOrNull('rideClass')?.strOrNull('code')] ?? RideCategory.go,
+      occurredAt: (JsonReader.of(ride.raw['timestamps']).timeOrNull('completedAt') ?? ride.time('createdAt')).toLocal(),
+      route: HistoryRoute.fromRide(ride),
+      fare: TripFare.fromJson(ride).total,
+      itemName: item?.strOrNull('name'),
+      packagePhotoUrl: item?.strOrNull('photoUrl'),
+    );
+  }
+
   final String id;
   final HistoryKind kind;
   final HistoryStatus status;
@@ -109,6 +131,11 @@ class HistoryPage {
       page: reader.intOr('page', 1),
       hasMore: reader.boolOr('hasMore', false),
     );
+  }
+
+  factory HistoryPage.fromRides(Map<String, dynamic> data, {required int page, required int limit}) {
+    final items = JsonReader(data).listOf('rides', HistoryItem.fromRide);
+    return HistoryPage(items: items, page: page, hasMore: items.length >= limit);
   }
 
   final List<HistoryItem> items;

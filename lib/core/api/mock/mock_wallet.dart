@@ -1,6 +1,5 @@
 import 'dart:math' as math;
 
-import 'package:sanga_ride/core/api/history_endpoints.dart';
 import 'package:sanga_ride/core/api/mock/mock_groups.dart';
 import 'package:sanga_ride/core/api/mock/mock_history.dart';
 import 'package:sanga_ride/core/api/mock/mock_money.dart';
@@ -91,10 +90,7 @@ abstract final class MockWallet {
 
   static _Book _openGroupBook(String groupId) {
     final seeds = _groupSeeds[groupId] ?? const [];
-    final book = _Book(
-      balance: _groupOpening[groupId] ?? 0,
-      ledger: [],
-    );
+    final book = _Book(balance: _groupOpening[groupId] ?? 0, ledger: []);
     for (final (index, seed) in seeds.indexed) {
       final isTopUp = seed.$1 == 'top_up';
       book.ledger.add(
@@ -165,18 +161,7 @@ abstract final class MockWallet {
     ];
   }
 
-  static List<Map<String, dynamic>> _completedTrips() {
-    final route = MockHistory.routes.firstWhere((route) => route.match('GET', HistoryEndpoints.rides) != null);
-    final page = route.handler(
-      MockRequest(
-        path: HistoryEndpoints.rides,
-        body: {},
-        query: {'status': 'completed', 'page': 1, 'pageSize': 50},
-        params: {},
-      ),
-    );
-    return [for (final item in (page as Map)['items'] as List) Map<String, dynamic>.from(item as Map)];
-  }
+  static List<Map<String, dynamic>> _completedTrips() => MockHistory.summaries('completed');
 
   static _Entry _rideEntry(Map<String, dynamic> trip) {
     final id = trip['id'] as String;

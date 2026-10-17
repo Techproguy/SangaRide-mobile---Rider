@@ -1,7 +1,6 @@
 import 'package:sanga_ride_core/sanga_ride_core.dart';
 
 abstract final class BookingEndpoints {
-  static const String scheduledRides = '/rides/scheduled';
   static const String scheduledRide = '/rides/scheduled/:id';
   static const String scheduledRideReminder = '/rides/scheduled/:id/reminder';
   static const String hourlyTiers = '/ride-classes/:code/hourly-tiers';

@@ -4,6 +4,7 @@ import 'package:sanga_ride/model/ride/booking.dart';
 import 'package:sanga_ride/model/ride/ride_load_problem.dart';
 import 'package:sanga_ride/model/ride/ride_request.dart';
 import 'package:sanga_ride/model/trip/scheduled_wait.dart';
+import 'package:sanga_ride/model/trip/trip.dart';
 import 'package:sanga_ride_core/sanga_ride_core.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
@@ -23,6 +24,11 @@ class ScheduledStop {
 
   factory ScheduledStop.fromJson(JsonReader json) =>
       ScheduledStop(name: json.strOr('name', ''), address: json.strOr('address', ''));
+
+  factory ScheduledStop.fromRide(JsonReader json) {
+    final address = json.strOr('address', '');
+    return ScheduledStop(name: address, address: address);
+  }
 
   final String name;
   final String address;
@@ -69,6 +75,31 @@ class ScheduledRide {
       reminderAt: json.timeOrNull('reminderAt')?.toLocal(),
       airport: airport == null ? null : ScheduledAirport.fromJson(airport.raw),
       wait: ScheduledWait.maybeFrom(json, pickupAt: scheduledAt),
+    );
+  }
+
+  factory ScheduledRide.fromRide(JsonReader json) {
+    final airport = json.objectOrNull('airport');
+    final scheduledAt = json.time('scheduledFor').toLocal();
+    final hourlyMinutes = json.intOrNull('hourlyDurationMin');
+    return ScheduledRide(
+      id: json.str('id'),
+      kind: ScheduledRideKind.oneTime,
+      tripType: TripType.fromCode(json.strOrNull('tripType')),
+      category: enumByCode(
+        RideCategory.values,
+        json.objectOrNull('rideClass')?.strOrNull('code'),
+        (category) => category.name,
+        RideCategory.go,
+      ),
+      scheduledAt: scheduledAt,
+      pickup: ScheduledStop.fromRide(json.object('pickup')),
+      dropoff: ScheduledStop.fromRide(json.object('dropoff')),
+      fare: TripFare.fromJson(json).total,
+      canRemind: false,
+      hours: hourlyMinutes == null ? null : hourlyMinutes ~/ Duration.minutesPerHour,
+      airport: airport?.timeOrNull('estimatedArrival') == null ? null : ScheduledAirport.fromJson(airport!.raw),
+      wait: ScheduledWait.maybeFrom(json.objectOrNull('waiting') ?? json, pickupAt: scheduledAt),
     );
   }
 

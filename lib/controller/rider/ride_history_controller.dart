@@ -85,12 +85,20 @@ class RideHistoryController extends GetxController {
 
   Future<HistoryPage> _fetch(HistoryStatus status, int page) async {
     final groupId = scope.groupId;
+    if (groupId != null) {
+      final response = await _api.get(
+        GroupEndpoints.ridesOf(groupId),
+        queryParameters: {'status': status.code, 'page': page, 'pageSize': pageSize, 'memberId': ?memberId},
+        suppressErrorToast: true,
+      );
+      return HistoryPage.fromJson(response.dataMapOrEmpty);
+    }
     final response = await _api.get(
-      groupId == null ? HistoryEndpoints.rides : GroupEndpoints.ridesOf(groupId),
-      queryParameters: {'status': status.code, 'page': page, 'pageSize': pageSize, 'memberId': ?memberId},
+      HistoryEndpoints.rides,
+      queryParameters: {'status': status.code, 'page': page, 'limit': pageSize},
       suppressErrorToast: true,
     );
-    return HistoryPage.fromJson(response.dataMapOrEmpty);
+    return HistoryPage.fromRides(response.dataMapOrEmpty, page: page, limit: pageSize);
   }
 
   Future<void> openDetail(String id) async {

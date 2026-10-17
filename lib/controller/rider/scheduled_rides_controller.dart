@@ -4,6 +4,7 @@ import 'dart:developer';
 import 'package:get/get.dart';
 import 'package:sanga_ride/core/api/api.dart';
 import 'package:sanga_ride/core/api/booking_endpoints.dart';
+import 'package:sanga_ride/core/api/history_endpoints.dart';
 import 'package:sanga_ride/core/api/idempotency_intents.dart';
 import 'package:sanga_ride/model/ride/booking.dart';
 import 'package:sanga_ride/model/ride/ride_load_problem.dart';
@@ -11,6 +12,8 @@ import 'package:sanga_ride_core/sanga_ride_core.dart';
 import 'package:sanga_ride/model/ride/scheduled_ride.dart';
 
 class ScheduledRidesController extends GetxController {
+  static const String _scheduledStatus = 'scheduled';
+
   final _api = Get.find<ApiService>();
 
   final Rx<ScheduledRidesState> _state = Rx<ScheduledRidesState>(const ScheduledLoading());
@@ -20,9 +23,13 @@ class ScheduledRidesController extends GetxController {
   Future<void> load() async {
     if (state is! ScheduledLoaded) _state.value = const ScheduledLoading();
     try {
-      final response = await _api.get(BookingEndpoints.scheduledRides, suppressErrorToast: true);
+      final response = await _api.get(
+        HistoryEndpoints.rides,
+        queryParameters: {'status': _scheduledStatus},
+        suppressErrorToast: true,
+      );
       final rides = JsonReader.of((response.data as Map)['data'])
-          .listOf('rides', ScheduledRide.fromJson, onSkip: (key, error) => log('skipped a scheduled ride: $error'));
+          .listOf('rides', ScheduledRide.fromRide, onSkip: (key, error) => log('skipped a scheduled ride: $error'));
       _state.value = ScheduledLoaded(rides);
     } catch (e) {
       log('load scheduled rides failed: $e');
