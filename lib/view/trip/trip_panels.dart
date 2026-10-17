@@ -38,6 +38,36 @@ extension _TripPanels on _TripScreenState {
     );
   }
 
+  String _carLine(Trip trip) {
+    final vehicle = trip.vehicle;
+    final car = [vehicle.colour, vehicle.make, vehicle.model].where((part) => part.isNotEmpty).join(' ');
+    return [trip.driver.name, if (car.isNotEmpty) car, if (vehicle.plate.isNotEmpty) vehicle.plate].join(' · ');
+  }
+
+  Widget? _peek(TripState state) {
+    if (state case TripLoaded(:final trip) when trip.delivery != null) return null;
+    return switch (state) {
+      TripEnRoute(:final trip) => SangaSheetPeek(title: 'Your driver is on the way', subtitle: _carLine(trip)),
+      TripArrived(:final trip) => SangaSheetPeek(
+        title: 'Your driver is at the pickup',
+        subtitle: _carLine(trip),
+        action: SangaButton.primary(label: 'Confirm details', onPressed: _openDetailsCheck),
+      ),
+      TripVerifying(:final trip) => SangaSheetPeek(
+        title: 'Share your PIN to start the ride',
+        subtitle: _carLine(trip),
+        action: SangaButton.primary(label: 'Show trip PIN', onPressed: () => unawaited(_showPin(trip))),
+      ),
+      TripInProgress(:final trip) => SangaSheetPeek(title: 'On the way to drop off', subtitle: trip.dropoff.name),
+      TripAtDropoff(:final trip) => SangaSheetPeek(
+        title: 'You’ve arrived at your drop off',
+        subtitle: trip.dropoff.name,
+        action: SangaButton.primary(label: 'Complete ride', onPressed: _makePayment),
+      ),
+      _ => null,
+    };
+  }
+
   Widget _panel(TripState state) {
     if (state case TripLoaded(:final trip)) {
       final delivery = trip.delivery;

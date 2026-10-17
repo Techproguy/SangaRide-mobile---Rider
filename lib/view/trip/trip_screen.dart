@@ -211,6 +211,7 @@ class _TripScreenState extends State<TripScreen> {
                   Positioned.fill(
                     child: SangaMapSheet(
                       onVisibleHeightChanged: _onSheetHeight,
+                      peek: _peek(state),
                       child: SangaMapPanel(children: [_flightLine(state), _panel(state)]),
                     ),
                   ),
