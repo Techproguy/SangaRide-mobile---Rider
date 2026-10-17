@@ -9,6 +9,7 @@ import 'package:sanga_ride/core/api/app_endpoints.dart';
 import 'package:sanga_ride/core/api/idempotency_intents.dart';
 import 'package:sanga_ride/core/constants.dart';
 import 'package:sanga_ride/core/services/auth_config.dart';
+import 'package:sanga_ride/core/services/realtime.dart';
 import 'package:sanga_ride/core/services/session_restore.dart';
 import 'package:sanga_ride/core/services/session_storage.dart';
 import 'package:sanga_ride/model/auth/otp_session.dart';
@@ -189,6 +190,7 @@ class AuthController extends GetxController {
       accessToken: tokens['accessToken'] as String,
       refreshToken: tokens['refreshToken'] as String?,
     );
+    Realtime.resume();
     await Get.find<UserController>().setUser(UserModel.fromJson(data['user'] as Map<String, dynamic>));
     unawaited(Get.find<SessionRestore>().refreshQuietly());
   }

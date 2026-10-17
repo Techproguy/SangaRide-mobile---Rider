@@ -34,6 +34,7 @@ import 'package:sanga_ride/core/services/auth_config.dart';
 import 'package:sanga_ride/core/services/card_tokenizer.dart';
 import 'package:sanga_ride/core/services/connectivity_service.dart';
 import 'package:sanga_ride/core/services/permission_center.dart';
+import 'package:sanga_ride/core/services/realtime.dart';
 import 'package:sanga_ride/core/services/session_lifecycle.dart';
 import 'package:sanga_ride/core/services/session_restore.dart';
 import 'package:sanga_ride/core/services/session_storage.dart';
@@ -95,6 +96,7 @@ Future<void> initializeSanga() async {
   registerAccountControllers();
 
   SessionLifecycle.register();
+  Realtime.start();
 }
 
 ConnectionMonitor _startRuntime(ApiService api) {

@@ -26,11 +26,13 @@ extension RideMatchOffers on RideMatchController {
   }
 
   void startOffersRefresh() {
-    if (_offersPoller != null) return;
+    final id = _requestId;
+    if (_offersPoller != null || id == null) return;
     final epoch = _epoch.current;
     _offersPoller = LivePoller(
       fetch: () => _refreshOffers(epoch),
       interval: RideMatchController.offersRefreshInterval,
+      nudges: RideEvents.instance.about(id),
       onParseError: (error, _) => log('offers unreadable: $error'),
     )..start();
   }

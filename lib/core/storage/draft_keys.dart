@@ -14,4 +14,5 @@ abstract final class SessionNames {
   static const String drafts = 'drafts';
   static const String controllers = 'controllers';
   static const String rideMatch = 'ride_match';
+  static const String realtime = 'realtime';
 }

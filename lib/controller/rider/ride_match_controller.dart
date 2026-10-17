@@ -451,6 +451,7 @@ class RideMatchController extends GetxController {
     final poller = LivePoller(
       fetch: () => _pollOnce(epoch),
       interval: pollInterval,
+      nudges: RideEvents.instance.about(request.id),
       onParseError: (error, _) => log('poll unreadable: $error'),
     );
     poller.link.addListener(() => _onLink(epoch, poller));
