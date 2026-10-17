@@ -62,8 +62,8 @@ class _RoutePoint extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             spacing: SangaSpacing.xxs,
             children: [
-              Text(place.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: SangaTextStyles.cardTitle),
-              Text(place.address, maxLines: 1, overflow: TextOverflow.ellipsis, style: SangaTextStyles.tileSubtitle),
+              Text(place.title, maxLines: 1, overflow: TextOverflow.ellipsis, style: SangaTextStyles.cardTitle),
+              Text(place.subtitle, maxLines: 1, overflow: TextOverflow.ellipsis, style: SangaTextStyles.tileSubtitle),
             ],
           ),
         ),

@@ -147,7 +147,7 @@ class _HomeLocationScreenState extends State<HomeLocationScreen> {
         ),
         const SizedBox(height: SangaSpacing.md),
         for (final place in _results)
-          SangaPlaceTile(title: place.name, subtitle: place.address, onTap: () => _choose(place)),
+          SangaPlaceTile(title: place.title, subtitle: place.subtitle, onTap: () => _choose(place)),
         if (_isSearching)
           const Padding(
             padding: EdgeInsets.all(SangaSpacing.md),

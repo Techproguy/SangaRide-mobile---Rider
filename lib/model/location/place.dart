@@ -37,6 +37,17 @@ class Place {
 
   static const double _sameSpotMeters = 50;
 
+  bool get _isNamedByAddress => name.trim().isEmpty || name.trim() == address.trim();
+
+  List<String> get _addressParts => [
+    for (final part in address.split(','))
+      if (part.trim().isNotEmpty) part.trim(),
+  ];
+
+  String get title => _isNamedByAddress ? (_addressParts.firstOrNull ?? address) : name;
+
+  String get subtitle => _isNamedByAddress ? _addressParts.skip(1).join(', ') : address;
+
   bool isSameAs(Place other) {
     if (placeId.isNotEmpty && placeId == other.placeId) return true;
     final here = coordinates;

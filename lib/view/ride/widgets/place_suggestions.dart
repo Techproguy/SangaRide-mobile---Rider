@@ -19,7 +19,10 @@ class PlaceSuggestions extends StatelessWidget {
   String _subtitleOf(Place place) {
     final from = origin;
     final to = place.coordinates;
-    return [if (from != null && to != null) SangaDistance.format(from.metersTo(to)), place.address].join(' · ');
+    return [
+      if (from != null && to != null) SangaDistance.format(from.metersTo(to)),
+      if (place.subtitle.isNotEmpty) place.subtitle,
+    ].join(' · ');
   }
 
   @override
@@ -47,7 +50,7 @@ class PlaceSuggestions extends StatelessWidget {
                     background: const _RemoveBackground(),
                     onDismissed: (_) => home.forgetPlace(place),
                     child: SangaListRow.recent(
-                      title: place.name,
+                      title: place.title,
                       subtitle: _subtitleOf(place),
                       onTap: () => onPick(place),
                     ),
