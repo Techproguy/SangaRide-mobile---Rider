@@ -95,7 +95,9 @@ class OfferCard extends StatelessWidget {
   String get _offerLine {
     if (!offer.isAvailable) return 'No longer available';
     final counter = offer.counterOffer;
-    return counter == null ? 'Accepts your fare' : 'Counter offer: ${counter.format()}';
+    if (counter != null) return 'Counter offer: ${counter.format()}';
+    final fare = offer.fare;
+    return fare == null ? 'Accepts your fare' : 'Accepts your fare of ${fare.format()}';
   }
 }
 

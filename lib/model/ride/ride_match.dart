@@ -115,13 +115,19 @@ class MatchRequest {
       id: json.str('id'),
       status: RideRequestStatus.fromCode(json.strOrNull('status')),
       steps: matching?.listOf('steps', MatchStep.fromJson) ?? const [],
-      searchDeadline: (matching == null ? null : serverInstantOrNull(matching, 'expiresAt')) ?? ServerClock.instance.now(),
+      searchDeadline:
+          (matching == null ? null : serverInstantOrNull(matching, 'expiresAt')) ?? ServerClock.instance.now(),
       driver: json.raw['driver'] == null ? null : OfferDriver.fromJson(json.raw['driver']),
     );
   }
 
-  MatchRequest withOffers() =>
-      MatchRequest(id: id, status: RideRequestStatus.offers, steps: steps, searchDeadline: searchDeadline, driver: driver);
+  MatchRequest withOffers() => MatchRequest(
+    id: id,
+    status: RideRequestStatus.offers,
+    steps: steps,
+    searchDeadline: searchDeadline,
+    driver: driver,
+  );
 
   final String id;
   final RideRequestStatus status;
@@ -198,16 +204,19 @@ class DriverOffer {
     required this.etaMinutes,
     required this.distanceKm,
     required this.driver,
+    this.fare,
   });
 
   factory DriverOffer.fromJson(JsonReader json) => DriverOffer(
     id: json.str('id'),
     status: OfferStatus.fromCode(json.strOr('status', OfferStatus.pending.code)),
     counterOffer:
-        json.moneyOrNull('counterOfferAmount') ?? (json.strOrNull('type') == _counter ? json.moneyOrNull('amount') : null),
+        json.moneyOrNull('counterOfferAmount') ??
+        (json.strOrNull('type') == _counter ? json.moneyOrNull('amount') : null),
     etaMinutes: json.intOr('etaMin', 0),
     distanceKm: json.doubleOr('distanceKm', 0),
     driver: OfferDriver.fromJson(json.raw['driver']),
+    fare: json.moneyOrNull('fee') ?? json.moneyOrNull('amount'),
   );
 
   static const String _counter = 'counter';
@@ -218,6 +227,7 @@ class DriverOffer {
   final int etaMinutes;
   final double distanceKm;
   final OfferDriver driver;
+  final Money? fare;
 
   bool get isAvailable => status == OfferStatus.pending || status == OfferStatus.selected;
 
@@ -228,6 +238,7 @@ class DriverOffer {
     etaMinutes: etaMinutes,
     distanceKm: distanceKm,
     driver: driver,
+    fare: fare,
   );
 }
 
