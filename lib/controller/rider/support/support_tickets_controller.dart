@@ -168,11 +168,7 @@ class SupportTicketsController extends GetxController {
   }
 
   Future<TicketsPage> _fetchList(int page) async {
-    final response = await _api.get(
-      SupportEndpoints.tickets,
-      queryParameters: {'page': page},
-      suppressErrorToast: true,
-    );
+    final response = await _api.get(SupportEndpoints.issues, queryParameters: {'page': page}, suppressErrorToast: true);
     return TicketsPage.fromJson(response.dataMapOrEmpty);
   }
 }

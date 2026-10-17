@@ -1,4 +1,5 @@
 import 'package:sanga_ride/core/api/mock/mock_data.dart';
+import 'package:sanga_ride/core/api/mock/mock_history.dart';
 import 'package:sanga_ride/core/api/app_endpoints.dart';
 import 'package:sanga_ride/core/api/mock/mock_money.dart';
 import 'package:sanga_ride/core/api/mock/mock_server.dart';
@@ -292,7 +293,10 @@ abstract final class MockTripWrapUp {
   static String _referenceOf(String id, {required bool isDelivery}) =>
       '${isDelivery ? 'DL' : 'SR'}-${id.hashCode.abs() % 90000000 + 10000000}';
 
-  static Object? _receipt(MockRequest request) => _receiptOf(request.params['id']!, _tripOf(request));
+  static Object? _receipt(MockRequest request) {
+    final id = request.params['id']!;
+    return MockHistory.receiptOf(id) ?? _receiptOf(id, _tripOf(request));
+  }
 
   static Map<String, dynamic> _receiptOf(String id, Map<String, dynamic> trip) {
     final fare = _fareOf(trip);

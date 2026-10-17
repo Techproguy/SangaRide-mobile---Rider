@@ -38,7 +38,12 @@ class ScheduledRidesController extends GetxController {
   }
 
   Future<BookingProblem?> cancel(String id) => _act(id, ScheduledAction.cancel, () async {
-    await _api.delete(BookingEndpoints.scheduledRideOf(id), suppressErrorToast: true);
+    await _api.post(
+      BookingEndpoints.scheduledRideCancelOf(id),
+      data: const <String, dynamic>{},
+      key: IdempotencyKey.newFor(IdempotencyIntent.cancelScheduledRide),
+      suppressErrorToast: true,
+    );
     return null;
   });
 

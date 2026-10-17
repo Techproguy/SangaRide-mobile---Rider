@@ -2,6 +2,7 @@ import 'package:get/get.dart';
 import 'package:sanga_ride/model/account/load_problem.dart';
 import 'package:sanga_ride_core/sanga_ride_core.dart';
 import 'package:sanga_ride/core/api/api.dart';
+import 'package:sanga_ride/core/api/app_endpoints.dart';
 import 'package:sanga_ride/core/api/group_endpoints.dart';
 import 'package:sanga_ride/core/api/history_endpoints.dart';
 import 'package:sanga_ride/core/api/idempotency_intents.dart';
@@ -125,11 +126,15 @@ class RideHistoryController extends GetxController {
     if (showLoading) _detail.value = const HistoryDetailLoading();
     try {
       final response = await _api.get(HistoryEndpoints.rideOf(id), suppressErrorToast: true);
+      final ride = response.dataMapOrEmpty;
+      final (receipt, blockedDriverIds) = await (
+        ride['status'] == HistoryStatus.completed.code ? _fetchReceipt(id) : Future<Map<String, dynamic>?>.value(),
+        _fetchBlockedDriverIds(),
+      ).wait;
       if (!_detailEpoch.isCurrent(epoch)) return;
-      final data = response.dataMapOrEmpty;
       final latest = detailState;
       _detail.value = HistoryDetailLoaded(
-        HistoryDetail.fromJson(data),
+        HistoryDetail.fromRide(ride, receipt: receipt, blockedDriverIds: blockedDriverIds ?? _blockedIdsOf(previous)),
         driverAction: latest is HistoryDetailLoaded ? latest.driverAction : null,
       );
     } on Object catch (error) {
@@ -140,6 +145,36 @@ class RideHistoryController extends GetxController {
           ? HistoryDetailLoaded(previous.detail, driverAction: previous.driverAction, isStale: true)
           : HistoryDetailFailed(failure);
     }
+  }
+
+  Future<Map<String, dynamic>?> _fetchReceipt(String id) async {
+    try {
+      final response = await _api.get(AppEndpoints.tripReceiptOf(id), suppressErrorToast: true);
+      return response.dataMapOrEmpty;
+    } on Object {
+      return null;
+    }
+  }
+
+  Future<Set<String>?> _fetchBlockedDriverIds() async {
+    try {
+      final response = await _api.get(HistoryEndpoints.blockedDrivers, suppressErrorToast: true);
+      final body = response.data;
+      final entries = body is Map ? body['data'] : null;
+      return {
+        if (entries is List)
+          for (final entry in entries.whereType<Map>())
+            if ('${entry['driverId'] ?? entry['id'] ?? ''}' case final driverId when driverId.isNotEmpty) driverId,
+      };
+    } on Object {
+      return null;
+    }
+  }
+
+  Set<String> _blockedIdsOf(HistoryDetailState state) {
+    if (state is! HistoryDetailLoaded) return const {};
+    final driver = state.detail.driver;
+    return {if (driver != null && driver.isBlocked) driver.profile.id};
   }
 
   Future<HistoryProblem?> setDriverBlocked(bool isBlocked) async {
@@ -153,12 +188,16 @@ class RideHistoryController extends GetxController {
       driverAction: isBlocked ? HistoryDriverAction.blocking : HistoryDriverAction.unblocking,
     );
     try {
-      final endpoint = HistoryEndpoints.blockDriverOf(driver.profile.id);
       if (isBlocked) {
-        await _api.post(endpoint, key: IdempotencyKey.newFor(IdempotencyIntent.blockDriver), suppressErrorToast: true);
+        await _api.post(
+          HistoryEndpoints.blockedDrivers,
+          data: {'driverId': driver.profile.id},
+          key: IdempotencyKey.newFor(IdempotencyIntent.blockDriver),
+          suppressErrorToast: true,
+        );
       } else {
         await _api.delete(
-          endpoint,
+          HistoryEndpoints.blockedDriverOf(driver.profile.id),
           key: IdempotencyKey.newFor(IdempotencyIntent.unblockDriver),
           suppressErrorToast: true,
         );

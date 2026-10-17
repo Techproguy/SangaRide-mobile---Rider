@@ -3,8 +3,8 @@ import 'package:sanga_ride_core/sanga_ride_core.dart';
 
 abstract final class DeliveryLiveEndpoints {
   static const String uploads = '/uploads';
-  static const String pickupConfirmation = '/deliveries/:id/pickup-confirmation';
-  static const String issues = '/deliveries/:id/issues';
+  static const String pickupConfirmation = '/rides/:id/package/sender-confirmation';
+  static const String issues = '/rides/:id/issues';
   static const String issue = '/deliveries/:id/issues/:issueId';
   static const String issueResolution = '/deliveries/:id/issues/:issueId/resolution';
 

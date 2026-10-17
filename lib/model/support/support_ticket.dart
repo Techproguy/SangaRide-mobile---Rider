@@ -214,7 +214,7 @@ class TicketsPage {
   factory TicketsPage.fromJson(Map<String, dynamic> json) {
     final reader = JsonReader(json);
     return TicketsPage(
-      items: reader.listOf('items', TicketSummary.fromReader),
+      items: reader.listOf('issues', TicketSummary.fromReader),
       page: reader.intOr('page', 1),
       hasMore: reader.boolOr('hasMore', false),
     );

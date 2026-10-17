@@ -6,6 +6,8 @@ import 'package:sanga_ride/model/history/history_item.dart';
 import 'package:sanga_ride_core/sanga_ride_core.dart';
 import 'package:sanga_ride/model/ride/ride_match.dart';
 import 'package:sanga_ride/model/ride/ride_request.dart';
+import 'package:sanga_ride/model/trip/trip.dart';
+import 'package:sanga_ride/model/trip/wrapup/payment.dart';
 import 'package:sanga_ride/model/trip/wrapup/receipt.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
@@ -31,6 +33,16 @@ enum HistoryEventType {
 
   static HistoryEventType fromCode(String? code) =>
       enumByCode(values, code, (type) => type.code, HistoryEventType.unknown);
+
+  static HistoryEventType? ofTrip(TripEventType type, {required bool isDelivery}) => switch (type) {
+    TripEventType.driverAccepted => driverAccepted,
+    TripEventType.driverArrived => driverArrived,
+    TripEventType.tripStarted => isDelivery ? packagePickedUp : tripStarted,
+    TripEventType.arrivedDropoff => arrivedDropoff,
+    TripEventType.tripCompleted => isDelivery ? packageDelivered : tripCompleted,
+    TripEventType.tripCancelled => isDelivery ? deliveryCancelled : rideCancelled,
+    TripEventType.detailsConfirmed || TripEventType.pinVerified => null,
+  };
 }
 
 class HistoryEvent {
@@ -156,47 +168,73 @@ class HistoryDetail {
     this.returnFee,
   });
 
-  factory HistoryDetail.fromJson(Map<String, dynamic> json) {
-    final reader = JsonReader(json);
-    Map<String, dynamic>? map(String key) => reader.objectOrNull(key)?.raw;
-    T? attempt<T>(Map<String, dynamic>? source, T Function(Map<String, dynamic> source) parse) {
-      if (source == null) return null;
-      try {
-        return parse(source);
-      } on Object {
-        return null;
-      }
-    }
-
-    final driver = map('driver');
-    final vehicle = map('vehicle');
-    final paidWith = map('paidWith');
-    final cancellation = map('cancellation');
-    final delivery = map('delivery');
-    final rating = reader.objectOrNull('rating');
+  factory HistoryDetail.fromRide(
+    Map<String, dynamic> json, {
+    Map<String, dynamic>? receipt,
+    Set<String> blockedDriverIds = const {},
+  }) {
+    final reader = JsonReader.of(json);
+    final receiptReader = receipt == null ? null : JsonReader.of(receipt);
+    final trip = Trip.fromJson(json);
+    final kind = HistoryKind.fromCode(reader.strOrNull('kind'));
+    final status = HistoryStatus.fromCode(reader.strOrNull('status'));
+    final createdAt = reader.time('createdAt').toLocal();
+    final hasDriver = reader.objectOrNull('driver') != null;
+    final delivery = reader.objectOrNull('delivery');
     return HistoryDetail(
-      id: reader.str('id'),
-      kind: HistoryKind.fromCode(reader.strOrNull('kind')),
-      status: HistoryStatus.fromCode(reader.strOrNull('status')),
-      category: RideCategory.values.asNameMap()[reader.strOrNull('category')] ?? RideCategory.go,
-      reference: reader.strOr('reference', ''),
-      requestedAt: reader.time('requestedAt').toLocal(),
-      occurredAt: reader.time('occurredAt').toLocal(),
-      route: HistoryRoute.fromJson(json),
-      fare: reader.money('fare'),
-      counterOffer: reader.moneyOrNull('counterOffer'),
+      id: trip.id,
+      kind: kind,
+      status: status,
+      category: trip.rideType,
+      reference: reader.strOr('ref', ''),
+      requestedAt: createdAt,
+      occurredAt: trip.eventTime(TripEventType.tripCompleted) ?? createdAt,
+      route: HistoryRoute.fromRide(reader),
+      fare: trip.fare.total,
       distanceKm: reader.doubleOrNull('distanceKm'),
-      durationMinutes: reader.intOrNull('durationMinutes'),
-      lines: reader.listOf('lines', (line) => ReceiptLine.fromJson(line.raw)),
-      paidWith: attempt(paidWith, ReceiptPayment.fromJson),
-      driver: attempt(driver, HistoryDriver.fromJson),
-      vehicle: attempt(vehicle, DriverVehicle.fromJson),
-      events: [for (final event in reader.listOf('events', HistoryEvent.tryFromReader)) ?event],
-      ratedStars: rating?.numOrNull('stars')?.toInt(),
-      cancellation: attempt(cancellation, HistoryCancellation.fromJson),
-      delivery: attempt(delivery, HistoryDelivery.fromJson),
-      returnFee: reader.moneyOrNull('returnFee'),
+      durationMinutes: reader.intOrNull('durationMin'),
+      lines: [
+        if (receiptReader != null) ...[
+          ...receiptReader.listOf('lines', (line) => ReceiptLine.fromJson(line.raw)),
+          ...receiptReader.listOf('adjustments', (line) => ReceiptLine.fromJson(line.raw)),
+        ],
+      ],
+      paidWith: _paymentOf(reader, receiptReader),
+      driver: hasDriver
+          ? HistoryDriver(profile: trip.driver, isBlocked: blockedDriverIds.contains(trip.driver.id))
+          : null,
+      vehicle: hasDriver ? trip.vehicle : null,
+      events: [
+        for (final event in trip.events)
+          if (HistoryEventType.ofTrip(event.type, isDelivery: kind.isDelivery) case final type?)
+            HistoryEvent(type: type, at: event.at),
+      ],
+      ratedStars: reader.objectOrNull('rating')?.intOrNull('stars'),
+      cancellation: status == HistoryStatus.cancelled
+          ? HistoryCancellation(
+              by: CancelledBy.fromCode(reader.strOrNull('cancelledBy')),
+              reason: (trip.cancellationReason ?? TripCancelReason.other).message,
+              fee: reader.moneyOr('cancellationFee', Money.zero()),
+            )
+          : null,
+      delivery: delivery == null ? null : _tryParse(() => HistoryDelivery.fromJson(delivery.raw)),
+      returnFee: trip.returnFee,
     );
+  }
+
+  static ReceiptPayment? _paymentOf(JsonReader ride, JsonReader? receipt) {
+    final payment = receipt?.objectOrNull('payment');
+    if (payment != null) return ReceiptPayment.fromJson(payment.raw);
+    final method = PaymentMethod.tryFromCode(ride.strOrNull('paymentMethod'));
+    return method == null ? null : ReceiptPayment(method: method);
+  }
+
+  static T? _tryParse<T>(T Function() parse) {
+    try {
+      return parse();
+    } on Object {
+      return null;
+    }
   }
 
   final String id;

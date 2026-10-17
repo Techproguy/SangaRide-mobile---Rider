@@ -433,6 +433,7 @@ abstract final class MockTrip {
       'waitingFee': 0,
       'noShowFee': 0,
       'tipAmount': 0,
+      'rating': ?(MockTripState.ratings[id] == null ? null : {'stars': MockTripState.ratings[id]}),
       'waiting': _waitBlock(id, trip),
       'pin': _pinBlock(id, status, now),
       'matching': null,

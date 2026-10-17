@@ -1,5 +1,6 @@
 abstract final class IdempotencyIntent {
   static const String blockDriver = 'block-driver';
+  static const String cancelScheduledRide = 'cancel-scheduled-ride';
   static const String confirmDriver = 'confirm-driver';
   static const String deleteAccount = 'delete-account';
   static const String deliveryIssue = 'delivery-issue';

@@ -12,9 +12,9 @@ import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 abstract final class MockHistory {
   static final List<MockRoute> routes = [
     MockRoute.get(HistoryEndpoints.rides, _list),
-    MockRoute.get(HistoryEndpoints.rideById, _detail),
-    MockRoute.post(HistoryEndpoints.blockDriver, (request) => _setBlocked(request, true)),
-    MockRoute.delete(HistoryEndpoints.blockDriver, (request) => _setBlocked(request, false)),
+    MockRoute.get(HistoryEndpoints.blockedDrivers, (_) => _blockedList()),
+    MockRoute.post(HistoryEndpoints.blockedDrivers, _block),
+    MockRoute.delete(HistoryEndpoints.blockedDriver, _unblock),
   ];
 
   static const int _count = 30;
@@ -37,7 +37,7 @@ abstract final class MockHistory {
   static const String _packagePhotoAsset = 'assets/images/delivery_pickup_proof.webp';
 
   static final DateTime _anchor = DateTime.now();
-  static final Set<String> _blockedDrivers = {};
+  static final Map<String, DateTime> _blockedDrivers = {};
   static final Map<String, Map<String, dynamic> Function()> _recorded = {};
 
   static void recordTrip(String id, Map<String, dynamic> Function() detailOf) => _recorded[id] = detailOf;
@@ -169,8 +169,7 @@ abstract final class MockHistory {
 
   static Map<String, dynamic> _driverOf(int i) {
     final drivers = [for (final offer in MockData.driverOffers) offer['driver'] as Map<String, dynamic>];
-    final driver = drivers[i % drivers.length];
-    return {...driver, 'blocked': _blockedDrivers.contains(driver['id'])};
+    return drivers[i % drivers.length];
   }
 
   static Map<String, dynamic> _vehicleOf(int i) {
@@ -241,7 +240,6 @@ abstract final class MockHistory {
     final occurredAt = _occurredAt(i);
     final requestedAt = occurredAt.subtract(Duration(minutes: minutes + 14));
     final fare = MockMoney.of(_fareOf(i)).major;
-    final item = _items[i % _items.length];
     return {
       'id': _idOf(i),
       'ref': _referenceOf(i),
@@ -268,6 +266,10 @@ abstract final class MockHistory {
       'paymentMethod': _paidWith(i, i % 2 == 1)['method'],
       'driver': hasDriver ? _liveDriver(i) : null,
       'tipAmount': 0,
+      'cancelledBy': isCancelled ? _cancelledBy(i) : null,
+      'cancellationReason': isCancelled ? _cancellationReasonOf(i) : null,
+      'cancellationFee': isCancelled ? _cancellationFeeOf(i) : null,
+      'rating': _isRated(i) ? {'stars': _stars[i % _stars.length]} : null,
       'timestamps': {
         'acceptedAt': hasDriver ? _iso(requestedAt.add(const Duration(minutes: 1))) : null,
         'arrivedAt': isCancelled ? null : _iso(requestedAt.add(const Duration(minutes: 9))),
@@ -277,11 +279,23 @@ abstract final class MockHistory {
         'cancelledAt': isCancelled ? _iso(occurredAt) : null,
       },
       'createdAt': _iso(requestedAt),
-      if (isDelivery)
-        'delivery': {
-          'item': {'name': item['name'], 'photoUrl': i % 2 == 0 ? _packagePhotoAsset : null},
-        },
+      if (isDelivery) 'delivery': _deliveryOf(i),
     };
+  }
+
+  static String? _cancellationReasonOf(int i) => switch (_cancelledBy(i)) {
+    'driver' => 'driver_cancelled',
+    'rider' => 'rider_cancelled',
+    _ => null,
+  };
+
+  static int _cancellationFeeOf(int i) => _cancelledBy(i) == 'rider' && i % 2 == 0 ? _cancellationFee : 0;
+
+  static bool _isRated(int i) => !_isCancelled(i) && i % 3 != 1;
+
+  static Map<String, dynamic>? liveRideOf(String id) {
+    final i = _indexOf(id);
+    return i == null ? null : _liveRide(i);
   }
 
   static List<Map<String, dynamic>> _recordedRides(String status) => [
@@ -314,7 +328,7 @@ abstract final class MockHistory {
     return {'rides': start >= matching.length ? const [] : matching.sublist(start, end)};
   }
 
-  static List<Map<String, dynamic>> _lines(int fare, double km, int minutes, {required bool isDelivery}) {
+  static List<Map<String, dynamic>> _receiptLines(int fare, double km, int minutes, {required bool isDelivery}) {
     var base = _roundedToFifty(fare * 0.22);
     final distance = _roundedToFifty(fare * 0.44);
     final time = _roundedToFifty(fare * 0.22);
@@ -324,40 +338,20 @@ abstract final class MockHistory {
       service = 0;
     }
     return [
-      {'key': 'base_fare', 'label': 'Base fare', 'amount': MockMoney.json(base)},
+      {'code': 'BASE_FARE', 'label': 'Base fare', 'amount': MockMoney.of(base).major},
       {
-        'key': 'distance',
+        'code': 'DISTANCE',
         'label': 'Distance (${SangaDistance.fromKilometers(km)})',
-        'amount': MockMoney.json(distance),
+        'amount': MockMoney.of(distance).major,
       },
-      {'key': 'time', 'label': isDelivery ? 'Handling time' : 'Time ($minutes mins)', 'amount': MockMoney.json(time)},
-      {'key': 'service_fee', 'label': 'Service fee', 'amount': MockMoney.json(service)},
+      {
+        'code': 'TIME',
+        'label': isDelivery ? 'Handling time' : 'Time ($minutes mins)',
+        'amount': MockMoney.of(time).major,
+      },
+      {'code': 'SERVICE_FEE', 'label': 'Service fee', 'amount': MockMoney.of(service).major},
     ];
   }
-
-  static Map<String, dynamic> _event(String type, DateTime at) => {'type': type, 'at': _iso(at)};
-
-  static List<Map<String, dynamic>> _completedEvents(int i, DateTime requestedAt, DateTime occurredAt) {
-    final isDelivery = _isDelivery(i);
-    return [
-      _event('driver_accepted', requestedAt.add(const Duration(minutes: 1))),
-      _event('driver_arrived', requestedAt.add(const Duration(minutes: 9))),
-      _event(isDelivery ? 'package_picked_up' : 'trip_started', requestedAt.add(const Duration(minutes: 12))),
-      _event('arrived_dropoff', occurredAt.subtract(const Duration(minutes: 1))),
-      _event(isDelivery ? 'package_delivered' : 'trip_completed', occurredAt),
-    ];
-  }
-
-  static List<Map<String, dynamic>> _cancelledEvents(int i, DateTime requestedAt, DateTime occurredAt) => [
-    if (_cancelledBy(i) != 'system') _event('driver_accepted', requestedAt.add(const Duration(minutes: 1))),
-    _event(_isDelivery(i) ? 'delivery_cancelled' : 'ride_cancelled', occurredAt),
-  ];
-
-  static const Map<String, String> _cancelReasons = {
-    'driver': 'Driver did not arrive on time to the pick up point',
-    'rider': 'You changed your plans',
-    'system': 'We couldn’t find a driver close enough to you',
-  };
 
   static Map<String, dynamic> _deliveryOf(int i) {
     final item = _items[i % _items.length];
@@ -378,47 +372,56 @@ abstract final class MockHistory {
     };
   }
 
-  static Object? _detail(MockRequest request) {
-    final recorded = _recorded[request.params['id']];
-    if (recorded != null) return {...recorded(), 'serverTime': _iso(DateTime.now())};
-    final i = _indexOf(request.params['id']!);
-    if (i == null) throw const MockFailure(404, 'We can’t find that trip.', code: 'not_found');
-    final isCancelled = _isCancelled(i);
+  static Map<String, dynamic>? receiptOf(String id) {
+    final i = _indexOf(id);
+    if (i == null || _isCancelled(i)) return null;
     final isDelivery = _isDelivery(i);
-    final occurredAt = _occurredAt(i);
-    final minutes = _minutesOf(i);
-    final requestedAt = occurredAt.subtract(Duration(minutes: minutes + 14));
     final fare = _fareOf(i);
     final km = _km(i);
-    final cancelledBy = _cancelledBy(i);
-    final hasDriver = !isCancelled || cancelledBy != 'system';
-    final isRated = !isCancelled && i % 3 != 1;
-    final counter = !isCancelled && !isDelivery && i % 5 == 2;
-    final isCard = i % 2 == 1;
+    final minutes = _minutesOf(i);
+    final driver = _liveDriver(i);
+    final vehicle = _vehicleOf(i);
+    final occurredAt = _iso(_occurredAt(i));
     return {
-      ..._summary(i),
+      'rideId': id,
       'reference': _referenceOf(i),
-      'requestedAt': _iso(requestedAt),
-      'counterOffer': counter ? MockMoney.json(fare) : null,
-      'distanceKm': isCancelled ? null : km,
-      'durationMinutes': isCancelled ? null : minutes,
-      'lines': isCancelled ? const [] : _lines(fare, km, minutes, isDelivery: isDelivery),
-      'paidWith': isCancelled ? null : _paidWith(i, isCard),
-      'driver': hasDriver ? _driverOf(i) : null,
-      'vehicle': hasDriver ? _vehicleOf(i) : null,
-      'events': isCancelled
-          ? _cancelledEvents(i, requestedAt, occurredAt)
-          : _completedEvents(i, requestedAt, occurredAt),
-      'rating': isRated ? {'stars': _stars[i % _stars.length]} : null,
-      'cancellation': isCancelled
-          ? {
-              'by': cancelledBy,
-              'reason': _cancelReasons[cancelledBy],
-              'fee': MockMoney.json(cancelledBy == 'rider' && i % 2 == 0 ? _cancellationFee : 0),
-            }
-          : null,
-      'delivery': isDelivery ? _deliveryOf(i) : null,
-      'serverTime': _iso(DateTime.now()),
+      'kind': isDelivery ? 'delivery' : 'ride',
+      'status': 'completed',
+      'pickup': _livePlace(_pickup(i)),
+      'dropoff': _livePlace(_dropoff(i)),
+      'distanceKm': km,
+      'durationMin': minutes,
+      'lines': _receiptLines(fare, km, minutes, isDelivery: isDelivery),
+      'adjustments': const <Map<String, dynamic>>[],
+      'totalPaid': MockMoney.of(fare).major,
+      'tip': 0,
+      'payment': _receiptPayment(i, occurredAt),
+      'completedAt': occurredAt,
+      'driver': {
+        'id': driver['id'],
+        'name': driver['displayName'],
+        'photoUrl': driver['photoUrl'],
+        'ridesCompleted': driver['ridesCompleted'],
+        'rating': driver['rating'],
+      },
+      'vehicle': {
+        'display': '(${vehicle['year']} model) REG NO: ${vehicle['plate']}',
+        'vehicleType': _categoryOf(i) == 'moto' ? 'bike' : 'car',
+      },
+    };
+  }
+
+  static Map<String, dynamic> _receiptPayment(int i, String paidAt) {
+    final paidWith = _paidWith(i, i % 2 == 1);
+    final method = paidWith['method'] as String;
+    final last4 = paidWith['last4'] as String?;
+    return {
+      'method': method,
+      'status': 'succeeded',
+      'brand': last4 == null ? null : 'visa',
+      'last4': last4,
+      'display': last4 == null ? '${method[0].toUpperCase()}${method.substring(1)}' : 'Card •••• $last4',
+      'paidAt': paidAt,
     };
   }
 
@@ -427,15 +430,21 @@ abstract final class MockHistory {
     return {'method': isCard ? 'card' : 'cash', 'last4': isCard ? _cardLast4[i % 3] : null};
   }
 
-  static Object? _setBlocked(MockRequest request, bool isBlocked) {
-    final id = request.params['id']!;
+  static List<Map<String, dynamic>> _blockedList() => [
+    for (final entry in _blockedDrivers.entries) {'driverId': entry.key, 'blockedAt': _iso(entry.value)},
+  ];
+
+  static Object? _block(MockRequest request) {
+    final id = request.body['driverId'] as String? ?? '';
     final isKnown = MockData.driverOffers.any((offer) => (offer['driver'] as Map)['id'] == id);
     if (!isKnown) throw const MockFailure(404, 'We can’t find that driver.', code: 'driver_not_found');
-    if (isBlocked) {
-      _blockedDrivers.add(id);
-    } else {
-      _blockedDrivers.remove(id);
-    }
-    return {'driverId': id, 'blocked': isBlocked, 'serverTime': _iso(DateTime.now())};
+    _blockedDrivers.putIfAbsent(id, DateTime.now);
+    return {'driverId': id, 'blocked': true, 'serverTime': _iso(DateTime.now())};
+  }
+
+  static Object? _unblock(MockRequest request) {
+    final id = request.params['driverId']!;
+    _blockedDrivers.remove(id);
+    return {'driverId': id, 'blocked': false, 'serverTime': _iso(DateTime.now())};
   }
 }

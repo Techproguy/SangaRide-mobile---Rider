@@ -6,7 +6,6 @@ import 'package:sanga_ride/core/api/mock/mock_server.dart';
 
 abstract final class MockBooking {
   static final List<MockRoute> routes = [
-    MockRoute.delete(BookingEndpoints.scheduledRide, _cancel),
     MockRoute.post(BookingEndpoints.scheduledRideReminder, _remind),
     MockRoute.get(BookingEndpoints.hourlyTiers, _hourlyTiers),
     MockRoute.get(BookingEndpoints.cities, (_) => cities),
@@ -298,7 +297,14 @@ abstract final class MockBooking {
     return _payload(record);
   }
 
-  static Object? _cancel(MockRequest request) {
+  static bool isScheduled(String id) => _rides.any((ride) => ride.id == id);
+
+  static Map<String, dynamic>? liveRideOf(String id) {
+    final ride = _rides.where((ride) => ride.id == id).firstOrNull;
+    return ride == null ? null : _liveRide(ride);
+  }
+
+  static Object? cancel(MockRequest request) {
     _rides.remove(_require(request));
     return null;
   }

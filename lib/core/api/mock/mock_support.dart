@@ -21,7 +21,7 @@ abstract final class MockSupport {
     MockRoute.post(SupportEndpoints.articleFeedback, _feedback),
     MockRoute.get(SupportEndpoints.issueCategories, _issueCategories),
     MockRoute.post(SupportEndpoints.issues, _createTicket),
-    MockRoute.get(SupportEndpoints.tickets, _tickets),
+    MockRoute.get(SupportEndpoints.issues, _tickets),
     MockRoute.get(SupportEndpoints.ticket, _ticket),
     MockRoute.post(SupportEndpoints.ticketResolution, _resolve),
     MockRoute.post(SupportEndpoints.chats, _startChat),
@@ -172,27 +172,20 @@ abstract final class MockSupport {
   }
 
   static Object? _tickets(MockRequest request) {
-    final page = (int.tryParse('${request.query['page']}') ?? 1).clamp(1, 1000);
     final intentKey = request.query['idempotencyKey'];
-    final all = [
-      for (final ticket in _all)
-        if (intentKey == null || ticket.intentKey == intentKey) ticket,
-    ];
-    final start = (page - 1) * _pageSize;
     final now = DateTime.now();
     return {
-      'items': [
-        for (final ticket in all.skip(start).take(_pageSize))
-          {
-            'id': ticket.id,
-            'reference': ticket.reference,
-            'typeLabel': _typeOf(ticket.typeId)!['title'],
-            'status': ticket.status(now),
-            'createdAt': _iso(ticket.createdAt),
-          },
+      'issues': [
+        for (final ticket in _all)
+          if (intentKey == null || ticket.intentKey == intentKey)
+            {
+              'id': ticket.id,
+              'reference': ticket.reference,
+              'typeLabel': _typeOf(ticket.typeId)!['title'],
+              'status': ticket.status(now),
+              'createdAt': _iso(ticket.createdAt),
+            },
       ],
-      'page': page,
-      'hasMore': start + _pageSize < all.length,
     };
   }
 

@@ -6,6 +6,7 @@ import 'package:sanga_ride/core/api/mock/mock_booking.dart';
 import 'package:sanga_ride/core/api/mock/mock_data.dart';
 import 'package:sanga_ride/core/api/mock/mock_delivery.dart';
 import 'package:sanga_ride/core/api/mock/mock_groups.dart';
+import 'package:sanga_ride/core/api/mock/mock_history.dart';
 import 'package:sanga_ride/core/api/mock/mock_money.dart';
 import 'package:sanga_ride/core/api/mock/mock_server.dart';
 import 'package:sanga_ride/core/api/mock/mock_trip.dart';
@@ -77,11 +78,7 @@ abstract final class MockRideRequests {
     'id': id,
     'status': status,
     'kind': 'ride',
-    'matching': {
-      'round': 1,
-      'expiresAt': _now().add(_searchWindow).toIso8601String(),
-      'steps': _matchSteps(stepsDone),
-    },
+    'matching': {'round': 1, 'expiresAt': _now().add(_searchWindow).toIso8601String(), 'steps': _matchSteps(stepsDone)},
   };
 
   static _MockRideRequest _requireRideRequest(MockRequest request) {
@@ -169,6 +166,8 @@ abstract final class MockRideRequests {
   static Object? _rideRequestStatus(MockRequest request) {
     final id = request.params['id']!;
     if (MockTripState.trips.containsKey(id)) return MockTrip.ridePayload(id);
+    final ride = MockHistory.liveRideOf(id) ?? MockBooking.liveRideOf(id);
+    if (ride != null) return ride;
     final record = _requireRideRequest(request);
     return _requestPayload(id, _requestStatus(record), _stepsDone(record));
   }
@@ -211,7 +210,8 @@ abstract final class MockRideRequests {
     final record = _requireRideRequest(request);
     if (!_hasResolved(record) || _requestStatus(record) != 'requested') return const <Object>[];
     return [
-      for (final offer in MockData.driverOffers) _priced(Map.of(offer), record.proposedFare, isFixed: record.isFixedFare),
+      for (final offer in MockData.driverOffers)
+        _priced(Map.of(offer), record.proposedFare, isFixed: record.isFixedFare),
     ];
   }
 
@@ -271,6 +271,7 @@ abstract final class MockRideRequests {
 
   static Object? _cancelRideRequest(MockRequest request) {
     if (MockTripState.trips.containsKey(request.params['id'])) return MockTrip.cancelRide(request);
+    if (MockBooking.isScheduled(request.params['id']!)) return MockBooking.cancel(request);
     _requireRideRequest(request).isCancelled = true;
     return {'status': 'cancelled'};
   }
