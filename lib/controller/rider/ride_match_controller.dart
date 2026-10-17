@@ -424,6 +424,11 @@ class RideMatchController extends GetxController {
       case RideRequestStatus.offers:
         final continueAt = immediate ? DateTime.now() : DateTime.now().add(autoContinueAfter);
         _finishSearch(MatchOffersReady(request: request, continueAt: continueAt));
+      case RideRequestStatus.accepted:
+        _requestId = null;
+        _persist();
+        _finishSearch(MatchConfirmed(request.asConfirmedTrip));
+        _refreshRestore();
       case RideRequestStatus.noDriverFound:
         _finishSearch(const MatchNoDriver());
       case RideRequestStatus.cancelled:

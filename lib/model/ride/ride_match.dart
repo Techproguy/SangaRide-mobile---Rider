@@ -11,6 +11,7 @@ enum RideRequestStatus {
   checking('checking'),
   sending('sending'),
   offers('offers'),
+  accepted('accepted'),
   noDriverFound('no_driver_found'),
   cancelled('cancelled'),
   scheduled('scheduled'),
@@ -98,7 +99,13 @@ class MatchStep {
 }
 
 class MatchRequest {
-  const MatchRequest({required this.id, required this.status, required this.steps, required this.searchDeadline});
+  const MatchRequest({
+    required this.id,
+    required this.status,
+    required this.steps,
+    required this.searchDeadline,
+    this.driver,
+  });
 
   factory MatchRequest.fromJson(Object? body) {
     final json = JsonReader.of(body);
@@ -108,16 +115,21 @@ class MatchRequest {
       status: RideRequestStatus.fromCode(json.strOrNull('status')),
       steps: matching?.listOf('steps', MatchStep.fromJson) ?? const [],
       searchDeadline: (matching == null ? null : serverInstantOrNull(matching, 'expiresAt')) ?? ServerClock.instance.now(),
+      driver: json.raw['driver'] == null ? null : OfferDriver.fromJson(json.raw['driver']),
     );
   }
 
   MatchRequest withOffers() =>
-      MatchRequest(id: id, status: RideRequestStatus.offers, steps: steps, searchDeadline: searchDeadline);
+      MatchRequest(id: id, status: RideRequestStatus.offers, steps: steps, searchDeadline: searchDeadline, driver: driver);
 
   final String id;
   final RideRequestStatus status;
   final List<MatchStep> steps;
   final DateTime searchDeadline;
+  final OfferDriver? driver;
+
+  ConfirmedTrip get asConfirmedTrip =>
+      ConfirmedTrip(tripId: id, etaMinutes: 0, driver: driver ?? OfferDriver.fromJson(const <String, dynamic>{}));
 
   int get stepsDone => steps.where((step) => step.isDone).length;
 
