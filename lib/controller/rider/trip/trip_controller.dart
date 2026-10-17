@@ -367,7 +367,7 @@ class TripController extends GetxController {
       name: 'confirm-details',
       signature: '',
       send: (key) async {
-        final id = await _post(AppEndpoints.liveTripConfirmDetailsOf, key: key);
+        final id = await _post(AppEndpoints.liveTripConfirmDetailsOf, key: key, data: {'matches': true});
         _detailsConfirmedAt ??= DateTime.now();
         await _revealPin();
         return _loadTrip(id);

@@ -31,6 +31,7 @@ enum RideRequestStatus {
 
 enum OfferStatus {
   pending('pending'),
+  selected('selected'),
   withdrawn('withdrawn'),
   unknown('unknown');
 
@@ -218,7 +219,7 @@ class DriverOffer {
   final double distanceKm;
   final OfferDriver driver;
 
-  bool get isAvailable => status == OfferStatus.pending;
+  bool get isAvailable => status == OfferStatus.pending || status == OfferStatus.selected;
 
   DriverOffer asWithdrawn() => DriverOffer(
     id: id,
