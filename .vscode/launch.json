@@ -1,0 +1,30 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Dev",
+      "request": "launch",
+      "type": "dart",
+      "args": ["--flavor", "dev", "--dart-define-from-file=dart_defines/dev.json"]
+    },
+    {
+      "name": "Demo",
+      "request": "launch",
+      "type": "dart",
+      "args": ["--flavor", "dev", "--dart-define-from-file=dart_defines/demo.json"]
+    },
+    {
+      "name": "Prod",
+      "request": "launch",
+      "type": "dart",
+      "args": ["--flavor", "prod", "--dart-define-from-file=dart_defines/prod.json"]
+    },
+    {
+      "name": "Prod (release)",
+      "request": "launch",
+      "type": "dart",
+      "flutterMode": "release",
+      "args": ["--flavor", "prod", "--dart-define-from-file=dart_defines/prod.json"]
+    }
+  ]
+}
