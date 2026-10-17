@@ -153,16 +153,25 @@ class OfferDriver {
 
   factory OfferDriver.fromJson(Object? body) {
     final json = JsonReader.of(body);
-    final name = json.strOr('name', fallbackName);
+    final name = _nameOf(json);
+    final firstName = json.strOr('firstName', '').trim();
     return OfferDriver(
       id: json.strOr('id', ''),
       name: name,
-      firstName: json.strOr('firstName', name.split(' ').first),
+      firstName: firstName.isEmpty ? name.split(' ').first : firstName,
       photoUrl: json.strOrNull('photoUrl'),
       isVerified: json.boolOr('verified', false),
       rating: json.doubleOr('rating', 0),
       ridesCompleted: json.intOr('ridesCompleted', 0),
     );
+  }
+
+  static String _nameOf(JsonReader json) {
+    final full = '${json.strOr('firstName', '')} ${json.strOr('lastName', '')}'.trim();
+    for (final candidate in [json.strOr('displayName', ''), json.strOr('name', ''), full]) {
+      if (candidate.trim().isNotEmpty) return candidate.trim();
+    }
+    return fallbackName;
   }
 
   final String id;
@@ -193,8 +202,9 @@ class DriverOffer {
   factory DriverOffer.fromJson(JsonReader json) => DriverOffer(
     id: json.str('id'),
     status: OfferStatus.fromCode(json.strOr('status', OfferStatus.pending.code)),
-    counterOffer: json.strOrNull('type') == _counter ? json.moneyOrNull('amount') : json.moneyOrNull('counterOffer'),
-    etaMinutes: json.intOr('etaMinutes', 0),
+    counterOffer:
+        json.moneyOrNull('counterOfferAmount') ?? (json.strOrNull('type') == _counter ? json.moneyOrNull('amount') : null),
+    etaMinutes: json.intOr('etaMin', 0),
     distanceKm: json.doubleOr('distanceKm', 0),
     driver: OfferDriver.fromJson(json.raw['driver']),
   );
@@ -239,6 +249,7 @@ class DriverVehicle {
     required this.colour,
     required this.plate,
     required this.features,
+    this.summary = '',
   });
 
   factory DriverVehicle.fromJson(Object? body) {
@@ -248,8 +259,9 @@ class DriverVehicle {
       model: json.strOr('model', ''),
       year: json.intOr('year', 0),
       colour: json.strOr('colour', ''),
-      plate: json.strOr('plate', ''),
-      features: json.strings('features'),
+      plate: json.strOr('plateNumber', ''),
+      features: json.strings('featureLabels'),
+      summary: json.strOr('display', ''),
     );
   }
 
@@ -261,10 +273,11 @@ class DriverVehicle {
   final String colour;
   final String plate;
   final List<String> features;
+  final String summary;
 
   String get title {
     final name = [make, model].where((part) => part.isNotEmpty).join(' ');
-    if (name.isEmpty) return 'Vehicle';
+    if (name.isEmpty) return summary.isEmpty ? 'Vehicle' : summary;
     return year == 0 ? name : '$name ($year)';
   }
 
@@ -288,20 +301,25 @@ class DriverHold {
 
   factory DriverHold.fromJson(Object? body, {required DriverOffer offer, required Money fare}) {
     final json = JsonReader.of(body);
-    final hold = json.objectOrNull('hold') ?? json;
     final card = json.objectOrNull('driver');
-    final expiresAt = serverInstantOrNull(hold, 'holdExpiresAt') ?? serverInstantOrNull(hold, 'expiresAt');
+    final expiresAt = serverInstantOrNull(json, 'confirmExpiresAt');
     return DriverHold(
-      offerId: hold.strOr('offerId', offer.id),
+      offerId: json.strOr('offerId', offer.id),
       holdExpiresAt: expiresAt == null ? DateTime.now().add(confirmWindow) : deviceDeadlineAt(expiresAt),
-      fare: hold.moneyOr('fare', offer.counterOffer ?? fare),
-      counterOffer: hold.moneyOrNull('counterOffer') ?? offer.counterOffer,
-      matchLabel: hold.strOrNull('matchLabel'),
-      distanceAwayKm: card?.doubleOr('distanceAwayKm', offer.distanceKm) ?? offer.distanceKm,
+      fare: json.moneyOr('fee', offer.counterOffer ?? fare),
+      counterOffer: json.moneyOrNull('counterOfferAmount') ?? offer.counterOffer,
+      matchLabel: _matchLabelOf(json.strOrNull('matchLabel')),
+      distanceAwayKm: json.doubleOr('distanceKm', offer.distanceKm),
       driver: card == null ? offer.driver : OfferDriver.fromJson(card.raw),
-      vehicle: DriverVehicle.fromJson(card?.raw['vehicle']),
-      etaMinutes: offer.etaMinutes,
+      vehicle: DriverVehicle.fromJson(json.raw['vehicle']),
+      etaMinutes: json.intOr('etaMin', offer.etaMinutes),
     );
+  }
+
+  static String? _matchLabelOf(String? code) {
+    if (code == null || code.isEmpty) return null;
+    final words = code.replaceAll('_', ' ');
+    return '${words[0].toUpperCase()}${words.substring(1)}';
   }
 
   static const Duration confirmWindow = Duration(seconds: 120);
@@ -323,8 +341,8 @@ class ConfirmedTrip {
   factory ConfirmedTrip.fromJson(Object? body) {
     final json = JsonReader.of(body);
     return ConfirmedTrip(
-      tripId: json.strOrNull('tripId') ?? json.str('id'),
-      etaMinutes: json.intOr('etaMinutes', 0),
+      tripId: json.object('ride').str('id'),
+      etaMinutes: json.intOr('etaMin', 0),
       driver: OfferDriver.fromJson(json.raw['driver']),
     );
   }

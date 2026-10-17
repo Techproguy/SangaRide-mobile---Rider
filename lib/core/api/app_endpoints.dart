@@ -60,18 +60,18 @@ class AppEndpoints {
       fillPath(template, {'id': id, 'offerId': offerId});
 
   static const String activeTrip = '/rides/active';
-  static const String _liveTrip = '/trips/:id';
+  static const String _liveTrip = '/rides/:id';
 
   static const String liveTrip = _liveTrip;
-  static const String liveTripConfirmDetails = '$_liveTrip/details/confirm';
-  static const String liveTripPinRefresh = '$_liveTrip/pin/refresh';
+  static const String liveTripConfirmDetails = '$_liveTrip/match-check';
+  static const String liveTripPinRefresh = '$_liveTrip/pin';
   static const String liveTripReport = '$_liveTrip/report';
   static const String liveTripComplete = '$_liveTrip/complete';
-  static const String liveTripCall = '$_liveTrip/call';
+  static const String liveTripCall = '$_liveTrip/contact/call';
   static const String liveTripMessages = '$_liveTrip/messages';
   static const String liveTripStopsQuote = '$_liveTrip/stops/quote';
-  static const String liveTripStops = '$_liveTrip/stops';
-  static const String liveTripCancellation = '$_liveTrip/cancellation';
+  static const String liveTripStops = '$_liveTrip/stops/confirm';
+  static const String liveTripCancellation = '$_liveTrip/cancellation-preview';
   static const String liveTripCancel = '$_liveTrip/cancel';
 
   static String liveTripOf(String id) => fillPath(liveTrip, {'id': id});
@@ -96,7 +96,7 @@ class AppEndpoints {
 
   static String liveTripCancelOf(String id) => fillPath(liveTripCancel, {'id': id});
 
-  static const String _tripWrapUp = '/trips/:id';
+  static const String _tripWrapUp = '/rides/:id';
 
   static const String tripPayment = '$_tripWrapUp/payment';
   static const String tripPaymentCancel = '$_tripWrapUp/payment/cancel';

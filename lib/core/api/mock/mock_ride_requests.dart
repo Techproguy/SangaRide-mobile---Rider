@@ -40,7 +40,7 @@ abstract final class MockRideRequests {
 
   static ({String id, String status})? activeRideRequest() {
     for (final entry in _rideRequests.entries.toList().reversed) {
-      if (entry.value.isCancelled || MockTripState.trips.containsKey('trip_${entry.key}')) continue;
+      if (entry.value.isCancelled || MockTripState.trips.containsKey(entry.key)) continue;
       final status = _requestStatus(entry.value);
       if (_liveRequestStatuses.contains(status)) return (id: entry.key, status: status);
     }
@@ -194,8 +194,16 @@ abstract final class MockRideRequests {
   }
 
   static Map<String, dynamic> _priced(Map<String, dynamic> offer, num fare, {bool isFixed = false}) {
-    final counterOffer = MockMoney.jsonOrNull(_counterOffer(offer, fare, isFixed: isFixed));
-    return {...offer..remove('counterMarkup'), 'counterOffer': counterOffer};
+    final counter = _counterOffer(offer, fare, isFixed: isFixed);
+    return {
+      ...offer..remove('counterMarkup'),
+      'type': counter == null ? 'accept' : 'counter',
+      'amount': MockMoney.json(counter ?? fare),
+      'counterOfferAmount': MockMoney.jsonOrNull(counter),
+      'fee': MockMoney.json(counter ?? fare),
+      'expiresAt': _now().add(_holdWindow).toIso8601String(),
+      'vehicle': MockData.driverVehicle,
+    };
   }
 
   static Object? _rideOffers(MockRequest request) {
@@ -218,16 +226,19 @@ abstract final class MockRideRequests {
     final record = _requireRideRequest(request);
     final offer = _requireOffer(request);
     if (offer['status'] == 'withdrawn') throw _offerUnavailable;
+    final counter = _counterOffer(offer, record.proposedFare, isFixed: record.isFixedFare);
     return {
-      'hold': {
-        'offerId': offer['id'],
-        'holdExpiresAt': _now().add(_holdWindow).toIso8601String(),
-        'serverTime': _isoNow(),
-        'fare': MockMoney.json(record.proposedFare),
-        'counterOffer': MockMoney.jsonOrNull(_counterOffer(offer, record.proposedFare, isFixed: record.isFixedFare)),
-        'matchLabel': offer['matchLabel'],
-      },
-      'driver': _driverCard(offer),
+      'offerId': offer['id'],
+      'status': 'selected',
+      'confirmExpiresAt': _now().add(_holdWindow).toIso8601String(),
+      'confirmWindowSec': _holdWindow.inSeconds,
+      'driver': offer['driver'],
+      'vehicle': MockData.driverVehicle,
+      'distanceKm': offer['distanceKm'],
+      'etaMin': offer['etaMin'],
+      'matchLabel': offer['matchLabel'],
+      'fee': MockMoney.json(counter ?? record.proposedFare),
+      'counterOfferAmount': MockMoney.jsonOrNull(counter),
     };
   }
 
@@ -236,7 +247,7 @@ abstract final class MockRideRequests {
     final offer = _requireOffer(request);
     if (offer['status'] == 'withdrawn') throw _offerUnavailable;
     final requestId = request.params['id']!;
-    final tripId = 'trip_$requestId';
+    final tripId = requestId;
     if (!MockTripState.trips.containsKey(tripId)) {
       MockAirport.attachLive(tripId, MockTrip.requests[requestId]);
       MockTrip.open(
@@ -249,10 +260,11 @@ abstract final class MockRideRequests {
       );
     }
     return {
-      'tripId': tripId,
-      'status': 'driver_confirmed',
-      'driver': _driverCard(offer),
-      'etaMinutes': offer['etaMinutes'],
+      'ride': {'id': tripId, 'status': 'accepted', 'acceptedAt': _isoNow()},
+      'driver': offer['driver'],
+      'vehicle': MockData.driverVehicle,
+      'etaMin': offer['etaMin'],
+      'title': 'Ride accepted',
     };
   }
 

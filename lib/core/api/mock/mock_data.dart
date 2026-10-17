@@ -94,7 +94,12 @@ class MockData {
     'Finding a match',
   ];
 
-  static Map<String, dynamic> get driverVehicle => {..._driverVehicle, 'plate': MockRegion.plate('BDJ822FQ')};
+  static Map<String, dynamic> get driverVehicle => {
+    ..._driverVehicle,
+    'plate': MockRegion.plate('BDJ822FQ'),
+    'plateNumber': MockRegion.plate('BDJ822FQ'),
+    'featureLabels': _driverVehicle['features'],
+  };
 
   static const Map<String, dynamic> _driverVehicle = {
     'make': 'Toyota',
@@ -110,12 +115,15 @@ class MockData {
       'status': 'pending',
       'counterMarkup': 0.1,
       'etaMinutes': 20,
+      'etaMin': 20,
       'distanceKm': 4.0,
-      'matchLabel': 'Perfect match',
+      'matchLabel': 'perfect_match',
       'driver': {
         'id': 'drv_kamaru',
         'name': 'Kamaru U.',
+        'displayName': 'Kamaru U.',
         'firstName': 'Kamaru',
+        'lastName': 'U.',
         'photoUrl': null,
         'verified': true,
         'rating': 4.0,
@@ -127,12 +135,15 @@ class MockData {
       'status': 'pending',
       'counterMarkup': null,
       'etaMinutes': 25,
+      'etaMin': 25,
       'distanceKm': 6.0,
       'matchLabel': null,
       'driver': {
         'id': 'drv_george',
         'name': 'George A.',
+        'displayName': 'George A.',
         'firstName': 'George',
+        'lastName': 'A.',
         'photoUrl': null,
         'verified': true,
         'rating': 3.0,
@@ -144,12 +155,15 @@ class MockData {
       'status': 'pending',
       'counterMarkup': 0.05,
       'etaMinutes': 25,
+      'etaMin': 25,
       'distanceKm': 7.0,
       'matchLabel': null,
       'driver': {
         'id': 'drv_john',
         'name': 'John A.',
+        'displayName': 'John A.',
         'firstName': 'John',
+        'lastName': 'A.',
         'photoUrl': null,
         'verified': true,
         'rating': 5.0,
@@ -161,12 +175,15 @@ class MockData {
       'status': 'withdrawn',
       'counterMarkup': null,
       'etaMinutes': 25,
+      'etaMin': 25,
       'distanceKm': 9.0,
       'matchLabel': null,
       'driver': {
         'id': 'drv_ibrahim',
         'name': 'Ibrahim S.',
+        'displayName': 'Ibrahim S.',
         'firstName': 'Ibrahim',
+        'lastName': 'S.',
         'photoUrl': null,
         'verified': false,
         'rating': 3.0,
