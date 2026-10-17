@@ -16,6 +16,8 @@ class RatingDriverHeader extends StatelessWidget {
     return parts.take(2).map((part) => part[0].toUpperCase()).join();
   }
 
+  Widget get _initialsLabel => Text(_initials, style: SangaTextStyles.title.copyWith(color: SangaColors.primary));
+
   @override
   Widget build(BuildContext context) {
     final photo = driver.photo;
@@ -29,8 +31,14 @@ class RatingDriverHeader extends StatelessWidget {
           alignment: Alignment.center,
           decoration: const BoxDecoration(color: SangaColors.primarySoft, shape: BoxShape.circle),
           child: photo == null
-              ? Text(_initials, style: SangaTextStyles.title.copyWith(color: SangaColors.primary))
-              : Image(image: photo, width: _avatarSize, height: _avatarSize, fit: BoxFit.cover),
+              ? _initialsLabel
+              : Image(
+                  image: photo,
+                  width: _avatarSize,
+                  height: _avatarSize,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stack) => _initialsLabel,
+                ),
         ),
         Text.rich(
           TextSpan(
