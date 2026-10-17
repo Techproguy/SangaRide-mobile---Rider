@@ -287,10 +287,12 @@ class DriverVehicle {
   final List<String> features;
   final String summary;
 
-  String get title {
-    final name = [make, model].where((part) => part.isNotEmpty).join(' ');
-    if (name.isEmpty) return summary.isEmpty ? 'Vehicle' : summary;
-    return year == 0 ? name : '$name ($year)';
+  String get title => name.isEmpty ? 'Vehicle' : name;
+
+  String get name {
+    final makeModel = [make, model].where((part) => part.isNotEmpty).join(' ');
+    if (makeModel.isEmpty) return summary;
+    return year == 0 ? makeModel : '$makeModel ($year)';
   }
 
   String get colourLabel => colour.isEmpty ? colour : '${colour[0].toUpperCase()}${colour.substring(1)}';

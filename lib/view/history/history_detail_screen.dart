@@ -98,7 +98,11 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
         if (vehicle != null)
           SangaVehicleInfo(
             image: detail.category.image,
-            lines: [vehicle.title, '${vehicle.colourLabel} colour', 'REG NO: ${vehicle.plateLabel}'],
+            lines: [
+              vehicle.name,
+              if (vehicle.colour.isNotEmpty) '${vehicle.colourLabel} colour',
+              'REG NO: ${vehicle.plateLabel}',
+            ],
           ),
         if (detail.isCompleted) HistoryRatingCard(stars: detail.ratedStars),
         if (actions.isNotEmpty)

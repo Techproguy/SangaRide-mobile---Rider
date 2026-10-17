@@ -57,7 +57,7 @@ class ConfirmDriverCard extends StatelessWidget {
               SangaVehicleInfo(
                 image: vehicleImage,
                 lines: [
-                  hold.vehicle.title,
+                  hold.vehicle.name,
                   hold.vehicle.colourLabel,
                   hold.vehicle.plateLabel,
                   if (hold.vehicle.features.isNotEmpty) hold.vehicle.features.join(', '),

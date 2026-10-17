@@ -15,7 +15,7 @@ class TripVehicleCard extends StatelessWidget {
     return SangaVehicleInfo(
       image: trip.rideType.image,
       lines: [
-        vehicle.title,
+        vehicle.name,
         vehicle.colourLabel,
         vehicle.plateLabel,
         if (showsFeatures && vehicle.features.isNotEmpty) vehicle.features.join(', '),
