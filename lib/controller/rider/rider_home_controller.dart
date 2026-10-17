@@ -110,7 +110,7 @@ class RiderHomeController extends GetxController {
 
   Future<void> refreshHome() async {
     _problems.clear();
-    await Future.wait([locate(), _loadWeather(), _loadPlaces(), _saved.load()]);
+    await Future.wait([locate(), _loadPlaces(), _saved.load()]);
   }
 
   Future<PermissionAccess> askForLocation(BuildContext context) async {
@@ -141,6 +141,7 @@ class RiderHomeController extends GetxController {
       if (place == null) return _locationStatus.value = LocationStatus.error;
       _currentPlace.value = place;
       unawaited(_checkCity(place));
+      unawaited(_loadWeather(place));
       return result.status;
     } finally {
       _isLocating.value = false;
@@ -197,10 +198,17 @@ class RiderHomeController extends GetxController {
     }
   }
 
-  Future<void> _loadWeather() async {
+  Future<void> _loadWeather(Place place) async {
+    final coordinates = place.coordinates;
+    if (coordinates == null) return;
     try {
-      final response = await _api.get(AppEndpoints.weather, suppressErrorToast: true);
-      _weather.value = Weather.fromJson((response.data as Map)['data']);
+      final city = _cityOf(place);
+      final response = await _api.get(
+        AppEndpoints.weather,
+        queryParameters: {'lat': coordinates.latitude, 'lng': coordinates.longitude},
+        suppressErrorToast: true,
+      );
+      _weather.value = Weather.tryFromJson((response.data as Map)['data'], city: await city ?? '');
     } catch (e) {
       log('weather failed: $e');
     }

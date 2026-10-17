@@ -31,7 +31,7 @@ abstract final class MockRegion {
 
   static String get cityName => isUnitedStates ? 'Houston' : 'Lagos';
 
-  static Map<String, dynamic> get weather => {'city': cityName, 'temperatureC': 28, 'condition': 'sunny'};
+  static Map<String, dynamic> get weather => {'tempC': 28, 'condition': 'Sunny', 'icon': 'clear'};
 
   static List<MockPlaceSpec> get landmarks => isUnitedStates ? _houstonLandmarks : _lagosLandmarks;
 
