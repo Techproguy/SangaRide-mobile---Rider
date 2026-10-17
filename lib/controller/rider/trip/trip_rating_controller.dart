@@ -14,6 +14,7 @@ class TripRatingController extends GetxController {
   final Rx<RatingState> _state = Rx<RatingState>(const RatingEditing(DriverRating()));
   String? _tripId;
   IdempotencyKey? _key;
+  String? _keyedRequest;
   final Epoch _epoch = Epoch();
 
   Rx<RatingState> get stateRx => _state;
@@ -32,7 +33,6 @@ class TripRatingController extends GetxController {
     if (_tripId == tripId && state is! RatingSubmitted) return;
     _epoch.next();
     _tripId = tripId;
-    _key = null;
     _state.value = const RatingEditing(DriverRating());
   }
 
@@ -57,11 +57,12 @@ class TripRatingController extends GetxController {
     if (id == null || isSubmitting || state is RatingSubmitted || !rating.hasStars) return false;
     final epoch = _epoch.next();
     _state.value = RatingSubmitting(rating);
+    final body = rating.toJson();
     try {
       await _api.post(
         AppEndpoints.tripRatingOf(id),
-        data: rating.toJson(),
-        key: _key ??= IdempotencyKey.newFor(IdempotencyIntent.tripRating),
+        data: body,
+        key: _keyFor('$id $body'),
         suppressErrorToast: true,
       );
     } catch (e) {
@@ -74,5 +75,13 @@ class TripRatingController extends GetxController {
     if (!_epoch.isCurrent(epoch)) return false;
     _state.value = RatingSubmitted(rating);
     return true;
+  }
+
+  IdempotencyKey _keyFor(String request) {
+    if (request != _keyedRequest) {
+      _keyedRequest = request;
+      _key = IdempotencyKey.newFor(IdempotencyIntent.tripRating);
+    }
+    return _key!;
   }
 }
