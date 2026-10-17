@@ -31,8 +31,13 @@ abstract final class PlaceMarker {
     required String title,
     String? subtitle,
   }) async {
-    final icon = await _icon(kind, title, subtitle);
+    final icon = await _icon(kind, _shortName(title), subtitle);
     return Marker(markerId: MarkerId(id), position: position, icon: icon.icon, anchor: icon.anchor, zIndexInt: 2);
+  }
+
+  static String _shortName(String title) {
+    final first = title.split(',').first.trim();
+    return first.isEmpty ? title : first;
   }
 
   static Future<PlaceMarkerIcon> _icon(PlaceMarkerKind kind, String title, String? subtitle) async {
@@ -41,12 +46,12 @@ abstract final class PlaceMarker {
   }
 
   static Future<PlaceMarkerIcon> _paint(PlaceMarkerKind kind, String title, String? subtitle) async {
-    final titlePainter = _text(title, SangaTextStyles.mapLabel);
+    final titlePainter = _text(title, SangaTextStyles.mapLabel.copyWith(fontSize: 12, fontWeight: FontWeight.w600));
     final subtitlePainter = subtitle == null
         ? null
-        : _text(subtitle, SangaTextStyles.mapLabel.copyWith(fontSize: 7.5, color: SangaColors.textFaint));
-    const padH = 8.0;
-    const padV = 5.0;
+        : _text(subtitle, SangaTextStyles.mapLabel.copyWith(fontSize: 9, color: SangaColors.textSecondary));
+    const padH = 10.0;
+    const padV = 6.0;
     final textWidth = [titlePainter.width, subtitlePainter?.width ?? 0].reduce((a, b) => a > b ? a : b);
     final bubbleWidth = textWidth + padH * 2;
     final bubbleHeight = titlePainter.height + (subtitlePainter?.height ?? 0) + padV * 2;

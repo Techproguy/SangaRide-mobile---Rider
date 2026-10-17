@@ -71,6 +71,12 @@ class _TripScreenState extends State<TripScreen> {
 
   bool _sheetTouched = false;
 
+  bool _mapPanned = false;
+
+  static const double _minZoom = 13;
+
+  static const double _maxZoom = 17;
+
   static const Duration _settleDelay = Duration(seconds: 4);
 
   @override
@@ -106,7 +112,10 @@ class _TripScreenState extends State<TripScreen> {
     _previous = next;
     _phase = next is TripLoaded ? next.trip.deliveryPhase : null;
     if (!mounted || _isLeaving) return;
-    if (next.runtimeType != previous.runtimeType) _settleSheetFor(next);
+    if (next.runtimeType != previous.runtimeType) {
+      _mapPanned = false;
+      _settleSheetFor(next);
+    }
     if (next is TripLoaded && _hasRouteChanged(previous, next)) {
       _scheduleReframe();
     }
@@ -171,8 +180,8 @@ class _TripScreenState extends State<TripScreen> {
 
   void _reframe() {
     final trip = _trip.trip;
-    if (!mounted || trip == null) return;
-    unawaited(_camera.fitBounds(tripFramePoints(trip)));
+    if (!mounted || trip == null || _mapPanned) return;
+    unawaited(_camera.fitBounds(tripFramePoints(trip), minZoom: _minZoom, maxZoom: _maxZoom));
   }
 
   void _closeSheet() {
@@ -233,7 +242,10 @@ class _TripScreenState extends State<TripScreen> {
               child: Stack(
                 children: [
                   Positioned.fill(
-                    child: TripMap(trip: _trip.trip, camera: _camera, onMapCreated: _scheduleReframe),
+                    child: Listener(
+                      onPointerMove: (_) => _mapPanned = true,
+                      child: TripMap(trip: _trip.trip, camera: _camera, onMapCreated: _scheduleReframe),
+                    ),
                   ),
                   _overlays(state),
                   Positioned.fill(

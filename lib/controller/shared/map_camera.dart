@@ -46,6 +46,7 @@ class MapCamera {
     double padding = 60,
     double singlePointZoom = 15,
     double maxZoom = 16.5,
+    double minZoom = 0,
   }) async {
     final controller = _controller;
     if (controller == null || points.isEmpty || mapSize.isEmpty) return;
@@ -55,6 +56,7 @@ class MapCamera {
       insets: visibleInsets,
       padding: padding,
       maxZoom: maxZoom,
+      minZoom: minZoom,
       singlePointZoom: singlePointZoom,
       samePlaceMeters: _samePlaceMeters,
     );
