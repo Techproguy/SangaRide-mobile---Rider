@@ -167,8 +167,9 @@ abstract final class MockRideRequests {
   }
 
   static Object? _rideRequestStatus(MockRequest request) {
-    final record = _requireRideRequest(request);
     final id = request.params['id']!;
+    if (MockTripState.trips.containsKey(id)) return MockTrip.ridePayload(id);
+    final record = _requireRideRequest(request);
     return _requestPayload(id, _requestStatus(record), _stepsDone(record));
   }
 
@@ -269,6 +270,7 @@ abstract final class MockRideRequests {
   }
 
   static Object? _cancelRideRequest(MockRequest request) {
+    if (MockTripState.trips.containsKey(request.params['id'])) return MockTrip.cancelRide(request);
     _requireRideRequest(request).isCancelled = true;
     return {'status': 'cancelled'};
   }

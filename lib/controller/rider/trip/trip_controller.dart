@@ -11,6 +11,7 @@ import 'package:sanga_ride/core/services/session_restore.dart';
 import 'package:sanga_ride/core/services/session_storage.dart';
 import 'package:sanga_ride/core/storage/draft_keys.dart';
 import 'package:sanga_ride/model/models.dart';
+import 'package:sanga_ride/model/trip/server_time.dart';
 import 'package:sanga_ride_core/sanga_ride_core.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
@@ -73,6 +74,20 @@ class TripController extends GetxController {
 
   bool _hasSignalledEnd = false;
 
+  bool _isRevealingPin = false;
+
+  bool _hasReported = false;
+
+  bool _hasCancelledAsRider = false;
+
+  String? _pin;
+
+  DateTime? _pinExpiresAt;
+
+  DateTime? _detailsConfirmedAt;
+
+  int _markedDriverMessages = 0;
+
   IdempotencyKey? _shareKey;
 
   final Set<String> _inFlight = {};
@@ -122,7 +137,7 @@ class TripController extends GetxController {
     _openers = 1;
     _epoch.next();
     _state.value = const TripLoading();
-    _startTripPoller();
+    _startTripPoller(tripId);
   }
 
   void close({String? onlyTripId}) {
@@ -155,6 +170,13 @@ class TripController extends GetxController {
     _seq = 0;
     _applied = 0;
     _hasSignalledEnd = false;
+    _isRevealingPin = false;
+    _hasReported = false;
+    _hasCancelledAsRider = false;
+    _pin = null;
+    _pinExpiresAt = null;
+    _detailsConfirmedAt = null;
+    _markedDriverMessages = 0;
     _shareKey = null;
     _inFlight.clear();
     _state.value = const TripLoading();
@@ -170,20 +192,26 @@ class TripController extends GetxController {
   }
 
   Future<void> retryLoad() async {
-    if (_tripId == null || state is! TripFailed) return;
+    final id = _tripId;
+    if (id == null || state is! TripFailed) return;
     _state.value = const TripLoading();
     final poller = _tripPoller;
     if (poller == null || !poller.isRunning) {
-      _startTripPoller();
+      _startTripPoller(id);
       return;
     }
     await poller.refreshNow();
   }
 
-  void _startTripPoller() {
+  void _startTripPoller(String id) {
     _detachTripLink?.call();
     _tripPoller?.dispose();
-    final poller = LivePoller(fetch: _fetchTrip, interval: pollInterval, onParseError: _onParseError);
+    final poller = LivePoller(
+      fetch: _fetchTrip,
+      interval: pollInterval,
+      nudges: RideEvents.instance.about(id),
+      onParseError: _onParseError,
+    );
     void mirror() => _link.value = poller.link.value;
     poller.link.addListener(mirror);
     _detachTripLink = () => poller.link.removeListener(mirror);
@@ -202,13 +230,12 @@ class TripController extends GetxController {
     final seq = ++_seq;
     final isFirstLoad = state is TripLoading || state is TripFailed;
     try {
-      final response = await _api.get(
-        AppEndpoints.liveTripOf(id),
-        suppressErrorToast: true,
+      final incoming = await _loadTrip(
+        id,
         profile: isFirstLoad ? RequestProfile.interactive : RequestProfile.background,
       );
       if (!_epoch.isCurrent(epoch)) return;
-      _accept(Trip.fromJson(response.dataMapOrEmpty), seq);
+      _accept(incoming, seq);
     } catch (error) {
       if (!_epoch.isCurrent(epoch)) return;
       if (error is ApiException && error.isGone) {
@@ -232,9 +259,36 @@ class TripController extends GetxController {
     _ => false,
   };
 
-  void _accept(Trip incoming, int seq) {
+  Future<Trip> _loadTrip(String id, {RequestProfile profile = RequestProfile.interactive}) async {
+    final response = await _api.get(AppEndpoints.liveTripOf(id), suppressErrorToast: true, profile: profile);
+    return Trip.fromJson(response.dataMapOrEmpty);
+  }
+
+  Trip _withLocalFacts(Trip incoming) {
+    if (incoming.status != TripStatus.driverArrived) {
+      _pin = null;
+      _pinExpiresAt = null;
+    }
+    return incoming.withLocal(
+      pin: _pin,
+      pinExpiresAt: _pinExpiresAt,
+      detailsConfirmedAt: _detailsConfirmedAt,
+      cancellationReason: _localCancelReason(incoming),
+    );
+  }
+
+  TripCancelReason? _localCancelReason(Trip incoming) {
+    if (incoming.status != TripStatus.cancelled) return null;
+    if (_hasReported) return TripCancelReason.driverMismatch;
+    final reason = incoming.cancellationReason;
+    final isUnattributed = reason == null || reason == TripCancelReason.other;
+    return _hasCancelledAsRider && isUnattributed ? TripCancelReason.riderCancelled : null;
+  }
+
+  void _accept(Trip raw, int seq) {
     if (seq <= _applied) return;
     final current = trip;
+    final incoming = _withLocalFacts(raw);
     final isReturnLeg = incoming.delivery?.stage.isReturn ?? false;
     if (current != null && !isReturnLeg && TripStatus.advance(current.status, incoming.status) != incoming.status) {
       return;
@@ -246,8 +300,45 @@ class TripController extends GetxController {
       _tripPoller?.stop();
       _chatPoller?.stop();
       _signalEnded();
+      return;
+    }
+    if (_needsPin(incoming)) unawaited(_revealPin());
+  }
+
+  bool _needsPin(Trip trip) =>
+      trip.status == TripStatus.driverArrived && trip.pin == null && trip.hasEvent(TripEventType.detailsConfirmed);
+
+  Future<bool> _revealPin() async {
+    final id = _tripId;
+    if (id == null || _isRevealingPin) return false;
+    _isRevealingPin = true;
+    final epoch = _epoch.current;
+    try {
+      final response = await _api.post(AppEndpoints.liveTripPinRefreshOf(id), suppressErrorToast: true);
+      if (!_epoch.isCurrent(epoch)) return false;
+      return _storePin(response.dataMapOrEmpty);
+    } catch (error) {
+      log('pin reveal failed: $error', name: 'TripController');
+      return false;
+    } finally {
+      _isRevealingPin = false;
     }
   }
+
+  bool _storePin(Map<String, dynamic> reveal) {
+    final data = JsonReader.of(reveal);
+    final pin = data.strOrNull('pin');
+    if (pin == null) return false;
+    _pin = pin;
+    _pinExpiresAt = deviceDeadlineOrNull(data.strOrNull('expiresAt'));
+    final current = trip;
+    if (current != null) _acceptFresh(current);
+    return true;
+  }
+
+  Future<Trip> loadLatest() => _loadTrip(_requireTripId());
+
+  void noteCancelledByRider() => _hasCancelledAsRider = true;
 
   void _signalEnded() {
     if (_hasSignalledEnd) return;
@@ -270,14 +361,23 @@ class TripController extends GetxController {
     _noticeTimer = Timer(noticeDuration, () => _notice.value = null);
   }
 
-  Future<bool> confirmDetails() => _act(
-    flag: isConfirmingDetails,
-    name: 'confirm-details',
-    signature: '',
-    send: (key) => _post(AppEndpoints.liveTripConfirmDetailsOf, key: key),
-    didHappen: (trip) =>
-        trip.hasEvent(TripEventType.detailsConfirmed) || trip.status.rank > TripStatus.driverArrived.rank,
-  );
+  Future<bool> confirmDetails() async {
+    final isDone = await _act(
+      flag: isConfirmingDetails,
+      name: 'confirm-details',
+      signature: '',
+      send: (key) async {
+        final id = await _post(AppEndpoints.liveTripConfirmDetailsOf, key: key);
+        _detailsConfirmedAt ??= DateTime.now();
+        await _revealPin();
+        return _loadTrip(id);
+      },
+      didHappen: (trip) =>
+          trip.hasEvent(TripEventType.detailsConfirmed) || trip.status.rank > TripStatus.driverArrived.rank,
+    );
+    if (isDone && state is TripArrived) SangaToast.show(LiveProblem.pinPending);
+    return isDone;
+  }
 
   Future<bool> refreshPin() {
     final before = trip?.pin;
@@ -285,19 +385,26 @@ class TripController extends GetxController {
       flag: isRefreshingPin,
       name: 'refresh-pin',
       signature: before ?? '',
-      send: (key) => _post(AppEndpoints.liveTripPinRefreshOf, key: key),
+      send: (key) async {
+        final id = _requireTripId();
+        final response = await _api.post(AppEndpoints.liveTripPinRefreshOf(id), key: key, suppressErrorToast: true);
+        _storePin(response.dataMapOrEmpty);
+        return _loadTrip(id);
+      },
       didHappen: (trip) => trip.pin != null && trip.pin != before,
     );
   }
 
-  Future<bool> completeRide() => _act(
-    flag: isCompleting,
-    name: 'complete',
-    signature: '',
-    send: (key) => _post(AppEndpoints.liveTripCompleteOf, key: key),
-    didHappen: (trip) => trip.status == TripStatus.completed,
-    onDone: (_) => _signalEnded(),
-  );
+  Future<bool> completeRide() async {
+    if (isCompleting.value) return false;
+    isCompleting.value = true;
+    try {
+      final latest = await pollNow();
+      return latest?.status == TripStatus.completed;
+    } finally {
+      isCompleting.value = false;
+    }
+  }
 
   Future<bool> reportIssue(Iterable<TripIssue> issues) {
     if (issues.isEmpty) return Future.value(false);
@@ -306,20 +413,34 @@ class TripController extends GetxController {
       flag: isReporting,
       name: 'report',
       signature: reasons.join(','),
-      send: (key) => _post(AppEndpoints.liveTripReportOf, key: key, data: {'reasons': reasons}),
+      send: (key) async {
+        _hasReported = true;
+        try {
+          final id = await _post(AppEndpoints.liveTripReportOf, key: key, data: {'reasons': reasons});
+          return await _loadTrip(id);
+        } catch (_) {
+          _hasReported = false;
+          rethrow;
+        }
+      },
       didHappen: (trip) => trip.status == TripStatus.cancelled,
     );
   }
 
-  Future<Trip> _post(
+  String _requireTripId() {
+    final id = _tripId;
+    if (id == null) throw const ApiException(kind: ApiFailureKind.rejected, message: 'No trip', isMutation: true);
+    return id;
+  }
+
+  Future<String> _post(
     String Function(String id) endpoint, {
     required IdempotencyKey key,
     Map<String, dynamic>? data,
   }) async {
-    final id = _tripId;
-    if (id == null) throw const ApiException(kind: ApiFailureKind.rejected, message: 'No trip', isMutation: true);
-    final response = await _api.post(endpoint(id), data: data, key: key, suppressErrorToast: true);
-    return Trip.fromJson(response.dataMapOrEmpty);
+    final id = _requireTripId();
+    await _api.post(endpoint(id), data: data, key: key, suppressErrorToast: true);
+    return id;
   }
 
   Future<bool> _act({
@@ -328,7 +449,6 @@ class TripController extends GetxController {
     required String signature,
     required Future<Trip> Function(IdempotencyKey key) send,
     required bool Function(Trip trip) didHappen,
-    void Function(Trip trip)? onDone,
   }) async {
     final id = _tripId;
     if (id == null || flag.value) return false;
@@ -354,17 +474,16 @@ class TripController extends GetxController {
     try {
       final result = await mutation.start();
       if (!_epoch.isCurrent(epoch)) return false;
-      return _settleAction(result, mutationKey, onDone);
+      return _settleAction(result, mutationKey);
     } finally {
       if (_epoch.isCurrent(epoch)) flag.value = false;
     }
   }
 
-  bool _settleAction(MutationState<Trip> result, String mutationKey, void Function(Trip trip)? onDone) {
+  bool _settleAction(MutationState<Trip> result, String mutationKey) {
     switch (result) {
       case MutationDone<Trip>(:final value):
         _acceptFresh(value);
-        onDone?.call(value);
         _discardAction(mutationKey);
         return true;
       case MutationRejected<Trip>(:final error):
@@ -389,12 +508,7 @@ class TripController extends GetxController {
 
   Future<Trip?> _fetchOnce(String id) async {
     try {
-      final response = await _api.get(
-        AppEndpoints.liveTripOf(id),
-        suppressErrorToast: true,
-        profile: RequestProfile.interactive,
-      );
-      return Trip.fromJson(response.dataMapOrEmpty);
+      return await _loadTrip(id);
     } catch (error) {
       log('trip check failed: $error', name: 'TripController');
       return null;

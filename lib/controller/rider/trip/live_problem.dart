@@ -5,6 +5,8 @@ import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 abstract final class LiveProblem {
   static const String checking = 'We’re still checking. Give it a moment before you try again.';
 
+  static const String pinPending = 'Your PIN will show once your driver confirms you’re with them.';
+
   static bool get isOffline => ConnectionMonitor.current?.isOnline == false;
 
   static String messageOf(Object error) {

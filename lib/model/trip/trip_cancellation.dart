@@ -52,19 +52,17 @@ enum CancelFeeReason {
     tripStarted => 'You’ll pay $amount for the distance you’ve already travelled, as our cancellation policy explains.',
   };
 
-  static CancelFeeReason fromCode(String? code) => enumByCode(values, code, (reason) => reason.code, driverOnTheWay);
+  static const String _withinGrace = 'within_grace';
+
+  static CancelFeeReason fromCode(String? code) {
+    final normalized = code?.toLowerCase();
+    if (normalized == _withinGrace) return freeWindow;
+    return enumByCode(values, normalized, (reason) => reason.code, driverOnTheWay);
+  }
 }
 
 class CancellationRefund {
   const CancellationRefund({required this.amount, required this.method});
-
-  factory CancellationRefund.fromJson(Map<String, dynamic> json) {
-    final reader = JsonReader.of(json);
-    return CancellationRefund(
-      amount: reader.money('amount'),
-      method: PaymentMethod.tryFromCode(reader.strOrNull('method')),
-    );
-  }
 
   final Money amount;
   final PaymentMethod? method;
@@ -74,7 +72,6 @@ class CancellationRefund {
 
 class CancellationReview {
   const CancellationReview({
-    required this.reviewId,
     required this.fee,
     required this.feeReason,
     required this.refund,
@@ -84,18 +81,20 @@ class CancellationReview {
 
   factory CancellationReview.fromJson(Map<String, dynamic> json) {
     final reader = JsonReader.of(json);
+    final fee = JsonReader.of(reader.raw['fee']);
     final refund = reader.objectOrNull('refund');
+    final paymentMethod = PaymentMethod.tryFromCode(JsonReader.of(reader.raw['paymentMethod']).strOrNull('type'));
     return CancellationReview(
-      reviewId: reader.strOrNull('reviewId'),
-      fee: reader.money('fee'),
-      feeReason: CancelFeeReason.fromCode(reader.strOrNull('feeReason')),
-      refund: refund == null ? null : CancellationRefund.fromJson(refund.raw),
-      paymentMethod: PaymentMethod.tryFromCode(reader.strOrNull('paymentMethod')),
-      message: reader.strOrNull('message'),
+      fee: fee.money('amount'),
+      feeReason: CancelFeeReason.fromCode(fee.strOrNull('policyRule')),
+      refund: refund != null && refund.boolOr('applicable', false)
+          ? CancellationRefund(amount: refund.money('amount'), method: paymentMethod)
+          : null,
+      paymentMethod: paymentMethod,
+      message: fee.strOrNull('notice'),
     );
   }
 
-  final String? reviewId;
   final Money fee;
   final CancelFeeReason feeReason;
   final CancellationRefund? refund;
@@ -113,8 +112,8 @@ class CancelOutcome {
   factory CancelOutcome.fromJson(Map<String, dynamic> json) {
     final reader = JsonReader.of(json);
     return CancelOutcome(
-      tripId: reader.str('tripId'),
-      feeCharged: reader.money('feeCharged'),
+      tripId: reader.str('id'),
+      feeCharged: reader.money('cancellationFee'),
       message: reader.strOr('message', 'Your ride is cancelled.'),
     );
   }

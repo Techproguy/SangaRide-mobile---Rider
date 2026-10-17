@@ -44,13 +44,28 @@ extension TripChat on TripController {
     try {
       final response = await _api.get(AppEndpoints.liveTripMessagesOf(id), suppressErrorToast: true);
       if (!_epoch.isCurrent(epoch) || !isChatOpen) return;
-      final server = JsonReader.of(response.dataMapOrEmpty)
-          .listOf('messages', (item) => TripMessage.fromJson(item.raw));
+      final server = TripMessage.listFrom(response.data);
       _mergeServerMessages(server);
       chatStatus.value = TripChatStatus.ready;
+      _markDriverMessagesRead(id, server);
     } catch (error) {
       if (_epoch.isCurrent(epoch) && messages.isEmpty) chatStatus.value = TripChatStatus.failed;
       rethrow;
+    }
+  }
+
+  void _markDriverMessagesRead(String id, List<TripMessage> server) {
+    final driverMessages = server.where((message) => !message.isMine).length;
+    if (driverMessages <= _markedDriverMessages) return;
+    _markedDriverMessages = driverMessages;
+    unawaited(_markRead(id));
+  }
+
+  Future<void> _markRead(String id) async {
+    try {
+      await _api.post('${AppEndpoints.liveTripMessagesOf(id)}/read', suppressErrorToast: true);
+    } catch (error) {
+      log('mark read failed: $error', name: 'TripController');
     }
   }
 
@@ -96,7 +111,7 @@ extension TripChat on TripController {
         suppressErrorToast: true,
       );
       if (!_epoch.isCurrent(epoch)) return;
-      _replaceByClientId(clientId, TripMessage.fromJson(response.dataMapOrEmpty));
+      _replaceByClientId(clientId, TripMessage.fromResponse(response.dataMapOrEmpty));
     } catch (error) {
       log('sendMessage failed: $error', name: 'TripController');
       if (_epoch.isCurrent(epoch)) _markDelivery(clientId, TripMessageDelivery.failed);

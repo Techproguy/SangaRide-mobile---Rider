@@ -111,11 +111,7 @@ extension _TripPanels on _TripScreenState {
         onShare: () => unawaited(shareTrip(trip.id)),
         onAddStops: _openAddStops,
         onCancel: _openCancel,
-        action: SangaButton.primary(
-          label: 'Complete ride',
-          isLoading: _trip.isCompleting.value,
-          onPressed: _trip.completeRide,
-        ),
+        action: SangaButton.primary(label: 'Complete ride', onPressed: _makePayment),
       ),
       TripCancelled(:final reason, :final trip) => TripEndedPanel(
         reason: reason,

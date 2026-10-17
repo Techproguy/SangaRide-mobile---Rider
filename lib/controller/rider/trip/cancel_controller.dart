@@ -99,7 +99,7 @@ class CancelController extends GetxController {
   Future<CancellationReview> _fetchReview(String id, CancelReason reason) async {
     final response = await _api.get(
       AppEndpoints.liveTripCancellationOf(id),
-      queryParameters: {'reason': reason.code},
+      queryParameters: {'reasonCode': reason.code},
       suppressErrorToast: true,
       profile: RequestProfile.interactive,
     );
@@ -139,7 +139,7 @@ class CancelController extends GetxController {
 
   Mutation<CancelOutcome> _mutationFor(String id, CancelReviewing reviewing) {
     final note = reviewing.note.trim();
-    final signature = '${reviewing.review.reviewId}|${reviewing.reason.code}|$note';
+    final signature = '${reviewing.review.fee.minor}|${reviewing.reason.code}|$note';
     final existing = _mutation;
     if (existing != null && _signature == signature) return existing;
     existing?.dispose();
@@ -147,14 +147,10 @@ class CancelController extends GetxController {
     return _mutation = Mutation<CancelOutcome>(
       intent: IdempotencyIntent.tripCancel,
       run: (key) async {
+        _trip.noteCancelledByRider();
         final response = await _api.post(
           AppEndpoints.liveTripCancelOf(id),
-          data: {
-            'reason': reviewing.reason.code,
-            if (note.isNotEmpty) 'note': note,
-            'reviewId': reviewing.review.reviewId,
-            'fee': reviewing.review.fee.toJson(),
-          },
+          data: {'reasonCode': reviewing.reason.code, if (note.isNotEmpty) 'reason': note},
           key: key,
           suppressErrorToast: true,
         );

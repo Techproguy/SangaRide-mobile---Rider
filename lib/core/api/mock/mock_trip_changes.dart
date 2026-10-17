@@ -5,6 +5,7 @@ import 'package:sanga_ride/core/api/mock/mock_money.dart';
 import 'package:sanga_ride/core/api/mock/mock_server.dart';
 import 'package:sanga_ride/core/api/mock/mock_trip.dart';
 import 'package:sanga_ride/core/api/mock/mock_trip_state.dart';
+import 'package:sanga_ride/model/trip/trip_cancellation.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 abstract final class MockTripChanges {
@@ -12,7 +13,6 @@ abstract final class MockTripChanges {
     MockRoute.post(AppEndpoints.liveTripStopsQuote, _quote),
     MockRoute.post(AppEndpoints.liveTripStops, _addStops),
     MockRoute.get(AppEndpoints.liveTripCancellation, _cancellation),
-    MockRoute.post(AppEndpoints.liveTripCancel, _cancel),
   ];
 
   static const int _maxStops = 3;
@@ -27,14 +27,21 @@ abstract final class MockTripChanges {
   static const Duration _freeCancelWindow = Duration(minutes: 2);
   static const List<String> _changeableStatuses = ['driver_en_route', 'driver_arrived', 'in_progress'];
   static const List<String> _driverFaultReasons = ['driver_asked', 'vehicle_mismatch', 'safety_concern'];
-  static const List<String> _reasons = [
-    'driver_late',
-    'driver_asked',
-    'vehicle_mismatch',
-    'no_longer_needed',
-    'safety_concern',
-    'other',
-  ];
+  static const Map<String, String> _reasonLabels = {
+    'driver_late': 'Driver is taking too long',
+    'driver_asked': 'Driver asked me to cancel',
+    'vehicle_mismatch': 'Driver or vehicle doesn’t match',
+    'no_longer_needed': 'I no longer need this ride',
+    'safety_concern': 'Safety concern',
+    'other': 'Other',
+  };
+  static const Map<String, String> _policyRules = {
+    'free_window': 'WITHIN_GRACE',
+    'driver_fault': 'DRIVER_FAULT',
+    'driver_on_the_way': 'DRIVER_EN_ROUTE',
+    'driver_arrived': 'DRIVER_ARRIVED',
+    'trip_started': 'TRIP_STARTED',
+  };
 
   static final Map<String, _StopQuote> _quotes = {};
   static int _quoteCount = 0;
@@ -164,12 +171,12 @@ abstract final class MockTripChanges {
     MockTrip.addStops(id, quote.stops);
     trip['fare'] = quote.total;
     trip['distanceKm'] = double.parse(((trip['distanceKm'] as num) + quote.extraKm).toStringAsFixed(1));
-    return MockTrip.payload(id);
+    return MockTrip.ridePayload(id);
   }
 
   static String _reasonOf(MockRequest request) {
-    final reason = request.query['reason'] ?? request.body['reason'];
-    if (reason is! String || !_reasons.contains(reason)) {
+    final reason = request.query['reasonCode'] ?? request.body['reasonCode'];
+    if (reason is! String || !_reasonLabels.containsKey(reason)) {
       throw const MockFailure(422, 'Pick a reason first.', code: 'invalid_reason');
     }
     return reason;
@@ -198,19 +205,41 @@ abstract final class MockTripChanges {
     return (fee: _cancelFee, feeReason: status == 'driver_arrived' ? 'driver_arrived' : 'driver_on_the_way');
   }
 
-  static Map<String, dynamic> _review(String id, String reason) {
-    final trip = MockTrip.stored(id);
+  static String _noticeOf(({int fee, String feeReason}) fee) =>
+      fee.fee == 0 ? 'Free cancellation' : CancelFeeReason.fromCode(fee.feeReason).notice(MockMoney.label(fee.fee));
+
+  static Map<String, dynamic> _preview(String id, String reason, String note) {
+    final ride = MockTrip.ridePayload(id);
     final fee = _fee(id, reason);
     final method = MockTripState.paymentMethod[id] ?? 'cash';
     final isRefundable = MockTripState.paidAt.containsKey(id) && method == 'card';
-    final fare = (trip['fare'] as num).toInt();
+    final fare = (MockTrip.stored(id)['fare'] as num).toInt();
+    final refund = isRefundable ? math.max(0, fare - fee.fee) : 0;
     return {
-      'reviewId': 'rev_${id}_${fee.fee}_$reason',
-      'fee': MockMoney.json(fee.fee),
-      'feeReason': fee.feeReason,
-      'refund': isRefundable ? {'amount': MockMoney.json(math.max(0, fare - fee.fee)), 'method': method} : null,
-      'paymentMethod': method,
-      'serverTime': _iso(DateTime.now()),
+      'rideId': id,
+      'reference': ride['ref'],
+      'status': ride['status'],
+      'kind': ride['kind'],
+      'driver': ride['driver'],
+      'vehicle': (ride['driver'] as Map<String, dynamic>)['vehicle'],
+      'pickup': ride['pickup'],
+      'dropoff': ride['dropoff'],
+      'fee': {
+        'amount': MockMoney.of(fee.fee).major,
+        'isFree': fee.fee == 0,
+        'display': fee.fee == 0 ? 'Free' : MockMoney.label(fee.fee),
+        'notice': _noticeOf(fee),
+        'policyRule': _policyRules[fee.feeReason],
+      },
+      'paymentMethod': {'type': method, 'label': '${method[0].toUpperCase()}${method.substring(1)}'},
+      'refund': {'applicable': refund > 0, 'amount': MockMoney.of(refund).major, 'display': MockMoney.label(refund)},
+      'reason': {'code': reason, 'label': _reasonLabels[reason], 'otherReason': note.isEmpty ? null : note},
+      'confirmButtonLabel': fee.fee == 0 ? 'Cancel ride' : 'Cancel and pay ${MockMoney.label(fee.fee)}',
+      'confirmDialog': {
+        'message': 'Are you sure you want to cancel this ride?',
+        'confirmLabel': 'Yes, cancel',
+        'dismissLabel': 'Keep my ride',
+      },
     };
   }
 
@@ -218,49 +247,21 @@ abstract final class MockTripChanges {
     final id = request.params['id']!;
     MockTrip.stored(id);
     _requireCancellable(id);
-    return _review(id, _reasonOf(request));
+    return _preview(id, _reasonOf(request), '');
   }
 
-  static String _messageOf(Map<String, dynamic> review) {
-    final fee = MockMoney.naira(review['fee']);
-    final refund = review['refund'] as Map<String, dynamic>?;
-    final refundAmount = refund == null ? 0 : MockMoney.naira(refund['amount']);
-    final parts = [
-      'Your ride has been cancelled.',
-      if (fee == 0) 'You won’t be charged.' else '${MockMoney.label(fee)} goes to your driver for their time.',
-      if (refund != null && refundAmount > 0)
-        'We’re refunding ${MockMoney.label(refundAmount)} to your ${refund['method']}.',
-    ];
-    return parts.join(' ');
-  }
-
-  static Object? _cancel(MockRequest request) {
+  static Object? cancel(MockRequest request) {
     final id = request.params['id']!;
     MockTrip.stored(id);
     _requireCancellable(id);
     final reason = _reasonOf(request);
-    final note = (request.body['note'] as String?)?.trim() ?? '';
+    final note = (request.body['reason'] as String?)?.trim() ?? '';
     if (reason == 'other' && note.isEmpty) {
       throw const MockFailure(422, 'Add a short note so we know what happened.', code: 'note_required');
     }
-    final review = _review(id, reason);
-    final reviewedFee = request.body['fee'];
-    if (reviewedFee != null && MockMoney.naira(reviewedFee) != MockMoney.naira(review['fee'])) {
-      throw MockFailure(
-        409,
-        'The cancellation fee changed while you were looking.',
-        code: 'fee_changed',
-        data: {'review': review},
-      );
-    }
+    final fee = _fee(id, reason).fee;
     MockTrip.cancel(id, reason: 'rider_cancelled', by: 'rider');
-    return {
-      'tripId': id,
-      'status': 'cancelled',
-      'feeCharged': review['fee'],
-      'message': _messageOf(review),
-      'serverTime': _iso(DateTime.now()),
-    };
+    return MockTrip.cancelledPayload(id, fee: fee);
   }
 }
 

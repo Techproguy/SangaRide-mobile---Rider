@@ -190,7 +190,8 @@ class AddStopController extends GetxController {
           key: key,
           suppressErrorToast: true,
         );
-        return Trip.fromJson(response.dataMapOrEmpty);
+        final body = response.dataMapOrEmpty;
+        return Trip.isRideShape(body) ? Trip.fromJson(body) : await _trip.loadLatest();
       },
       reconcile: () async {
         final trip = await _trip.pollNow();
@@ -235,6 +236,6 @@ class AddStopController extends GetxController {
   }
 
   Map<String, dynamic> _stopsBody(List<Place> stops) => {
-    'stops': [for (final stop in stops) stop.toJson()],
+    'stops': [for (final stop in stops) stop.toLocationJson()],
   };
 }

@@ -16,15 +16,14 @@ import 'package:sanga_ride/core/api/mock/mock_trip_wrapup.dart';
 abstract final class MockTrip {
   static final List<MockRoute> routes = [
     MockRoute.get(AppEndpoints.activeTrip, (_) => _active()),
-    MockRoute.get(AppEndpoints.liveTrip, (request) => _payload(request.params['id']!)),
     MockRoute.post(AppEndpoints.liveTripConfirmDetails, _confirmDetails),
-    MockRoute.post(AppEndpoints.liveTripPinRefresh, _refreshPin),
+    MockRoute.post(AppEndpoints.liveTripPinRefresh, _revealPin),
     MockRoute.post(AppEndpoints.liveTripReport, _report),
-    MockRoute.post(AppEndpoints.liveTripComplete, _complete),
     MockRoute.post(AppEndpoints.liveTripCall, (_) => {'maskedNumber': MockRegion.maskedCallNumber}),
     MockRoute.post(AppEndpoints.tripShare, _share),
     MockRoute.get(AppEndpoints.liveTripMessages, _messages),
     MockRoute.post(AppEndpoints.liveTripMessages, _sendMessage),
+    MockRoute.post('${AppEndpoints.liveTripMessages}/read', _markMessagesRead),
     ...MockTripChanges.routes,
     ...MockDeliveryLive.routes,
   ];
@@ -32,6 +31,7 @@ abstract final class MockTrip {
   static final Map<String, Map<String, dynamic>> requests = {};
 
   static final Map<String, DateTime> _detailsConfirmedAt = {};
+  static final Map<String, DateTime> _pinRevealedAt = {};
   static final Map<String, DateTime> _completedAt = {};
   static final Map<String, DateTime> _cancelledAt = {};
   static final Map<String, String> _cancelReasons = {};
@@ -48,6 +48,7 @@ abstract final class MockTrip {
   static const Duration _rideDuration = Duration(seconds: 20);
   static const Duration _legExtra = Duration(seconds: 8);
   static const Duration _returnDuration = Duration(seconds: 30);
+  static const Duration _driverCompletesAfter = Duration(seconds: 4);
   static const Duration _pinWindow = Duration(minutes: 5);
 
   static const List<String> _pinCodes = ['5428', '7391', '2064', '8815'];
@@ -96,6 +97,7 @@ abstract final class MockTrip {
       'stops': stops,
       'dropoff': dropoff,
       'fare': counterOffer ?? proposedFare,
+      'riderFare': proposedFare,
       'counterOffer': counterOffer,
       'distanceKm': distanceKm,
       'durationMinutes': math.max(5, (distanceKm / _averageSpeedKmh * 60).round()),
@@ -109,7 +111,7 @@ abstract final class MockTrip {
     MockDeliveryLive.bind(
       MockDeliveryLink(
         clockOf: _deliveryClock,
-        payloadOf: _payload,
+        payloadOf: _ridePayload,
         cancel: (id, {required reason}) => cancel(id, reason: reason, by: 'system'),
         reassign: _reassignDriver,
         startReturn: _startReturn,
@@ -169,7 +171,7 @@ abstract final class MockTrip {
     return back == null || now.isBefore(back.startedAt) ? null : back;
   }
 
-  static DateTime? _pinVerifiedAt(String id) => _detailsConfirmedAt[id]?.add(_pinVerifiedAfter);
+  static DateTime? _pinVerifiedAt(String id) => _pinRevealedAt[id]?.add(_pinVerifiedAfter);
 
   static void _reassignDriver(String id) {
     final trip = _stored(id);
@@ -183,8 +185,8 @@ abstract final class MockTrip {
   static Map<String, dynamic> _place(Object? json, Map<String, dynamic> fallback) {
     final place = json is Map ? Map<String, dynamic>.from(json) : fallback;
     final coordinates = place['coordinates'];
-    final lat = coordinates is Map ? coordinates['lat'] : place['lat'];
-    final lng = coordinates is Map ? coordinates['lng'] : place['lng'];
+    final lat = coordinates is Map ? coordinates['lat'] : place['lat'] ?? place['latitude'];
+    final lng = coordinates is Map ? coordinates['lng'] : place['lng'] ?? place['longitude'];
     return {
       'name': place['name'] ?? fallback['name'],
       'address': place['address'] ?? '',
@@ -199,11 +201,19 @@ abstract final class MockTrip {
     'coordinates': {'lat': place['lat'], 'lng': place['lng']},
   };
 
+  static Map<String, dynamic> _livePlace(Map<String, dynamic> place) {
+    final address = place['address'] as String? ?? '';
+    return {'latitude': place['lat'], 'longitude': place['lng'], 'address': address.isEmpty ? place['name'] : address};
+  }
+
   static const double routeDetour = _routeDetour;
 
   static Map<String, dynamic> stored(String id) => _stored(id);
 
-  static String statusOf(String id) => _status(id, DateTime.now());
+  static String statusOf(String id) {
+    _completeIfDue(id);
+    return _status(id, DateTime.now());
+  }
 
   static DateTime? completedAt(String id) => _completedAt[id];
 
@@ -214,6 +224,18 @@ abstract final class MockTrip {
       MockDeliveryLive.receiptBlock(id, () => _deliveryClock(id));
 
   static Map<String, dynamic> payload(String id) => _payload(id);
+
+  static Map<String, dynamic> ridePayload(String id) => _ridePayload(id);
+
+  static Object? cancelRide(MockRequest request) => MockTripChanges.cancel(request);
+
+  static Map<String, dynamic> cancelledPayload(String id, {required num fee}) => {
+    'id': id,
+    'status': 'cancelled',
+    'cancelledBy': _cancelledBy[id],
+    'cancellationFee': _naira(fee),
+    'cancelledAt': _iso(_cancelledAt[id]!),
+  };
 
   static DateTime createdAt(String id) => _createdAt(_stored(id));
 
@@ -284,9 +306,167 @@ abstract final class MockTrip {
     if (back != null) return now.isBefore(back.endAt) ? 'in_progress' : 'completed';
     final leg = _legOf(id);
     if (leg != null) return now.isBefore(leg.endAt) ? 'in_progress' : 'arrived_dropoff';
-    final confirmedAt = _detailsConfirmedAt[id];
-    if (confirmedAt != null && now.difference(confirmedAt) >= _pinVerifiedAfter) return 'pin_verified';
+    final verifiedAt = _pinVerifiedAt(id);
+    if (verifiedAt != null && !now.isBefore(verifiedAt)) return 'pin_verified';
     return now.difference(_createdAt(trip)) >= _arrivalAfter ? 'driver_arrived' : 'driver_en_route';
+  }
+
+  static String _rideStatus(String status) => switch (status) {
+    'driver_en_route' => 'accepted',
+    'pin_verified' => 'driver_arrived',
+    'arrived_dropoff' => 'arrived_at_dropoff',
+    _ => status,
+  };
+
+  static num _naira(num amount) => MockMoney.of(amount).major;
+
+  static String _reference(String id) => 'SR-${10000000 + id.hashCode.abs() % 90000000}';
+
+  static String _bookedFor(Object? rideFor) => switch (rideFor is Map ? rideFor['type'] : null) {
+    'family' => 'family',
+    'business' => 'business',
+    'someone' => 'other',
+    _ => 'self',
+  };
+
+  static String? _isoWhenReached(DateTime? time, DateTime now) => time == null || time.isAfter(now) ? null : _iso(time);
+
+  static Map<String, dynamic> _liveDriver(Map<String, dynamic> trip) {
+    final driver = trip['driver'] as Map<String, dynamic>;
+    final vehicle = trip['vehicle'] as Map<String, dynamic>;
+    return {
+      'id': driver['id'],
+      'firstName': driver['firstName'],
+      'lastName': driver['lastName'],
+      'displayName': driver['displayName'] ?? driver['name'],
+      'photoUrl': driver['photoUrl'],
+      'rating': driver['rating'],
+      'ridesCompleted': driver['ridesCompleted'],
+      'vehicle': {
+        'make': vehicle['make'],
+        'model': vehicle['model'],
+        'year': vehicle['year'],
+        'colour': vehicle['colour'],
+        'plateNumber': vehicle['plateNumber'] ?? vehicle['plate'],
+        'features': vehicle['features'] ?? const [],
+        'featureLabels': vehicle['featureLabels'] ?? const [],
+      },
+    };
+  }
+
+  static Map<String, dynamic> _pinBlock(String id, String status, DateTime now) {
+    final trip = _stored(id);
+    final revealed = _pinRevealedAt.containsKey(id);
+    final expiresAt = revealed ? DateTime.parse(trip['pinExpiresAt'] as String) : null;
+    final verifiedAt = _pinVerifiedAt(id);
+    final isVerified = verifiedAt != null && !now.isBefore(verifiedAt);
+    return {
+      'required': true,
+      'digits': _pinCodes.first.length,
+      'verified': isVerified,
+      'available': status == 'driver_arrived' && _detailsConfirmedAt.containsKey(id) && !isVerified,
+      'expiresAt': expiresAt == null ? null : _iso(expiresAt),
+      'expired': expiresAt != null && !now.isBefore(expiresAt),
+      'attemptsLeft': 5,
+    };
+  }
+
+  static Map<String, dynamic> _timestamps(String id, DateTime now) {
+    final created = _createdAt(_stored(id));
+    final leg = _legOf(id);
+    return {
+      'acceptedAt': _iso(created),
+      'arrivedAt': _isoWhenReached(created.add(_arrivalAfter), now),
+      'waitStartedAt': null,
+      'passengerArrivedAt': _isoWhenReached(_detailsConfirmedAt[id], now),
+      'startedAt': _isoWhenReached(leg?.startedAt, now),
+      'arrivedDropoffAt': _isoWhenReached(leg?.endAt, now),
+      'completedAt': _isoWhenReached(_completedAt[id], now),
+    };
+  }
+
+  static Map<String, dynamic> _ridePayload(String id) {
+    _completeIfDue(id);
+    final trip = _stored(id);
+    final now = DateTime.now();
+    final status = _status(id, now);
+    final category = trip['category'] as String;
+    final fare = _naira(trip['fare'] as num);
+    final riderFare = _naira(trip['riderFare'] as num);
+    final isPriced = status == 'arrived_dropoff' || status == 'completed';
+    final isDelivery = MockDeliveryLive.isDelivery(id);
+    return {
+      'id': id,
+      'ref': _reference(id),
+      'status': _rideStatus(status),
+      'kind': isDelivery ? 'delivery' : 'ride',
+      'rideClass': {
+        'id': category,
+        'code': category,
+        'name': 'Sanga ${category[0].toUpperCase()}${category.substring(1)}',
+      },
+      'pickup': _livePlace(trip['pickup'] as Map<String, dynamic>),
+      'dropoff': _livePlace(trip['dropoff'] as Map<String, dynamic>),
+      'stops': _liveStops(id, now),
+      'pricingOption': 'standard',
+      'tripType': 'one_way',
+      'recommendedFare': riderFare,
+      'boostAmount': 0,
+      'offeredFare': null,
+      'riderFare': riderFare,
+      'discountAmount': 0,
+      'agreedFare': fare,
+      'finalFare': isPriced ? fare : null,
+      'distanceKm': trip['distanceKm'],
+      'durationMin': trip['durationMinutes'],
+      'hourlyDurationMin': null,
+      'scheduledFor': trip['scheduledAt'],
+      'bookedFor': _bookedFor(trip['rideFor']),
+      'passenger': null,
+      'familyMemberId': null,
+      'business': null,
+      'preferences': null,
+      'paymentMethod': MockTripState.paymentMethod[id] ?? 'cash',
+      'driver': _liveDriver(trip),
+      'package': null,
+      'airport': MockAirport.tripBlock(id),
+      'waitingFee': 0,
+      'noShowFee': 0,
+      'tipAmount': 0,
+      'waiting': _waitBlock(id, trip),
+      'pin': _pinBlock(id, status, now),
+      'matching': null,
+      'timestamps': _timestamps(id, now),
+      'createdAt': _iso(_createdAt(trip)),
+      'cancelledBy': ?_cancelledBy[id],
+      'cancellationReason': ?(status == 'cancelled' ? _deliveryCancelReason(id) : null),
+      'returnFee': ?(_returnLegOf(id) == null ? null : _naira(MockDeliveryLive.returnFee)),
+      'delivery': ?MockDeliveryLive.tripBlock(id, () => _deliveryClock(id)),
+    };
+  }
+
+  static String? _deliveryCancelReason(String id) {
+    final reason = _cancelReasons[id] ?? _refusalReason(id);
+    return const {'package_refused', 'delivery_cancelled', 'delivery_returned'}.contains(reason) ? reason : null;
+  }
+
+  static List<Map<String, dynamic>> _liveStops(String id, DateTime now) {
+    final reached = _reachedStops(id, now);
+    return [
+      for (final (index, stop) in (_stored(id)['stops'] as List).indexed)
+        {..._livePlace(stop as Map<String, dynamic>), 'status': index < reached ? 'reached' : 'pending'},
+    ];
+  }
+
+  static void _completeIfDue(String id) {
+    if (_completedAt.containsKey(id) || _cancelledAt.containsKey(id)) return;
+    final leg = _legOf(id);
+    if (leg == null) return;
+    final completesAt = leg.endAt.add(_driverCompletesAfter);
+    if (DateTime.now().isBefore(completesAt)) return;
+    if (MockDeliveryLive.isDelivery(id) && !MockDeliveryLive.canComplete(id, _deliveryClock(id))) return;
+    _completedAt[id] = completesAt;
+    MockHistory.recordTrip(id, () => MockTripWrapUp.historyDetail(id));
   }
 
   static Map<String, dynamic> _payload(String id) {
@@ -345,8 +525,8 @@ abstract final class MockTrip {
 
   static Map<String, dynamic>? _active() {
     for (final id in MockTripState.trips.keys.toList().reversed) {
-      final status = _status(id, DateTime.now());
-      if (status != 'completed' && status != 'cancelled') return _payload(id);
+      final status = statusOf(id);
+      if (status != 'completed' && status != 'cancelled') return _ridePayload(id);
     }
     return null;
   }
@@ -356,37 +536,47 @@ abstract final class MockTrip {
     final status = _status(id, DateTime.now());
     if (status == 'driver_en_route') throw const MockFailure(409, 'Your driver is still on the way.');
     if (status != 'driver_arrived') throw const MockFailure(409, 'This trip has already moved on.');
-    if (!_detailsConfirmedAt.containsKey(id)) {
-      final now = DateTime.now();
-      _detailsConfirmedAt[id] = now;
-      _stored(id)['pinExpiresAt'] = _iso(now.add(_pinWindow));
-    }
-    return _payload(id);
+    _detailsConfirmedAt.putIfAbsent(id, DateTime.now);
+    return {'rideId': id, 'confirmed': true};
   }
 
-  static Object? _refreshPin(MockRequest request) {
+  static Object? _revealPin(MockRequest request) {
     final id = request.params['id']!;
-    if (_status(id, DateTime.now()) != 'driver_arrived' || !_detailsConfirmedAt.containsKey(id)) {
-      throw const MockFailure(409, 'A new PIN isn’t available right now.');
+    final now = DateTime.now();
+    if (_status(id, now) != 'driver_arrived' || !_detailsConfirmedAt.containsKey(id)) {
+      throw const MockFailure(409, 'Your PIN isn’t available yet.', code: 'PASSENGER_NOT_CONFIRMED');
     }
-    final next = ((_pinIndex[id] ?? 0) + 1) % _pinCodes.length;
-    _pinIndex[id] = next;
-    _stored(id)
-      ..['pin'] = _pinCodes[next]
-      ..['pinExpiresAt'] = _iso(DateTime.now().add(_pinWindow));
-    return _payload(id);
+    final trip = _stored(id);
+    final isIssued = _pinRevealedAt.containsKey(id);
+    final isExpired = isIssued && !now.isBefore(DateTime.parse(trip['pinExpiresAt'] as String));
+    if (isExpired) _pinIndex[id] = ((_pinIndex[id] ?? 0) + 1) % _pinCodes.length;
+    if (!isIssued || isExpired) {
+      trip
+        ..['pin'] = _pinCodes[_pinIndex[id] ?? 0]
+        ..['pinExpiresAt'] = _iso(now.add(_pinWindow));
+    }
+    _pinRevealedAt.putIfAbsent(id, () => now);
+    final expiresAt = DateTime.parse(trip['pinExpiresAt'] as String);
+    return {
+      'rideId': id,
+      'pin': int.parse(trip['pin'] as String),
+      'digits': (trip['pin'] as String).length,
+      'expiresAt': _iso(expiresAt),
+      'expiresInSec': expiresAt.difference(now).inSeconds,
+    };
   }
 
   static Object? _report(MockRequest request) {
     final id = request.params['id']!;
     final reasons = request.body['reasons'];
     if (reasons is! List || reasons.isEmpty) throw const MockFailure(422, 'Pick at least one reason.');
-    if (_cancelReasons[id] == 'driver_mismatch') return _payload(id);
-    if (_status(id, DateTime.now()) != 'driver_arrived') {
-      throw const MockFailure(409, 'This trip has already moved on.');
+    if (_cancelReasons[id] != 'driver_mismatch') {
+      if (_status(id, DateTime.now()) != 'driver_arrived') {
+        throw const MockFailure(409, 'This trip has already moved on.');
+      }
+      cancel(id, reason: 'driver_mismatch', by: 'rider');
     }
-    cancel(id, reason: 'driver_mismatch', by: 'rider');
-    return _payload(id);
+    return cancelledPayload(id, fee: 0);
   }
 
   static Object? _share(MockRequest request) {
@@ -398,20 +588,6 @@ abstract final class MockTrip {
       'expiresAt': _iso(DateTime.now().add(const Duration(hours: 6))),
       'serverTime': _iso(DateTime.now()),
     };
-  }
-
-  static Object? _complete(MockRequest request) {
-    final id = request.params['id']!;
-    if (_completedAt.containsKey(id)) return _payload(id);
-    if (_status(id, DateTime.now()) != 'arrived_dropoff') {
-      throw const MockFailure(409, 'You can complete the ride once you’ve arrived.');
-    }
-    if (MockDeliveryLive.isDelivery(id) && !MockDeliveryLive.canComplete(id, _deliveryClock(id))) {
-      throw const MockFailure(409, 'Your driver is still handing over the package.', code: 'wrong_stage');
-    }
-    _completedAt[id] = DateTime.now();
-    MockHistory.recordTrip(id, () => MockTripWrapUp.historyDetail(id));
-    return _payload(id);
   }
 
   static Map<String, dynamic> _driverPosition(Map<String, dynamic> trip, String status, DateTime now) {
@@ -562,7 +738,7 @@ abstract final class MockTrip {
       ('driver_accepted', created),
       ('driver_arrived', created.add(_arrivalAfter)),
       ('details_confirmed', confirmedAt),
-      ('pin_verified', confirmedAt?.add(_pinVerifiedAfter)),
+      ('pin_verified', _pinVerifiedAt(id)),
       ('trip_started', paidAt),
       ('arrived_dropoff', _legOf(id)?.endAt),
       ('trip_completed', _completedAt[id]),
@@ -613,6 +789,13 @@ abstract final class MockTrip {
     _stored(id);
     _messagesReadAt[id] = DateTime.now();
     return {'messages': _allMessages(id)};
+  }
+
+  static Object? _markMessagesRead(MockRequest request) {
+    final id = request.params['id']!;
+    _stored(id);
+    _messagesReadAt[id] = DateTime.now();
+    return {'rideId': id, 'read': true};
   }
 
   static Object? _sendMessage(MockRequest request) {

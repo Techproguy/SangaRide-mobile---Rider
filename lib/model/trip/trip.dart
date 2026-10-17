@@ -14,11 +14,11 @@ import 'package:sanga_ride_core/sanga_ride_core.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 enum TripStatus {
-  driverEnRoute('driver_en_route'),
+  driverEnRoute('accepted'),
   driverArrived('driver_arrived'),
   pinVerified('pin_verified'),
   inProgress('in_progress'),
-  arrivedDropoff('arrived_dropoff'),
+  arrivedDropoff('arrived_at_dropoff'),
   paymentPending('payment_pending'),
   completed('completed'),
   cancelled('cancelled'),
@@ -34,7 +34,10 @@ enum TripStatus {
 
   bool get canChange => this == driverEnRoute || this == driverArrived || this == inProgress;
 
-  static TripStatus fromCode(String? code) => enumByCode(values, code, (status) => status.code, unknown);
+  static TripStatus ofRide(String? code, {required bool isPinVerified}) {
+    final status = enumByCode(values, code, (status) => status.code, unknown);
+    return status == driverArrived && isPinVerified ? pinVerified : status;
+  }
 
   static TripStatus advance(TripStatus current, TripStatus incoming) {
     if (current.isTerminal) return current;
@@ -57,25 +60,10 @@ enum TripEventType {
 
   final String code;
   final String label;
-
-  static TripEventType? fromCode(String? code) {
-    for (final type in values) {
-      if (type.code == code) return type;
-    }
-    return null;
-  }
 }
 
 class TripEvent {
   const TripEvent({required this.type, required this.at});
-
-  static TripEvent? tryParse(Map<String, dynamic> json) {
-    final reader = JsonReader.of(json);
-    final type = TripEventType.fromCode(reader.strOrNull('type'));
-    final at = reader.timeOrNull('at');
-    if (type == null || at == null) return null;
-    return TripEvent(type: type, at: at.toLocal());
-  }
 
   final TripEventType type;
   final DateTime at;
@@ -123,6 +111,20 @@ enum TripCancelReason {
   bool get didNotHappen => this == driverCancelled || this == packageRefused || this == deliveryCancelled;
 
   static TripCancelReason fromCode(String? code) => codedEnum(values, (reason) => reason.code, code, orElse: other);
+
+  static TripCancelReason? tryFromCode(String? code) {
+    for (final reason in values) {
+      if (reason.code == code) return reason;
+    }
+    return null;
+  }
+
+  static TripCancelReason? ofCancelledBy(String? who) => switch (who) {
+    null => null,
+    'rider' => riderCancelled,
+    'driver' => driverCancelled,
+    _ => other,
+  };
 }
 
 enum TripLoadFailure {
@@ -157,18 +159,26 @@ enum StopStatus {
   static StopStatus fromCode(String? code) => codedEnum(values, (status) => status.code, code, orElse: unknown);
 }
 
-LatLng _latLng(JsonReader json) => LatLng(json.number('lat').toDouble(), json.number('lng').toDouble());
+LatLng _positionOf(JsonReader json) {
+  final coordinates = json.objectOrNull('coordinates') ?? json;
+  final latitude = coordinates.numOrNull('latitude') ?? coordinates.number('lat');
+  final longitude = coordinates.numOrNull('longitude') ?? coordinates.number('lng');
+  return LatLng(latitude.toDouble(), longitude.toDouble());
+}
+
+DateTime? _localTime(JsonReader json, String key) => json.timeOrNull(key)?.toLocal();
 
 class TripPlace {
   const TripPlace({required this.name, required this.address, required this.position, this.isReached = false});
 
   factory TripPlace.fromJson(Map<String, dynamic> json) {
     final reader = JsonReader.of(json);
+    final address = reader.strOr('address', '');
     return TripPlace(
-      name: reader.str('name'),
-      address: reader.strOr('address', ''),
-      position: _latLng(reader.object('coordinates')),
-      isReached: StopStatus.fromCode(reader.strOrNull('status')) == StopStatus.reached,
+      name: reader.strOr('name', address),
+      address: address,
+      position: _positionOf(reader),
+      isReached: StopStatus.fromCode(reader.strOrNull('status')) == StopStatus.reached || reader.has('reachedAt'),
     );
   }
 
@@ -181,12 +191,11 @@ class TripPlace {
 }
 
 class TripFare {
-  const TripFare({required this.total, required this.counterOffer});
+  const TripFare({required this.total, this.counterOffer});
 
-  factory TripFare.fromJson(Map<String, dynamic> json) {
-    final reader = JsonReader.of(json);
-    return TripFare(total: reader.money('total'), counterOffer: reader.moneyOrNull('counterOffer'));
-  }
+  factory TripFare.fromJson(JsonReader json) => TripFare(
+    total: json.moneyOrNull('finalFare') ?? json.moneyOrNull('agreedFare') ?? json.moneyOr('riderFare', Money.zero()),
+  );
 
   final Money total;
   final Money? counterOffer;
@@ -194,11 +203,6 @@ class TripFare {
 
 class DriverPosition {
   const DriverPosition({required this.position, required this.heading});
-
-  factory DriverPosition.fromJson(Map<String, dynamic> json) {
-    final reader = JsonReader.of(json);
-    return DriverPosition(position: _latLng(reader), heading: reader.doubleOrNull('heading'));
-  }
 
   final LatLng position;
   final double? heading;
@@ -217,13 +221,14 @@ class Trip {
     required this.fare,
     required this.pin,
     required this.pinExpiresAt,
-    required this.etaAt,
-    required this.distanceRemainingKm,
-    required this.driverPosition,
-    required this.unreadMessages,
     required this.events,
     required this.cancellationReason,
+    this.etaAt,
+    this.distanceRemainingKm,
+    this.driverPosition,
+    this.unreadMessages = 0,
     this.cancellationMessage,
+    this.waitingFee,
     this.returnFee,
     this.airport,
     this.delivery,
@@ -233,29 +238,32 @@ class Trip {
 
   factory Trip.fromJson(Map<String, dynamic> json) {
     final reader = JsonReader.of(json);
+    final pin = JsonReader.of(reader.raw['pin']);
+    final isPinVerified = pin.boolOr('verified', false);
+    final status = TripStatus.ofRide(reader.strOrNull('status'), isPinVerified: isPinVerified);
+    final driver = JsonReader.of(reader.raw['driver']);
+    final waiting = reader.objectOrNull('waiting');
     return Trip(
       id: reader.str('id'),
-      status: TripStatus.fromCode(reader.strOrNull('status')),
-      rideType: RideCategory.values.asNameMap()[reader.strOrNull('rideType')] ?? RideCategory.go,
-      driver: OfferDriver.fromJson(reader.raw['driver']),
-      vehicle: DriverVehicle.fromJson(reader.raw['vehicle']),
+      status: status,
+      rideType:
+          RideCategory.values.asNameMap()[JsonReader.of(reader.raw['rideClass']).strOrNull('code')] ?? RideCategory.go,
+      driver: OfferDriver.fromJson(driver.raw),
+      vehicle: DriverVehicle.fromJson(driver.raw['vehicle']),
       pickup: TripPlace.fromJson(reader.object('pickup').raw),
       stops: reader.listOf('stops', (item) => TripPlace.fromJson(item.raw)),
       dropoff: TripPlace.fromJson(reader.object('dropoff').raw),
-      fare: TripFare.fromJson(reader.object('fare').raw),
-      pin: reader.strOrNull('pin'),
-      pinExpiresAt: deviceDeadlineOrNull(reader.strOrNull('pinExpiresAt')),
-      etaAt: deviceDeadlineOrNull(reader.strOrNull('etaAt')),
-      distanceRemainingKm: reader.doubleOrNull('distanceRemainingKm'),
-      driverPosition: reader.objectOrNull('driverPosition') == null
-          ? null
-          : _tryRead(() => DriverPosition.fromJson(reader.object('driverPosition').raw)),
-      unreadMessages: reader.intOr('unreadMessages', 0),
-      events: reader.listOf('events', (item) => TripEvent.tryParse(item.raw)!),
-      cancellationReason: reader.has('cancellationReason')
-          ? TripCancelReason.fromCode(reader.strOrNull('cancellationReason'))
-          : null,
-      cancellationMessage: reader.strOrNull('cancellationMessage'),
+      fare: TripFare.fromJson(reader),
+      pin: null,
+      pinExpiresAt: deviceDeadlineOrNull(pin.strOrNull('expiresAt')),
+      events: _eventsOf(
+        JsonReader.of(reader.raw['timestamps']),
+        status: status,
+        isPinIssued: pin.has('expiresAt'),
+        isPinVerified: isPinVerified,
+      ),
+      cancellationReason: _cancelReasonOf(reader, status),
+      waitingFee: reader.moneyOrNull('waitingFee'),
       returnFee: reader.moneyOrNull('returnFee'),
       airport: reader.objectOrNull('airport') == null
           ? null
@@ -263,10 +271,13 @@ class Trip {
       delivery: reader.objectOrNull('delivery') == null
           ? null
           : _tryRead(() => TripDelivery.fromJson(reader.object('delivery').raw)),
-      freeWait: Duration(seconds: reader.intOr('freeWaitSeconds', 0)),
-      scheduledWait: ScheduledWait.maybeFrom(reader, pickupAt: reader.timeOrNull('scheduledPickupAt')),
+      freeWait: Duration(seconds: waiting?.intOr('freeWaitSeconds', 0) ?? 0),
+      scheduledWait: ScheduledWait.maybeFrom(waiting ?? reader, pickupAt: _localTime(reader, 'scheduledFor')),
     );
   }
+
+  static bool isRideShape(Map<String, dynamic> json) =>
+      json['id'] is String && json['status'] is String && json['pickup'] is Map && json['dropoff'] is Map;
 
   static T? _tryRead<T>(T Function() parse) {
     try {
@@ -274,6 +285,39 @@ class Trip {
     } catch (_) {
       return null;
     }
+  }
+
+  static TripCancelReason? _cancelReasonOf(JsonReader json, TripStatus status) {
+    if (status != TripStatus.cancelled) return null;
+    return TripCancelReason.tryFromCode(json.strOrNull('cancellationReason')) ??
+        TripCancelReason.ofCancelledBy(json.strOrNull('cancelledBy'));
+  }
+
+  static List<TripEvent> _eventsOf(
+    JsonReader times, {
+    required TripStatus status,
+    required bool isPinIssued,
+    required bool isPinVerified,
+  }) {
+    final accepted = _localTime(times, 'acceptedAt');
+    final arrived = _localTime(times, 'arrivedAt');
+    final passengerArrived = _localTime(times, 'passengerArrivedAt');
+    final started = _localTime(times, 'startedAt');
+    final confirmedAt = passengerArrived ?? arrived ?? accepted ?? DateTime.now();
+    final candidates = <(TripEventType, DateTime?)>[
+      (TripEventType.driverAccepted, accepted),
+      (TripEventType.driverArrived, arrived),
+      (TripEventType.detailsConfirmed, isPinIssued || isPinVerified ? confirmedAt : null),
+      (TripEventType.pinVerified, isPinVerified ? started ?? confirmedAt : null),
+      (TripEventType.tripStarted, started),
+      (TripEventType.arrivedDropoff, _localTime(times, 'arrivedDropoffAt')),
+      (TripEventType.tripCompleted, _localTime(times, 'completedAt')),
+      (TripEventType.tripCancelled, status == TripStatus.cancelled ? _localTime(times, 'cancelledAt') : null),
+    ];
+    return [
+      for (final (type, at) in candidates)
+        if (at != null) TripEvent(type: type, at: at),
+    ];
   }
 
   final String id;
@@ -294,11 +338,49 @@ class Trip {
   final List<TripEvent> events;
   final TripCancelReason? cancellationReason;
   final String? cancellationMessage;
+  final Money? waitingFee;
   final Money? returnFee;
   final TripAirport? airport;
   final TripDelivery? delivery;
   final Duration freeWait;
   final ScheduledWait? scheduledWait;
+
+  Trip withLocal({
+    String? pin,
+    DateTime? pinExpiresAt,
+    DateTime? detailsConfirmedAt,
+    TripCancelReason? cancellationReason,
+  }) {
+    final needsConfirmedEvent = detailsConfirmedAt != null && !hasEvent(TripEventType.detailsConfirmed);
+    return Trip(
+      id: id,
+      status: status,
+      rideType: rideType,
+      driver: driver,
+      vehicle: vehicle,
+      pickup: pickup,
+      stops: stops,
+      dropoff: dropoff,
+      fare: fare,
+      pin: pin ?? this.pin,
+      pinExpiresAt: pinExpiresAt ?? this.pinExpiresAt,
+      events: needsConfirmedEvent
+          ? [...events, TripEvent(type: TripEventType.detailsConfirmed, at: detailsConfirmedAt)]
+          : events,
+      cancellationReason: cancellationReason ?? this.cancellationReason,
+      etaAt: etaAt,
+      distanceRemainingKm: distanceRemainingKm,
+      driverPosition: driverPosition,
+      unreadMessages: unreadMessages,
+      cancellationMessage: cancellationMessage,
+      waitingFee: waitingFee,
+      returnFee: returnFee,
+      airport: airport,
+      delivery: delivery,
+      freeWait: freeWait,
+      scheduledWait: scheduledWait,
+    );
+  }
 
   static const int maxStops = 3;
 
