@@ -6,7 +6,7 @@ import 'package:sanga_ride/core/constants.dart';
 class AppSignature {
   AppSignature._();
 
-  static const _channel = MethodChannel('${SangaConstants.androidPackageName}/app_signature');
+  static const _channel = MethodChannel('${SangaConstants.appId}/app_signature');
   static String? _cached;
 
   static Future<String?> androidCertSha1() async {

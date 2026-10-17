@@ -52,8 +52,8 @@ Future<void> initializeSanga() async {
     SangaRouteConfig(
       apiKey: SangaConstants.googleMapsApiKey,
       useDirections: SangaConstants.roadRoutes,
-      iosBundleId: SangaConstants.appId,
-      androidPackage: SangaConstants.appId,
+      iosBundleId: SangaConstants.installedAppId,
+      androidPackage: SangaConstants.installedAppId,
     ),
   );
   await SessionStorage.tokens.hydrate();

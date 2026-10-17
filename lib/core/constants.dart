@@ -1,4 +1,5 @@
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:sanga_ride_core/sanga_ride_core.dart' show AppEnvironment;
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 import 'package:sanga_ride/core/storage_keys.dart';
 
@@ -13,8 +14,7 @@ class SangaConstants {
 
   static const bool roadRoutes = bool.fromEnvironment('ROAD_ROUTES');
 
-  static const String iosBundleId = 'com.sangatechnologies.ride';
-  static const String androidPackageName = 'com.sangatechnologies.ride';
+  static String get installedAppId => AppEnvironment.current.isProduction ? appId : '$appId.dev';
 
   static final String googleMapsApiKey = SangaMapsKeys.defaultKey;
 
