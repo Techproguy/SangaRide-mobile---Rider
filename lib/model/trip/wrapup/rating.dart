@@ -1,56 +1,48 @@
 import 'package:sanga_ride/core/copy/common_copy.dart';
 
-enum RatingAudience { ride, delivery, both }
-
 enum RatingTag {
-  greatDriving('great_driving', 'Great driving', isPositive: true, audience: RatingAudience.ride),
-  cleanCar('clean_car', 'Clean car', isPositive: true, audience: RatingAudience.ride),
-  carefulHandling('careful_handling', 'Careful handling', isPositive: true, audience: RatingAudience.delivery),
-  goodUpdates('good_updates', 'Kept me updated', isPositive: true, audience: RatingAudience.delivery),
-  friendly('friendly', 'Friendly', isPositive: true),
-  onTime('on_time', 'On time', isPositive: true),
-  late('late', 'Late', isPositive: false),
-  unsafeDriving('unsafe_driving', 'Unsafe driving', isPositive: false, audience: RatingAudience.ride),
-  roughHandling('rough_handling', 'Rough handling', isPositive: false, audience: RatingAudience.delivery),
-  hardToReach('hard_to_reach', 'Hard to reach', isPositive: false, audience: RatingAudience.delivery),
-  rude('rude', 'Rude', isPositive: false),
-  dirtyCar('dirty_car', 'Dirty car', isPositive: false, audience: RatingAudience.ride);
+  fastAndPolite('FAST_AND_POLITE', 'Fast and polite', isPositive: true),
+  cleanCar('CLEAN_CAR', 'Clean car', isPositive: true),
+  greatConversation('GREAT_CONVERSATION', 'Great conversation', isPositive: true),
+  safeDriving('SAFE_DRIVING', 'Safe driving', isPositive: true),
+  onTime('ON_TIME', 'On time', isPositive: true),
+  expertNavigation('EXPERT_NAVIGATION', 'Expert navigation', isPositive: true),
+  lateArrival('LATE_ARRIVAL', 'Late arrival', isPositive: false),
+  unsafeDriving('UNSAFE_DRIVING', 'Unsafe driving', isPositive: false),
+  rude('RUDE', 'Rude', isPositive: false),
+  dirtyCar('DIRTY_CAR', 'Dirty car', isPositive: false),
+  wrongRoute('WRONG_ROUTE', 'Wrong route', isPositive: false);
 
-  const RatingTag(this.code, this.label, {required this.isPositive, this.audience = RatingAudience.both});
+  const RatingTag(this.code, this.label, {required this.isPositive});
 
   final String code;
   final String label;
   final bool isPositive;
-  final RatingAudience audience;
 
-  bool isFor({required bool isDelivery}) =>
-      audience == RatingAudience.both || (audience == RatingAudience.delivery) == isDelivery;
-
-  static List<RatingTag> forStars(int stars, {bool isDelivery = false}) {
+  static List<RatingTag> forStars(int stars) {
     if (stars <= 0) return const [];
     return [
       for (final tag in values)
-        if (tag.isPositive == stars >= 4 && tag.isFor(isDelivery: isDelivery)) tag,
+        if (tag.isPositive == stars >= 4) tag,
     ];
   }
 }
 
 class DriverRating {
-  const DriverRating({this.stars = 0, this.tags = const {}, this.comment = '', this.isDelivery = false});
+  const DriverRating({this.stars = 0, this.tags = const {}, this.comment = ''});
 
   static const int maxCommentLength = 200;
 
   final int stars;
   final Set<RatingTag> tags;
   final String comment;
-  final bool isDelivery;
 
   bool get hasStars => stars > 0;
 
-  List<RatingTag> get availableTags => RatingTag.forStars(stars, isDelivery: isDelivery);
+  List<RatingTag> get availableTags => RatingTag.forStars(stars);
 
   DriverRating withStars(int value) {
-    final available = RatingTag.forStars(value, isDelivery: isDelivery);
+    final available = RatingTag.forStars(value);
     return DriverRating(
       stars: value,
       tags: {
@@ -58,24 +50,25 @@ class DriverRating {
           if (available.contains(tag)) tag,
       },
       comment: comment,
-      isDelivery: isDelivery,
     );
   }
 
   DriverRating toggled(RatingTag tag) {
     final next = {...tags};
     if (!next.remove(tag)) next.add(tag);
-    return DriverRating(stars: stars, tags: next, comment: comment, isDelivery: isDelivery);
+    return DriverRating(stars: stars, tags: next, comment: comment);
   }
 
-  DriverRating withComment(String value) =>
-      DriverRating(stars: stars, tags: tags, comment: value, isDelivery: isDelivery);
+  DriverRating withComment(String value) => DriverRating(stars: stars, tags: tags, comment: value);
 
-  Map<String, dynamic> toJson() => {
-    'stars': stars,
-    'tags': [for (final tag in tags) tag.code],
-    'comment': comment.trim(),
-  };
+  Map<String, dynamic> toJson() {
+    final review = comment.trim();
+    return {
+      'stars': stars,
+      if (review.isNotEmpty) 'review': review,
+      if (tags.isNotEmpty) 'tags': [for (final tag in tags) tag.code],
+    };
+  }
 }
 
 sealed class RatingState {

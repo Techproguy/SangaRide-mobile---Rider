@@ -46,8 +46,8 @@ extension TripPaymentCash on TripPaymentController {
     final mutation = _cancelCashMutation ??= Mutation<TripPayment>(
       intent: IdempotencyIntent.tripPayCancel,
       run: (key) async {
-        final response = await _api.post(AppEndpoints.tripPaymentCancelOf(id), key: key, suppressErrorToast: true);
-        return TripPayment.fromJson(response.dataMapOrEmpty);
+        await _api.post(AppEndpoints.tripPaymentCancelOf(id), key: key, suppressErrorToast: true);
+        return _fetchPayment(id, profile: RequestProfile.interactive);
       },
       reconcile: () async {
         final fresh = await _fetchPayment(id, profile: RequestProfile.interactive);

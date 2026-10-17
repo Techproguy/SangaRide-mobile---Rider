@@ -12,7 +12,12 @@ extension TripPaymentPolling on TripPaymentController {
 
   void _startPolling(int epoch) {
     if (_poller != null) return;
-    final poller = LivePoller(fetch: () => _pollOnce(epoch), interval: TripPaymentController.pollInterval);
+    final id = _tripId;
+    final poller = LivePoller(
+      fetch: () => _pollOnce(epoch),
+      interval: TripPaymentController.pollInterval,
+      nudges: id == null ? null : RideEvents.instance.about(id),
+    );
     void mirror() => _onPollLink(poller.link.value);
     poller.link.addListener(mirror);
     _detachLink = () => poller.link.removeListener(mirror);

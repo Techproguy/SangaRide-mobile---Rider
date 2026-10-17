@@ -28,13 +28,12 @@ class TripRatingController extends GetxController {
     super.onClose();
   }
 
-  void open(String tripId, {bool isDelivery = false}) {
-    final isSame = _tripId == tripId && state.rating.isDelivery == isDelivery;
-    if (isSame && state is! RatingSubmitted) return;
+  void open(String tripId) {
+    if (_tripId == tripId && state is! RatingSubmitted) return;
     _epoch.next();
     _tripId = tripId;
     _key = null;
-    _state.value = RatingEditing(DriverRating(isDelivery: isDelivery));
+    _state.value = const RatingEditing(DriverRating());
   }
 
   void setStars(int stars) {

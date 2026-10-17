@@ -27,26 +27,16 @@ class _RateScreenState extends State<RateScreen> {
   final _receipt = Get.find<TripReceiptController>();
   final _rating = Get.find<TripRatingController>();
   final _comment = TextEditingController();
-  late final Worker _receiptWorker;
 
   @override
   void initState() {
     super.initState();
     _rating.open(widget.tripId);
-    _receiptWorker = ever(_receipt.stateRx, _syncAudience);
-    WidgetsBinding.instance.addPostFrameCallback((_) => _syncAudience(_receipt.state));
     unawaited(_receipt.open(widget.tripId));
-  }
-
-  void _syncAudience(ReceiptState state) {
-    if (state is ReceiptLoaded && state.receipt.tripId == widget.tripId) {
-      _rating.open(widget.tripId, isDelivery: state.receipt.isDelivery);
-    }
   }
 
   @override
   void dispose() {
-    _receiptWorker.dispose();
     _comment.dispose();
     super.dispose();
   }

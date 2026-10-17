@@ -12,7 +12,8 @@ class ReceiptPlace {
 
   factory ReceiptPlace.fromJson(Map<String, dynamic> json) {
     final reader = JsonReader.of(json);
-    return ReceiptPlace(name: reader.str('name'), address: reader.strOr('address', ''));
+    final address = reader.strOr('address', '');
+    return ReceiptPlace(name: reader.strOr('name', address), address: address);
   }
 
   final String name;
@@ -24,7 +25,11 @@ class ReceiptLine {
 
   factory ReceiptLine.fromJson(Map<String, dynamic> json) {
     final reader = JsonReader.of(json);
-    return ReceiptLine(key: reader.strOr('key', ''), label: reader.str('label'), amount: reader.money('amount'));
+    return ReceiptLine(
+      key: reader.strOrNull('code') ?? reader.strOr('key', ''),
+      label: reader.str('label'),
+      amount: reader.money('amount'),
+    );
   }
 
   final String key;
@@ -33,7 +38,7 @@ class ReceiptLine {
 }
 
 class ReceiptPayment {
-  const ReceiptPayment({required this.method, this.last4, this.group});
+  const ReceiptPayment({required this.method, this.last4, this.group, this.display});
 
   factory ReceiptPayment.fromJson(Map<String, dynamic> json) {
     final reader = JsonReader.of(json);
@@ -42,6 +47,7 @@ class ReceiptPayment {
       method: PaymentMethod.tryFromCode(reader.strOrNull('method')),
       last4: reader.strOrNull('last4'),
       group: group == null ? null : _groupOf(group),
+      display: reader.strOrNull('display'),
     );
   }
 
@@ -56,12 +62,13 @@ class ReceiptPayment {
   final PaymentMethod? method;
   final String? last4;
   final PaymentGroup? group;
+  final String? display;
 
   String get label => switch ((method, group)) {
     (PaymentMethod.card, _) when last4 != null => '•••• $last4',
     (PaymentMethod.groupWallet, final group?) => '${group.name} wallet',
     (final PaymentMethod method?, _) => method.label,
-    _ => 'Paid',
+    _ => display ?? 'Paid',
   };
 }
 
@@ -96,7 +103,6 @@ class ReceiptDelivery {
 
 class TripReceipt {
   const TripReceipt({
-    required this.id,
     required this.tripId,
     required this.pickup,
     required this.dropoff,
@@ -117,18 +123,21 @@ class TripReceipt {
   factory TripReceipt.fromJson(Map<String, dynamic> json) {
     final reader = JsonReader.of(json);
     final delivery = reader.objectOrNull('delivery');
+    final payment = reader.objectOrNull('payment');
     return TripReceipt(
-      id: reader.str('id'),
-      tripId: reader.str('tripId'),
+      tripId: reader.str('rideId'),
       pickup: ReceiptPlace.fromJson(reader.object('pickup').raw),
       dropoff: ReceiptPlace.fromJson(reader.object('dropoff').raw),
       stops: reader.listOf('stops', (stop) => ReceiptPlace.fromJson(stop.raw)),
       distanceKm: reader.doubleOr('distanceKm', 0),
-      durationMinutes: reader.intOr('durationMinutes', 0),
-      lines: reader.listOf('lines', (line) => ReceiptLine.fromJson(line.raw)),
-      total: reader.money('total'),
-      paidWith: ReceiptPayment.fromJson(reader.objectOrNull('paidWith')?.raw ?? const {}),
-      paidAt: reader.timeOrNull('paidAt')?.toLocal() ?? DateTime.now(),
+      durationMinutes: reader.intOr('durationMin', 0),
+      lines: [
+        ...reader.listOf('lines', (line) => ReceiptLine.fromJson(line.raw)),
+        ...reader.listOf('adjustments', (line) => ReceiptLine.fromJson(line.raw)),
+      ],
+      total: reader.money('totalPaid'),
+      paidWith: ReceiptPayment.fromJson(payment?.raw ?? const {}),
+      paidAt: (payment?.timeOrNull('paidAt') ?? reader.timeOrNull('completedAt'))?.toLocal() ?? DateTime.now(),
       driver: OfferDriver.fromJson(reader.raw['driver']),
       vehicle: DriverVehicle.fromJson(reader.raw['vehicle']),
       category: RideCategory.values.asNameMap()[reader.strOrNull('category')] ?? RideCategory.go,
@@ -137,7 +146,6 @@ class TripReceipt {
     );
   }
 
-  final String id;
   final String tripId;
   final ReceiptPlace pickup;
   final ReceiptPlace dropoff;
@@ -180,7 +188,9 @@ enum ReceiptFailure {
   static ReceiptFailure fromCode(String? code) => enumByCode(values, code, (failure) => failure.code, unknown);
 
   static ReceiptFailure of(Object error) {
-    if (error is ApiException && error.kind == ApiFailureKind.rejected) return fromCode(error.code);
+    if (error is ApiException && error.kind == ApiFailureKind.rejected) {
+      return error.statusCode == 404 ? notFound : fromCode(error.code);
+    }
     return switch (ProblemKind.of(error)) {
       ProblemOffline() => connection,
       _ => unknown,

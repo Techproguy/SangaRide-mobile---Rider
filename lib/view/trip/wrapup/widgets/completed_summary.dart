@@ -34,7 +34,11 @@ class CompletedSummary extends StatelessWidget {
         if (delivery == null)
           SangaVehicleInfo(
             image: receipt.category.image,
-            lines: [vehicle.title, '${vehicle.colourLabel} colour', 'REG NO: ${vehicle.plateLabel}'],
+            lines: [
+              vehicle.title,
+              if (vehicle.colour.isNotEmpty) '${vehicle.colourLabel} colour',
+              if (vehicle.plate.isNotEmpty) 'REG NO: ${vehicle.plateLabel}',
+            ],
           )
         else
           SangaDetailList(

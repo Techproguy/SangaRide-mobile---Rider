@@ -1,7 +1,5 @@
 import 'package:sanga_ride/core/api/mock/mock_data.dart';
-import 'package:sanga_ride/core/api/mock/mock_card_tokenizer.dart';
 import 'package:sanga_ride/core/api/app_endpoints.dart';
-import 'package:sanga_ride/core/api/mock/mock_groups.dart';
 import 'package:sanga_ride/core/api/mock/mock_money.dart';
 import 'package:sanga_ride/core/api/mock/mock_server.dart';
 import 'package:sanga_ride/core/api/mock/mock_trip.dart';
@@ -22,12 +20,23 @@ abstract final class MockTripWrapUp {
   static const int _fallbackFare = 4500;
   static const double _fallbackDistanceKm = 12.4;
   static const int _fallbackDurationMinutes = 24;
-  static const List<String> _allowedMethods = ['cash', 'card', 'wallet'];
+  static const List<String> _allowedMethods = ['cash', 'wallet'];
+  static const List<String> _ratingTags = [
+    'FAST_AND_POLITE',
+    'CLEAN_CAR',
+    'GREAT_CONVERSATION',
+    'SAFE_DRIVING',
+    'ON_TIME',
+    'EXPERT_NAVIGATION',
+    'LATE_ARRIVAL',
+    'UNSAFE_DRIVING',
+    'RUDE',
+    'DIRTY_CAR',
+    'WRONG_ROUTE',
+  ];
 
   static Duration cashConfirmDelay = _cashConfirmDelay;
   static Duration cashWaitWindow = const Duration(seconds: 90);
-
-  static const String _declinedLast4 = '0002';
 
   static bool isSettled(String id) =>
       MockTripState.paidAt.containsKey(id) || MockTripState.cashPostedAt.containsKey(id);
@@ -63,39 +72,24 @@ abstract final class MockTripWrapUp {
     MockTripState.lastMethod = method;
   }
 
-  static Map<String, dynamic>? _rideForOf(Map<String, dynamic> trip) {
-    final rideFor = trip['rideFor'];
-    return rideFor is Map ? Map<String, dynamic>.from(rideFor) : null;
-  }
-
-  static List<String> _allowedFor(Map<String, dynamic> trip) => [
-    ..._allowedMethods,
-    if (MockGroups.canPayWithGroupWallet(_rideForOf(trip), _fareOf(trip))) 'group_wallet',
-  ];
+  static num _amount(num naira) => MockMoney.of(naira).major;
 
   static Map<String, dynamic> _paymentPayload(
     String id,
     Map<String, dynamic> trip,
     String status, {
     String? method,
-    String? last4,
     DateTime? paidAt,
-    Map<String, dynamic>? action,
     DateTime? cashWaitExpiresAt,
   }) => {
-    'tripId': id,
-    'status': status,
-    'amount': MockMoney.json(_fareOf(trip)),
+    'rideId': id,
+    'amount': _amount(_fareOf(trip)),
     'currency': MockMoney.currency,
-    'method': method,
-    'last4': last4,
+    'status': status,
+    'method': method ?? 'wallet',
+    'allowedMethods': _allowedMethods,
     'paidAt': paidAt?.toUtc().toIso8601String(),
-    'allowedMethods': _allowedFor(trip),
-    'group': MockGroups.paymentGroup(_rideForOf(trip)),
-    'lastMethod': MockTripState.lastMethod,
-    'action': action,
     'cashWaitExpiresAt': cashWaitExpiresAt?.toUtc().toIso8601String(),
-    'serverTime': _isoNow(),
   };
 
   static Object? _payment(MockRequest request) {
@@ -104,7 +98,7 @@ abstract final class MockTripWrapUp {
     final paidAt = MockTripState.paidAt[id];
     final method = MockTripState.paymentMethod[id];
     if (paidAt != null && method != null) {
-      return _paymentPayload(id, trip, 'succeeded', method: method, last4: MockTripState.cardLast4[id], paidAt: paidAt);
+      return _paymentPayload(id, trip, 'succeeded', method: method, paidAt: paidAt);
     }
     final postedAt = MockTripState.cashPostedAt[id];
     if (postedAt != null) {
@@ -123,14 +117,6 @@ abstract final class MockTripWrapUp {
     return _paymentPayload(id, trip, 'pending');
   }
 
-  static Object? _settleCard(String id, Map<String, dynamic> trip, String last4) {
-    final paidAt = DateTime.now();
-    MockTripState.cashPostedAt.remove(id);
-    MockTripState.cardLast4[id] = last4;
-    _settle(id, 'card', paidAt);
-    return _paymentPayload(id, trip, 'succeeded', method: 'card', last4: last4, paidAt: paidAt);
-  }
-
   static Object? _pay(MockRequest request) {
     final id = request.params['id']!;
     final trip = _tripOf(request);
@@ -140,9 +126,7 @@ abstract final class MockTripWrapUp {
     final method = request.body['method'];
     return switch (method) {
       'cash' => _payCash(id, trip),
-      'card' => _payCard(id, trip, _asMap(request.body['card'])),
       'wallet' => _payWallet(id, trip),
-      'group_wallet' => _payGroupWallet(id, trip),
       _ => throw const MockFailure(422, 'Pick a way to pay.', code: 'invalid_method'),
     };
   }
@@ -156,16 +140,6 @@ abstract final class MockTripWrapUp {
       method: 'cash',
       cashWaitExpiresAt: MockTripState.cashPostedAt[id]!.add(cashWaitWindow),
     );
-  }
-
-  static Object? _payCard(String id, Map<String, dynamic> trip, Map<String, dynamic> card) {
-    final ref = MockCardTokenizer.decode(card['token'] as String?);
-    if (ref == null) throw const MockFailure(422, 'Check your card details.', code: 'invalid_card');
-    if (!_isFutureExpiry(ref.expiry)) throw const MockFailure(402, 'This card has expired.', code: 'card_expired');
-    if (ref.last4 == _declinedLast4) {
-      throw const MockFailure(402, 'Your bank declined this card.', code: 'card_declined');
-    }
-    return _settleCard(id, trip, ref.last4);
   }
 
   static Object? _payWallet(String id, Map<String, dynamic> trip) {
@@ -183,39 +157,6 @@ abstract final class MockTripWrapUp {
     return _paymentPayload(id, trip, 'succeeded', method: 'wallet', paidAt: paidAt);
   }
 
-  static Object? _payGroupWallet(String id, Map<String, dynamic> trip) {
-    final rideFor = _rideForOf(trip);
-    final target = MockGroups.paymentTarget(rideFor);
-    if (target == null || !MockGroups.canPayWithGroupWallet(rideFor, _fareOf(trip))) {
-      throw const MockFailure(403, 'The group wallet can’t pay for this ride.', code: 'not_allowed');
-    }
-    final paidAt = DateTime.now();
-    MockWallet.payTrip(
-      tripId: id,
-      fare: _fareOf(trip),
-      pickup: _placeOf(trip['pickup'], 'Pickup')['name'] as String,
-      dropoff: _placeOf(trip['dropoff'], 'Drop off')['name'] as String,
-      at: paidAt,
-      itemName: MockTrip.deliveryItemName(id),
-      groupId: target.id,
-      memberName: target.memberName,
-    );
-    MockGroups.recordSpend(rideFor, _fareOf(trip));
-    MockTripState.cashPostedAt.remove(id);
-    _settle(id, 'group_wallet', paidAt);
-    return _paymentPayload(id, trip, 'succeeded', method: 'group_wallet', paidAt: paidAt);
-  }
-
-  static bool _isFutureExpiry(String expiry) {
-    final match = RegExp(r'^(\d{2})/(\d{2})$').firstMatch(expiry);
-    if (match == null) return false;
-    final month = int.parse(match.group(1)!);
-    final year = 2000 + int.parse(match.group(2)!);
-    if (month < 1 || month > 12) return false;
-    final now = DateTime.now();
-    return DateTime(year, month + 1).isAfter(DateTime(now.year, now.month));
-  }
-
   static Object? _cancelPayment(MockRequest request) {
     final id = request.params['id']!;
     final trip = _tripOf(request);
@@ -228,7 +169,7 @@ abstract final class MockTripWrapUp {
 
   static int _roundedShare(int fare, double share) => ((fare * share) / 50).round() * 50;
 
-  static List<Map<String, dynamic>> _fareLines(int fare, double distanceKm, int durationMinutes) {
+  static ({int base, int distance, int time, int service}) _splitFare(int fare) {
     var base = _roundedShare(fare, 0.22);
     final distance = _roundedShare(fare, 0.44);
     final time = _roundedShare(fare, 0.22);
@@ -237,15 +178,36 @@ abstract final class MockTripWrapUp {
       base += service;
       service = 0;
     }
+    return (base: base, distance: distance, time: time, service: service);
+  }
+
+  static List<Map<String, dynamic>> _fareLines(int fare, double distanceKm, int durationMinutes) {
+    final split = _splitFare(fare);
     return [
-      {'key': 'base_fare', 'label': 'Base fare', 'amount': MockMoney.json(base)},
+      {'code': 'BASE_FARE', 'label': 'Base fare', 'amount': _amount(split.base)},
       {
-        'key': 'distance',
+        'code': 'DISTANCE',
         'label': 'Distance (${SangaDistance.fromKilometers(distanceKm)})',
-        'amount': MockMoney.json(distance),
+        'amount': _amount(split.distance),
+        'quantity': distanceKm,
+        'unit': 'km',
+        'rate': _amount(distanceKm == 0 ? 0 : (split.distance / distanceKm).round()),
       },
-      {'key': 'time', 'label': 'Time ($durationMinutes mins)', 'amount': MockMoney.json(time)},
-      {'key': 'service_fee', 'label': 'Service fee', 'amount': MockMoney.json(service)},
+      {
+        'code': 'TIME',
+        'label': 'Time ($durationMinutes mins)',
+        'amount': _amount(split.time),
+        'quantity': durationMinutes,
+        'unit': 'min',
+        'rate': _amount(durationMinutes == 0 ? 0 : (split.time / durationMinutes).round()),
+      },
+    ];
+  }
+
+  static List<Map<String, dynamic>> _adjustments(int fare) {
+    final service = _splitFare(fare).service;
+    return [
+      if (service > 0) {'code': 'SERVICE_FEE', 'label': 'Service fee', 'amount': _amount(service)},
     ];
   }
 
@@ -253,6 +215,15 @@ abstract final class MockTripWrapUp {
     final place = _asMap(value);
     final name = place['name'] as String? ?? fallbackName;
     return {'name': name, 'address': place['address'] as String? ?? name};
+  }
+
+  static Map<String, dynamic> _receiptPlaceOf(Object? value, String fallbackName) {
+    final place = _asMap(value);
+    return {
+      'address': _placeOf(value, fallbackName)['address'],
+      'latitude': place['latitude'],
+      'longitude': place['longitude'],
+    };
   }
 
   static Map<String, dynamic> _driverOf(Map<String, dynamic> trip) {
@@ -276,79 +247,122 @@ abstract final class MockTripWrapUp {
       'model': vehicle['model'],
       'year': vehicle['year'],
       'colour': vehicle['colour'],
-      'plate': vehicle['plate'],
-      'features': vehicle['features'] ?? const <String>[],
+      'plateNumber': vehicle['plateNumber'] ?? vehicle['plate'],
+      'featureLabels': vehicle['featureLabels'] ?? vehicle['features'] ?? const <String>[],
     };
   }
+
+  static Map<String, dynamic> _receiptVehicleOf(Map<String, dynamic> trip) {
+    final vehicle = _vehicleOf(trip);
+    return {'display': '(${vehicle['year']} model) REG NO: ${vehicle['plateNumber']}', 'vehicleType': 'car'};
+  }
+
+  static Map<String, dynamic> _receiptDriverOf(Map<String, dynamic> trip) {
+    final driver = _driverOf(trip);
+    return {
+      'id': driver['id'],
+      'name': driver['name'],
+      'photoUrl': driver['photoUrl'],
+      'ridesCompleted': driver['ridesCompleted'],
+      'rating': driver['rating'],
+    };
+  }
+
+  static Map<String, dynamic> _paidWithOf(String id) {
+    final method = MockTripState.paymentMethod[id] ?? 'cash';
+    return {
+      'method': method,
+      'status': 'succeeded',
+      'brand': null,
+      'last4': null,
+      'display': method == 'wallet' ? 'Wallet' : 'Cash',
+      'paidAt': (MockTripState.paidAt[id] ?? DateTime.now()).toUtc().toIso8601String(),
+    };
+  }
+
+  static double _distanceOf(Map<String, dynamic> trip) =>
+      (trip['distanceKm'] as num?)?.toDouble() ?? _fallbackDistanceKm;
+
+  static int _durationOf(Map<String, dynamic> trip) =>
+      (trip['durationMinutes'] as num?)?.toInt() ?? _fallbackDurationMinutes;
+
+  static String _categoryOf(Map<String, dynamic> trip) =>
+      _asMap(trip['vehicle'])['category'] as String? ?? trip['category'] as String? ?? 'go';
+
+  static String _referenceOf(String id, {required bool isDelivery}) =>
+      '${isDelivery ? 'DL' : 'SR'}-${id.hashCode.abs() % 90000000 + 10000000}';
 
   static Object? _receipt(MockRequest request) => _receiptOf(request.params['id']!, _tripOf(request));
 
   static Map<String, dynamic> _receiptOf(String id, Map<String, dynamic> trip) {
     final fare = _fareOf(trip);
-    final distanceKm = (trip['distanceKm'] as num?)?.toDouble() ?? _fallbackDistanceKm;
-    final durationMinutes = (trip['durationMinutes'] as num?)?.toInt() ?? _fallbackDurationMinutes;
-    final method = MockTripState.paymentMethod[id] ?? 'cash';
-    final stars = MockTripState.ratings[id];
+    final distanceKm = _distanceOf(trip);
+    final durationMinutes = _durationOf(trip);
+    final paidWith = _paidWithOf(id);
+    final delivery = MockTrip.deliveryReceiptBlock(id);
     return {
-      'id': 'rcpt_$id',
-      'tripId': id,
+      'rideId': id,
+      'reference': _referenceOf(id, isDelivery: delivery != null),
+      'kind': delivery == null ? 'ride' : 'delivery',
       'status': 'completed',
-      'serverTime': _isoNow(),
-      'pickup': _placeOf(trip['pickup'], 'Pickup'),
-      'dropoff': _placeOf(trip['dropoff'], 'Drop off'),
-      'stops': [for (final stop in (trip['stops'] as List? ?? const [])) _placeOf(stop, 'Stop')],
+      'statusLabel': 'Completed',
+      'title': delivery == null ? 'Trip receipt' : 'Delivery receipt',
+      'pickup': _receiptPlaceOf(trip['pickup'], 'Pickup'),
+      'dropoff': _receiptPlaceOf(trip['dropoff'], 'Drop off'),
       'distanceKm': distanceKm,
-      'durationMinutes': durationMinutes,
+      'distanceDisplay': SangaDistance.fromKilometers(distanceKm),
+      'durationMin': durationMinutes,
+      'durationDisplay': durationMinutes == 1 ? '1 minute' : '$durationMinutes minutes',
       'lines': _fareLines(fare, distanceKm, durationMinutes),
-      'total': MockMoney.json(fare),
-      'paidWith': {
-        'method': method,
-        'last4': method == 'card' ? MockTripState.cardLast4[id] : null,
-        'group': method == 'group_wallet' ? MockGroups.paymentGroup(_rideForOf(trip)) : null,
-      },
-      'paidAt': (MockTripState.paidAt[id] ?? DateTime.now()).toUtc().toIso8601String(),
-      'driver': _driverOf(trip),
-      'vehicle': _vehicleOf(trip),
-      'category': _asMap(trip['vehicle'])['category'] ?? trip['category'] ?? 'go',
-      'rating': stars == null ? null : {'stars': stars},
-      'delivery': ?MockTrip.deliveryReceiptBlock(id),
+      'adjustments': _adjustments(fare),
+      'totalPaid': _amount(fare),
+      'totalLabel': 'TOTAL PAID',
+      'tip': 0,
+      'payment': paidWith,
+      'completedAt': paidWith['paidAt'],
+      'driver': _receiptDriverOf(trip),
+      'vehicle': _receiptVehicleOf(trip),
+      'delivery': ?delivery,
     };
   }
 
   static Map<String, dynamic> historyDetail(String id) {
     final trip = MockTripState.trips[id] ?? const <String, dynamic>{};
     final live = MockTrip.payload(id);
-    final receipt = _receiptOf(id, trip);
+    final fare = _fareOf(trip);
+    final distanceKm = _distanceOf(trip);
+    final durationMinutes = _durationOf(trip);
     final delivery = _asMap(live['delivery']);
     final isDelivery = delivery.isNotEmpty;
     final item = _asMap(delivery['item']);
     final proof = _asMap(delivery['deliveryProof']);
     final occurredAt = MockTrip.completedAt(id) ?? DateTime.now();
+    final stars = MockTripState.ratings[id];
     return {
       'id': id,
       'kind': isDelivery ? 'delivery' : 'ride',
       'status': 'completed',
-      'category': receipt['category'],
+      'category': _categoryOf(trip),
       'occurredAt': occurredAt.toUtc().toIso8601String(),
       'pickup': live['pickup'],
       'stops': [
         for (final stop in live['stops'] as List) {..._asMap(stop)}..remove('status'),
       ],
       'dropoff': live['dropoff'],
-      'fare': receipt['total'],
+      'fare': _amount(fare),
       'returnFee': ?live['returnFee'],
       if (isDelivery) 'itemName': item['name'],
-      'reference': '${isDelivery ? 'DL' : 'SR'}-${id.hashCode.abs() % 90000000 + 10000000}',
+      'reference': _referenceOf(id, isDelivery: isDelivery),
       'requestedAt': MockTrip.createdAt(id).toUtc().toIso8601String(),
       'counterOffer': MockMoney.jsonOrNull(trip['counterOffer'] as num?),
-      'distanceKm': receipt['distanceKm'],
-      'durationMinutes': receipt['durationMinutes'],
-      'lines': receipt['lines'],
-      'paidWith': receipt['paidWith'],
+      'distanceKm': distanceKm,
+      'durationMinutes': durationMinutes,
+      'lines': [..._fareLines(fare, distanceKm, durationMinutes), ..._adjustments(fare)],
+      'paidWith': _paidWithOf(id),
       'driver': {...live['driver'] as Map<String, dynamic>, 'blocked': false},
-      'vehicle': receipt['vehicle'],
+      'vehicle': _vehicleOf(trip),
       'events': _historyEvents(live['events'] as List, isDelivery: isDelivery),
-      'rating': receipt['rating'],
+      'rating': stars == null ? null : {'stars': stars},
       'cancellation': null,
       'delivery': isDelivery
           ? {
@@ -378,13 +392,26 @@ abstract final class MockTripWrapUp {
 
   static Object? _rate(MockRequest request) {
     final id = request.params['id']!;
-    _tripOf(request);
+    final trip = _tripOf(request);
     final stars = (request.body['stars'] as num?)?.toInt() ?? 0;
     if (stars < 1 || stars > 5) throw const MockFailure(422, 'Pick between 1 and 5 stars.', code: 'invalid_stars');
+    final tags = request.body['tags'];
+    if (tags != null && (tags is! List || tags.any((tag) => !_ratingTags.contains(tag)))) {
+      throw const MockFailure(422, 'Pick tags from the list.', code: 'invalid_tags');
+    }
     if (MockTripState.ratings.containsKey(id)) {
       throw const MockFailure(409, 'You already rated this trip.', code: 'already_rated');
     }
     MockTripState.ratings[id] = stars;
-    return {'tripId': id, 'stars': stars, 'serverTime': _isoNow()};
+    final driver = _receiptDriverOf(trip);
+    return {
+      'id': 'rating_$id',
+      'rideId': id,
+      'stars': stars,
+      'review': request.body['review'],
+      'tags': tags ?? const <String>[],
+      'driver': {'id': driver['id'], 'name': driver['name'], 'rating': driver['rating']},
+      'createdAt': _isoNow(),
+    };
   }
 }

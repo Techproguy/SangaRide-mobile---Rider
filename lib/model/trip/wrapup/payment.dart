@@ -125,7 +125,7 @@ class TripPayment {
     final reader = JsonReader.of(json);
     final group = reader.objectOrNull('group');
     return TripPayment(
-      tripId: reader.str('tripId'),
+      tripId: reader.str('rideId'),
       amount: reader.money('amount'),
       status: PaymentStatus.fromCode(reader.strOrNull('status')),
       allowedMethods: [for (final code in reader.strings('allowedMethods')) ?PaymentMethod.tryFromCode(code)],
