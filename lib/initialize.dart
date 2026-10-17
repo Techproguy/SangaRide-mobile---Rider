@@ -51,7 +51,7 @@ Future<void> initializeSanga() async {
   SangaRouteService.configure(
     SangaRouteConfig(
       apiKey: SangaConstants.googleMapsApiKey,
-      useDirections: SangaConstants.roadRoutes,
+      useDirections: true,
       iosBundleId: SangaConstants.installedAppId,
       androidPackage: SangaConstants.installedAppId,
     ),

@@ -12,8 +12,6 @@ class SangaConstants {
 
   static const String baseUrl = String.fromEnvironment('BASE_URL');
 
-  static const bool roadRoutes = bool.fromEnvironment('ROAD_ROUTES');
-
   static String get installedAppId => AppEnvironment.current.isProduction ? appId : '$appId.dev';
 
   static final String googleMapsApiKey = SangaMapsKeys.defaultKey;
