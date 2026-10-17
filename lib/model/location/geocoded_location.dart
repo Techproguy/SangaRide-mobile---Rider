@@ -7,6 +7,7 @@ class GeocodedLocation {
   final String? route;
   final String? locality;
   final String? subLocality;
+  final String? neighborhood;
   final String? administrativeAreaLevel1;
   final String? administrativeAreaLevel2;
   final String? country;
@@ -22,6 +23,7 @@ class GeocodedLocation {
     this.route,
     this.locality,
     this.subLocality,
+    this.neighborhood,
     this.administrativeAreaLevel1,
     this.administrativeAreaLevel2,
     this.country,
@@ -39,6 +41,7 @@ class GeocodedLocation {
       route: route,
       locality: locality,
       subLocality: subLocality,
+      neighborhood: neighborhood,
       administrativeAreaLevel1: administrativeAreaLevel1,
       administrativeAreaLevel2: administrativeAreaLevel2,
       country: country,
@@ -127,6 +130,7 @@ class GeocodedLocation {
     String? route;
     String? locality;
     String? subLocality;
+    String? neighborhood;
     String? adminArea1;
     String? adminArea2;
     String? country;
@@ -142,6 +146,8 @@ class GeocodedLocation {
         streetNumber = longName;
       } else if (types.contains('route')) {
         route = longName;
+      } else if (types.contains('neighborhood')) {
+        neighborhood = longName;
       } else if (types.contains('locality')) {
         locality = longName;
       } else if (types.contains('sublocality') || types.contains('sublocality_level_1')) {
@@ -165,6 +171,7 @@ class GeocodedLocation {
       route: route,
       locality: locality,
       subLocality: subLocality,
+      neighborhood: neighborhood,
       administrativeAreaLevel1: adminArea1,
       administrativeAreaLevel2: adminArea2,
       country: country,

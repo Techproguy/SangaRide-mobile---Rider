@@ -109,7 +109,7 @@ class PlacesService {
     if (!SangaMapsKeys.isConfigured) return MockPlaces.nearest(coordinates);
     final location = await reverseGeocode(coordinates);
     if (location == null) return null;
-    final area = location.subLocality ?? location.locality ?? location.route;
+    final area = location.neighborhood ?? location.subLocality ?? location.locality ?? location.route;
     return Place(
       placeId: location.placeId ?? '',
       name: area ?? location.formattedAddress,
