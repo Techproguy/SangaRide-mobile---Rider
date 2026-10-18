@@ -220,11 +220,27 @@ class RideRequestController extends GetxController {
 
   Money? get hourlyRate => hourlyCatalog?.hourlyRate;
 
+  static const Duration _returnSlack = Duration(minutes: 5);
+  static const int _returnStepMinutes = 5;
+
   bool get isScheduledBooking => timing.isScheduled || tripType.isAlwaysScheduled;
 
   DateTime? get departureAt => timing == RideTiming.now ? BookingClock.now() : scheduledAt;
 
   DateTime? get earliestReturn => departureAt?.add(rules.returnGap);
+
+  DateTime? get earliestPickableReturn {
+    final earliest = earliestReturn?.add(_returnSlack);
+    if (earliest == null) return null;
+    final roundedUp = (earliest.minute / _returnStepMinutes).ceil() * _returnStepMinutes;
+    return DateTime(earliest.year, earliest.month, earliest.day, earliest.hour).add(Duration(minutes: roundedUp));
+  }
+
+  bool get isReturnTooSoon {
+    final at = returnAt;
+    final earliest = earliestReturn;
+    return tripType.needsReturn && at != null && earliest != null && at.isBefore(earliest);
+  }
 
   bool get isReadyToReview => switch (tripType) {
     TripType.oneWay => timing != RideTiming.later || scheduledAt != null,
@@ -428,8 +444,16 @@ class RideRequestController extends GetxController {
     }
   }
 
+  void _preselectOption() {
+    final preferred = _preferredCategory;
+    if (preferred != null && _optionId.value == null) {
+      _optionId.value = _options.firstWhereOrNull((o) => o.category == preferred)?.id;
+    }
+    _optionId.value ??= _options.firstWhereOrNull(fitsGroup)?.id;
+  }
+
   Future<void> loadOptions({bool force = false}) async {
-    if (_options.isNotEmpty && !force && _isFresh(_optionsLoadedAt)) return;
+    if (_options.isNotEmpty && !force && _isFresh(_optionsLoadedAt)) return _preselectOption();
     if (_isLoadingOptions.value) return;
     _optionsProblem.value = null;
     _isLoadingOptions.value = true;
@@ -439,11 +463,7 @@ class RideRequestController extends GetxController {
       _options.assignAll(loaded);
       _optionsLoadedAt = DateTime.now();
       _loadHourlyIfMissing();
-      final preferred = _preferredCategory;
-      if (preferred != null && _optionId.value == null) {
-        _optionId.value = _options.firstWhereOrNull((o) => o.category == preferred)?.id;
-      }
-      _optionId.value ??= _options.firstWhereOrNull(fitsGroup)?.id;
+      _preselectOption();
       unawaited(loadOptionFares());
       if (_optionId.value != null && _options.every((option) => option.id != _optionId.value)) {
         _optionId.value = null;

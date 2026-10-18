@@ -8,7 +8,13 @@ extension RideRequestPayload on RideRequestController {
     if (repeatRule case final rule?) 'repeat': rule.toJson(),
     if (tripType == TripType.hourly) ...{'hourlyDurationMin': hours * Duration.minutesPerHour, 'stayWithMe': staysWithRider},
     if (tripType == TripType.intercity) ...{'fromCityId': fromCity?.id, 'toCityId': toCity?.id},
-    if (returnAt case final at? when tripType.needsReturn) 'returnAt': at.toUtc().toIso8601String(),
+    if (returnAt case final at? when tripType.needsReturn) ...{
+      'returnAt': at.toUtc().toIso8601String(),
+      'roundTrip': {
+        'departAt': (scheduledAt ?? DateTime.now()).toUtc().toIso8601String(),
+        'returnAt': at.toUtc().toIso8601String(),
+      },
+    },
     if (airportBooking case final booking? when tripType == TripType.airport) 'airport': booking.toJson(),
     if (deliveryBooking case final booking? when tripType == TripType.delivery) 'delivery': booking.toJson(),
   };

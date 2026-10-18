@@ -14,7 +14,7 @@ class RoundTripReturnScreen extends StatelessWidget {
   const RoundTripReturnScreen({super.key});
 
   Future<void> _pickReturn(BuildContext context, RideRequestController ride) async {
-    final earliest = ride.earliestReturn;
+    final earliest = ride.earliestPickableReturn;
     if (earliest == null) return;
     final picked = await showSangaDateTimeSheet(
       context: context,

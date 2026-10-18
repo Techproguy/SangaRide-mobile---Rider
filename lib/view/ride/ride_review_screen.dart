@@ -37,6 +37,12 @@ class _RideReviewScreenState extends State<RideReviewScreen> {
   }
 
   Future<void> _submit(RideRequestController ride) async {
+    if (ride.isReturnTooSoon) {
+      SangaToast.show(BookingProblem.scheduleTooSoon.message, tone: SangaToastTone.error);
+      ride.setReturnAt(null);
+      context.pop();
+      return;
+    }
     if (ride.isScheduledBooking) return _schedule(ride);
     await startMatching(context);
   }
