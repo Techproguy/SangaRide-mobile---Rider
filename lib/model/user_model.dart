@@ -21,6 +21,17 @@ class UserModel {
 
   String get displayName => [firstName, lastName].whereType<String>().where((s) => s.isNotEmpty).join(' ');
 
+  UserModel withTripCount(int count) => UserModel(
+    id: id,
+    firstName: firstName,
+    lastName: lastName,
+    email: email,
+    phone: phone,
+    avatarUrl: avatarUrl,
+    rating: rating,
+    tripCount: count,
+  );
+
   bool get isProfileComplete => (firstName ?? '').isNotEmpty && (lastName ?? '').isNotEmpty;
 
   factory UserModel.fromJson(Map<String, dynamic> json) => UserModel(

@@ -7,7 +7,7 @@ import 'package:sanga_ride/core/api/api.dart';
 import 'package:sanga_ride/core/api/app_endpoints.dart';
 import 'package:sanga_ride/core/services/session_storage.dart';
 import 'package:sanga_ride/core/storage_keys.dart';
-import 'package:sanga_ride_core/sanga_ride_core.dart' show ResponseData;
+import 'package:sanga_ride_core/sanga_ride_core.dart' show JsonReader, ResponseData;
 import 'package:sanga_ride/model/models.dart';
 
 class UserController extends GetxController {
@@ -30,10 +30,26 @@ class UserController extends GetxController {
 
   Future<void> fetchMe() async {
     try {
+      final tripCount = fetchTripCount();
       final response = await _api.get(AppEndpoints.profile, suppressErrorToast: true);
-      await setUser(UserModel.fromJson(response.dataMap));
+      final user = UserModel.fromJson(response.dataMap);
+      await setUser(user.withTripCount(await tripCount ?? _user.value?.tripCount ?? user.tripCount));
     } catch (e) {
       log('fetchMe failed: $e');
+    }
+  }
+
+  Future<int?> fetchTripCount() async {
+    try {
+      final response = await _api.get(
+        AppEndpoints.rideRequests,
+        queryParameters: {'status': 'completed', 'limit': 1},
+        suppressErrorToast: true,
+      );
+      return JsonReader.of(response.data).objectOrNull('meta')?.intOrNull('total');
+    } catch (e) {
+      log('trip count failed: $e');
+      return null;
     }
   }
 

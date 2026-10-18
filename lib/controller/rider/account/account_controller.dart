@@ -52,10 +52,12 @@ class AccountController extends GetxController {
     final epoch = _loadEpoch.next();
     if (_state.value is! AccountLoaded) _state.value = const AccountLoading();
     try {
+      final tripCount = _users.fetchTripCount();
       final response = await _api.get(AccountEndpoints.profile, suppressErrorToast: true);
+      final rides = await tripCount;
       if (!_loadEpoch.isCurrent(epoch)) return;
       _loadedAt = DateTime.now();
-      await apply(response.dataMapOrEmpty);
+      await apply({...response.dataMapOrEmpty, 'ridesCount': ?rides});
     } on Object catch (error) {
       final shouldFail = _loadEpoch.isCurrent(epoch) && _state.value is! AccountLoaded;
       if (shouldFail) _state.value = AccountFailed(AccountProblem.of(error));
@@ -68,7 +70,7 @@ class AccountController extends GetxController {
   }
 
   Future<void> apply(Map<String, dynamic> json) async {
-    final account = Account.fromJson(json);
+    final account = Account.fromJson({'ridesCount': ?(this.account?.ridesCount ?? _users.user?.tripCount), ...json});
     final current = _state.value;
     _state.value = current is AccountLoaded ? current.copyWith(account: account) : AccountLoaded(account);
     await _users.setUser(account.toUserModel());
