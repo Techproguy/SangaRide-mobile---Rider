@@ -60,7 +60,7 @@ class _FlightTrackingScreenState extends State<FlightTrackingScreen> {
     final confirmed = await showCancelScheduledSheet(
       context: context,
       isRepeat: false,
-      whenLabel: formatRideSchedule(context, tracking.pickupAt),
+      whenLabel: formatRideMoment(context, tracking.pickupAt),
     );
     if (!confirmed || !mounted) return;
     if (_rides.state is! ScheduledLoaded) await _rides.load();

@@ -27,11 +27,22 @@ class ScheduledStop {
 
   factory ScheduledStop.fromRide(JsonReader json) {
     final address = json.strOr('address', '');
-    return ScheduledStop(name: address, address: address);
+    return ScheduledStop(name: json.strOrNull('name') ?? address, address: address);
   }
 
   final String name;
   final String address;
+
+  bool get _isNamedByAddress => name.trim().isEmpty || name.trim() == address.trim();
+
+  List<String> get _addressParts => [
+    for (final part in address.split(','))
+      if (part.trim().isNotEmpty) part.trim(),
+  ];
+
+  String get title => _isNamedByAddress ? (_addressParts.firstOrNull ?? address) : name;
+
+  String get subtitle => _isNamedByAddress ? _addressParts.skip(1).join(', ') : address;
 }
 
 class ScheduledRide {

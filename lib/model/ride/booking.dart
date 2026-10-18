@@ -142,12 +142,16 @@ class RepeatRule {
 class City {
   const City({required this.id, required this.name, required this.coordinates, required this.radiusKm});
 
-  factory City.fromJson(JsonReader json) => City(
-    id: json.str('id'),
-    name: json.str('name'),
-    coordinates: LatLng(json.number('lat').toDouble(), json.number('lng').toDouble()),
-    radiusKm: json.number('radiusKm'),
-  );
+  factory City.fromJson(JsonReader json) {
+    final center = json.objectOrNull('center') ?? json;
+    final radiusMeters = json.numOrNull('radiusMeters');
+    return City(
+      id: json.str('id'),
+      name: json.str('name'),
+      coordinates: LatLng(center.number('lat').toDouble(), center.number('lng').toDouble()),
+      radiusKm: radiusMeters == null ? json.number('radiusKm') : radiusMeters / 1000,
+    );
+  }
 
   final String id;
   final String name;
@@ -289,6 +293,7 @@ enum BookingProblem {
   quoteExpired(ServerCode.quoteExpired, 'Your price changed. Have a look at the new one, then go again.'),
   notFound(ServerCode.notFound, 'We can’t find that ride. It may already be gone.'),
   connection('connection', CommonCopy.offline),
+  rejected('rejected', 'We couldn’t book that. Check your trip details and try again.'),
   unknown('unknown', CommonCopy.serverTrouble);
 
   const BookingProblem(this.code, this.message);
@@ -300,7 +305,10 @@ enum BookingProblem {
 
   static BookingProblem of(Object error) => switch (ProblemKind.of(error)) {
     ProblemOffline() => connection,
-    ProblemRejected(:final code) => fromCode(code),
+    ProblemRejected(:final code) => switch (fromCode(code)) {
+      unknown => rejected,
+      final known => known,
+    },
     _ => unknown,
   };
 }

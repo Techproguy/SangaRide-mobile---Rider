@@ -10,7 +10,7 @@ Future<bool> cancelScheduledRide(BuildContext context, ScheduledRidesController 
   final confirmed = await showCancelScheduledSheet(
     context: context,
     isRepeat: ride.isRepeat,
-    whenLabel: formatRideSchedule(context, ride.scheduledAt),
+    whenLabel: formatRideMoment(context, ride.scheduledAt),
   );
   if (!confirmed || !context.mounted) return false;
   final problem = await rides.cancel(ride.id);

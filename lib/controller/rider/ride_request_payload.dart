@@ -11,7 +11,15 @@ extension RideRequestPayload on RideRequestController {
       'stayWithMe': staysWithRider,
       'hourly': {'durationMin': hours * Duration.minutesPerHour, 'stayWithMe': staysWithRider},
     },
-    if (tripType == TripType.intercity) ...{'fromCityId': fromCity?.id, 'toCityId': toCity?.id},
+    if (tripType == TripType.intercity) ...{
+      'fromCityId': fromCity?.id,
+      'toCityId': toCity?.id,
+      'intercity': {
+        'fromCityId': fromCity?.id,
+        'toCityId': toCity?.id,
+        'departAt': ?scheduledAt?.toUtc().toIso8601String(),
+      },
+    },
     if (returnAt case final at? when tripType.needsReturn) ...{
       'returnAt': at.toUtc().toIso8601String(),
       'roundTrip': {

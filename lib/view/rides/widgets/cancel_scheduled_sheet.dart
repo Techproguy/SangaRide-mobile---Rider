@@ -21,7 +21,7 @@ Future<bool> showCancelScheduledSheet({
         Text(
           isRepeat
               ? 'Every upcoming ride in this series will be cancelled. Your next one is $whenLabel.'
-              : 'Your ride for $whenLabel will be cancelled.',
+              : 'Your ride $whenLabel will be cancelled.',
           textAlign: TextAlign.center,
           style: SangaTextStyles.statusMessage,
         ),

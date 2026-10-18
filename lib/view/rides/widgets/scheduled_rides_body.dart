@@ -69,7 +69,7 @@ class _ScheduledRidesBodyState extends State<ScheduledRidesBody> {
     final airport = ride.airport;
     return ScheduledRideCard(
       ride: ride,
-      whenLabel: formatRideSchedule(context, ride.scheduledAt),
+      whenLabel: formatRideMoment(context, ride.scheduledAt),
       tagLabel: _tagLabel(ride),
       repeatLabel: rule == null ? null : formatRepeatRule(context, rule),
       reminderLabel: reminderAt == null ? null : 'Reminder at ${formatRideClock(context, reminderAt)}',

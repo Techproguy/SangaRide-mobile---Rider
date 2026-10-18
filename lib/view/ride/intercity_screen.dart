@@ -91,6 +91,16 @@ class _IntercityScreenState extends State<IntercityScreen> {
   Widget _buildContent(BuildContext context) {
     final catalog = _ride.readyCatalog?.intercity;
     if (catalog == null) return const SizedBox.shrink();
+    if (catalog.cities.isEmpty) {
+      return SangaEmptyMessage(
+        isPageBody: true,
+        icon: Icons.route_rounded,
+        title: 'Intercity isn’t open yet',
+        message: 'You can still get there with a one way or hourly ride.',
+        actionLabel: 'Choose another trip',
+        onAction: () => context.pop(),
+      );
+    }
     final departure = _ride.scheduledAt;
     final isStale = departure != null && departure.isBefore(BookingClock.now().add(catalog.departureLead));
     return Column(
@@ -132,10 +142,10 @@ class _IntercityScreenState extends State<IntercityScreen> {
     return SangaLocationRow(
       kind: kind,
       title: place?.title ?? 'Choose a place',
-      subtitle: place?.address,
+      subtitle: place?.subtitle,
       isPlaceholder: place == null,
       onTap: () => _editPlace(edit),
-      trailing: Text(city?.name ?? 'No city', style: SangaTextStyles.cardSubtitle),
+      trailing: city == null ? null : Text(city.name, style: SangaTextStyles.cardSubtitle),
     );
   }
 }

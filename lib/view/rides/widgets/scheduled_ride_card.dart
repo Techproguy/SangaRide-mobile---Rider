@@ -128,8 +128,8 @@ class ScheduledRideCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(stop.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: SangaTextStyles.cardTitle),
-              Text(stop.address, maxLines: 1, overflow: TextOverflow.ellipsis, style: SangaTextStyles.tileSubtitle),
+              Text(stop.title, maxLines: 1, overflow: TextOverflow.ellipsis, style: SangaTextStyles.cardTitle),
+              Text(stop.subtitle, maxLines: 1, overflow: TextOverflow.ellipsis, style: SangaTextStyles.tileSubtitle),
             ],
           ),
         ),
