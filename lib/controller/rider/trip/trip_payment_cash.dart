@@ -60,6 +60,7 @@ extension TripPaymentCash on TripPaymentController {
       case MutationDone<TripPayment>(:final value):
         _cancelCashMutation?.dispose();
         _cancelCashMutation = null;
+        _isRechoosing = true;
         _apply(value, epoch);
       case MutationRejected<TripPayment>(:final error):
         _cancelCashMutation?.dispose();

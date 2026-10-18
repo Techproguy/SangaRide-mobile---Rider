@@ -85,8 +85,13 @@ class TripPaymentController extends GetxController {
 
   void stopWatching() => _stopPolling();
 
+  bool _isRechoosing = false;
+
   Future<void> open(String tripId) async {
-    if (_tripId != tripId) _forgetAttempts();
+    if (_tripId != tripId) {
+      _forgetAttempts();
+      _isRechoosing = false;
+    }
     _tripId = tripId;
     await _load();
   }
@@ -130,6 +135,9 @@ class TripPaymentController extends GetxController {
         _stopPolling();
         _settleWallets(payment);
         _state.value = PaymentPaid(payment);
+      case PaymentStatus.awaitingDriver when _isRechoosing:
+        _stopPolling();
+        _state.value = PaymentChoosing(payment, selected: _rechoiceOf(payment));
       case PaymentStatus.awaitingDriver:
         _state.value = PaymentAwaitingDriver(payment, link: _cashLinkOf(payment));
         _startPolling(epoch);
@@ -169,6 +177,11 @@ class TripPaymentController extends GetxController {
 
   bool _isChoosable(TripPayment payment, PaymentMethod method) =>
       payment.allowedMethods.contains(method) && (method != PaymentMethod.wallet || _walletCovers(payment.amount));
+
+  PaymentMethod? _rechoiceOf(TripPayment payment) {
+    final preferred = _preferredOf(payment);
+    return preferred == PaymentMethod.cash ? null : preferred;
+  }
 
   PaymentMethod? _preferredOf(TripPayment payment) {
     if (_isChoosable(payment, PaymentMethod.groupWallet)) return PaymentMethod.groupWallet;
@@ -250,6 +263,7 @@ class TripPaymentController extends GetxController {
   }
 
   Future<void> _submit(TripPayment payment, PaymentRequest request, {required String signature}) async {
+    _isRechoosing = false;
     if (LiveProblem.isOffline) {
       _state.value = PaymentChoosing(payment, selected: request.method, notice: PaymentNotice.offline);
       return;
