@@ -6,7 +6,11 @@ extension RideRequestPayload on RideRequestController {
     'timing': timing.name,
     if (scheduledAt case final at?) ...{'scheduledFor': at.toUtc().toIso8601String(), 'timezone': BookingZone.of(at)},
     if (repeatRule case final rule?) 'repeat': rule.toJson(),
-    if (tripType == TripType.hourly) ...{'hourlyDurationMin': hours * Duration.minutesPerHour, 'stayWithMe': staysWithRider},
+    if (tripType == TripType.hourly) ...{
+      'hourlyDurationMin': hours * Duration.minutesPerHour,
+      'stayWithMe': staysWithRider,
+      'hourly': {'durationMin': hours * Duration.minutesPerHour, 'stayWithMe': staysWithRider},
+    },
     if (tripType == TripType.intercity) ...{'fromCityId': fromCity?.id, 'toCityId': toCity?.id},
     if (returnAt case final at? when tripType.needsReturn) ...{
       'returnAt': at.toUtc().toIso8601String(),

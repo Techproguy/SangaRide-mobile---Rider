@@ -28,8 +28,8 @@ class RoutePanel extends StatelessWidget {
       children: [
         SangaLocationRow(
           kind: SangaStopKind.pickup,
-          title: pickup?.name ?? 'Pickup location',
-          subtitle: pickup?.address ?? 'Choose your pick up point',
+          title: pickup?.title ?? 'Pickup location',
+          subtitle: pickup?.subtitle ?? 'Choose your pick up point',
           isPlaceholder: pickup == null,
           onTap: () => onEdit(const RouteEdit.pickup()),
         ),
@@ -37,8 +37,8 @@ class RoutePanel extends StatelessWidget {
           const SizedBox(height: SangaSpacing.sm),
           SangaLocationRow(
             kind: SangaStopKind.stop,
-            title: stop.name,
-            subtitle: 'Stop ${index + 1} · ${stop.address}',
+            title: stop.title,
+            subtitle: 'Stop ${index + 1} · ${stop.subtitle}',
             onTap: () => onEdit(RouteEdit.stop(index)),
             trailing: IconButton(
               tooltip: 'Remove stop',
@@ -51,8 +51,8 @@ class RoutePanel extends StatelessWidget {
         const SizedBox(height: SangaSpacing.sm),
         SangaLocationRow(
           kind: SangaStopKind.dropoff,
-          title: dropoff?.name ?? 'Drop off location',
-          subtitle: dropoff?.address ?? 'Choose your drop off point',
+          title: dropoff?.title ?? 'Drop off location',
+          subtitle: dropoff?.subtitle ?? 'Choose your drop off point',
           isPlaceholder: dropoff == null,
           onTap: () => onEdit(const RouteEdit.dropoff()),
         ),

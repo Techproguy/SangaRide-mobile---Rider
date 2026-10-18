@@ -10,7 +10,9 @@ List<SangaFareLine> rideFareLines({
   final adjustment = estimate.adjustmentFor(pricing);
   return [
     if (estimate.baseFare.isPositive) SangaFareLine('Base fare', estimate.baseFare.format()),
-    _usageLine(estimate, pricePerKm, tripType),
+    if (estimate.hasDistanceFare || estimate.hours != null || estimate.otherLines.isEmpty)
+      _usageLine(estimate, pricePerKm, tripType),
+    for (final line in estimate.otherLines) SangaFareLine(line.label, line.amount.format()),
     if (estimate.meetGreetFee case final fee? when fee.isPositive) SangaFareLine('Meet and greet', fee.format()),
     if (estimate.boost.isPositive) SangaFareLine('Demand boost', estimate.boost.format()),
     if (estimate.discount.isPositive) SangaFareLine('Discount', '-${estimate.discount.format()}'),

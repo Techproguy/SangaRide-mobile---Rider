@@ -131,7 +131,7 @@ class _IntercityScreenState extends State<IntercityScreen> {
   Widget _cityRow(SangaStopKind kind, Place? place, City? city, RouteEdit edit) {
     return SangaLocationRow(
       kind: kind,
-      title: place?.name ?? 'Choose a place',
+      title: place?.title ?? 'Choose a place',
       subtitle: place?.address,
       isPlaceholder: place == null,
       onTap: () => _editPlace(edit),

@@ -111,7 +111,7 @@ class _RideSearchScreenState extends State<RideSearchScreen> {
     return SangaRouteField.display(
       kind: SangaStopKind.pickup,
       label: 'From',
-      value: pickup?.name ?? 'Choose a pickup point',
+      value: pickup?.title ?? 'Choose a pickup point',
       isPlaceholder: pickup == null,
       onTap: () => _focusOn(RoutePoint.pickup),
     );
@@ -132,7 +132,7 @@ class _RideSearchScreenState extends State<RideSearchScreen> {
     return SangaRouteField.display(
       kind: SangaStopKind.dropoff,
       label: 'To',
-      value: dropoff?.name ?? 'Where are you going?',
+      value: dropoff?.title ?? 'Where are you going?',
       isPlaceholder: dropoff == null,
       onTap: () => _focusOn(RoutePoint.dropoff),
     );

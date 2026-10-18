@@ -70,7 +70,7 @@ class RideOption {
 }
 
 enum PricingOption {
-  standard('Standard', 'Best balance of price and speed', null),
+  standard('Standard', 'Best balance of price and speed', 'Standard rate'),
   fairFare('Fair Fare', 'You set the price', null),
   saver('Saver', 'Lowest price, longest wait', 'Saver discount'),
   priority('Priority', 'Faster matching', 'Priority extra');
@@ -183,7 +183,10 @@ class FareEstimate {
     this.meetGreetFee,
     this.quoteId,
     this.fairFare,
+    this.otherLines = const [],
   });
+
+  static const _knownLineCodes = {'base_fare', 'distance', 'discount', 'boost', 'meet_greet'};
 
   factory FareEstimate.fromJson(Object? body) {
     final json = JsonReader.of(body);
@@ -210,6 +213,12 @@ class FareEstimate {
       quoteId: json.strOrNull('quoteId'),
       pricing: pricing,
       fairFare: minimumOffer == null || maximumOffer == null ? null : FairFareRange(min: minimumOffer, max: maximumOffer),
+      otherLines: [
+        for (final MapEntry(key: code, value: line) in lines.entries)
+          if (!_knownLineCodes.contains(code))
+            if ((line.strOrNull('label'), line.moneyOrNull('amount')) case (final label?, final amount?))
+              (label: label, amount: amount),
+      ],
     );
   }
 
@@ -226,6 +235,9 @@ class FareEstimate {
   final Money? meetGreetFee;
   final String? quoteId;
   final FairFareRange? fairFare;
+  final List<({String label, Money amount})> otherLines;
+
+  bool get hasDistanceFare => distanceFare.isPositive;
 
   Money adjustmentFor(PricingOption option) => (pricing[option] ?? total) - total;
 }
