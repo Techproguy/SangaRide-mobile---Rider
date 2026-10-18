@@ -253,7 +253,7 @@ class GroupMember {
 
   bool get isInvited => status == MemberStatus.invited;
 
-  String get firstName => name.trim().split(RegExp(r'\s+')).first;
+  String get firstName => hasName ? name.trim().split(RegExp(r'\s+')).first : 'this member';
 
   String get caption => isInvited ? '$relation · Invited' : relation;
 }

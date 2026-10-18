@@ -53,7 +53,7 @@ class _MemberMenu extends StatelessWidget {
     context,
     icon: Icons.favorite_border_rounded,
     title: GroupCopy.relationTitle,
-    subtitle: member.relation,
+    subtitle: member.relation.isEmpty ? GroupCopy.notSet : member.relation,
     route: GroupRoutes.relationOf(detail.id, member.id),
   );
 

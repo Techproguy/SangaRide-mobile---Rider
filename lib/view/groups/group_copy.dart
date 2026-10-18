@@ -141,7 +141,7 @@ abstract final class GroupCopy {
       promoted ? '$firstName is now an admin' : '$firstName is now a member';
 
   static String memberRemoved(GroupMember member) =>
-      member.isInvited ? 'Invite cancelled' : '${member.firstName} was removed';
+      member.isInvited ? 'Invite cancelled' : '${_capitalised(member.firstName)} was removed';
 
   static String youLeft(String groupName) => 'You left $groupName';
 
@@ -191,6 +191,10 @@ abstract final class GroupCopy {
   static String youSuffix(String name) => '$name (You)';
 
   static const String walletLockedTitle = 'The wallet is admin only';
+
+  static const String notSet = 'Not set';
+
+  static String _capitalised(String text) => text.isEmpty ? text : '${text[0].toUpperCase()}${text.substring(1)}';
 
   static String walletLockedMessage(GroupKind kind) =>
       'Ask your ${kind == GroupKind.family ? 'family' : 'team'} admin if you need to pay from it.';
@@ -331,19 +335,19 @@ abstract final class GroupCopy {
 
   static String removeMessage(GroupMember member, String groupName) => member.isInvited
       ? 'They won’t be able to join $groupName with this invite. You can send a new one any time.'
-      : '${member.firstName} will lose access to $groupName and its wallet. Their Sanga account stays.';
+      : '${_capitalised(member.firstName)} will lose access to $groupName and its wallet. Their Sanga account stays.';
 
   static String removeAction(GroupMember member) => member.isInvited ? 'Cancel invite' : 'Remove';
 
   static String adminPrompt(GroupMember member) => 'Make ${member.firstName} an admin';
 
   static String adminMessage(GroupMember member, String groupName) =>
-      '${member.firstName} will be able to invite people, set limits, top up the wallet and answer ride requests in $groupName.';
+      '${_capitalised(member.firstName)} will be able to invite people, set limits, top up the wallet and answer ride requests in $groupName.';
 
   static String demotePrompt(GroupMember member) => 'Make ${member.firstName} a member';
 
   static String demoteMessage(GroupMember member) =>
-      '${member.firstName} won’t be able to manage the group any more. They stay in it as a regular member.';
+      '${_capitalised(member.firstName)} won’t be able to manage the group any more. They stay in it as a regular member.';
 
   static String leaveTitle(GroupKind kind) => switch (kind) {
     GroupKind.family => 'Leave family group',
