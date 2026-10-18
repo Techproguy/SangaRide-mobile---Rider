@@ -117,7 +117,7 @@ extension RideRequestPayload on RideRequestController {
       final mutation = _scheduleMutationFor(payload);
       final result = await mutation.start();
       return switch (result) {
-        MutationDone<ScheduledBooking>(:final value) => ScheduleSucceeded(value),
+        MutationDone<ScheduledBooking>(:final value) => _scheduled(value),
         MutationRejected<ScheduledBooking>(:final error) => _scheduleRejection(error),
         MutationFailed<ScheduledBooking>(:final error) => ScheduleRejected(BookingProblem.of(error)),
         MutationUnknown<ScheduledBooking>() => const ScheduleUnconfirmed(),
@@ -128,6 +128,11 @@ extension RideRequestPayload on RideRequestController {
     } finally {
       _isScheduling.value = false;
     }
+  }
+
+  ScheduleOutcome _scheduled(ScheduledBooking booking) {
+    forgetLockedQuote();
+    return ScheduleSucceeded(booking);
   }
 
   ScheduleOutcome _scheduleRejection(ApiException error) {

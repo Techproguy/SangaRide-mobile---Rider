@@ -211,6 +211,7 @@ class RideMatchController extends GetxController {
   }
 
   void _onCreated(CreateOutcome outcome) {
+    _trip.forgetLockedQuote();
     switch (outcome) {
       case RequestScheduled(:final booking):
         _state.value = MatchScheduled(booking);

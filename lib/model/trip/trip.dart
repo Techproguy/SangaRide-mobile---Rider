@@ -299,10 +299,8 @@ class Trip {
 
   static TripCancelReason? _cancelReasonOf(JsonReader json, TripStatus status) {
     if (status != TripStatus.cancelled) return null;
-    final isNoShow = (json.numOrNull('noShowFee') ?? 0) > 0;
     return TripCancelReason.tryFromCode(json.strOrNull('cancellationReasonCode')) ??
         TripCancelReason.tryFromCode(json.strOrNull('cancellationReason')) ??
-        (isNoShow ? TripCancelReason.riderNoShow : null) ??
         TripCancelReason.ofCancelledBy(json.strOrNull('cancelledBy'));
   }
 
