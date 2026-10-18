@@ -178,7 +178,10 @@ class TripPlace {
       name: reader.strOr('name', address),
       address: address,
       position: _positionOf(reader),
-      isReached: StopStatus.fromCode(reader.strOrNull('status')) == StopStatus.reached || reader.has('reachedAt'),
+      isReached:
+          StopStatus.fromCode(reader.strOrNull('status')) == StopStatus.reached ||
+          reader.has('reachedAt') ||
+          reader.has('arrivedAt'),
     );
   }
 
