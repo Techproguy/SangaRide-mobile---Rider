@@ -47,19 +47,30 @@ extension _TripPanels on _TripScreenState {
   Widget? _peek(TripState state) {
     if (state case TripLoaded(:final trip) when trip.delivery != null) return null;
     return switch (state) {
-      TripEnRoute(:final trip) => SangaSheetPeek(title: 'Your driver is on the way', subtitle: _carLine(trip)),
+      TripEnRoute(:final trip) => SangaSheetPeek(
+        trailing: _peekMessages(),
+        title: 'Your driver is on the way',
+        subtitle: _carLine(trip),
+      ),
       TripArrived(:final trip) => SangaSheetPeek(
+        trailing: _peekMessages(),
         title: 'Your driver is at the pickup',
         subtitle: _carLine(trip),
         action: SangaButton.primary(label: 'Confirm details', onPressed: _openDetailsCheck),
       ),
       TripVerifying(:final trip) => SangaSheetPeek(
+        trailing: _peekMessages(),
         title: 'Share your PIN to start the ride',
         subtitle: _carLine(trip),
         action: SangaButton.primary(label: 'Show trip PIN', onPressed: () => unawaited(_showPin(trip))),
       ),
-      TripInProgress(:final trip) => SangaSheetPeek(title: 'On the way to drop off', subtitle: trip.dropoff.title),
+      TripInProgress(:final trip) => SangaSheetPeek(
+        trailing: _peekMessages(),
+        title: 'On the way to drop off',
+        subtitle: trip.dropoff.title,
+      ),
       TripAtDropoff(:final trip) => SangaSheetPeek(
+        trailing: _peekMessages(),
         title: 'You’ve arrived at your drop off',
         subtitle: trip.dropoff.title,
         action: SangaButton.primary(label: 'Complete ride', onPressed: _makePayment),
@@ -67,6 +78,8 @@ extension _TripPanels on _TripScreenState {
       _ => null,
     };
   }
+
+  Widget _peekMessages() => Obx(() => SangaPeekMessageButton(unreadCount: _trip.unreadCount, onPressed: _openChat));
 
   Widget _panel(TripState state) {
     if (state case TripLoaded(:final trip)) {
