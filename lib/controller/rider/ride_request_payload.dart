@@ -61,6 +61,35 @@ extension RideRequestPayload on RideRequestController {
     };
   }
 
+  Future<Map<String, dynamic>?> lockedRequestPayload() async {
+    final payload = requestPayload();
+    if (payload == null || tripType == TripType.delivery) return payload;
+    final terms = {...payload}..remove('quoteId');
+    final signature = jsonEncode(terms);
+    if (_lockedTerms != signature) {
+      final quoteId = await _quoteFor(terms);
+      if (quoteId == null) return payload;
+      _lockedTerms = signature;
+      _lockedQuoteId = quoteId;
+    }
+    return {...payload, 'quoteId': _lockedQuoteId};
+  }
+
+  void forgetLockedQuote() {
+    _lockedTerms = null;
+    _lockedQuoteId = null;
+  }
+
+  Future<String?> _quoteFor(Map<String, dynamic> terms) async {
+    try {
+      final response = await _api.post(AppEndpoints.rideEstimate, data: terms, suppressErrorToast: true);
+      return JsonReader.of(response.data).objectOrNull('data')?.strOrNull('quoteId');
+    } catch (e) {
+      log('quote lock failed: $e');
+      return null;
+    }
+  }
+
   Map<String, dynamic> _whoForJson(RideFor rideFor) => switch (rideFor) {
     RideForMe() => {'bookedFor': 'self'},
     RideForSomeone(:final passenger) => {'bookedFor': 'other', 'passenger': passenger.toJson()},
@@ -73,11 +102,11 @@ extension RideRequestPayload on RideRequestController {
 
   Future<ScheduleOutcome?> scheduleBooking() async {
     if (isScheduling || !isScheduledBooking) return null;
-    final payload = requestPayload();
-    if (payload == null) return const ScheduleRejected(BookingProblem.unknown);
-    final mutation = _scheduleMutationFor(payload);
     _isScheduling.value = true;
     try {
+      final payload = await lockedRequestPayload();
+      if (payload == null) return const ScheduleRejected(BookingProblem.unknown);
+      final mutation = _scheduleMutationFor(payload);
       final result = await mutation.start();
       return switch (result) {
         MutationDone<ScheduledBooking>(:final value) => ScheduleSucceeded(value),
@@ -95,7 +124,10 @@ extension RideRequestPayload on RideRequestController {
 
   ScheduleOutcome _scheduleRejection(ApiException error) {
     final problem = BookingProblem.of(error);
-    if (problem == BookingProblem.quoteExpired) _estimate.value = null;
+    if (problem == BookingProblem.quoteExpired) {
+      _estimate.value = null;
+      forgetLockedQuote();
+    }
     return ScheduleRejected(problem);
   }
 

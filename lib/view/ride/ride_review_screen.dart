@@ -186,9 +186,15 @@ class _RideReviewScreenState extends State<RideReviewScreen> {
     name: option.name,
     description: option.description,
     seats: option.seats,
-    price: ride.priceLabel(option),
+    price: _cardPrice(ride, option),
     isSelected: true,
   );
+
+  String _cardPrice(RideRequestController ride, RideOption option) {
+    final offer = ride.price;
+    final isOffer = ride.pricing?.isNegotiated ?? false;
+    return isOffer && offer != null ? offer.format() : ride.priceLabel(option);
+  }
 
   List<SangaFareLine> _tripLines(BuildContext context, RideRequestController ride) {
     final returnAt = ride.returnAt;

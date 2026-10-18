@@ -126,11 +126,10 @@ class RideMatchController extends GetxController {
     return _epoch.next();
   }
 
-  Map<String, dynamic>? _payload() => _trip.requestPayload();
-
   Future<void> requestRide() async {
-    if (isLive) return;
-    final payload = _payload();
+    if (isLive || isStarting) return;
+    _state.value = const MatchStarting();
+    final payload = await _trip.lockedRequestPayload();
     if (payload == null) {
       _state.value = const MatchFailed(MatchFailure.couldNotStart);
       return;
@@ -256,6 +255,7 @@ class RideMatchController extends GetxController {
       return;
     }
     if (error.code == ServerCode.quoteExpired) {
+      _trip.forgetLockedQuote();
       _state.value = MatchFailed(MatchFailure.quoteExpired, code: error.code, data: error.data);
       return;
     }

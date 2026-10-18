@@ -29,6 +29,8 @@ class RideRequestController extends GetxController {
   DateTime? _catalogLoadedAt;
   Mutation<ScheduledBooking>? _scheduleMutation;
   String? _scheduleSignature;
+  String? _lockedTerms;
+  String? _lockedQuoteId;
 
   final Rxn<Place> _pickup = Rxn<Place>();
   final Rxn<Place> _dropoff = Rxn<Place>();
