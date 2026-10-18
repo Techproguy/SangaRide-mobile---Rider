@@ -31,18 +31,36 @@ class SafetyTrip {
 
   factory SafetyTrip.fromJson(Map<String, dynamic> json) {
     final reader = JsonReader.of(json);
+    final driver = reader.objectOrNull('driver');
+    final passenger = reader.objectOrNull('passenger') ?? reader.objectOrNull('rider');
+    final role = reader.strOrNull('counterpartRole') ?? (driver == null && passenger != null ? 'rider' : 'driver');
+    final person = role == 'rider' ? passenger : driver;
     return SafetyTrip(
       id: reader.str('id'),
       reference: reader.strOr('reference', ''),
       isLive: reader.boolOr('isLive', false),
-      counterpartName: reader.strOr('counterpartName', ''),
-      counterpartRole: CounterpartRole.fromCode(reader.strOrNull('counterpartRole')),
-      vehicle: reader.strOr('vehicle', ''),
-      pickup: reader.strOr('pickup', ''),
-      dropoff: reader.strOr('dropoff', ''),
+      counterpartName: reader.strOrNull('counterpartName') ?? person?.strOr('name', '').trim() ?? '',
+      counterpartRole: CounterpartRole.fromCode(role),
+      vehicle: _vehicleOf(reader),
+      pickup: _placeOf(reader, 'pickup'),
+      dropoff: _placeOf(reader, 'dropoff'),
       currentArea: reader.strOrNull('currentArea'),
-      startedAt: (reader.timeOrNull('startedAt') ?? DateTime.now()).toLocal(),
+      startedAt: reader.timeOrNull('startedAt')?.toLocal(),
     );
+  }
+
+  static String _vehicleOf(JsonReader reader) {
+    final vehicle = reader.objectOrNull('vehicle');
+    if (vehicle == null) return reader.strOr('vehicle', '');
+    final car = [vehicle.strOrNull('colour'), vehicle.strOrNull('make'), vehicle.strOrNull('model')].nonNulls.join(' ');
+    return [if (car.isNotEmpty) car, ?vehicle.strOrNull('plateNumber')].join(' · ');
+  }
+
+  static String _placeOf(JsonReader reader, String key) {
+    final place = reader.objectOrNull(key);
+    if (place == null) return reader.strOr(key, '');
+    final address = place.strOr('address', '');
+    return (place.strOrNull('name') ?? address.split(',').first).trim();
   }
 
   final String id;
@@ -54,7 +72,7 @@ class SafetyTrip {
   final String pickup;
   final String dropoff;
   final String? currentArea;
-  final DateTime startedAt;
+  final DateTime? startedAt;
 }
 
 class SafetyCentre {
