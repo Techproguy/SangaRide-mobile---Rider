@@ -30,8 +30,9 @@ abstract final class PlaceMarker {
     required LatLng position,
     required String title,
     String? subtitle,
+    bool showsLabel = true,
   }) async {
-    final icon = await _icon(kind, _shortName(title), subtitle);
+    final icon = showsLabel ? await _icon(kind, _shortName(title), subtitle) : await _pinOnly(kind);
     return Marker(markerId: MarkerId(id), position: position, icon: icon.icon, anchor: icon.anchor, zIndexInt: 2);
   }
 
@@ -43,6 +44,23 @@ abstract final class PlaceMarker {
   static Future<PlaceMarkerIcon> _icon(PlaceMarkerKind kind, String title, String? subtitle) async {
     final key = '${kind.name}|$title|$subtitle';
     return _cache[key] ??= await _paint(kind, title, subtitle);
+  }
+
+  static Future<PlaceMarkerIcon> _pinOnly(PlaceMarkerKind kind) async {
+    return _cache['${kind.name}|pin'] ??= await () async {
+      final glyph = _glyph(kind);
+      final width = glyph.width + 4;
+      final height = glyph.height + 4;
+      final recorder = ui.PictureRecorder();
+      final canvas = Canvas(recorder)..scale(_scale);
+      glyph.paint(canvas, const Offset(2, 2));
+      final image = await recorder.endRecording().toImage((width * _scale).ceil(), (height * _scale).ceil());
+      final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
+      final icon = bytes == null
+          ? BitmapDescriptor.defaultMarker
+          : BitmapDescriptor.bytes(bytes.buffer.asUint8List(), imagePixelRatio: _scale);
+      return PlaceMarkerIcon(icon, Offset(0.5, (2 + _pinSize * 0.9) / height));
+    }();
   }
 
   static Future<PlaceMarkerIcon> _paint(PlaceMarkerKind kind, String title, String? subtitle) async {

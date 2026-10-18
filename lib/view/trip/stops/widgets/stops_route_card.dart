@@ -7,7 +7,7 @@ class StopsRouteEntry {
 
   factory StopsRouteEntry.start(Trip trip) => trip.status == TripStatus.inProgress
       ? const StopsRouteEntry(kind: SangaStopKind.pickup, label: 'Current location', value: 'Where your driver is now')
-      : StopsRouteEntry(kind: SangaStopKind.pickup, label: 'Pickup location', value: trip.pickup.name);
+      : StopsRouteEntry(kind: SangaStopKind.pickup, label: 'Pickup location', value: trip.pickup.title);
 
   static List<StopsRouteEntry> of(Trip trip, List<Place> added, {required ValueChanged<int> onRemove}) {
     return [
@@ -16,16 +16,16 @@ class StopsRouteEntry {
         StopsRouteEntry(
           kind: SangaStopKind.stop,
           label: stop.isReached ? 'Stop ${index + 1} · Reached' : 'Stop ${index + 1}',
-          value: stop.name,
+          value: stop.title,
         ),
       for (final (index, place) in added.indexed)
         StopsRouteEntry(
           kind: SangaStopKind.stop,
           label: 'Stop ${trip.stops.length + index + 1}',
-          value: place.name,
+          value: place.title,
           onRemove: () => onRemove(index),
         ),
-      StopsRouteEntry(kind: SangaStopKind.dropoff, label: 'Drop off location', value: trip.dropoff.name),
+      StopsRouteEntry(kind: SangaStopKind.dropoff, label: 'Drop off location', value: trip.dropoff.title),
     ];
   }
 

@@ -82,7 +82,8 @@ class _TripMapState extends State<TripMap> with SingleTickerProviderStateMixin {
     super.didUpdateWidget(oldWidget);
     final trip = widget.trip;
     final before = oldWidget.trip;
-    if (!_sameRoute(trip, before)) _drawRoute();
+    final labelMoved = trip != null && before != null && _nextLabelled(trip) != _nextLabelled(before);
+    if (!_sameRoute(trip, before) || labelMoved) _drawRoute();
     if (trip?.status != before?.status) _syncLines();
     if (trip?.driverPosition?.position != before?.driverPosition?.position ||
         trip?.driverPosition?.heading != before?.driverPosition?.heading) {
@@ -185,30 +186,44 @@ class _TripMapState extends State<TripMap> with SingleTickerProviderStateMixin {
   Future<Set<Marker>> _buildMarkers() async {
     final trip = widget.trip;
     if (trip == null) return const {};
+    final next = _nextLabelled(trip);
     return {
       await PlaceMarker.marker(
         id: 'pickup',
         kind: PlaceMarkerKind.pickup,
         position: trip.pickup.position,
-        title: trip.pickup.name,
+        title: trip.pickup.title,
         subtitle: 'Pick up point',
+        showsLabel: next == _pickupLabel,
       ),
       for (final (index, stop) in trip.stops.indexed)
         await PlaceMarker.marker(
           id: 'stop_$index',
           kind: PlaceMarkerKind.stop,
           position: stop.position,
-          title: stop.name,
+          title: stop.title,
           subtitle: 'Stop ${index + 1}',
+          showsLabel: next == index,
         ),
       await PlaceMarker.marker(
         id: 'dropoff',
         kind: PlaceMarkerKind.dropoff,
         position: trip.dropoff.position,
-        title: trip.dropoff.name,
+        title: trip.dropoff.title,
         subtitle: 'Drop off point',
+        showsLabel: next == _dropoffLabel,
       ),
     };
+  }
+
+  static const int _pickupLabel = -1;
+  static const int _dropoffLabel = -2;
+
+  int _nextLabelled(Trip trip) {
+    if (trip.status.isTerminal) return _dropoffLabel;
+    if (trip.status.rank < TripStatus.inProgress.rank) return _pickupLabel;
+    final nextStop = trip.stops.indexWhere((stop) => !stop.isReached);
+    return nextStop < 0 ? _dropoffLabel : nextStop;
   }
 
   void _onCameraMove(CameraPosition position) {

@@ -39,6 +39,24 @@ class StopQuote {
     );
   }
 
+  factory StopQuote.ofStops(List<(String, Map<String, dynamic>)> quotes) {
+    final first = JsonReader.of(quotes.first.$2);
+    final current = first.money('currentFare');
+    final lines = [
+      for (final (label, json) in quotes)
+        QuoteLine(key: label, label: label, amount: JsonReader.of(json).money('addedFare')),
+    ];
+    return StopQuote(
+      id: first.strOr('quoteId', ''),
+      expiresAt: DateTime.now().add(_liveQuoteLifetime),
+      lines: lines,
+      total: lines.fold(current, (sum, line) => sum + line.amount),
+      currentTotal: current,
+    );
+  }
+
+  static const Duration _liveQuoteLifetime = Duration(minutes: 5);
+
   final String id;
   final DateTime expiresAt;
   final List<QuoteLine> lines;

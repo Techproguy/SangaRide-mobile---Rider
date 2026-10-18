@@ -116,13 +116,14 @@ class AddStopController extends GetxController {
     final epoch = _epoch.next();
     _state.value = AddStopQuoting(stops);
     try {
-      final response = await _api.post(
-        AppEndpoints.liveTripStopsQuoteOf(id),
-        data: _stopsBody(stops),
-        suppressErrorToast: true,
-      );
+      final responses = await Future.wait([
+        for (final stop in stops)
+          _api.post(AppEndpoints.liveTripStopsQuoteOf(id), data: stop.toLocationJson(), suppressErrorToast: true),
+      ]);
       if (!_epoch.isCurrent(epoch)) return;
-      final quote = StopQuote.fromJson(response.dataMapOrEmpty);
+      final quote = StopQuote.ofStops([
+        for (final (index, response) in responses.indexed) (_stopLabel(stops, index), response.dataMapOrEmpty),
+      ]);
       _state.value = AddStopReviewing(stops, quote, isRefreshed: isRefresh);
     } catch (e) {
       log('stop quote failed: $e');
@@ -132,8 +133,13 @@ class AddStopController extends GetxController {
     }
   }
 
-  String? _rejection(Object error) =>
-      error is ApiException && error.kind == ApiFailureKind.rejected && error.message.isNotEmpty ? error.message : null;
+  static const String _validationFailed = 'Validation failed';
+
+  String? _rejection(Object error) {
+    if (error is! ApiException || error.kind != ApiFailureKind.rejected) return null;
+    final message = error.message.trim();
+    return message.isEmpty || message == _validationFailed ? null : message;
+  }
 
   Future<void> confirm() async {
     final current = state;
@@ -184,13 +190,16 @@ class AddStopController extends GetxController {
     return _mutation = Mutation<Trip>(
       intent: IdempotencyIntent.tripAddStops,
       run: (key) async {
-        final response = await _api.post(
-          AppEndpoints.liveTripStopsOf(id),
-          data: {..._stopsBody(reviewing.added), 'quoteId': reviewing.quote.id},
-          key: key,
-          suppressErrorToast: true,
-        );
-        final body = response.dataMapOrEmpty;
+        Map<String, dynamic> body = const {};
+        for (final (index, stop) in reviewing.added.indexed) {
+          final response = await _api.post(
+            AppEndpoints.liveTripStopsOf(id),
+            data: stop.toLocationJson(),
+            key: IdempotencyKey('${key.value}-$index'),
+            suppressErrorToast: true,
+          );
+          body = response.dataMapOrEmpty;
+        }
         return Trip.isRideShape(body) ? Trip.fromJson(body) : await _trip.loadLatest();
       },
       reconcile: () async {
@@ -235,7 +244,8 @@ class AddStopController extends GetxController {
     }
   }
 
-  Map<String, dynamic> _stopsBody(List<Place> stops) => {
-    'stops': [for (final stop in stops) stop.toLocationJson()],
-  };
+  String _stopLabel(List<Place> stops, int index) {
+    final number = (_trip.trip?.stops.length ?? 0) + index + 1;
+    return 'Stop $number · ${stops[index].title}';
+  }
 }
