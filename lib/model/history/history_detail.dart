@@ -62,7 +62,8 @@ enum CancelledBy {
   rider('rider', 'You cancelled'),
   driver('driver', 'Your driver cancelled'),
   system('system', 'Sanga cancelled'),
-  unknown('unknown', 'This was cancelled');
+  noShow('no_show', 'Your driver, after waiting'),
+  unknown('unknown', 'Not recorded');
 
   const CancelledBy(this.code, this.label);
 
@@ -212,9 +213,11 @@ class HistoryDetail {
       ratedStars: reader.objectOrNull('rating')?.intOrNull('stars'),
       cancellation: status == HistoryStatus.cancelled
           ? HistoryCancellation(
-              by: CancelledBy.fromCode(reader.strOrNull('cancelledBy')),
+              by: trip.cancellationReason == TripCancelReason.riderNoShow
+                  ? CancelledBy.noShow
+                  : CancelledBy.fromCode(reader.strOrNull('cancelledBy')),
               reason: (trip.cancellationReason ?? TripCancelReason.other).message,
-              fee: reader.moneyOr('cancellationFee', Money.zero()),
+              fee: reader.moneyOrNull('cancellationFee') ?? reader.moneyOr('noShowFee', Money.zero()),
             )
           : null,
       delivery: delivery == null ? null : _tryParse(() => HistoryDelivery.fromJson(delivery.raw)),

@@ -91,6 +91,11 @@ enum TripCancelReason {
   ),
   driverCancelled('driver_cancelled', 'Your driver cancelled', 'Sorry about that. We won’t charge you.'),
   riderCancelled('rider_cancelled', 'Ride cancelled', 'You cancelled this ride.'),
+  riderNoShow(
+    'RIDER_NO_SHOW',
+    'You missed your ride',
+    'Your driver waited at the pickup but couldn’t find you, so the trip ended. A no show fee applies.',
+  ),
   packageRefused('package_refused', 'Package not accepted', 'Your driver couldn’t take this package.'),
   deliveryCancelled('delivery_cancelled', 'Delivery cancelled', 'This delivery was cancelled.'),
   deliveryReturned(
@@ -294,7 +299,10 @@ class Trip {
 
   static TripCancelReason? _cancelReasonOf(JsonReader json, TripStatus status) {
     if (status != TripStatus.cancelled) return null;
-    return TripCancelReason.tryFromCode(json.strOrNull('cancellationReason')) ??
+    final isNoShow = (json.numOrNull('noShowFee') ?? 0) > 0;
+    return TripCancelReason.tryFromCode(json.strOrNull('cancellationReasonCode')) ??
+        TripCancelReason.tryFromCode(json.strOrNull('cancellationReason')) ??
+        (isNoShow ? TripCancelReason.riderNoShow : null) ??
         TripCancelReason.ofCancelledBy(json.strOrNull('cancelledBy'));
   }
 
