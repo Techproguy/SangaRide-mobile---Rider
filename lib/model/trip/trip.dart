@@ -350,6 +350,7 @@ class Trip {
     DateTime? pinExpiresAt,
     DateTime? detailsConfirmedAt,
     TripCancelReason? cancellationReason,
+    DriverPosition? livePosition,
   }) {
     final needsConfirmedEvent = detailsConfirmedAt != null && !hasEvent(TripEventType.detailsConfirmed);
     return Trip(
@@ -370,7 +371,7 @@ class Trip {
       cancellationReason: cancellationReason ?? this.cancellationReason,
       etaAt: etaAt,
       distanceRemainingKm: distanceRemainingKm,
-      driverPosition: driverPosition,
+      driverPosition: livePosition ?? driverPosition,
       unreadMessages: unreadMessages,
       cancellationMessage: cancellationMessage,
       waitingFee: waitingFee,

@@ -3,16 +3,19 @@ import 'dart:developer';
 
 import 'package:flutter/foundation.dart' show VoidCallback;
 import 'package:get/get.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart' show LatLng;
 import 'package:sanga_ride/controller/rider/trip/live_problem.dart';
 import 'package:sanga_ride/core/api/api.dart';
 import 'package:sanga_ride/core/api/app_endpoints.dart';
 import 'package:sanga_ride/core/api/idempotency_intents.dart';
+import 'package:sanga_ride/core/extensions/lat_lng.dart';
 import 'package:sanga_ride/core/services/session_restore.dart';
 import 'package:sanga_ride/core/services/session_storage.dart';
 import 'package:sanga_ride/core/storage/draft_keys.dart';
 import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride/model/trip/server_time.dart';
 import 'package:sanga_ride_core/sanga_ride_core.dart';
+import 'package:sanga_ride_maps/sanga_ride_maps.dart' show RouteGeometry;
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 part 'trip_chat.dart';
@@ -98,6 +101,12 @@ class TripController extends GetxController {
 
   TripState get state => _state.value;
 
+  static const double _headingMinMeters = 5;
+
+  StreamSubscription<RideEvent>? _positionSubscription;
+
+  DriverPosition? _livePosition;
+
   Rx<LinkState> get linkRx => _link;
 
   LinkState get link => _link.value;
@@ -157,6 +166,9 @@ class TripController extends GetxController {
     _tripPoller = null;
     _chatPoller?.dispose();
     _chatPoller = null;
+    _positionSubscription?.cancel();
+    _positionSubscription = null;
+    _livePosition = null;
     _noticeTimer?.cancel();
     _noticeTimer = null;
     _notice.value = null;
@@ -209,14 +221,34 @@ class TripController extends GetxController {
     final poller = LivePoller(
       fetch: _fetchTrip,
       interval: pollInterval,
-      nudges: RideEvents.instance.about(id),
+      nudges: RideEvents.instance.about(id, ignoring: {RideEvents.driverLocation}),
       onParseError: _onParseError,
     );
+    _livePosition = null;
+    _positionSubscription?.cancel();
+    _positionSubscription = RideEvents.instance.driverLocationsOf(id).listen(_onDriverLocation);
     void mirror() => _link.value = poller.link.value;
     poller.link.addListener(mirror);
     _detachTripLink = () => poller.link.removeListener(mirror);
     _tripPoller = poller;
     poller.start();
+  }
+
+  void _onDriverLocation(RideEvent event) {
+    final data = JsonReader.of(event.data);
+    final latitude = data.doubleOrNull('latitude');
+    final longitude = data.doubleOrNull('longitude');
+    if (latitude == null || longitude == null) return;
+    final next = LatLng(latitude, longitude);
+    final previous = _livePosition?.position;
+    final moved = previous != null && previous.metersTo(next) >= _headingMinMeters;
+    _livePosition = DriverPosition(
+      position: next,
+      heading: data.doubleOrNull('heading') ?? (moved ? RouteGeometry.bearing(previous, next) : _livePosition?.heading),
+    );
+    final current = trip;
+    if (current == null || current.status.isTerminal) return;
+    _state.value = TripState.of(current.withLocal(livePosition: _livePosition));
   }
 
   void _onParseError(Object error, StackTrace stack) {
@@ -274,6 +306,7 @@ class TripController extends GetxController {
       pinExpiresAt: _pinExpiresAt,
       detailsConfirmedAt: _detailsConfirmedAt,
       cancellationReason: _localCancelReason(incoming),
+      livePosition: _livePosition,
     );
   }
 
