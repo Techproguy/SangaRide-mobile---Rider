@@ -308,6 +308,7 @@ class DriverHold {
     required this.holdExpiresAt,
     required this.fare,
     required this.counterOffer,
+    required this.riderOffer,
     required this.matchLabel,
     required this.distanceAwayKm,
     required this.driver,
@@ -324,6 +325,7 @@ class DriverHold {
       holdExpiresAt: expiresAt == null ? DateTime.now().add(confirmWindow) : deviceDeadlineAt(expiresAt),
       fare: json.moneyOr('fee', offer.counterOffer ?? fare),
       counterOffer: json.moneyOrNull('counterOfferAmount') ?? offer.counterOffer,
+      riderOffer: json.moneyOrNull('riderFare') ?? fare,
       matchLabel: _matchLabelOf(json.strOrNull('matchLabel')),
       distanceAwayKm: json.doubleOr('distanceKm', offer.distanceKm),
       driver: card == null ? offer.driver : OfferDriver.fromJson(card.raw),
@@ -343,6 +345,7 @@ class DriverHold {
   final String offerId;
   final DateTime holdExpiresAt;
   final Money fare;
+  final Money riderOffer;
   final Money? counterOffer;
   final String? matchLabel;
   final double distanceAwayKm;

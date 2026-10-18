@@ -67,7 +67,7 @@ class ConfirmDriverCard extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    counter == null ? 'Fare ${hold.fare.format()}' : 'Your offer ${hold.fare.format()}',
+                    counter == null ? 'Fare ${hold.fare.format()}' : 'Your offer ${hold.riderOffer.format()}',
                     style: counter == null ? SangaTextStyles.cardValue : SangaTextStyles.cardSubtitle,
                   ),
                   Text(
