@@ -9,6 +9,7 @@ class GroupMembersTab extends StatelessWidget {
     super.key,
     required this.detail,
     required this.myId,
+    required this.myName,
     required this.canManageMember,
     required this.onRefresh,
     required this.onInvite,
@@ -18,11 +19,18 @@ class GroupMembersTab extends StatelessWidget {
 
   final GroupDetail detail;
   final String? myId;
+  final String? myName;
   final bool Function(GroupMember member) canManageMember;
   final Future<void> Function() onRefresh;
   final VoidCallback onInvite;
   final ValueChanged<GroupMember> onOpenMember;
   final VoidCallback onLeave;
+
+  GroupMember _withMyName(GroupMember member) {
+    final name = myName;
+    final isNamelessMe = member.id == myId && !member.hasName && name != null && name.isNotEmpty;
+    return isNamelessMe ? member.named(name) : member;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -48,7 +56,7 @@ class GroupMembersTab extends StatelessWidget {
               children: [
                 for (final member in detail.members)
                   MemberRow(
-                    member: member,
+                    member: _withMyName(member),
                     isYou: member.id == myId,
                     onTap: canManageMember(member) ? () => onOpenMember(member) : null,
                   ),

@@ -199,10 +199,10 @@ class GroupMember {
     return GroupMember(
       id: reader.str('id'),
       userId: reader.strOr('userId', ''),
-      name: reader.strOr('name', fallbackName),
-      phone: reader.strOr('phone', ''),
-      photoUrl: reader.strOrNull('photoUrl'),
-      relation: reader.strOr('relation', 'Member'),
+      name: _nameOf(reader),
+      phone: reader.strOrNull('phone') ?? reader.objectOrNull('user')?.strOrNull('phone') ?? '',
+      photoUrl: reader.strOrNull('photoUrl') ?? reader.objectOrNull('user')?.strOrNull('photoUrl'),
+      relation: reader.strOr('relation', ''),
       role: GroupRole.fromCode(reader.strOrNull('role')),
       status: MemberStatus.fromCode(reader.strOrNull('status')),
       permissions: MemberPermissions.fromJson(reader.objectOrNull('permissions')?.raw ?? const {}),
@@ -213,6 +213,30 @@ class GroupMember {
   }
 
   static const String fallbackName = 'Member';
+
+  static String _nameOf(JsonReader reader) {
+    final person = reader.objectOrNull('user') ?? reader;
+    final full = [person.strOrNull('firstName'), person.strOrNull('lastName')].nonNulls.join(' ').trim();
+    final named = reader.strOrNull('name') ?? person.strOrNull('displayName') ?? full;
+    return named.trim().isEmpty ? fallbackName : named.trim();
+  }
+
+  bool get hasName => name != fallbackName;
+
+  GroupMember named(String name) => GroupMember(
+    id: id,
+    userId: userId,
+    name: name,
+    phone: phone,
+    photoUrl: photoUrl,
+    relation: relation,
+    role: role,
+    status: status,
+    permissions: permissions,
+    limits: limits,
+    alerts: alerts,
+    monthSpent: monthSpent,
+  );
 
   final String id;
   final String userId;

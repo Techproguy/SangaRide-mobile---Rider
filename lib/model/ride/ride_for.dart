@@ -5,7 +5,7 @@ import 'package:sanga_ride/model/ride/server_deadline.dart';
 import 'package:sanga_ride_core/sanga_ride_core.dart';
 
 enum RideForKind {
-  me('Just for me', null),
+  me('Just for me', 'You’re the one riding'),
   family('Family member', 'Book it for someone in your family group'),
   someone('Someone else', 'Send a ride to another person'),
   business('Business ride', 'Charged to your company, with a purpose');

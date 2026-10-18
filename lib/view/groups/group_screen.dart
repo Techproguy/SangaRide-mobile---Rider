@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sanga_ride/controller/rider/groups/group_bindings.dart';
 import 'package:sanga_ride/controller/rider/groups/group_controller.dart';
+import 'package:sanga_ride/controller/shared/user_controller.dart';
 import 'package:sanga_ride/core/router/group_routes.dart';
 import 'package:sanga_ride/model/groups/group_models.dart';
 import 'package:sanga_ride/model/wallet/wallet.dart';
@@ -76,7 +77,7 @@ class _GroupScreenState extends State<GroupScreen> with SingleTickerProviderStat
       context: context,
       status: SangaStatus.caution,
       icon: Icons.door_back_door_outlined,
-      title: GroupCopy.leaveTitle(detail.kind),
+      title: GroupCopy.leaveQuestion(detail.kind),
       message: GroupCopy.leaveMessage(detail.name),
       actionLabel: GroupCopy.leave,
       secondaryLabel: GroupCopy.stay,
@@ -98,11 +99,20 @@ class _GroupScreenState extends State<GroupScreen> with SingleTickerProviderStat
     GroupTab.members => GroupMembersTab(
       detail: detail,
       myId: _group.me?.id,
+      myName: Get.find<UserController>().user?.displayName,
       canManageMember: _group.canManageMember,
       onRefresh: _group.reloadQuietly,
       onInvite: () => _push(GroupRoutes.inviteOf(detail.id)),
       onOpenMember: (member) => _push(GroupRoutes.memberOf(detail.id, member.id)),
       onLeave: () => _leave(detail),
+    ),
+    GroupTab.wallet when !detail.canManage && !(_group.me?.permissions.useGroupWallet ?? true) => Padding(
+      padding: const EdgeInsets.fromLTRB(SangaSpacing.gutter, SangaSpacing.xxl, SangaSpacing.gutter, 0),
+      child: SangaEmptyMessage(
+        icon: Icons.lock_outline_rounded,
+        title: GroupCopy.walletLockedTitle,
+        message: GroupCopy.walletLockedMessage(detail.kind),
+      ),
     ),
     GroupTab.wallet => WalletBody(scope: WalletScope.group(detail.id), canTopUp: detail.canManage),
     GroupTab.rides => GroupRidesTab(detail: detail),

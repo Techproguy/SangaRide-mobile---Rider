@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:developer';
 
 import 'package:get/get.dart';
 import 'package:sanga_ride/controller/rider/groups/group_mutations.dart';
@@ -75,6 +76,22 @@ class GroupController extends GetxController {
   Future<void> reload() async {
     _state.value = const GroupDetailLoading();
     await reloadQuietly();
+  }
+
+  bool _isMakingCode = false;
+
+  Future<void> ensureInviteCode() async {
+    final current = detail;
+    if (_isMakingCode || current == null || !current.canManage || current.inviteCode.isNotEmpty) return;
+    _isMakingCode = true;
+    try {
+      await _api.post(GroupEndpoints.invitesOf(groupId), data: const <String, dynamic>{}, suppressErrorToast: true);
+      await reloadQuietly();
+    } on Object catch (error) {
+      log('invite code failed: $error');
+    } finally {
+      _isMakingCode = false;
+    }
   }
 
   Future<void> reloadQuietly() async {

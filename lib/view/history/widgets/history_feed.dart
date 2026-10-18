@@ -134,7 +134,7 @@ class _HistoryFeedState extends State<HistoryFeed> {
         isPageBody: true,
         icon: Icons.history_rounded,
         title: 'No group rides yet',
-        message: 'Rides taken on the group’s tab show up here.',
+        message: 'Rides booked for the group or paid from its wallet show up here.',
       ),
       HistoryStatus.cancelled => const SangaEmptyMessage(
         isPageBody: true,

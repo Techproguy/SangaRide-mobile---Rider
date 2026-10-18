@@ -190,6 +190,11 @@ abstract final class GroupCopy {
 
   static String youSuffix(String name) => '$name (You)';
 
+  static const String walletLockedTitle = 'The wallet is admin only';
+
+  static String walletLockedMessage(GroupKind kind) =>
+      'Ask your ${kind == GroupKind.family ? 'family' : 'team'} admin if you need to pay from it.';
+
   static String inviteLine(GroupInvite invite, {DateTime? now}) {
     final days = invite.expiresAt.difference(now ?? DateTime.now()).inDays;
     final expiry = switch (days) {
@@ -343,6 +348,11 @@ abstract final class GroupCopy {
   static String leaveTitle(GroupKind kind) => switch (kind) {
     GroupKind.family => 'Leave family group',
     GroupKind.business => 'Leave business',
+  };
+
+  static String leaveQuestion(GroupKind kind) => switch (kind) {
+    GroupKind.family => 'Leave this family group?',
+    GroupKind.business => 'Leave this business?',
   };
 
   static String leaveMessage(String groupName) =>

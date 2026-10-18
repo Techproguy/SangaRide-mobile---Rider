@@ -29,6 +29,10 @@ class RideForController extends GetxController {
 
   RideForListState<FamilyMember> get family => _family.value;
 
+  final RxBool _isInFamily = false.obs;
+
+  bool get isInFamily => _isInFamily.value;
+
   RideForListState<BusinessProfile> get business => _business.value;
 
   FamilyMember? get pickedMember => _pickedMember.value;
@@ -100,6 +104,7 @@ class RideForController extends GetxController {
     if (family is! RideForListLoaded) _family.value = const RideForListLoading();
     try {
       final found = await _groupOf(GroupKind.family);
+      _isInFamily.value = found != null;
       final members = found == null
           ? <FamilyMember>[]
           : [

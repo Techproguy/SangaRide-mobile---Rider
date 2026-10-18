@@ -42,6 +42,12 @@ class _InviteFormState extends State<_InviteForm> {
   String? _phoneError;
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => widget.group.ensureInviteCode());
+  }
+
+  @override
   void dispose() {
     _phone.dispose();
     super.dispose();

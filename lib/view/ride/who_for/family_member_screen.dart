@@ -41,8 +41,10 @@ class _FamilyMemberScreenState extends State<FamilyMemberScreen> {
           () => RideForListBody<FamilyMember>(
             state: _flow.family,
             emptyIcon: Icons.groups_rounded,
-            emptyTitle: 'No family members yet',
-            emptyMessage: 'Create or join a family group from the menu, then book rides for everyone in it here.',
+            emptyTitle: _flow.isInFamily ? 'Ask your admin first' : 'No family members yet',
+            emptyMessage: _flow.isInFamily
+                ? 'Your family admin hasn’t let you book rides for the group yet.'
+                : 'Create or join a family group from the menu, then book rides for everyone in it here.',
             failedTitle: 'We couldn’t load your family',
             onRetry: _flow.loadFamily,
             builder: (context, members) => Column(
