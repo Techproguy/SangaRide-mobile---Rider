@@ -112,9 +112,9 @@ class _ConfirmDriverScreenState extends State<ConfirmDriverScreen> {
         children: [
           ConfirmDriverCard(
             hold: hold,
-            pickup: _trip.pickup?.name ?? '',
-            dropoff: _trip.dropoff?.name ?? '',
-            stops: [for (final stop in _trip.stops) stop.name],
+            pickup: _trip.pickup?.title ?? '',
+            dropoff: _trip.dropoff?.title ?? '',
+            stops: [for (final stop in _trip.stops) stop.title],
             vehicleImage: (_trip.option?.category ?? RideCategory.go).image,
           ),
         ],

@@ -58,10 +58,10 @@ extension _TripPanels on _TripScreenState {
         subtitle: _carLine(trip),
         action: SangaButton.primary(label: 'Show trip PIN', onPressed: () => unawaited(_showPin(trip))),
       ),
-      TripInProgress(:final trip) => SangaSheetPeek(title: 'On the way to drop off', subtitle: trip.dropoff.name),
+      TripInProgress(:final trip) => SangaSheetPeek(title: 'On the way to drop off', subtitle: trip.dropoff.title),
       TripAtDropoff(:final trip) => SangaSheetPeek(
         title: 'You’ve arrived at your drop off',
-        subtitle: trip.dropoff.name,
+        subtitle: trip.dropoff.title,
         action: SangaButton.primary(label: 'Complete ride', onPressed: _makePayment),
       ),
       _ => null,

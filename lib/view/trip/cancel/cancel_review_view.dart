@@ -67,9 +67,9 @@ class CancelReviewView extends StatelessWidget {
                 Padding(
                   padding: _cell,
                   child: SangaRouteSummary(
-                    pickup: trip.pickup.name,
-                    dropoff: trip.dropoff.name,
-                    stops: [for (final stop in trip.stops) stop.name],
+                    pickup: trip.pickup.title,
+                    dropoff: trip.dropoff.title,
+                    stops: [for (final stop in trip.stops) stop.title],
                   ),
                 ),
                 Padding(

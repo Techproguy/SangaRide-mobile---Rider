@@ -188,6 +188,8 @@ class TripPlace {
   final bool isReached;
 
   Place toPlace() => Place(placeId: '', name: name, address: address, coordinates: position);
+
+  String get title => toPlace().title;
 }
 
 class TripFare {

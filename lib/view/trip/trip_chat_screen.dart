@@ -55,7 +55,6 @@ class _TripChatScreenState extends State<TripChatScreen> {
       ),
       TripChatStatus.ready => Center(
         child: SangaEmptyMessage(
-          isPageBody: true,
           icon: Icons.chat_bubble_outline_rounded,
           title: 'No messages yet',
           message: 'Say hi to $firstName.',
