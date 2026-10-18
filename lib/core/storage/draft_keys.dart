@@ -3,6 +3,7 @@ abstract final class DraftKeys {
   static const String pendingRideCancels = 'pending_ride_cancels';
   static const String verificationDocument = 'verification:document';
   static const String deliveryDraft = 'delivery_draft';
+  static const String skippedRatings = 'skipped_ratings';
 
   static String topUp(String? scopeTag) => 'topup:${scopeTag ?? 'personal'}';
 }

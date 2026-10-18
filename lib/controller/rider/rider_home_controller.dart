@@ -214,12 +214,23 @@ class RiderHomeController extends GetxController {
     }
   }
 
+  static List<Place> _distinct(List<Place> places) {
+    final kept = <Place>[];
+    for (final place in places) {
+      final isDuplicate = kept.any(
+        (other) => (place.placeId.isNotEmpty && other.placeId == place.placeId) || other.isSameAs(place),
+      );
+      if (!isDuplicate) kept.add(place);
+    }
+    return kept;
+  }
+
   Future<void> _loadPlaces() async {
     try {
       final response = await _api.get(AppEndpoints.recentPlaces, suppressErrorToast: true);
       final places = JsonReader.of({'items': (response.data as Map)['data']})
           .listOf('items', (item) => Place.fromJson(item.raw));
-      _recent.assignAll(places);
+      _recent.assignAll(_distinct(places));
     } catch (e) {
       log('places failed: $e');
       _problems.add(HomeRefreshProblem.places);

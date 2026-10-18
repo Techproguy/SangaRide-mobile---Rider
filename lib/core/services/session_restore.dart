@@ -14,6 +14,7 @@ import 'package:sanga_ride/core/router/trip_routes.dart';
 import 'package:sanga_ride/core/router/trip_wrapup_routes.dart';
 import 'package:sanga_ride/core/services/me_state.dart';
 import 'package:sanga_ride/core/services/session_storage.dart';
+import 'package:sanga_ride/core/services/skipped_ratings.dart';
 import 'package:sanga_ride_core/sanga_ride_core.dart';
 
 class SessionRestore extends GetxService {
@@ -187,7 +188,8 @@ class SessionRestore extends GetxService {
     final unpaid = state.tripNeedingPayment;
     if (unpaid != null) return [SangaRoutes.home, TripWrapUpRoutes.payOf(unpaid)];
     final unrated = state.tripNeedingRating;
-    if (unrated != null) return [SangaRoutes.home, TripWrapUpRoutes.rateOf(unrated)];
+    final isRatingDue = unrated != null && !SkippedRatings.contains(unrated);
+    if (isRatingDue) return [SangaRoutes.home, TripWrapUpRoutes.rateOf(unrated)];
     return const [SangaRoutes.home];
   }
 
