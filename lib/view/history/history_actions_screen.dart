@@ -45,8 +45,13 @@ class _HistoryActionsScreenState extends State<HistoryActionsScreen> {
     }
   }
 
+  String _nameOf(HistoryDetail detail) {
+    final profile = detail.driver?.profile;
+    return profile != null && profile.hasName ? profile.firstName : 'this driver';
+  }
+
   Future<void> _block(HistoryDetail detail) async {
-    final name = detail.driver?.profile.firstName ?? 'this driver';
+    final name = _nameOf(detail);
     final isConfirmed = await showSangaStatusSheet(
       context: context,
       status: SangaStatus.caution,
@@ -67,11 +72,11 @@ class _HistoryActionsScreenState extends State<HistoryActionsScreen> {
   }
 
   Future<void> _unblock(HistoryDetail detail) async {
-    final name = detail.driver?.profile.firstName ?? 'this driver';
+    final name = _nameOf(detail);
     final problem = await _history.setDriverBlocked(false);
     if (!mounted) return;
     SangaToast.show(
-      problem == null ? '$name can be matched with you again.' : problem.message,
+      problem == null ? '${name.capitalizeFirst} can be matched with you again.' : problem.message,
       tone: problem == null ? SangaToastTone.success : SangaToastTone.error,
     );
   }

@@ -158,6 +158,8 @@ class OfferDriver {
     required this.ridesCompleted,
   });
 
+  bool get hasName => name != fallbackName;
+
   factory OfferDriver.fromJson(Object? body) {
     final json = JsonReader.of(body);
     final name = _nameOf(json);
