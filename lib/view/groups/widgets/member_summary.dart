@@ -14,13 +14,13 @@ class MemberSummary extends StatelessWidget {
     return Row(
       spacing: SangaSpacing.md,
       children: [
-        MemberAvatar(name: member.name, photoUrl: member.photoUrl, size: 48),
+        MemberAvatar(name: GroupCopy.memberTitle(member), photoUrl: member.photoUrl, size: 48),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             spacing: SangaSpacing.xxs,
             children: [
-              Text(member.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: SangaTextStyles.cardHeading),
+              Text(GroupCopy.memberTitle(member), maxLines: 1, overflow: TextOverflow.ellipsis, style: SangaTextStyles.cardHeading),
               Text(GroupCopy.roleCaption(member), style: SangaTextStyles.cardSubtitle),
             ],
           ),

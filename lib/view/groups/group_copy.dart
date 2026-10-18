@@ -190,6 +190,12 @@ abstract final class GroupCopy {
 
   static String youSuffix(String name) => '$name (You)';
 
+  static String memberTitle(GroupMember member) {
+    if (member.hasName || member.phone.isEmpty) return member.name;
+    final region = SangaPhoneNumber.regionOf(member.phone);
+    return '${region.dialCode} ${SangaPhoneNumber.format(member.phone, region)}';
+  }
+
   static const String walletLockedTitle = 'The wallet is admin only';
 
   static const String notSet = 'Not set';

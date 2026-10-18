@@ -19,7 +19,7 @@ class InviteCodeCard extends StatelessWidget {
   final String code;
   final VoidCallback onCopied;
 
-  String get _shareText => GroupCopy.shareText(kind: kind, groupName: groupName, formattedCode: InviteCode.group(code));
+  String get _shareText => GroupCopy.shareText(kind: kind, groupName: groupName, formattedCode: InviteCode.display(code));
 
   @override
   Widget build(BuildContext context) {
@@ -34,7 +34,7 @@ class InviteCodeCard extends StatelessWidget {
             spacing: SangaSpacing.md,
             children: [
               Text(
-                InviteCode.group(code),
+                InviteCode.display(code),
                 textAlign: TextAlign.center,
                 style: SangaTextStyles.display.copyWith(color: SangaColors.primary, letterSpacing: 4),
               ),

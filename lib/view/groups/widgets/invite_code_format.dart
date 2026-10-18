@@ -17,6 +17,11 @@ abstract final class InviteCode {
     return '${cleaned.substring(0, groupSize)}-${cleaned.substring(groupSize)}';
   }
 
+  static String display(String code) {
+    final cleaned = code.toUpperCase().replaceAll(_unsafe, '');
+    return cleaned.length == length ? group(cleaned) : code;
+  }
+
   static bool isComplete(String input) => clean(input).length == length;
 }
 
