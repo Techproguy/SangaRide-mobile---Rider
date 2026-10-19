@@ -1,0 +1,95 @@
+definitions:
+  environment: &environment
+    flutter: 3.47.6
+    xcode: latest
+    cocoapods: default
+  scripts:
+    - &fetch_building_blocks
+      name: Fetch sanga-ride-building-blocks
+      script: |
+        mkdir -p ~/.ssh
+        ssh-keyscan github.com >> ~/.ssh/known_hosts
+        git clone --depth 1 git@github.com:Techproguy/sanga-ride-building-blocks.git "$CM_BUILD_DIR/../sanga-ride-building-blocks"
+    - &write_env_config
+      name: Write env config
+      script: |
+        python3 - <<'PY'
+        import json, os
+        env = os.environ["APP_ENV"]
+        raw = os.environ[f"DART_DEFINES_{env.upper()}"]
+        defines = json.loads(raw)
+        with open(f"dart_defines/{env}.json", "w") as f:
+            f.write(raw)
+        with open("android/secrets.properties", "w") as f:
+            f.write(f"MAPS_API_KEY_ANDROID={defines['MAPS_API_KEY_ANDROID']}\n")
+        xcconfig = "Secrets.xcconfig" if env == "prod" else f"Secrets-{env}.xcconfig"
+        with open(f"ios/Flutter/{xcconfig}", "w") as f:
+            f.write(f"MAPS_API_KEY={defines['MAPS_API_KEY_IOS']}\n")
+        PY
+
+workflows:
+  dev:
+    name: Sanga Ride · dev APK
+    max_build_duration: 60
+    environment:
+      <<: *environment
+      groups:
+        - github_building_blocks
+        - sanga_ride_rider
+      android_signing:
+        - sanga_upload_keystore
+      vars:
+        APP_ENV: dev
+    scripts:
+      - *fetch_building_blocks
+      - *write_env_config
+      - name: Build APK
+        script: |
+          flutter build apk --release --flavor dev \
+            --dart-define-from-file=dart_defines/dev.json \
+            --build-number=$BUILD_NUMBER
+    artifacts:
+      - build/app/outputs/flutter-apk/*.apk
+
+  release:
+    name: Sanga Ride · release
+    max_build_duration: 90
+    integrations:
+      app_store_connect: Sanga
+    environment:
+      <<: *environment
+      groups:
+        - github_building_blocks
+        - sanga_ride_rider
+      android_signing:
+        - sanga_upload_keystore
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.sangatechnologies.ride
+      vars:
+        APP_ENV: prod
+    scripts:
+      - *fetch_building_blocks
+      - *write_env_config
+      - name: Use signing profiles
+        script: xcode-project use-profiles
+      - name: Build App Bundle
+        script: |
+          flutter build appbundle --release --flavor prod \
+            --dart-define-from-file=dart_defines/prod.json \
+            --build-number=$BUILD_NUMBER
+      - name: Build IPA
+        script: |
+          flutter build ipa --release --flavor prod \
+            --dart-define-from-file=dart_defines/prod.json \
+            --build-number=$BUILD_NUMBER \
+            --export-options-plist=/Users/builder/export_options.plist
+    artifacts:
+      - build/app/outputs/bundle/**/*.aab
+      - build/app/outputs/mapping/**/mapping.txt
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: false
