@@ -26,9 +26,6 @@ definitions:
         with open(f"ios/Flutter/{xcconfig}", "w") as f:
             f.write(f"MAPS_API_KEY={defines['MAPS_API_KEY_IOS']}\n")
         PY
-    - &android_keystore
-      name: Android upload keystore
-      script: echo "$CM_KEYSTORE" | base64 --decode > "$CM_KEYSTORE_PATH"
     - &ios_signing
       name: iOS signing
       script: |
@@ -38,8 +35,8 @@ definitions:
         xcode-project use-profiles
 
 workflows:
-  release:
-    name: Sanga Ride · release
+  testflight:
+    name: Sanga Ride · TestFlight
     max_build_duration: 90
     environment:
       <<: *environment
@@ -48,26 +45,19 @@ workflows:
       vars:
         APP_ENV: prod
         BUNDLE_ID: com.sangatechnologies.ride
-        CM_KEYSTORE_PATH: /tmp/sanga_upload.keystore
+        APP_STORE_APPLE_ID: 6824516357
     scripts:
       - *fetch_building_blocks
       - *write_env_config
-      - *android_keystore
       - *ios_signing
-      - name: Build App Bundle
-        script: |
-          flutter build appbundle --release --flavor prod \
-            --dart-define-from-file=dart_defines/prod.json \
-            --build-number=$BUILD_NUMBER
       - name: Build IPA
         script: |
+          LATEST=$(app-store-connect get-latest-testflight-build-number "$APP_STORE_APPLE_ID" 2>/dev/null || echo 0)
           flutter build ipa --release --flavor prod \
             --dart-define-from-file=dart_defines/prod.json \
-            --build-number=$BUILD_NUMBER \
+            --build-number=$((LATEST + 1)) \
             --export-options-plist=/Users/builder/export_options.plist
     artifacts:
-      - build/app/outputs/bundle/**/*.aab
-      - build/app/outputs/mapping/**/mapping.txt
       - build/ios/ipa/*.ipa
       - /tmp/xcodebuild_logs/*.log
     publishing:
