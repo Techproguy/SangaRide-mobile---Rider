@@ -28,29 +28,6 @@ definitions:
         PY
 
 workflows:
-  dev:
-    name: Sanga Ride · dev APK
-    max_build_duration: 60
-    environment:
-      <<: *environment
-      groups:
-        - github_building_blocks
-        - sanga_ride_rider
-      android_signing:
-        - sanga_upload_keystore
-      vars:
-        APP_ENV: dev
-    scripts:
-      - *fetch_building_blocks
-      - *write_env_config
-      - name: Build APK
-        script: |
-          flutter build apk --release --flavor dev \
-            --dart-define-from-file=dart_defines/dev.json \
-            --build-number=$BUILD_NUMBER
-    artifacts:
-      - build/app/outputs/flutter-apk/*.apk
-
   release:
     name: Sanga Ride · release
     max_build_duration: 90
@@ -59,7 +36,6 @@ workflows:
     environment:
       <<: *environment
       groups:
-        - github_building_blocks
         - sanga_ride_rider
       android_signing:
         - sanga_upload_keystore
