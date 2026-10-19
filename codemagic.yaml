@@ -26,29 +26,34 @@ definitions:
         with open(f"ios/Flutter/{xcconfig}", "w") as f:
             f.write(f"MAPS_API_KEY={defines['MAPS_API_KEY_IOS']}\n")
         PY
+    - &android_keystore
+      name: Android upload keystore
+      script: echo "$CM_KEYSTORE" | base64 --decode > "$CM_KEYSTORE_PATH"
+    - &ios_signing
+      name: iOS signing
+      script: |
+        keychain initialize
+        app-store-connect fetch-signing-files "$BUNDLE_ID" --type IOS_APP_STORE --create
+        keychain add-certificates
+        xcode-project use-profiles
 
 workflows:
   release:
     name: Sanga Ride · release
     max_build_duration: 90
-    integrations:
-      app_store_connect: Sanga
     environment:
       <<: *environment
       groups:
         - sanga_ride_rider
-      android_signing:
-        - sanga_upload_keystore
-      ios_signing:
-        distribution_type: app_store
-        bundle_identifier: com.sangatechnologies.ride
       vars:
         APP_ENV: prod
+        BUNDLE_ID: com.sangatechnologies.ride
+        CM_KEYSTORE_PATH: /tmp/sanga_upload.keystore
     scripts:
       - *fetch_building_blocks
       - *write_env_config
-      - name: Use signing profiles
-        script: xcode-project use-profiles
+      - *android_keystore
+      - *ios_signing
       - name: Build App Bundle
         script: |
           flutter build appbundle --release --flavor prod \
@@ -67,5 +72,7 @@ workflows:
       - /tmp/xcodebuild_logs/*.log
     publishing:
       app_store_connect:
-        auth: integration
+        api_key: $APP_STORE_CONNECT_PRIVATE_KEY
+        key_id: $APP_STORE_CONNECT_KEY_IDENTIFIER
+        issuer_id: $APP_STORE_CONNECT_ISSUER_ID
         submit_to_testflight: false
