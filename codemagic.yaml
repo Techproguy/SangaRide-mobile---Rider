@@ -3,6 +3,12 @@ definitions:
     flutter: 3.47.6
     xcode: latest
     cocoapods: default
+  triggering: &on_version_tag
+    events:
+      - tag
+    tag_patterns:
+      - pattern: "v*"
+        include: true
   scripts:
     - &fetch_building_blocks
       name: Fetch sanga-ride-building-blocks
@@ -38,6 +44,7 @@ workflows:
   testflight:
     name: Sanga Ride · TestFlight
     max_build_duration: 90
+    triggering: *on_version_tag
     environment:
       <<: *environment
       groups:
@@ -65,11 +72,14 @@ workflows:
         api_key: $APP_STORE_CONNECT_PRIVATE_KEY
         key_id: $APP_STORE_CONNECT_KEY_IDENTIFIER
         issuer_id: $APP_STORE_CONNECT_ISSUER_ID
-        submit_to_testflight: false
+        submit_to_testflight: true
+        beta_groups:
+          - Sanga Ride External
 
-  play-internal:
-    name: Sanga Ride · Play internal testing
+  play-open-testing:
+    name: Sanga Ride · Play open testing
     max_build_duration: 60
+    triggering: *on_version_tag
     environment:
       <<: *environment
       groups:
@@ -95,5 +105,5 @@ workflows:
     publishing:
       google_play:
         credentials: $GCLOUD_SERVICE_ACCOUNT_CREDENTIALS
-        track: internal
+        track: beta
         submit_as_draft: true

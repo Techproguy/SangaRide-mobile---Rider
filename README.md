@@ -50,6 +50,28 @@ make ipa env=prod         # iOS archive for TestFlight
 
 Swap `env=prod` for `env=dev` to build the dev app.
 
+## Tester builds (Codemagic)
+
+Codemagic builds both stores from `codemagic.yaml` whenever a tag that starts with `v` is pushed. Set the version in `pubspec.yaml` first (Codemagic picks the build number), then:
+
+```sh
+git tag v1.0.1
+git push origin v1.0.1
+```
+
+| Workflow | Builds | Testers join with |
+|---|---|---|
+| `testflight` | iOS IPA, sent to the TestFlight group "Sanga Ride External". Apple reviews each build before testers get it, usually within a day | https://testflight.apple.com/join/tWuXrm5X |
+| `play-open-testing` | Android App Bundle, uploaded to Play open testing as a draft | https://play.google.com/apps/testing/com.sangatechnologies.ride |
+
+Either workflow can also be started by hand in Codemagic (the app, then Start new build). Build numbers go one above the latest in TestFlight or Play.
+
+Play holds each build as a draft: in Play Console open Test and release, Open testing, then review the draft and send it to Google. After the first open testing release is approved, set `submit_as_draft: false` in `codemagic.yaml` so later builds go out on their own.
+
+Anyone with the links can join: the TestFlight link takes up to 10,000 testers and Play open testing has no list. To invite someone by email instead, add them to "Sanga Ride External" in App Store Connect, TestFlight.
+
+Secrets live in the Codemagic variable group `sanga_ride_rider`. Set or refresh them with `python3 ../sanga-ride-building-blocks/tool/codemagic_setup.py`; every variable is explained in [CODEMAGIC.md](https://github.com/Techproguy/sanga-ride-building-blocks/blob/main/docs/ci/CODEMAGIC.md).
+
 ## Mock data
 
 Until the backend exists, API calls are answered in-app from plain fixtures in `lib/core/api/mock/`. The sign-in code is `123456`.
