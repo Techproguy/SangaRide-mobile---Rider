@@ -66,3 +66,34 @@ workflows:
         key_id: $APP_STORE_CONNECT_KEY_IDENTIFIER
         issuer_id: $APP_STORE_CONNECT_ISSUER_ID
         submit_to_testflight: false
+
+  play-internal:
+    name: Sanga Ride · Play internal testing
+    max_build_duration: 60
+    environment:
+      <<: *environment
+      groups:
+        - sanga_ride_rider
+      vars:
+        APP_ENV: prod
+        PACKAGE_NAME: com.sangatechnologies.ride
+        CM_KEYSTORE_PATH: /tmp/upload.keystore
+    scripts:
+      - *fetch_building_blocks
+      - *write_env_config
+      - name: Android upload keystore
+        script: echo "$CM_KEYSTORE" | base64 --decode > "$CM_KEYSTORE_PATH"
+      - name: Build App Bundle
+        script: |
+          LATEST=$(google-play get-latest-build-number --package-name "$PACKAGE_NAME" 2>/dev/null || echo 0)
+          flutter build appbundle --release --flavor prod \
+            --dart-define-from-file=dart_defines/prod.json \
+            --build-number=$((LATEST + 1))
+    artifacts:
+      - build/app/outputs/bundle/**/*.aab
+      - build/app/outputs/mapping/**/mapping.txt
+    publishing:
+      google_play:
+        credentials: $GCLOUD_SERVICE_ACCOUNT_CREDENTIALS
+        track: internal
+        submit_as_draft: true
