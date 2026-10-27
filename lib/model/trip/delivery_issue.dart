@@ -5,9 +5,9 @@ enum DeliveryIssueReason {
   driverNotMoving('driver_not_moving', 'Driver not moving', 'Driver has stopped for too long'),
   cannotReachDriver('cannot_reach_driver', 'Cannot reach driver', 'Driver is not responding'),
   wrongLocation('wrong_location', 'Wrong location', 'Driver is at a different location'),
-  extraPayment('extra_payment', 'Driver asked for extra payment', 'Additional payment query'),
-  unableToComplete('unable_to_complete', 'Unable to complete delivery', 'Driver cannot deliver the package'),
-  safety('safety', 'Safety concern', 'I feel something is wrong'),
+  extraPayment('extra_payment_requested', 'Driver asked for extra payment', 'Additional payment query'),
+  unableToComplete('unable_to_complete_delivery', 'Unable to complete delivery', 'Driver cannot deliver the package'),
+  safety('safety_concern', 'Safety concern', 'I feel something is wrong'),
   other('other', 'Other', 'Something not listed above');
 
   const DeliveryIssueReason(this.code, this.label, this.hint);

@@ -211,7 +211,7 @@ class DeliveryIssueController extends GetxController {
       run: (key) async {
         final response = await _api.post(
           DeliveryLiveEndpoints.issuesOf(tripId),
-          data: {'reason': reason.code, 'note': note.isEmpty ? null : note},
+          data: {'category': reason.code, if (note.isNotEmpty) 'description': note},
           key: key,
           suppressErrorToast: true,
         );

@@ -5,8 +5,8 @@ abstract final class DeliveryLiveEndpoints {
   static const String uploads = '/uploads';
   static const String pickupConfirmation = '/rides/:id/package/sender-confirmation';
   static const String issues = '/rides/:id/issues';
-  static const String issue = '/deliveries/:id/issues/:issueId';
-  static const String issueResolution = '/deliveries/:id/issues/:issueId/resolution';
+  static const String issue = '/issues/:issueId';
+  static const String issueResolution = '/issues/:issueId/resolution';
 
   static const String pickupProofPurpose = UploadPurposes.pickupProof;
 
