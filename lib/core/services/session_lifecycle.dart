@@ -14,19 +14,17 @@ abstract final class SessionLifecycle {
     hub.register(SessionNames.restore, (_) => Get.find<SessionRestore>().reset());
     hub.register(SessionNames.tokens, (_) => SessionStorage.tokens.clear());
     hub.register(SessionNames.user, (_) => Get.find<UserController>().clear());
-    hub.register(SessionNames.drafts, (_) => _clearDrafts());
+    hub.register(SessionNames.drafts, _clearDrafts);
     hub.register(SessionNames.controllers, (_) => _scheduleControllerReset());
   }
 
-  static Future<void> endFromClient(SessionEndReason reason) async {
-    if (!SessionStorage.tokens.hasSession) return;
-    await SessionHub.instance.end(reason);
-  }
-
-  static Future<void> _clearDrafts() async {
-    await SessionStorage.drafts.clearScope();
+  static Future<void> _clearDrafts(SessionEndReason reason) async {
+    if (_discardsDrafts(reason)) await SessionStorage.drafts.clearScope();
     SessionStorage.drafts.userScope = null;
   }
+
+  static bool _discardsDrafts(SessionEndReason reason) =>
+      reason == SessionEndReason.loggedOut || reason == SessionEndReason.deleted;
 
   static void _scheduleControllerReset() {
     WidgetsBinding.instance

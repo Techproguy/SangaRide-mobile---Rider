@@ -8,7 +8,6 @@ import 'package:sanga_ride/core/api/app_endpoints.dart';
 import 'package:sanga_ride/core/api/error_handling.dart';
 import 'package:sanga_ride/core/api/mock/mock_server.dart';
 import 'package:sanga_ride/core/constants.dart';
-import 'package:sanga_ride/core/services/session_lifecycle.dart';
 import 'package:sanga_ride/core/services/session_storage.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart' show SangaToast, SangaToastTone;
 import 'package:sanga_ride_core/sanga_ride_core.dart';
@@ -31,7 +30,6 @@ class ApiService extends GetxService {
         refreshPath: AppEndpoints.refreshToken,
         authPathPrefix: _authPrefix,
         healthPath: AppEndpoints.health,
-        onSessionEnded: SessionLifecycle.endFromClient,
         extraInterceptors: [if (ApiEnvironment.usesMock) MockServer.engine],
         logBodies: kDebugMode,
       ),
