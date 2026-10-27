@@ -5,6 +5,7 @@ abstract final class SafetyEndpoints {
   static const String sos = '/safety/sos';
   static const String sosById = '/safety/sos/:id';
   static const String sosEnd = '/safety/sos/:id/end';
+  static const String sosLocation = '/safety/sos/:id/location';
   static const String contacts = '/safety/emergency-contacts';
   static const String contactById = '/safety/emergency-contacts/:id';
   static const String reports = '/safety/reports';
@@ -12,6 +13,8 @@ abstract final class SafetyEndpoints {
   static String sosOf(String id) => fillPath(sosById, {'id': id});
 
   static String sosEndOf(String id) => fillPath(sosEnd, {'id': id});
+
+  static String sosLocationOf(String id) => fillPath(sosLocation, {'id': id});
 
   static String contactOf(String id) => fillPath(contactById, {'id': id});
 }

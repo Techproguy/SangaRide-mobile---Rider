@@ -275,6 +275,7 @@ class SosController extends GetxController {
         _finishRemotely();
       } else {
         _state.value = SosActive(sos);
+        unawaited(_pushLocation(sosId, epoch));
       }
     } catch (e) {
       if (!_epoch.isCurrent(epoch)) return;
@@ -283,6 +284,20 @@ class SosController extends GetxController {
         return;
       }
       rethrow;
+    }
+  }
+
+  Future<void> _pushLocation(String sosId, int epoch) async {
+    final here = await _locate();
+    if (here == null || !_epoch.isCurrent(epoch) || state is! SosActive) return;
+    try {
+      await _api.post(
+        SafetyEndpoints.sosLocationOf(sosId),
+        data: {'latitude': here.latitude, 'longitude': here.longitude},
+        suppressErrorToast: true,
+      );
+    } catch (e) {
+      log('sos location update failed: $e');
     }
   }
 
