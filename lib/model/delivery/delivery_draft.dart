@@ -57,6 +57,22 @@ class DeliveryBooking {
   final BookingItem item;
   final BookingRecipient recipient;
 
+  Map<String, dynamic> toPackageJson() => {
+    'type': item.packageTypeId,
+    'itemName': item.name,
+    'description': item.description,
+    'size': item.sizeId,
+    'declaredValue': ?item.declaredValue?.major,
+    'photoId': ?item.photoId,
+    'tier': tierId,
+    'recipient': {
+      'name': recipient.name,
+      'phone': recipient.phone,
+      'email': ?recipient.email,
+      'gender': ?recipient.gender?.code,
+    },
+  };
+
   Map<String, dynamic> toJson() => {
     'quoteId': quoteId,
     'tier': tierId,

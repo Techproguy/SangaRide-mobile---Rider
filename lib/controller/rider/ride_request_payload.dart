@@ -35,15 +35,20 @@ extension RideRequestPayload on RideRequestController {
     final pickup = this.pickup;
     final dropoff = this.dropoff;
     final booking = deliveryBooking;
-    if (pickup == null || dropoff == null || booking == null) return null;
+    final rideClassId = option?.id ?? options.firstOrNull?.id;
+    if (pickup == null || dropoff == null || booking == null || rideClassId == null) return null;
     return {
-      'pickup': pickup.toJson(),
-      'stops': [for (final stop in stops) stop.toJson()],
-      'dropoff': dropoff.toJson(),
-      'rideFor': Get.find<RideForController>().rideFor.toJson(),
-      'pricingMode': PricingOption.standard.name,
-      'proposedFare': booking.fare.toJson(),
-      ...bookingJson,
+      'quoteId': booking.quoteId,
+      'rideClassId': rideClassId,
+      'kind': 'delivery',
+      'tripType': TripType.oneWay.code,
+      'timing': 'now',
+      'pickup': pickup.toLocationJson(),
+      'stops': [for (final stop in stops) stop.toLocationJson()],
+      'dropoff': dropoff.toLocationJson(),
+      'pricingOption': PricingOption.standard.code,
+      ..._whoForJson(Get.find<RideForController>().rideFor),
+      'package': booking.toPackageJson(),
     };
   }
 
@@ -70,6 +75,7 @@ extension RideRequestPayload on RideRequestController {
   }
 
   Future<Map<String, dynamic>?> lockedRequestPayload() async {
+    if (tripType == TripType.delivery && options.isEmpty) await loadOptions();
     final payload = requestPayload();
     if (payload == null || tripType == TripType.delivery) return payload;
     final terms = {...payload}..remove('quoteId');
