@@ -14,6 +14,29 @@ extension _TripPanels on _TripScreenState {
     );
   }
 
+  Widget _recenterControl(TripState state) {
+    if (!_isLive(state)) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(SangaSpacing.gutter, 0, SangaSpacing.gutter, SangaSpacing.md),
+      child: ListenableBuilder(
+        listenable: _camera,
+        builder: (context, _) => Align(
+          alignment: Alignment.centerRight,
+          child: AnimatedSwitcher(
+            duration: SangaMotion.quick,
+            child: !_camera.isFree
+                ? const SizedBox.shrink()
+                : SangaMapButton(
+                    icon: const Icon(Icons.navigation_rounded, color: SangaColors.primary, size: 24),
+                    tooltip: 'Recenter on your ride',
+                    onPressed: _recenter,
+                  ),
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _deliveryPanel(Trip trip, TripDelivery delivery, DeliveryPhase phase) {
     return DeliveryTripPanel(
       trip: trip,

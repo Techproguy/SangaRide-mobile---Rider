@@ -178,6 +178,13 @@ class _TripScreenState extends State<TripScreen> {
 
   void _scheduleReframe() => _camera.whenSettled(_reframe);
 
+  void _recenter() {
+    final trip = _trip.trip;
+    if (trip == null) return;
+    _camera.resume();
+    unawaited(_camera.reframe(tripFramePoints(trip), style: _fit, force: true));
+  }
+
   void _reframe() {
     final trip = _trip.trip;
     if (!mounted || trip == null) return;
@@ -260,6 +267,7 @@ class _TripScreenState extends State<TripScreen> {
                         key: _sheet,
                         onVisibleHeightChanged: _onSheetHeight,
                         peek: _peek(state),
+                        above: _recenterControl(state),
                         child: SangaMapPanel(children: [_flightLine(state), _panel(state)]),
                       ),
                     ),
