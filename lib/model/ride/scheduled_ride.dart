@@ -107,12 +107,15 @@ class ScheduledRide {
       pickup: ScheduledStop.fromRide(json.object('pickup')),
       dropoff: ScheduledStop.fromRide(json.object('dropoff')),
       fare: TripFare.fromJson(json).total,
-      canRemind: false,
+      canRemind: json.boolOr('canRemind', true),
+      reminderAt: (json.timeOrNull('reminderAt') ?? json.timeOrNull('reminderSentAt'))?.toLocal(),
       hours: hourlyMinutes == null ? null : hourlyMinutes ~/ Duration.minutesPerHour,
       airport: airport?.timeOrNull('estimatedArrival') == null ? null : ScheduledAirport.fromJson(airport!.raw),
       wait: ScheduledWait.maybeFrom(json.objectOrNull('waiting') ?? json, pickupAt: scheduledAt),
     );
   }
+
+  static const Duration reminderLead = Duration(minutes: 30);
 
   final String id;
   final ScheduledRideKind kind;
@@ -133,7 +136,25 @@ class ScheduledRide {
 
   bool get hasReminder => reminderAt != null;
 
-  bool get showsRemindAction => canRemind && !hasReminder;
+  bool get showsRemindAction =>
+      canRemind && !hasReminder && scheduledAt.subtract(reminderLead).isAfter(BookingClock.now());
+
+  ScheduledRide withReminder(DateTime at) => ScheduledRide(
+    id: id,
+    kind: kind,
+    tripType: tripType,
+    category: category,
+    scheduledAt: scheduledAt,
+    pickup: pickup,
+    dropoff: dropoff,
+    fare: fare,
+    canRemind: canRemind,
+    repeat: repeat,
+    hours: hours,
+    reminderAt: at,
+    airport: airport,
+    wait: wait,
+  );
 }
 
 sealed class ScheduledRidesState {

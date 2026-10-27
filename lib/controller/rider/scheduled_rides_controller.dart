@@ -53,8 +53,17 @@ class ScheduledRidesController extends GetxController {
       key: IdempotencyKey.newFor(IdempotencyIntent.remindRide),
       suppressErrorToast: true,
     );
-    return ScheduledRide.fromJson(JsonReader.of((response.data as Map)['data']));
+    final ride = _rideOf(id);
+    if (ride == null) return null;
+    final reply = (response.data as Map)['data'];
+    final replied = reply is Map ? JsonReader.of(reply).timeOrNull('reminderAt')?.toLocal() : null;
+    return ride.withReminder(replied ?? ride.scheduledAt.subtract(ScheduledRide.reminderLead));
   });
+
+  ScheduledRide? _rideOf(String id) {
+    final current = state;
+    return current is ScheduledLoaded ? current.rides.where((ride) => ride.id == id).firstOrNull : null;
+  }
 
   Future<BookingProblem?> _act(String id, ScheduledAction action, Future<ScheduledRide?> Function() request) async {
     final current = state;
