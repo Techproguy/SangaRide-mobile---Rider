@@ -153,7 +153,10 @@ class RideRequestController extends GetxController {
 
   bool _isFresh(DateTime? loadedAt) => loadedAt != null && DateTime.now().difference(loadedAt) < catalogLifetime;
 
-  String priceLabel(RideOption option) => _optionFares[option.id]?.format() ?? rateLabel(option);
+  String priceLabel(RideOption option) {
+    if (tripType == TripType.hourly) return rateLabel(option);
+    return _optionFares[option.id]?.format() ?? rateLabel(option);
+  }
 
   String get _fareRouteKey => [
     for (final place in [pickup, ...stops, dropoff]) place?.coordinates?.toString() ?? '',
