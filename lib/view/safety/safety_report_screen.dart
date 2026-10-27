@@ -66,16 +66,17 @@ class _SafetyReportScreenState extends State<SafetyReportScreen> {
   Widget build(BuildContext context) {
     return SangaPageLayout(
       title: CommonCopy.reportIssue,
-      footer: Obx(
-        () => ListenableBuilder(
+      footer: Obx(() {
+        final isSubmitting = _report.state is ReportSubmitting;
+        return ListenableBuilder(
           listenable: _details,
           builder: (context, _) => SangaButton.primary(
             label: 'Submit report',
-            isLoading: _report.state is ReportSubmitting,
+            isLoading: isSubmitting,
             onPressed: _isReady ? _submit : null,
           ),
-        ),
-      ),
+        );
+      }),
       children: [
         Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
