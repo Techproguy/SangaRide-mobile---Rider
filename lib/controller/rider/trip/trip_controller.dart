@@ -548,14 +548,18 @@ class TripController extends GetxController {
     }
   }
 
-  Future<String?> startCall() async {
+  Future<({String? maskedNumber, bool isServerInitiated})?> startCall() async {
     final id = _tripId;
     if (id == null || isCalling.value) return null;
     if (LiveProblem.isOffline) return null;
     isCalling.value = true;
     try {
       final response = await _api.post(AppEndpoints.liveTripCallOf(id), suppressErrorToast: true);
-      return JsonReader.of(response.dataMapOrEmpty).strOrNull('maskedNumber');
+      final data = JsonReader.of(response.dataMapOrEmpty);
+      return (
+        maskedNumber: data.strOrNull('maskedNumber'),
+        isServerInitiated: data.strOrNull('callMode') == 'server_initiated',
+      );
     } catch (error) {
       log('startCall failed: $error', name: 'TripController');
       return null;

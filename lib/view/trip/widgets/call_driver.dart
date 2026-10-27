@@ -32,12 +32,14 @@ Future<void> callDriver(BuildContext context, {required String firstName}) async
     ),
   );
   unawaited(sheet.whenComplete(() => isSheetOpen = false));
-  final number = await controller.startCall();
+  final call = await controller.startCall();
   if (isSheetOpen && navigator.mounted) navigator.pop();
   await sheet;
-  if (number == null) {
-    SangaToast.show('We couldn’t connect your call. Give it another go.', tone: SangaToastTone.error);
+  final number = call?.maskedNumber;
+  if (number != null) return dialNumber(number, failureMessage: 'We couldn’t open your phone app.');
+  if (call != null && call.isServerInitiated) {
+    SangaToast.show('Your phone is about to ring. Pick up to talk to $firstName.', tone: SangaToastTone.success);
     return;
   }
-  await dialNumber(number, failureMessage: 'We couldn’t open your phone app.');
+  SangaToast.show('We couldn’t connect your call. Give it another go.', tone: SangaToastTone.error);
 }
