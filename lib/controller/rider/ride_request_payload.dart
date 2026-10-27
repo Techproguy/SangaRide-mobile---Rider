@@ -153,13 +153,11 @@ extension RideRequestPayload on RideRequestController {
     return _scheduleMutation = Mutation<ScheduledBooking>(
       intent: IdempotencyIntent.scheduleRide,
       run: (key) async {
-        final response = await _api.post(
-          AppEndpoints.rideRequests,
-          data: payload,
-          key: key,
-          suppressErrorToast: true,
-        );
-        return ScheduledBooking.fromJson(response.dataMap);
+        final response = await _api.post(AppEndpoints.rideRequests, data: payload, key: key, suppressErrorToast: true);
+        final series = JsonReader.of(response.dataMap).objectOrNull('series');
+        if (series == null) return ScheduledBooking.fromJson(response.dataMap);
+        final first = repeatRule?.firstRideAfter(DateTime.now()) ?? DateTime.now();
+        return ScheduledBooking(id: series.str('id'), scheduledAt: first);
       },
     );
   }

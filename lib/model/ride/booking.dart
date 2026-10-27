@@ -131,10 +131,10 @@ class RepeatRule {
       '${date.year.toString().padLeft(4, '0')}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
 
   Map<String, dynamic> toJson() => {
-    'weekdays': [for (final day in _sorted) day.isoValue],
+    'days': [for (final day in _sorted) day.short.toLowerCase()],
     'time': '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}',
     'startDate': _date(startDate),
-    'endDate': endDate == null ? null : _date(endDate!),
+    'endDate': ?(endDate == null ? null : _date(endDate!)),
     'timezone': BookingZone.of(DateTime(startDate.year, startDate.month, startDate.day, hour, minute)),
   };
 }
