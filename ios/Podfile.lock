@@ -3,6 +3,9 @@ PODS:
     - Flutter
   - connectivity_plus (0.0.1):
     - Flutter
+  - file_picker_darwin (1.0.0):
+    - Flutter
+    - FlutterMacOS
   - Flutter (1.0.0)
   - flutter_image_compress_common (1.0.0):
     - Flutter
@@ -55,6 +58,7 @@ PODS:
 DEPENDENCIES:
   - camera_avfoundation (from `.symlinks/plugins/camera_avfoundation/darwin`)
   - connectivity_plus (from `.symlinks/plugins/connectivity_plus/ios`)
+  - file_picker_darwin (from `.symlinks/plugins/file_picker_darwin/darwin`)
   - Flutter (from `Flutter`)
   - flutter_image_compress_common (from `.symlinks/plugins/flutter_image_compress_common/ios`)
   - flutter_secure_storage_darwin (from `.symlinks/plugins/flutter_secure_storage_darwin/darwin`)
@@ -79,6 +83,8 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/camera_avfoundation/darwin"
   connectivity_plus:
     :path: ".symlinks/plugins/connectivity_plus/ios"
+  file_picker_darwin:
+    :path: ".symlinks/plugins/file_picker_darwin/darwin"
   Flutter:
     :path: Flutter
   flutter_image_compress_common:
@@ -103,6 +109,7 @@ EXTERNAL SOURCES:
 SPEC CHECKSUMS:
   camera_avfoundation: 968a9a5323c79a99c166ad9d7866bfd2047b5a9b
   connectivity_plus: cb623214f4e1f6ef8fe7403d580fdad517d2f7dd
+  file_picker_darwin: 4c2b9a50ea44cb3b071381ea0cf48591bdd80251
   Flutter: 71a624a5bc0c04062bf19101d501e466baf2fb47
   flutter_image_compress_common: 11d5dcfb36f4ded92320bfa896261813a073240e
   flutter_secure_storage_darwin: acdb3f316ed05a3e68f856e0353b133eec373a23
