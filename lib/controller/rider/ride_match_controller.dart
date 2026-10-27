@@ -149,6 +149,15 @@ class RideMatchController extends GetxController {
         final response = await _api.post(AppEndpoints.rideRequests, data: payload, key: key, suppressErrorToast: true);
         final data = response.dataMap;
         final json = JsonReader.of(data);
+        if (json.boolOr('approvalRequired', false)) {
+          throw ApiException(
+            kind: ApiFailureKind.rejected,
+            message: 'This ride needs an approval first',
+            statusCode: response.statusCode,
+            code: ServerCode.requiresApproval,
+            data: data,
+          );
+        }
         final isScheduled =
             RideRequestStatus.fromCode(json.strOrNull('status')) == RideRequestStatus.scheduled ||
             json.strOrNull('scheduledFor') != null;
