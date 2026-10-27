@@ -13,6 +13,7 @@ import 'package:sanga_ride/core/router/routes.dart';
 import 'package:sanga_ride/core/router/safety_routes.dart';
 import 'package:sanga_ride/core/router/trip_routes.dart';
 import 'package:sanga_ride/core/router/trip_wrapup_routes.dart';
+import 'package:sanga_ride/core/services/session_restore.dart';
 import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride/view/delivery/live/widgets/delivery_refused_content.dart';
 import 'package:sanga_ride/view/ride/matching/matching_flow.dart';
@@ -97,6 +98,7 @@ class _TripScreenState extends State<TripScreen> {
 
   bool _isLive(TripState state) => switch (state) {
     TripUpdating() ||
+    TripRematching() ||
     TripEnRoute() ||
     TripArrived() ||
     TripVerifying() ||
@@ -135,6 +137,8 @@ class _TripScreenState extends State<TripScreen> {
           when previous is! TripCancelled && reason != TripCancelReason.riderCancelled:
         if (trip.isDelivery) _popPagesAbove();
         unawaited(_showCancelled(trip, reason));
+      case TripRematching() when previous is! TripRematching:
+        unawaited(_resumeMatching());
       case TripCompleted(:final trip):
         _leaveForCompletion(trip.id);
       default:
@@ -204,6 +208,14 @@ class _TripScreenState extends State<TripScreen> {
     _isLeaving = true;
     _closeSheet();
     context.go(TripWrapUpRoutes.completeOf(tripId));
+  }
+
+  Future<void> _resumeMatching() async {
+    _isLeaving = true;
+    final restore = Get.find<SessionRestore>();
+    final stack = await restore.retry();
+    if (!mounted) return;
+    await restore.open(stack ?? const [SangaRoutes.home]);
   }
 
   void _goHome() {

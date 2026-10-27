@@ -22,6 +22,7 @@ enum TripStatus {
   paymentPending('payment_pending'),
   completed('completed'),
   cancelled('cancelled'),
+  rematching('requested'),
   unknown('unknown');
 
   const TripStatus(this.code);
@@ -41,7 +42,7 @@ enum TripStatus {
 
   static TripStatus advance(TripStatus current, TripStatus incoming) {
     if (current.isTerminal) return current;
-    if (incoming == unknown) return incoming;
+    if (incoming == unknown || incoming == rematching) return incoming;
     return incoming.rank > current.rank ? incoming : current;
   }
 }
@@ -416,7 +417,7 @@ class Trip {
       TripStatus.pinVerified => DeliveryPhase.afterPin(delivery),
       TripStatus.inProgress => DeliveryPhase.onTheWay,
       TripStatus.arrivedDropoff || TripStatus.paymentPending => DeliveryPhase.atDropoffOf(delivery.stage),
-      TripStatus.completed || TripStatus.cancelled || TripStatus.unknown => null,
+      TripStatus.completed || TripStatus.cancelled || TripStatus.rematching || TripStatus.unknown => null,
     };
   }
 
@@ -467,6 +468,7 @@ sealed class TripState {
     TripStatus.arrivedDropoff || TripStatus.paymentPending => TripAtDropoff(trip),
     TripStatus.completed => TripCompleted(trip),
     TripStatus.cancelled => TripCancelled(trip, trip.cancellationReason ?? TripCancelReason.other),
+    TripStatus.rematching => TripRematching(trip),
     TripStatus.unknown => TripUpdating(trip),
   };
 }
@@ -489,6 +491,10 @@ sealed class TripLoaded extends TripState {
 
 final class TripUpdating extends TripLoaded {
   const TripUpdating(super.trip);
+}
+
+final class TripRematching extends TripLoaded {
+  const TripRematching(super.trip);
 }
 
 final class TripEnRoute extends TripLoaded {

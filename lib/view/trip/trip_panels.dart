@@ -89,7 +89,7 @@ extension _TripPanels on _TripScreenState {
     }
     return switch (state) {
       TripLoading() || TripCompleted() => const TripLoadingPanel(),
-      TripUpdating(:final trip) => TripUpdatingPanel(
+      TripUpdating(:final trip) || TripRematching(:final trip) => TripUpdatingPanel(
         unreadCount: _trip.unreadCount,
         onCall: () => _call(trip),
         onMessage: _openChat,
