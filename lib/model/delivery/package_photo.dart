@@ -1,6 +1,6 @@
 import 'package:sanga_ride/model/delivery/delivery_failure.dart';
 
-enum PhotoSource { camera, gallery }
+enum PhotoSource { camera, gallery, file }
 
 class PhotoException implements Exception {
   const PhotoException(this.failure);

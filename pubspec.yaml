@@ -29,6 +29,7 @@ dependencies:
   url_launcher: ^6.3.3
   share_plus: ^13.3.1
   image_picker: ^1.2.4
+  file_picker: ^13.1.0
   flutter_image_compress: ^2.4.0
 
 dev_dependencies:

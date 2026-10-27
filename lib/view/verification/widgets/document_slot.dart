@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:sanga_ride/core/copy/common_copy.dart';
+import 'package:sanga_ride/core/services/document_file_service.dart';
 import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride/view/verification/verification_copy.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
@@ -27,6 +28,7 @@ class DocumentSlot extends StatelessWidget {
   final VoidCallback onOpenSettings;
 
   Widget _thumb(String path) {
+    if (DocumentFileService.isPdf(path)) return _fileTile(Icons.picture_as_pdf_outlined);
     return ClipRRect(
       borderRadius: SangaRadii.digit,
       child: Image.file(
@@ -34,12 +36,19 @@ class DocumentSlot extends StatelessWidget {
         width: _thumbnail,
         height: _thumbnail,
         fit: BoxFit.cover,
-        errorBuilder: (context, error, stack) => const SizedBox.square(
-          dimension: _thumbnail,
-          child: ColoredBox(
-            color: SangaColors.fill,
-            child: Icon(Icons.image_outlined, color: SangaColors.textMuted),
-          ),
+        errorBuilder: (context, error, stack) => _fileTile(Icons.image_outlined),
+      ),
+    );
+  }
+
+  Widget _fileTile(IconData icon) {
+    return ClipRRect(
+      borderRadius: SangaRadii.digit,
+      child: SizedBox.square(
+        dimension: _thumbnail,
+        child: ColoredBox(
+          color: SangaColors.fill,
+          child: Icon(icon, color: SangaColors.textMuted),
         ),
       ),
     );

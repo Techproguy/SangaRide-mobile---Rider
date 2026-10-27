@@ -8,12 +8,13 @@ abstract final class MockVerification {
   static const int _estimatedReviewHours = 24;
   static const int _maxUploadBytes = 5 * 1024 * 1024;
   static const Set<String> _documentTypes = {'national_id', 'drivers_license', 'passport'};
-  static const Set<String> _imageExtensions = {'jpg', 'jpeg', 'png', 'webp', 'heic', 'heif'};
+  static const Set<String> _documentExtensions = {'jpg', 'jpeg', 'png', 'webp', 'heic', 'heif', 'pdf'};
   static const Map<String, String> _mimeTypes = {
     'png': 'image/png',
     'webp': 'image/webp',
     'heic': 'image/heic',
     'heif': 'image/heif',
+    'pdf': 'application/pdf',
   };
   static const Map<String, String> _reasonMessages = {
     'image_unclear': 'The photo was blurry. Upload a clear one in good light.',
@@ -75,7 +76,7 @@ abstract final class MockVerification {
     final file = request.body['file'];
     final name = file is Map ? file['name'] as String? ?? 'document.jpg' : 'document.jpg';
     final extension = name.split('.').last.toLowerCase();
-    if (!_imageExtensions.contains(extension)) {
+    if (!_documentExtensions.contains(extension)) {
       throw const MockFailure(415, 'That file type isn’t supported.', code: 'unsupported_type');
     }
     final size = file is Map ? (file['length'] as num? ?? 0).toInt() : 0;

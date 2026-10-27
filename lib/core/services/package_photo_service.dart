@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:sanga_ride/core/api/mock/mock_capture.dart';
+import 'package:sanga_ride/core/services/document_file_service.dart';
 import 'package:sanga_ride/core/services/image_compression_service.dart';
 import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
@@ -14,6 +15,7 @@ abstract final class PackagePhotoService {
   };
 
   static Future<String?> pick(PhotoSource source, {required VoidCallback onPicked}) async {
+    if (source == PhotoSource.file) return DocumentFileService.pick(onPicked: onPicked);
     final original = await _pickOriginal(source);
     if (original == null) return null;
     onPicked();

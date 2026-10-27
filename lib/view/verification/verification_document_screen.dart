@@ -50,7 +50,7 @@ class _VerificationDocumentScreenState extends State<VerificationDocumentScreen>
 
   Future<void> _pick(DocumentSide side) async {
     if (_controller.draft.sideOf(side).isBusy) return;
-    final source = await showPhotoSourceSheet(context, title: VerificationCopy.addYourId);
+    final source = await showPhotoSourceSheet(context, title: VerificationCopy.addYourId, allowsFile: true);
     if (source == null || !mounted) return;
     if (source == PhotoSource.camera) await _permissions.prime(PermissionKind.camera, context);
     if (mounted) await _controller.pickPhoto(side, source);
