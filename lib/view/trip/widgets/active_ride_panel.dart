@@ -16,6 +16,7 @@ class ActiveRidePanel extends StatelessWidget {
     required this.onShare,
     required this.onSafety,
     required this.onAddStops,
+    required this.onExtend,
     required this.onCancel,
     required this.action,
   });
@@ -27,6 +28,7 @@ class ActiveRidePanel extends StatelessWidget {
   final VoidCallback onShare;
   final VoidCallback onSafety;
   final VoidCallback onAddStops;
+  final VoidCallback onExtend;
   final VoidCallback onCancel;
   final Widget action;
 
@@ -58,6 +60,7 @@ class ActiveRidePanel extends StatelessWidget {
           onShare: onShare,
           onSafety: onSafety,
           onAddStops: trip.canAddStops ? onAddStops : null,
+          onExtend: trip.canExtend ? onExtend : null,
           onCancel: trip.canChange ? onCancel : null,
         ),
         action,

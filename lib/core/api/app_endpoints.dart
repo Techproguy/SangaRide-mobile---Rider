@@ -71,6 +71,8 @@ class AppEndpoints {
   static const String liveTripMessages = '$_liveTrip/messages';
   static const String liveTripStopsQuote = '$_liveTrip/stops/quote';
   static const String liveTripStops = '$_liveTrip/stops/confirm';
+  static const String liveTripExtendQuote = '$_liveTrip/extend/quote';
+  static const String liveTripExtend = '$_liveTrip/extend';
   static const String liveTripCancellation = '$_liveTrip/cancellation-preview';
   static const String liveTripCancel = '$_liveTrip/cancel';
 
@@ -91,6 +93,10 @@ class AppEndpoints {
   static String liveTripStopsQuoteOf(String id) => fillPath(liveTripStopsQuote, {'id': id});
 
   static String liveTripStopsOf(String id) => fillPath(liveTripStops, {'id': id});
+
+  static String liveTripExtendQuoteOf(String id) => fillPath(liveTripExtendQuote, {'id': id});
+
+  static String liveTripExtendOf(String id) => fillPath(liveTripExtend, {'id': id});
 
   static String liveTripCancellationOf(String id) => fillPath(liveTripCancellation, {'id': id});
 

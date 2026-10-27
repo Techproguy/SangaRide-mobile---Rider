@@ -1,5 +1,6 @@
 import 'package:go_router/go_router.dart';
 import 'package:sanga_ride/view/trip/cancel/cancel_screen.dart';
+import 'package:sanga_ride/view/trip/extend/extend_trip_screen.dart';
 import 'package:sanga_ride/view/trip/stops/add_stop_screen.dart';
 import 'package:sanga_ride/view/trip/trip_chat_screen.dart';
 import 'package:sanga_ride/view/trip/trip_details_screen.dart';
@@ -13,6 +14,7 @@ abstract final class TripRoutes {
   static const String timeline = '/trip/:id/timeline';
   static const String chat = '/trip/:id/chat';
   static const String stops = '/trip/:id/stops';
+  static const String extend = '/trip/:id/extend';
   static const String cancel = '/trip/:id/cancel';
 
   static String tripOf(String id) => fillPath(trip, {'id': id});
@@ -24,6 +26,8 @@ abstract final class TripRoutes {
   static String chatOf(String id) => fillPath(chat, {'id': id});
 
   static String stopsOf(String id) => fillPath(stops, {'id': id});
+
+  static String extendOf(String id) => fillPath(extend, {'id': id});
 
   static String cancelOf(String id) => fillPath(cancel, {'id': id});
 
@@ -47,6 +51,10 @@ abstract final class TripRoutes {
     GoRoute(
       path: stops,
       builder: (context, state) => AddStopScreen(tripId: state.pathParameters['id']!),
+    ),
+    GoRoute(
+      path: extend,
+      builder: (context, state) => ExtendTripScreen(tripId: state.pathParameters['id']!),
     ),
     GoRoute(
       path: cancel,

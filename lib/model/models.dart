@@ -15,6 +15,7 @@ export 'trip/trip_delivery.dart';
 export 'trip/delivery_issue.dart';
 export 'trip/delivery_pickup.dart';
 export 'trip/stop_change.dart';
+export 'trip/trip_extension.dart';
 export 'trip/trip_cancellation.dart';
 export 'trip/trip_message.dart';
 export 'trip/wrapup/wrapup.dart';

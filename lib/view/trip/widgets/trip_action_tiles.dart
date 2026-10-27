@@ -10,6 +10,7 @@ class TripActionTiles extends StatelessWidget {
     this.onSafety,
     this.onShare,
     this.onAddStops,
+    this.onExtend,
     this.onReportIssue,
     this.onCancel,
   });
@@ -22,6 +23,7 @@ class TripActionTiles extends StatelessWidget {
   final VoidCallback? onSafety;
   final VoidCallback? onShare;
   final VoidCallback? onAddStops;
+  final VoidCallback? onExtend;
   final VoidCallback? onReportIssue;
   final VoidCallback? onCancel;
 
@@ -34,6 +36,7 @@ class TripActionTiles extends StatelessWidget {
       SangaActionTile(icon: Icons.shield_rounded, label: 'Safety', onPressed: onSafety, tone: SangaTone.danger),
     if (onAddStops != null)
       SangaActionTile(icon: Icons.add_location_alt_rounded, label: 'Add stops', onPressed: onAddStops),
+    if (onExtend != null) SangaActionTile(icon: Icons.more_time_rounded, label: 'Extend time', onPressed: onExtend),
     if (onReportIssue != null)
       SangaActionTile(
         icon: Icons.report_gmailerrorred_rounded,

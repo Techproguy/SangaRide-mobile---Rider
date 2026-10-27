@@ -245,6 +245,7 @@ class Trip {
     this.delivery,
     this.freeWait = Duration.zero,
     this.scheduledWait,
+    this.hourlyMinutes,
   });
 
   factory Trip.fromJson(Map<String, dynamic> json) {
@@ -284,6 +285,7 @@ class Trip {
           : _tryRead(() => TripDelivery.fromJson(reader.object('delivery').raw)),
       freeWait: Duration(seconds: waiting?.intOr('freeWaitSeconds', 0) ?? 0),
       scheduledWait: ScheduledWait.maybeFrom(waiting ?? reader, pickupAt: _localTime(reader, 'scheduledFor')),
+      hourlyMinutes: reader.intOrNull('hourlyDurationMin') ?? reader.objectOrNull('hourly')?.intOrNull('durationMin'),
     );
   }
 
@@ -356,6 +358,7 @@ class Trip {
   final TripDelivery? delivery;
   final Duration freeWait;
   final ScheduledWait? scheduledWait;
+  final int? hourlyMinutes;
 
   Trip withLocal({
     String? pin,
@@ -392,6 +395,7 @@ class Trip {
       delivery: delivery,
       freeWait: freeWait,
       scheduledWait: scheduledWait,
+      hourlyMinutes: hourlyMinutes,
     );
   }
 
@@ -404,6 +408,10 @@ class Trip {
   bool get canChange => status.canChange && (delivery?.stage.canCancel ?? true);
 
   bool get canAddStops => !isDelivery && canChange && stops.length < maxStops;
+
+  bool get isHourly => (hourlyMinutes ?? 0) > 0;
+
+  bool get canExtend => isHourly && !isDelivery && canChange;
 
   DeliveryPhase? get deliveryPhase {
     final delivery = this.delivery;

@@ -38,6 +38,7 @@ abstract final class IdempotencyIntent {
   static const String ticketResolution = 'ticket-resolution';
   static const String topUpOtp = 'topup-otp';
   static const String tripAddStops = 'trip-add-stops';
+  static const String tripExtend = 'trip-extend';
   static const String tripCancel = 'trip-cancel';
   static const String tripPay = 'trip-pay';
   static const String tripPayCancel = 'trip-pay-cancel';

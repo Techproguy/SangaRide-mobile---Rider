@@ -230,6 +230,8 @@ class _TripScreenState extends State<TripScreen> {
 
   void _openAddStops() => unawaited(context.push(TripRoutes.stopsOf(widget.tripId)));
 
+  void _openExtend() => unawaited(context.push(TripRoutes.extendOf(widget.tripId)));
+
   void _openCancel() => unawaited(context.push(TripRoutes.cancelOf(widget.tripId)));
 
   void _openSafety() => unawaited(context.push(SafetyRoutes.centreOf(tripId: widget.tripId)));

@@ -100,6 +100,7 @@ class _Details extends StatelessWidget {
               onShare: () => shareTrip(trip.id, isDelivery: trip.isDelivery),
               onSafety: trip.isDelivery ? () => context.push(SafetyRoutes.centreOf(tripId: trip.id)) : null,
               onAddStops: trip.canAddStops ? () => context.push(TripRoutes.stopsOf(trip.id)) : null,
+              onExtend: trip.canExtend ? () => context.push(TripRoutes.extendOf(trip.id)) : null,
               onReportIssue: trip.isDelivery ? () => context.push(DeliveryLiveRoutes.issueOf(trip.id)) : null,
             ),
           ),
