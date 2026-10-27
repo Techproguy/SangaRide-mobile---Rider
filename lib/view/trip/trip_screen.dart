@@ -120,7 +120,9 @@ class _TripScreenState extends State<TripScreen> {
         unawaited(_showPin(trip));
       case TripAuthenticated(:final trip) when previous is! TripAuthenticated:
         unawaited(trip.isDelivery ? _startPickupConfirmation(trip) : _showAuthenticated());
-      case TripInProgress() || TripAtDropoff():
+      case TripInProgress() when previous is! TripInProgress:
+        _closeSheet();
+      case TripAtDropoff() when previous is! TripAtDropoff:
         _closeSheet();
       case TripRefused(:final refusal) when previous is! TripRefused:
         _popPagesAbove();
