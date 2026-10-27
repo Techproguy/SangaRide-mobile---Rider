@@ -9,7 +9,7 @@ import 'package:sanga_ride/core/api/who_for_endpoints.dart';
 import 'package:sanga_ride/model/groups/group_models.dart';
 import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride/model/ride/ride_load_problem.dart';
-import 'package:sanga_ride_core/sanga_ride_core.dart' show ConnectionMonitor, JsonReader;
+import 'package:sanga_ride_core/sanga_ride_core.dart' show ConnectionMonitor, ResponseData;
 
 class RideForController extends GetxController {
   final _api = Get.find<ApiService>();
@@ -203,7 +203,7 @@ class RideForController extends GetxController {
     }
     _passenger.value = PassengerCodePending(info: state.info, verification: state.verification, isResending: true);
     try {
-      final verification = await _requestCode(state.info, isResend: true);
+      final verification = await _requestCode(state.info, isResend: true, passengerId: state.verification.id);
       _passenger.value = PassengerCodePending(info: state.info, verification: verification);
       _codeKey = null;
       return true;
@@ -231,14 +231,13 @@ class RideForController extends GetxController {
     }
     _passenger.value = PassengerChecking(info: state.info, verification: state.verification);
     try {
-      final response = await _api.post(
-        WhoForEndpoints.passengerVerify,
-        data: {'verificationId': state.verification.id, 'code': code},
+      await _api.post(
+        WhoForEndpoints.passengerVerifyOf(state.verification.id),
+        data: {'code': code},
         suppressErrorToast: true,
       );
-      final verifiedAt = JsonReader.of((response.data as Map)['data']).timeOrNull('verifiedAt') ?? DateTime.now();
       _passenger.value = PassengerVerified(
-        rideFor: RideForSomeone(passenger: state.info, verifiedAt: verifiedAt),
+        rideFor: RideForSomeone(passenger: state.info, passengerId: state.verification.id, verifiedAt: DateTime.now()),
         verification: state.verification,
       );
       return true;
@@ -254,13 +253,13 @@ class RideForController extends GetxController {
     }
   }
 
-  Future<PassengerVerification> _requestCode(PassengerInfo info, {required bool isResend}) async {
+  Future<PassengerVerification> _requestCode(PassengerInfo info, {required bool isResend, String? passengerId}) async {
     final response = await _api.post(
-      WhoForEndpoints.passengerOtp,
-      data: info.toJson(),
+      passengerId == null ? WhoForEndpoints.passengerOtp : WhoForEndpoints.passengerResendOf(passengerId),
+      data: passengerId == null ? info.toJson() : null,
       key: _keyFor(info, isResend: isResend),
       suppressErrorToast: true,
     );
-    return PassengerVerification.fromJson((response.data as Map)['data']);
+    return PassengerVerification.fromJson(response.dataMap, id: passengerId);
   }
 }

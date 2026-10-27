@@ -73,7 +73,7 @@ class PassengerInfo {
 
   String get firstName => name.trim().split(RegExp(r'\s+')).first;
 
-  Map<String, dynamic> toJson() => {'name': name, 'phone': phone, 'email': ?email, 'gender': ?gender?.code};
+  Map<String, dynamic> toJson() => {'fullName': name, 'phone': phone, 'email': ?email, 'gender': ?gender?.code};
 }
 
 class PassengerVerification {
@@ -84,13 +84,14 @@ class PassengerVerification {
     this.resendAfter = const Duration(seconds: 60),
   });
 
-  factory PassengerVerification.fromJson(Object? body) {
+  factory PassengerVerification.fromJson(Object? body, {String? id}) {
     final json = JsonReader.of(body);
+    final otp = json.object('otp');
     return PassengerVerification(
-      id: json.str('verificationId'),
-      expiresAt: deviceDeadlineAt(serverInstantOf(json, 'expiresAt')),
+      id: id ?? json.object('passenger').str('id'),
+      expiresAt: deviceDeadlineAt(serverInstantOf(otp, 'expiresAt')),
       sentAt: DateTime.now(),
-      resendAfter: Duration(seconds: json.intOr('resendInSeconds', 60)),
+      resendAfter: Duration(seconds: otp.intOr('resendInSec', 60)),
     );
   }
 
@@ -160,9 +161,10 @@ final class RideForMe extends RideFor {
 }
 
 final class RideForSomeone extends RideFor {
-  const RideForSomeone({required this.passenger, required this.verifiedAt});
+  const RideForSomeone({required this.passenger, required this.passengerId, required this.verifiedAt});
 
   final PassengerInfo passenger;
+  final String passengerId;
   final DateTime verifiedAt;
 
   @override
@@ -178,6 +180,7 @@ final class RideForSomeone extends RideFor {
   Map<String, dynamic> toJson() => {
     'type': 'someone',
     'passenger': passenger.toJson(),
+    'passengerId': passengerId,
     'verifiedAt': verifiedAt.toUtc().toIso8601String(),
   };
 }

@@ -23,7 +23,7 @@ abstract final class ServerCode {
   static const String notFound = 'not_found';
   static const String noteTooLong = 'note_too_long';
   static const String otpExpired = 'otp_expired';
-  static const String otpMismatch = 'otp_mismatch';
+  static const String otpMismatch = 'otp_invalid';
   static const String phoneTaken = 'phone_taken';
   static const String photoUnreadable = 'photo_unreadable';
   static const String quoteExpired = 'quote_expired';

@@ -100,7 +100,7 @@ extension RideRequestPayload on RideRequestController {
 
   Map<String, dynamic> _whoForJson(RideFor rideFor) => switch (rideFor) {
     RideForMe() => {'bookedFor': 'self'},
-    RideForSomeone(:final passenger) => {'bookedFor': 'other', 'passenger': passenger.toJson()},
+    RideForSomeone(:final passengerId) => {'bookedFor': 'other', 'passengerId': passengerId},
     RideForFamily(:final member) => {'bookedFor': 'family', 'familyMemberId': member.id},
     RideForBusiness(:final profile, :final purpose, :final note) => {
       'bookedFor': 'business',
