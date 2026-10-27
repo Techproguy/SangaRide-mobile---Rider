@@ -12,6 +12,7 @@ import 'package:sanga_ride/view/ride/hourly_hours_screen.dart';
 import 'package:sanga_ride/view/ride/intercity_screen.dart';
 import 'package:sanga_ride/view/ride/repeat_setup_screen.dart';
 import 'package:sanga_ride/view/ride/round_trip_return_screen.dart';
+import 'package:sanga_ride/view/rides/manage_repeat_screen.dart';
 import 'package:sanga_ride/view/rides/scheduled_ride_screen.dart';
 import 'package:sanga_ride/view/rides/scheduled_rides_screen.dart';
 import 'package:sanga_ride_core/sanga_ride_core.dart';
@@ -23,6 +24,8 @@ abstract final class BookingRoutes {
   static const String roundTripReturn = '/ride/return';
   static const String scheduledRides = '/rides/scheduled';
   static const String scheduledRide = '/rides/scheduled/:id';
+  static const String manageRepeat = '/rides/scheduled/:id/manage';
+  static const String editRepeat = '/rides/scheduled/:id/edit';
   static const String airportSelect = '/ride/airport';
   static const String airportDestination = '/ride/airport/to';
   static const String airportFlight = '/ride/airport/flight';
@@ -33,6 +36,10 @@ abstract final class BookingRoutes {
   static const String tripSource = 'trip';
 
   static String scheduledRideOf(String id) => fillPath(scheduledRide, {'id': id});
+
+  static String manageRepeatOf(String id) => fillPath(manageRepeat, {'id': id});
+
+  static String editRepeatOf(String id) => fillPath(editRepeat, {'id': id});
 
   static String flightTrackingOf(String id, {bool isTrip = false}) {
     final path = fillPath(flightTracking, {'id': id});
@@ -90,6 +97,14 @@ abstract final class BookingRoutes {
     GoRoute(
       path: scheduledRide,
       builder: (context, state) => ScheduledRideScreen(rideId: state.pathParameters['id']!),
+    ),
+    GoRoute(
+      path: manageRepeat,
+      builder: (context, state) => ManageRepeatScreen(rideId: state.pathParameters['id']!),
+    ),
+    GoRoute(
+      path: editRepeat,
+      builder: (context, state) => RepeatSetupScreen(editRideId: state.pathParameters['id']),
     ),
     GoRoute(
       path: airportSelect,

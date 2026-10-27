@@ -2,14 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sanga_ride/controller/rider/ride_request_controller.dart';
+import 'package:sanga_ride/controller/rider/scheduled_rides_controller.dart';
 import 'package:sanga_ride/model/ride/booking.dart';
+import 'package:sanga_ride/model/ride/scheduled_ride.dart';
 import 'package:sanga_ride/view/ride/widgets/booking_note.dart';
 import 'package:sanga_ride/view/ride/widgets/booking_picker_field.dart';
 import 'package:sanga_ride/view/ride/widgets/ride_option_schedule_format.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 class RepeatSetupScreen extends StatefulWidget {
-  const RepeatSetupScreen({super.key});
+  const RepeatSetupScreen({super.key, this.editRideId});
+
+  final String? editRideId;
 
   @override
   State<RepeatSetupScreen> createState() => _RepeatSetupScreenState();
@@ -19,21 +23,31 @@ class _RepeatSetupScreenState extends State<RepeatSetupScreen> {
   static const Duration _endDateSpan = Duration(days: 365);
 
   final _ride = Get.find<RideRequestController>();
+  final _scheduled = Get.find<ScheduledRidesController>();
   late Set<Weekday> _days;
   DateTime? _time;
   late DateTime _start;
   DateTime? _end;
+  bool _isSaving = false;
+
+  bool get _isEditing => widget.editRideId != null;
 
   static DateTime _dateOnly(DateTime date) => DateTime(date.year, date.month, date.day);
 
   @override
   void initState() {
     super.initState();
-    final rule = _ride.repeatRule;
+    final rule = _isEditing ? _editedRide?.repeat : _ride.repeatRule;
     _days = {...?rule?.weekdays};
     _time = rule?.timeOfDay;
     _start = rule == null ? _dateOnly(BookingClock.now()) : _dateOnly(rule.startDate);
     _end = rule?.endDate;
+  }
+
+  ScheduledRide? get _editedRide {
+    final state = _scheduled.state;
+    if (state is! ScheduledLoaded) return null;
+    return state.rides.where((ride) => ride.id == widget.editRideId).firstOrNull;
   }
 
   RepeatRule? get _rule {
@@ -88,9 +102,22 @@ class _RepeatSetupScreenState extends State<RepeatSetupScreen> {
     if (picked != null) setState(() => _end = _dateOnly(picked));
   }
 
-  void _confirm(RepeatRule rule) {
-    _ride.setRepeatRule(rule);
-    context.pop();
+  Future<void> _confirm(RepeatRule rule) async {
+    if (!_isEditing) {
+      _ride.setRepeatRule(rule);
+      context.pop();
+      return;
+    }
+    setState(() => _isSaving = true);
+    final problem = await _scheduled.editSchedule(widget.editRideId!, rule);
+    if (!mounted) return;
+    setState(() => _isSaving = false);
+    if (problem == null) {
+      SangaToast.show('Schedule updated.', tone: SangaToastTone.success);
+      context.pop();
+    } else {
+      SangaToast.show(problem.message, tone: SangaToastTone.error);
+    }
   }
 
   @override
@@ -99,8 +126,12 @@ class _RepeatSetupScreenState extends State<RepeatSetupScreen> {
     final time = _time;
     final firstRide = rule?.firstRideAfter(BookingClock.now());
     return SangaPageLayout(
-      title: 'When do you want to ride?',
-      footer: SangaButton.primary(label: 'Confirm', onPressed: rule == null ? null : () => _confirm(rule)),
+      title: _isEditing ? 'Edit schedule' : 'When do you want to ride?',
+      footer: SangaButton.primary(
+        label: _isEditing ? 'Save changes' : 'Confirm',
+        isLoading: _isSaving,
+        onPressed: rule == null || _isSaving ? null : () => _confirm(rule),
+      ),
       children: [
         Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,

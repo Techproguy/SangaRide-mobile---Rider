@@ -117,6 +117,35 @@ class ScheduledRide {
 
   static const Duration reminderLead = Duration(minutes: 30);
 
+  factory ScheduledRide.fromSeries(JsonReader json) {
+    final rule = RepeatRule.fromJson(json.objectOrNull('repeat') ?? json);
+    final nextRide = json.timeOrNull('nextRideAt') ?? json.timeOrNull('scheduledFor');
+    return ScheduledRide(
+      id: json.str('id'),
+      kind: ScheduledRideKind.repeat,
+      tripType: TripType.oneWay,
+      category: enumByCode(
+        RideCategory.values,
+        json.objectOrNull('rideClass')?.strOrNull('code') ?? json.strOrNull('rideClassCode'),
+        (category) => category.name,
+        RideCategory.go,
+      ),
+      scheduledAt: (nextRide ?? rule.firstRideAfter(BookingClock.now()) ?? BookingClock.now()).toLocal(),
+      pickup: _seriesStop(json, 'pickup'),
+      dropoff: _seriesStop(json, 'dropoff'),
+      fare: json.moneyOrNull('estimatedFare') ?? TripFare.fromJson(json).total,
+      canRemind: false,
+      repeat: rule,
+    );
+  }
+
+  static ScheduledStop _seriesStop(JsonReader json, String key) {
+    final place = json.objectOrNull(key);
+    if (place != null) return ScheduledStop.fromRide(place);
+    final address = json.strOr('${key}Address', '');
+    return ScheduledStop(name: address, address: address);
+  }
+
   final String id;
   final ScheduledRideKind kind;
   final TripType tripType;
@@ -139,19 +168,19 @@ class ScheduledRide {
   bool get showsRemindAction =>
       canRemind && !hasReminder && scheduledAt.subtract(reminderLead).isAfter(BookingClock.now());
 
-  ScheduledRide withReminder(DateTime at) => ScheduledRide(
+  ScheduledRide copyWith({DateTime? reminderAt, DateTime? scheduledAt, RepeatRule? repeat}) => ScheduledRide(
     id: id,
     kind: kind,
     tripType: tripType,
     category: category,
-    scheduledAt: scheduledAt,
+    scheduledAt: scheduledAt ?? this.scheduledAt,
     pickup: pickup,
     dropoff: dropoff,
     fare: fare,
     canRemind: canRemind,
-    repeat: repeat,
+    repeat: repeat ?? this.repeat,
     hours: hours,
-    reminderAt: at,
+    reminderAt: reminderAt ?? this.reminderAt,
     airport: airport,
     wait: wait,
   );
@@ -171,7 +200,7 @@ final class ScheduledFailed extends ScheduledRidesState {
   final RideLoadProblem problem;
 }
 
-enum ScheduledAction { cancel, remind }
+enum ScheduledAction { cancel, remind, edit }
 
 final class ScheduledLoaded extends ScheduledRidesState {
   const ScheduledLoaded(this.rides, {this.busy = const {}});

@@ -30,21 +30,63 @@ class ScheduledRidesController extends GetxController {
       );
       final rides = JsonReader.of((response.data as Map)['data'])
           .listOf('rides', ScheduledRide.fromRide, onSkip: (key, error) => log('skipped a scheduled ride: $error'));
-      _state.value = ScheduledLoaded(rides);
+      final series = await _loadSeries();
+      _state.value = ScheduledLoaded([...rides, ...series]..sort((a, b) => a.scheduledAt.compareTo(b.scheduledAt)));
     } catch (e) {
       log('load scheduled rides failed: $e');
       if (state is! ScheduledLoaded) _state.value = ScheduledFailed(problem: RideLoadProblem.of(e));
     }
   }
 
+  Future<List<ScheduledRide>> _loadSeries() async {
+    try {
+      final response = await _api.get(BookingEndpoints.series, suppressErrorToast: true);
+      final data = (response.data as Map)['data'];
+      final items = data is List ? data : (data is Map ? data['series'] : null);
+      return [
+        for (final item in items is List ? items : const [])
+          if (item is Map && item['isActive'] != false) ?_parseSeries(item),
+      ];
+    } catch (e) {
+      log('load repeat series failed: $e');
+      return const [];
+    }
+  }
+
+  ScheduledRide? _parseSeries(Map item) {
+    try {
+      return ScheduledRide.fromSeries(JsonReader.of(item));
+    } catch (e) {
+      log('skipped a repeat series: $e');
+      return null;
+    }
+  }
+
   Future<BookingProblem?> cancel(String id) => _act(id, ScheduledAction.cancel, () async {
-    await _api.post(
-      BookingEndpoints.scheduledRideCancelOf(id),
-      data: const <String, dynamic>{},
-      key: IdempotencyKey.newFor(IdempotencyIntent.cancelScheduledRide),
+    final key = IdempotencyKey.newFor(IdempotencyIntent.cancelScheduledRide);
+    if (_rideOf(id)?.isRepeat ?? false) {
+      await _api.delete(BookingEndpoints.seriesOf(id), key: key, suppressErrorToast: true);
+    } else {
+      await _api.post(
+        BookingEndpoints.scheduledRideCancelOf(id),
+        data: const <String, dynamic>{},
+        key: key,
+        suppressErrorToast: true,
+      );
+    }
+    return null;
+  });
+
+  Future<BookingProblem?> editSchedule(String id, RepeatRule rule) => _act(id, ScheduledAction.edit, () async {
+    final ride = _rideOf(id);
+    if (ride == null) return null;
+    await _api.patch(
+      BookingEndpoints.seriesOf(id),
+      data: rule.toJson(),
+      key: IdempotencyKey.newFor(IdempotencyIntent.editSeries),
       suppressErrorToast: true,
     );
-    return null;
+    return ride.copyWith(repeat: rule, scheduledAt: rule.firstRideAfter(BookingClock.now()));
   });
 
   Future<BookingProblem?> remind(String id) => _act(id, ScheduledAction.remind, () async {
@@ -57,7 +99,7 @@ class ScheduledRidesController extends GetxController {
     if (ride == null) return null;
     final reply = (response.data as Map)['data'];
     final replied = reply is Map ? JsonReader.of(reply).timeOrNull('reminderAt')?.toLocal() : null;
-    return ride.withReminder(replied ?? ride.scheduledAt.subtract(ScheduledRide.reminderLead));
+    return ride.copyWith(reminderAt: replied ?? ride.scheduledAt.subtract(ScheduledRide.reminderLead));
   });
 
   ScheduledRide? _rideOf(String id) {

@@ -62,6 +62,12 @@ enum Weekday {
 
   static Weekday? tryFromIso(int value) => value >= 1 && value <= values.length ? values[value - 1] : null;
 
+  static Weekday? tryFromName(String value) {
+    final name = value.trim().toLowerCase();
+    if (name.length < 3) return null;
+    return values.where((day) => day.label.toLowerCase().startsWith(name.substring(0, 3))).firstOrNull;
+  }
+
   static Weekday fromIso(int value) => tryFromIso(value) ?? (throw JsonFormatError('Unknown weekday', value));
 }
 
@@ -76,14 +82,15 @@ class RepeatRule {
 
   factory RepeatRule.fromJson(JsonReader json) {
     final time = json.str('time').split(':');
+    final days = json.raw['weekdays'] ?? json.raw['days'];
     return RepeatRule(
       weekdays: {
-        for (final day in (json.raw['weekdays'] as List? ?? const []))
-          if (day is num) ?Weekday.tryFromIso(day.toInt()),
+        for (final day in (days as List? ?? const []))
+          if (day is num) ?Weekday.tryFromIso(day.toInt()) else if (day is String) ?Weekday.tryFromName(day),
       },
       hour: int.parse(time[0]),
       minute: int.parse(time[1]),
-      startDate: json.time('startDate'),
+      startDate: json.timeOrNull('startDate') ?? DateTime.now(),
       endDate: json.timeOrNull('endDate'),
     );
   }
