@@ -328,7 +328,11 @@ class TripDelivery {
         declaredValue: reader.moneyOrNull('declaredValue'),
       ),
       recipient: DeliveryRecipient.fromJson(reader.object('recipient').raw),
-      stage: _stageOf(status, reader.strOrNull('handoverStatus')),
+      stage: _stageOf(
+        status,
+        reader.strOrNull('status') ?? reader.strOrNull('handoverStatus'),
+        isRecipientConfirmed: reader.boolOr('recipientConfirmed', false),
+      ),
       pickupProof: null,
       senderConfirmation: confirmedAt == null ? null : SenderConfirmation(photoUrl: null, at: confirmedAt.toLocal()),
       deliveryProof: null,
@@ -337,15 +341,16 @@ class TripDelivery {
     );
   }
 
-  static DeliveryStage _stageOf(TripStatus status, String? handoverStatus) {
-    final reported = DeliveryStage.fromCode(handoverStatus);
+  static DeliveryStage _stageOf(TripStatus status, String? packageStatus, {required bool isRecipientConfirmed}) {
+    final reported = DeliveryStage.fromCode(packageStatus);
     if (reported != DeliveryStage.unknown) return reported;
     return switch (status) {
       TripStatus.driverEnRoute => DeliveryStage.toPickup,
       TripStatus.driverArrived => DeliveryStage.atPickup,
       TripStatus.pinVerified => DeliveryStage.inspecting,
       TripStatus.inProgress => DeliveryStage.toDropoff,
-      TripStatus.arrivedDropoff || TripStatus.paymentPending => DeliveryStage.atDropoff,
+      TripStatus.arrivedDropoff ||
+      TripStatus.paymentPending => isRecipientConfirmed ? DeliveryStage.verifyingRecipient : DeliveryStage.atDropoff,
       TripStatus.completed => DeliveryStage.delivered,
       TripStatus.cancelled || TripStatus.rematching || TripStatus.unknown => DeliveryStage.unknown,
     };
