@@ -1,6 +1,7 @@
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:sanga_ride/core/extensions/lat_lng.dart';
 import 'package:sanga_ride/core/format/money_json.dart';
+import 'package:sanga_ride/model/trip/trip.dart';
 import 'package:sanga_ride_core/sanga_ride_core.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
@@ -308,6 +309,46 @@ class TripDelivery {
       events: reader.listOf('events', (item) => DeliveryEvent.tryParse(item.raw)!),
       openIssueId: reader.strOrNull('openIssueId'),
     );
+  }
+
+  factory TripDelivery.fromPackage(Map<String, dynamic> json, {required TripStatus status}) {
+    final reader = JsonReader.of(json);
+    final size = reader.strOr('size', '');
+    final confirmedAt = reader.timeOrNull('senderConfirmedAt');
+    return TripDelivery(
+      tier: reader.strOr('tier', 'standard'),
+      kind: reader.strOrNull('type') == 'document' ? DeliveryKind.documents : DeliveryKind.package,
+      item: DeliveryItem(
+        name: reader.str('itemName'),
+        description: reader.strOrNull('description'),
+        sizeLabel: size.isEmpty ? '' : '${size[0].toUpperCase()}${size.substring(1)}',
+        weightLabel: null,
+        packageType: null,
+        photoUrl: null,
+        declaredValue: reader.moneyOrNull('declaredValue'),
+      ),
+      recipient: DeliveryRecipient.fromJson(reader.object('recipient').raw),
+      stage: _stageOf(status, reader.strOrNull('handoverStatus')),
+      pickupProof: null,
+      senderConfirmation: confirmedAt == null ? null : SenderConfirmation(photoUrl: null, at: confirmedAt.toLocal()),
+      deliveryProof: null,
+      refusal: null,
+      events: const [],
+    );
+  }
+
+  static DeliveryStage _stageOf(TripStatus status, String? handoverStatus) {
+    final reported = DeliveryStage.fromCode(handoverStatus);
+    if (reported != DeliveryStage.unknown) return reported;
+    return switch (status) {
+      TripStatus.driverEnRoute => DeliveryStage.toPickup,
+      TripStatus.driverArrived => DeliveryStage.atPickup,
+      TripStatus.pinVerified => DeliveryStage.inspecting,
+      TripStatus.inProgress => DeliveryStage.toDropoff,
+      TripStatus.arrivedDropoff || TripStatus.paymentPending => DeliveryStage.atDropoff,
+      TripStatus.completed => DeliveryStage.delivered,
+      TripStatus.cancelled || TripStatus.rematching || TripStatus.unknown => DeliveryStage.unknown,
+    };
   }
 
   static T? _optional<T>(JsonReader reader, String key, T Function(Map<String, dynamic> json) parse) {

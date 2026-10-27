@@ -280,9 +280,11 @@ class Trip {
       airport: reader.objectOrNull('airport') == null
           ? null
           : _tryRead(() => TripAirport.fromJson(reader.object('airport').raw)),
-      delivery: reader.objectOrNull('delivery') == null
+      delivery: reader.objectOrNull('delivery') != null
+          ? _tryRead(() => TripDelivery.fromJson(reader.object('delivery').raw))
+          : reader.objectOrNull('package') == null
           ? null
-          : _tryRead(() => TripDelivery.fromJson(reader.object('delivery').raw)),
+          : _tryRead(() => TripDelivery.fromPackage(reader.object('package').raw, status: status)),
       freeWait: Duration(seconds: waiting?.intOr('freeWaitSeconds', 0) ?? 0),
       scheduledWait: ScheduledWait.maybeFrom(waiting ?? reader, pickupAt: _localTime(reader, 'scheduledFor')),
       hourlyMinutes: reader.intOrNull('hourlyDurationMin') ?? reader.objectOrNull('hourly')?.intOrNull('durationMin'),
