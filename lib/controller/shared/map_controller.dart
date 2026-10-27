@@ -2,12 +2,12 @@ import 'dart:developer';
 
 import 'package:get/get.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:sanga_ride/controller/shared/map_camera.dart';
 import 'package:sanga_ride/core/services/location_service.dart';
+import 'package:sanga_ride_maps/sanga_ride_maps.dart';
 
 class MapController extends GetxController {
   final LocationService _locationService = LocationService();
-  final MapCamera camera = MapCamera();
+  final MapCameraDirector camera = MapCameraDirector(samePlaceMeters: 200);
 
   final Rx<LatLng?> _currentLocation = Rx<LatLng?>(null);
 
@@ -28,6 +28,12 @@ class MapController extends GetxController {
     } catch (e) {
       log('Error initializing location: $e');
     }
+  }
+
+  @override
+  void onClose() {
+    camera.dispose();
+    super.onClose();
   }
 
   void _updateCurrentLocation(LatLng location) => _currentLocation.value = location;

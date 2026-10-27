@@ -5,7 +5,6 @@ import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sanga_ride/controller/rider/ride_request_controller.dart';
 import 'package:sanga_ride/controller/rider/trip/trip_controller.dart';
-import 'package:sanga_ride/controller/shared/map_camera.dart';
 import 'package:sanga_ride/core/copy/common_copy.dart';
 import 'package:sanga_ride/core/router/booking_routes.dart';
 import 'package:sanga_ride/core/router/delivery_live_routes.dart';
@@ -31,6 +30,7 @@ import 'package:sanga_ride/view/trip/widgets/trip_flight_line.dart';
 import 'package:sanga_ride/view/trip/widgets/trip_map.dart';
 import 'package:sanga_ride/view/trip/widgets/trip_state_panel.dart';
 import 'package:sanga_ride/view/trip/widgets/verifying_panel.dart';
+import 'package:sanga_ride_maps/sanga_ride_maps.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 part 'trip_panels.dart';
@@ -48,21 +48,17 @@ class TripScreen extends StatefulWidget {
 class _TripScreenState extends State<TripScreen> {
   static const double _topInset = 120;
 
-  static const Duration _reframeDelay = Duration(milliseconds: 180);
-
   final _trip = Get.find<TripController>();
 
   final _ride = Get.find<RideRequestController>();
 
-  final _camera = MapCamera();
+  final _camera = MapCameraDirector(samePlaceMeters: 200);
 
   late final Worker _worker;
 
   TripState _previous = const TripLoading();
 
   DeliveryPhase? _phase;
-
-  Timer? _reframeTimer;
 
   bool _isLeaving = false;
 
@@ -72,11 +68,7 @@ class _TripScreenState extends State<TripScreen> {
 
   bool _sheetTouched = false;
 
-  bool _mapPanned = false;
-
-  static const double _minZoom = 13;
-
-  static const double _maxZoom = 17;
+  static const FitStyle _fit = FitStyle(minZoom: 13, maxZoom: 17);
 
   static const Duration _settleDelay = Duration(seconds: 4);
 
@@ -90,7 +82,7 @@ class _TripScreenState extends State<TripScreen> {
   @override
   void dispose() {
     _settleTimer?.cancel();
-    _reframeTimer?.cancel();
+    _camera.dispose();
     _worker.dispose();
     _trip.close(onlyTripId: widget.tripId);
     super.dispose();
@@ -115,11 +107,13 @@ class _TripScreenState extends State<TripScreen> {
     _phase = next is TripLoaded ? next.trip.deliveryPhase : null;
     if (!mounted || _isLeaving) return;
     if (next.runtimeType != previous.runtimeType) {
-      _mapPanned = false;
+      _camera.resume();
       _settleSheetFor(next);
     }
     if (next is TripLoaded && _hasRouteChanged(previous, next)) {
       _scheduleReframe();
+    } else if (next is TripLoaded && _hasDriverMoved(previous, next)) {
+      unawaited(_camera.reframe(tripFramePoints(next.trip), style: _fit));
     }
     switch (next) {
       case TripVerifying(:final trip) when previous is! TripVerifying:
@@ -170,22 +164,24 @@ class _TripScreenState extends State<TripScreen> {
     return previous.trip.status != next.trip.status || previous.trip.stops.length != next.trip.stops.length;
   }
 
-  void _onSheetHeight(double height) {
-    final inset = EdgeInsets.only(top: _topInset, bottom: height);
-    if (inset == _camera.visibleInsets) return;
-    _camera.visibleInsets = inset;
-    _scheduleReframe();
+  bool _hasDriverMoved(TripState previous, TripLoaded next) {
+    if (previous is! TripLoaded) return false;
+    return previous.trip.driverPosition?.position != next.trip.driverPosition?.position;
   }
 
-  void _scheduleReframe() {
-    _reframeTimer?.cancel();
-    _reframeTimer = Timer(_reframeDelay, _reframe);
+  void _onSheetHeight(double height) {
+    _camera.setInsets(
+      EdgeInsets.only(top: _topInset, bottom: height),
+      onSettled: _reframe,
+    );
   }
+
+  void _scheduleReframe() => _camera.whenSettled(_reframe);
 
   void _reframe() {
     final trip = _trip.trip;
-    if (!mounted || trip == null || _mapPanned) return;
-    unawaited(_camera.fitBounds(tripFramePoints(trip), minZoom: _minZoom, maxZoom: _maxZoom));
+    if (!mounted || trip == null) return;
+    unawaited(_camera.reframe(tripFramePoints(trip), style: _fit, force: true));
   }
 
   void _closeSheet() {
@@ -254,10 +250,7 @@ class _TripScreenState extends State<TripScreen> {
               child: Stack(
                 children: [
                   Positioned.fill(
-                    child: Listener(
-                      onPointerMove: (_) => _mapPanned = true,
-                      child: TripMap(trip: _trip.trip, camera: _camera, onMapCreated: _scheduleReframe),
-                    ),
+                    child: TripMap(trip: _trip.trip, camera: _camera, onMapCreated: _scheduleReframe),
                   ),
                   _overlays(state),
                   Positioned.fill(

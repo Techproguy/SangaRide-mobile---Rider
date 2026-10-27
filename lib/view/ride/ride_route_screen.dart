@@ -6,7 +6,6 @@ import 'package:go_router/go_router.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:sanga_ride/controller/rider/ride_request_controller.dart';
 import 'package:sanga_ride/controller/rider/rider_home_controller.dart';
-import 'package:sanga_ride/controller/shared/map_camera.dart';
 import 'package:sanga_ride/core/router/booking_routes.dart';
 import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride/view/ride/widgets/place_search_sheet.dart';
@@ -27,15 +26,13 @@ class RideRouteScreen extends StatefulWidget {
 
 class _RideRouteScreenState extends State<RideRouteScreen> {
   static const double _topInset = 120;
-  static const Duration _reframeDelay = Duration(milliseconds: 180);
 
   final _ride = Get.find<RideRequestController>();
   final _home = Get.find<RiderHomeController>();
-  final _camera = MapCamera();
+  final _camera = MapCameraDirector(samePlaceMeters: 200);
   final _routeLines = SangaRouteLines(id: 'route');
   Set<Marker> _markers = const {};
   Worker? _currentPlaceWorker;
-  Timer? _frameTimer;
   int _drawRequest = 0;
   SangaRoute? _framedRoute;
 
@@ -59,7 +56,7 @@ class _RideRouteScreenState extends State<RideRouteScreen> {
   @override
   void dispose() {
     _currentPlaceWorker?.dispose();
-    _frameTimer?.cancel();
+    _camera.dispose();
     _routeLines
       ..removeListener(_frameRoadRoute)
       ..dispose();
@@ -67,11 +64,10 @@ class _RideRouteScreenState extends State<RideRouteScreen> {
   }
 
   void _onSheetHeight(double height) {
-    final inset = EdgeInsets.only(top: _topInset, bottom: height);
-    if (inset == _camera.visibleInsets) return;
-    _camera.visibleInsets = inset;
-    _frameTimer?.cancel();
-    _frameTimer = Timer(_reframeDelay, _frame);
+    _camera.setInsets(
+      EdgeInsets.only(top: _topInset, bottom: height),
+      onSettled: _frame,
+    );
   }
 
   List<LatLng> get _framePoints {
@@ -82,7 +78,7 @@ class _RideRouteScreenState extends State<RideRouteScreen> {
     return points;
   }
 
-  void _frame() => _camera.fitBounds(_framePoints);
+  void _frame() => unawaited(_camera.frame(_framePoints));
 
   Future<void> _draw() async {
     final request = ++_drawRequest;

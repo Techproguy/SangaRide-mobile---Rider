@@ -2,8 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:sanga_ride/controller/rider/trip/trip_controller.dart';
-import 'package:sanga_ride/controller/shared/map_camera.dart';
 import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride/view/widgets/map/car_marker.dart';
 import 'package:sanga_ride/view/widgets/map/place_marker.dart';
@@ -29,32 +27,21 @@ class TripMap extends StatefulWidget {
   const TripMap({super.key, required this.trip, required this.camera, this.onMapCreated});
 
   final Trip? trip;
-  final MapCamera camera;
+  final MapCameraDirector camera;
   final VoidCallback? onMapCreated;
 
   @override
   State<TripMap> createState() => _TripMapState();
 }
 
-class _TripMapState extends State<TripMap> with SingleTickerProviderStateMixin {
-  static const Duration _glideDuration = TripController.pollInterval;
-  static const Duration _frameGap = Duration(milliseconds: 60);
-
+class _TripMapState extends State<TripMap> {
   final _tripLine = SangaRouteLines(id: 'trip');
   final _approachLine = SangaRouteLines(id: 'approach', style: SangaRouteStyle.approach);
-  late final AnimationController _glide = AnimationController(vsync: this, duration: _glideDuration)
-    ..addListener(_onGlide);
+  late final CarGlide _glide = CarGlide(onFrame: _showCar);
   Set<Marker> _placeMarkers = const {};
   Set<Marker> _carMarkers = const {};
   int _routeRequest = 0;
   String? _approachKey;
-  LatLng? _carFrom;
-  LatLng? _carTo;
-  double _headingFrom = 0;
-  double _headingTo = 0;
-  LatLng? _carNow;
-  double _headingNow = 0;
-  DateTime _lastFrame = DateTime.fromMillisecondsSinceEpoch(0);
 
   List<LatLng> get _routePoints => [for (final place in widget.trip?.route ?? const <TripPlace>[]) place.position];
 
@@ -104,61 +91,21 @@ class _TripMapState extends State<TripMap> with SingleTickerProviderStateMixin {
   void _driveTo(DriverPosition? driver) {
     if (!mounted) return;
     if (driver == null) {
-      _glide.stop();
-      _carNow = null;
-      _carFrom = null;
-      _carTo = null;
+      _glide.clear();
       setState(() => _carMarkers = const {});
       return;
     }
-    final heading = driver.heading ?? _headingNow;
-    final here = _carNow;
-    if (here == null) {
-      _carFrom = _carTo = driver.position;
-      _headingFrom = _headingTo = heading;
-      _showCar(driver.position, heading);
-      return;
-    }
-    _carFrom = here;
-    _carTo = driver.position;
-    _headingFrom = _headingNow;
-    _headingTo = heading;
-    _glide.forward(from: 0);
-  }
-
-  void _onGlide() {
-    final from = _carFrom;
-    final to = _carTo;
-    if (from == null || to == null) return;
-    final now = DateTime.now();
-    final isLast = _glide.value >= 1;
-    if (!isLast && now.difference(_lastFrame) < _frameGap) return;
-    _lastFrame = now;
-    final t = _glide.value;
-    final position = LatLng(
-      from.latitude + (to.latitude - from.latitude) * t,
-      from.longitude + (to.longitude - from.longitude) * t,
-    );
-    final heading = _easedHeading(_headingFrom, _headingTo, Curves.easeInOut.transform(t));
-    _showCar(position, heading);
-  }
-
-  double _easedHeading(double from, double to, double t) {
-    var delta = (to - from) % 360;
-    if (delta > 180) delta -= 360;
-    return (from + delta * t) % 360;
+    _glide.moveTo(driver.position, driver.heading ?? _glide.heading);
   }
 
   void _showCar(LatLng position, double heading) {
     if (!mounted) return;
-    _carNow = position;
-    _headingNow = heading;
     setState(() => _carMarkers = {CarMarker.build(position: position, heading: heading)});
     _syncLines();
   }
 
   void _syncLines() {
-    final car = _carNow;
+    final car = _glide.position;
     _tripLine.follow(_trimsRoute ? car : null);
     final pickup = widget.trip?.pickup.position;
     if (!_isApproaching || car == null || pickup == null) {

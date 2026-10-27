@@ -1,11 +1,13 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:sanga_ride/controller/shared/map_camera.dart';
 import 'package:sanga_ride/controller/shared/map_controller.dart';
 import 'package:sanga_ride/core/constants.dart';
+import 'package:sanga_ride_maps/sanga_ride_maps.dart';
 
 class SangaMap extends StatefulWidget {
   final CameraPosition? initialCameraPosition;
@@ -19,7 +21,7 @@ class SangaMap extends StatefulWidget {
   final Set<Marker>? extraMarkers;
   final Set<Polyline>? extraPolylines;
   final String? style;
-  final MapCamera? camera;
+  final MapCameraDirector? camera;
   final bool followsUser;
 
   const SangaMap({
@@ -48,10 +50,11 @@ class _SangaMapState extends State<SangaMap> {
 
   final MapController _mapController = Get.find<MapController>();
   GoogleMapController? _gmController;
+  Size _size = Size.zero;
   Worker? _locationWatcher;
   bool _centeredOnUser = false;
 
-  MapCamera get _camera => widget.camera ?? _mapController.camera;
+  MapCameraDirector get _camera => widget.camera ?? _mapController.camera;
 
   CameraPosition get _initialPosition {
     if (widget.initialCameraPosition != null) return widget.initialCameraPosition!;
@@ -68,13 +71,13 @@ class _SangaMapState extends State<SangaMap> {
     if (current != null) {
       _centeredOnUser = true;
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) _camera.moveTo(current, zoom: _userZoom);
+        if (mounted) unawaited(_camera.moveTo(current, zoom: _userZoom));
       });
     }
     _locationWatcher = ever(_mapController.currentLocationObs, (LatLng? loc) {
       if (loc == null || _centeredOnUser || !mounted) return;
       _centeredOnUser = true;
-      _camera.moveTo(loc, zoom: _userZoom);
+      unawaited(_camera.moveTo(loc, zoom: _userZoom));
     });
   }
 
@@ -91,28 +94,36 @@ class _SangaMapState extends State<SangaMap> {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        _camera.mapSize = constraints.biggest;
-        return GoogleMap(
-          mapType: widget.mapType,
-          style: widget.style,
-          initialCameraPosition: _initialPosition,
-          markers: {...?widget.extraMarkers},
-          polylines: {...?widget.extraPolylines},
-          onMapCreated: (controller) {
-            _gmController = controller;
-            _camera.attach(controller);
-            widget.onMapCreated?.call();
-          },
-          onCameraIdle: widget.onCameraIdle,
-          onCameraMove: widget.onCameraMove,
-          myLocationButtonEnabled: widget.myLocationButtonEnabled,
-          zoomControlsEnabled: widget.zoomControlsEnabled,
-          myLocationEnabled: widget.myLocationEnabled,
-          gestureRecognizers: <Factory<OneSequenceGestureRecognizer>>{
-            Factory<PanGestureRecognizer>(PanGestureRecognizer.new),
-            Factory<HorizontalDragGestureRecognizer>(HorizontalDragGestureRecognizer.new),
-            Factory<VerticalDragGestureRecognizer>(VerticalDragGestureRecognizer.new),
-          },
+        _size = constraints.biggest;
+        _camera.resize(_gmController, _size);
+        final initial = _initialPosition;
+        return Listener(
+          onPointerMove: (_) => _camera.takeOver(),
+          child: GoogleMap(
+            mapType: widget.mapType,
+            style: widget.style,
+            initialCameraPosition: initial,
+            markers: {...?widget.extraMarkers},
+            polylines: {...?widget.extraPolylines},
+            onMapCreated: (controller) {
+              _gmController = controller;
+              _camera.attach(controller, _size, initial);
+              widget.onMapCreated?.call();
+            },
+            onCameraIdle: widget.onCameraIdle,
+            onCameraMove: (position) {
+              _camera.onCameraMove(_gmController, position);
+              widget.onCameraMove?.call(position);
+            },
+            myLocationButtonEnabled: widget.myLocationButtonEnabled,
+            zoomControlsEnabled: widget.zoomControlsEnabled,
+            myLocationEnabled: widget.myLocationEnabled,
+            gestureRecognizers: <Factory<OneSequenceGestureRecognizer>>{
+              Factory<PanGestureRecognizer>(PanGestureRecognizer.new),
+              Factory<HorizontalDragGestureRecognizer>(HorizontalDragGestureRecognizer.new),
+              Factory<VerticalDragGestureRecognizer>(VerticalDragGestureRecognizer.new),
+            },
+          ),
         );
       },
     );
