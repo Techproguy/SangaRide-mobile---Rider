@@ -164,7 +164,7 @@ class SupportTicket {
       id: id,
       reference: reader.strOrNull('reference') ?? id,
       type: reader.strOrNull('type') ?? reader.strOr('category', ''),
-      typeLabel: reader.strOr('typeLabel', ''),
+      typeLabel: reader.strOrNull('typeLabel') ?? reader.strOr('categoryTitle', ''),
       status: TicketStatus.fromCode(reader.strOrNull('status')),
       events: [for (final event in reader.listOf('events', TicketEvent.tryFromReader)) ?event],
       resolutionOptions: reader.listOf('resolutionOptions', ResolutionOption.fromReader),
@@ -196,9 +196,9 @@ class TicketSummary {
   factory TicketSummary.fromReader(JsonReader reader) => TicketSummary(
     id: reader.str('id'),
     reference: reader.strOr('reference', ''),
-    typeLabel: reader.strOr('typeLabel', ''),
+    typeLabel: reader.strOrNull('typeLabel') ?? reader.strOr('categoryTitle', ''),
     status: TicketStatus.fromCode(reader.strOrNull('status')),
-    createdAt: reader.time('createdAt').toLocal(),
+    createdAt: (reader.timeOrNull('createdAt') ?? reader.time('reportedAt')).toLocal(),
   );
 
   final String id;
