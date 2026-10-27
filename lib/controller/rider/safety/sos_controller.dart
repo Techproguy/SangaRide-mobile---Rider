@@ -183,7 +183,7 @@ class SosController extends GetxController {
         final response = await _api.post(
           SafetyEndpoints.sos,
           data: {
-            'tripId': tripId,
+            'rideId': ?tripId,
             if (coordinates != null) 'location': {'latitude': coordinates.latitude, 'longitude': coordinates.longitude},
           },
           key: key,
