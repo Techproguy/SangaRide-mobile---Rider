@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sanga_ride/controller/shared/user_controller.dart';
+import 'package:sanga_ride/core/constants.dart';
 import 'package:sanga_ride/core/router/account_routes.dart';
+import 'package:sanga_ride/core/services/legal.dart';
 import 'package:sanga_ride/core/router/wallet_routes.dart';
 import 'package:sanga_ride/view/dev/dev_entry.dart';
 import 'package:sanga_ride/view/menu/menu_entries.dart';
@@ -48,7 +50,10 @@ class MenuScreen extends StatelessWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             spacing: SangaSpacing.lg,
-            children: [for (final section in MenuEntries.sections) _section(context, section)],
+            children: [
+              for (final section in MenuEntries.sections) _section(context, section),
+              SangaLegalSection(appName: SangaConstants.appName, links: sangaLegalLinks(context)),
+            ],
           ),
         ],
       ),
