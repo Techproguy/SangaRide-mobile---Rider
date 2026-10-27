@@ -116,7 +116,8 @@ class _ScheduledRideScreenState extends State<ScheduledRideScreen> {
         ),
         if (airport != null && _hasRoute(airport)) _flightCard(context, airport),
         SangaDetailList(title: 'Ride details', rows: _detailRows(context, ride)),
-        SangaFareBreakdown(title: 'Fare', lines: const [], totalLabel: 'TOTAL ESTIMATE', total: ride.fare.format()),
+        if (ride.fare.isPositive)
+          SangaFareBreakdown(title: 'Fare', lines: const [], totalLabel: 'TOTAL ESTIMATE', total: ride.fare.format()),
         if (ride.isRepeat)
           SangaSafetyChannelRow(
             icon: Icons.manage_history_rounded,
