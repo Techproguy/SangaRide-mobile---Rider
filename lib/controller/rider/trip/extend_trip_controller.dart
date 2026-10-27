@@ -26,7 +26,10 @@ class ExtendTripController extends GetxController {
   IdempotencyKey? _key;
   int? _keyMinutes;
 
-  ExtendQuote? get selectedQuote => quotes[selected.value];
+  ExtendQuote? get selectedQuote {
+    final minutes = selected.value;
+    return minutes == null ? null : quotes[minutes];
+  }
 
   bool get canConfirm => selectedQuote != null && !isApplying.value;
 
