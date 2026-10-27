@@ -172,7 +172,7 @@ class AccountController extends GetxController {
       run: (key) async {
         final response = await _api.delete(
           AccountEndpoints.me,
-          data: {'reason': reason},
+          data: {'reason': ?reason},
           key: key,
           suppressErrorToast: true,
         );
