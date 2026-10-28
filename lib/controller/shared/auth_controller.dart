@@ -89,7 +89,7 @@ class AuthController extends GetxController {
       );
       return OtpSent(OtpSession.fromData((response.data as Map)['data']));
     } on ApiException catch (e) {
-      if (e.kind == ApiFailureKind.rejected && purpose == OtpPurpose.login) {
+      if (e.kind == ApiFailureKind.rejected && purpose == OtpPurpose.login && e.statusCode != 429) {
         _phoneError.value = e.message;
         return OtpNotSent(e.message);
       }
