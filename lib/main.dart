@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:get/get.dart';
 import 'package:sanga_ride/core/api/api_environment.dart';
 import 'package:sanga_ride/core/constants.dart';
 import 'package:sanga_ride/core/router/router.dart';
@@ -9,6 +10,7 @@ import 'package:sanga_ride/core/services/crash_reporter.dart';
 import 'package:sanga_ride/initialize.dart';
 import 'package:sanga_ride/view/boot/app_overlays.dart';
 import 'package:sanga_ride/view/boot/session_end_notice.dart';
+import 'package:sanga_ride/view/boot/startup_error_app.dart';
 import 'package:sanga_ride_core/sanga_ride_core.dart' show SessionEndReason, SessionHub, navigatorKey;
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
@@ -21,8 +23,24 @@ Future<void> _start() async {
   WidgetsFlutterBinding.ensureInitialized();
   CrashReporting.install();
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-  await initializeSanga();
-  runApp(const SangaRide());
+  await _launch();
+}
+
+bool _isLaunching = false;
+
+Future<void> _launch() async {
+  if (_isLaunching) return;
+  _isLaunching = true;
+  try {
+    await initializeSanga();
+    runApp(const SangaRide());
+  } catch (error, stack) {
+    CrashReporting.recordZoneError(error, stack);
+    Get.reset();
+    runApp(StartupErrorApp(onRetry: () => unawaited(_launch())));
+  } finally {
+    _isLaunching = false;
+  }
 }
 
 class SangaRide extends StatefulWidget {

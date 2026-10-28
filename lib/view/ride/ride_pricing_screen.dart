@@ -29,6 +29,13 @@ class _RidePricingScreenState extends State<RidePricingScreen> {
     PricingOption.priority => Icons.bolt_rounded,
   };
 
+  static Color _accentFor(PricingOption option) => switch (option) {
+    PricingOption.standard => SangaColors.tierStandard,
+    PricingOption.fairFare => SangaColors.tierFairFare,
+    PricingOption.saver => SangaColors.dangerStrong,
+    PricingOption.priority => SangaColors.primary,
+  };
+
   @override
   void initState() {
     super.initState();
@@ -89,7 +96,7 @@ class _RidePricingScreenState extends State<RidePricingScreen> {
             ?_fairFareCard(estimate)
           else if (estimate.pricing[option] case final price?)
             SangaOptionCard(
-              leading: SangaIconBadge(child: Icon(_iconFor(option))),
+              leading: SangaIconBadge(accent: _accentFor(option), child: Icon(_iconFor(option))),
               title: option.label,
               subtitle: option.description,
               value: price.format(),
@@ -109,7 +116,10 @@ class _RidePricingScreenState extends State<RidePricingScreen> {
       spacing: SangaSpacing.xs,
       children: [
         SangaOptionCard(
-          leading: SangaIconBadge(child: Icon(_iconFor(PricingOption.fairFare))),
+          leading: SangaIconBadge(
+            accent: _accentFor(PricingOption.fairFare),
+            child: Icon(_iconFor(PricingOption.fairFare)),
+          ),
           title: PricingOption.fairFare.label,
           subtitle: PricingOption.fairFare.description,
           trailing: SizedBox(
