@@ -67,7 +67,8 @@ class _PlaceSearchSheetState extends State<PlaceSearchSheet> {
   @override
   Widget build(BuildContext context) {
     final media = MediaQuery.of(context);
-    final available = media.size.height - media.viewInsets.bottom - media.padding.top - _topClearance;
+    final statusBar = MediaQueryData.fromView(View.of(context)).padding.top;
+    final available = media.size.height - media.viewInsets.bottom - statusBar - _topClearance;
     return SizedBox(
       height: math.min(media.size.height * _heightFactor, available),
       child: Column(

@@ -29,6 +29,9 @@ class SafetyCentreBody extends StatelessWidget {
   final VoidCallback onReport;
   final String? removingContactId;
 
+  static const double _sosSize = 89;
+  static const double _sosCardHeight = 141;
+
   String get _sosMessage => centre.contacts.isEmpty
       ? 'Tap SOS to alert the Sanga safety team'
       : 'Tap SOS to alert your emergency contacts and the Sanga safety team';
@@ -40,7 +43,16 @@ class SafetyCentreBody extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       spacing: SangaSpacing.md,
       children: [
-        SangaSosCard(title: 'In an emergency?', message: _sosMessage, onSos: onSos),
+        Padding(
+          padding: const EdgeInsets.only(bottom: SangaSpacing.md),
+          child: SangaSosCard(
+            title: 'In an emergency?',
+            message: _sosMessage,
+            onSos: onSos,
+            buttonSize: _sosSize,
+            minHeight: _sosCardHeight,
+          ),
+        ),
         EmergencyContactsCard(
           contacts: centre.contacts,
           removingId: removingContactId,

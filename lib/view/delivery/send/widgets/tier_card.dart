@@ -12,6 +12,7 @@ class TierCard extends StatelessWidget {
     required this.isSelected,
     required this.isRecommended,
     required this.onTap,
+    this.accent = SangaColors.primary,
   });
 
   static const double _tagLift = 10;
@@ -24,6 +25,7 @@ class TierCard extends StatelessWidget {
   final bool isSelected;
   final bool isRecommended;
   final VoidCallback onTap;
+  final Color accent;
 
   @override
   Widget build(BuildContext context) {
@@ -31,7 +33,7 @@ class TierCard extends StatelessWidget {
       clipBehavior: Clip.none,
       children: [
         SangaOptionCard(
-          leading: SangaIconBadge(size: 40, child: Icon(icon)),
+          leading: SangaIconBadge(size: 40, accent: accent, child: Icon(icon)),
           title: label,
           subtitle: '$blurb\n$eta',
           value: fare.format(),

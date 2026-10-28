@@ -188,7 +188,7 @@ class DeliveryPickupController extends GetxController {
       run: (key) async {
         final response = await _api.post(
           DeliveryLiveEndpoints.pickupConfirmationOf(id),
-          data: {'photoId': photoId},
+          data: {'photoId': ?photoId},
           key: key,
           suppressErrorToast: true,
         );

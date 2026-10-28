@@ -31,27 +31,37 @@ class _SupportHomeScreenState extends State<SupportHomeScreen> {
   }
 
   Widget _contactGroup(SupportHome home) {
-    return SangaListGroup(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      spacing: SangaSpacing.lg,
       children: [
-        if (home.contact == null)
-          SangaListRow(
-            leading: const SangaIconBadge(size: 36, child: Icon(Icons.report_gmailerrorred_rounded)),
-            title: CommonCopy.reportIssue,
-            subtitle: SupportCopy.sendDetailedReport,
-            onTap: () => context.push(SupportRoutes.reportOf()),
-          )
-        else
-          SangaListRow(
-            leading: const SangaIconBadge(size: 36, child: Icon(Icons.headset_mic_outlined)),
-            title: SupportCopy.contactSupport,
-            subtitle: SupportCopy.contactSubtitle,
-            onTap: () => context.push(SupportRoutes.contact),
-          ),
-        SangaListRow(
-          leading: const SangaIconBadge(size: 36, child: Icon(Icons.assignment_outlined)),
-          title: SupportCopy.myReports,
-          subtitle: SupportCopy.followUp,
-          onTap: () => context.push(SupportRoutes.tickets),
+        SangaListGroup(
+          children: [
+            if (home.contact == null)
+              SangaListRow(
+                leading: const SangaIconBadge(size: 36, child: Icon(Icons.report_gmailerrorred_rounded)),
+                title: CommonCopy.reportIssue,
+                subtitle: SupportCopy.sendDetailedReport,
+                onTap: () => context.push(SupportRoutes.reportOf()),
+              )
+            else
+              SangaListRow(
+                leading: const SangaIconBadge(size: 36, child: Icon(Icons.headset_mic_outlined)),
+                title: SupportCopy.contactSupport,
+                subtitle: SupportCopy.contactSubtitle,
+                onTap: () => context.push(SupportRoutes.contact),
+              ),
+          ],
+        ),
+        SangaListGroup(
+          children: [
+            SangaListRow(
+              leading: const SangaIconBadge(size: 36, child: Icon(Icons.assignment_outlined)),
+              title: SupportCopy.myReports,
+              subtitle: SupportCopy.followUp,
+              onTap: () => context.push(SupportRoutes.tickets),
+            ),
+          ],
         ),
       ],
     );

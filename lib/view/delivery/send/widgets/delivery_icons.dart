@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:sanga_ride/model/models.dart';
+import 'package:sanga_ride_ui/sanga_ride_ui.dart' show SangaColors;
 
 IconData deliveryKindIcon(String id) => switch (id) {
   'documents' || 'document' => Icons.description_outlined,
@@ -17,4 +18,9 @@ IconData deliveryTierIcon(String id) => switch (id) {
   'priority' => Icons.diamond_outlined,
   'premium_care' => Icons.verified_user_outlined,
   _ => Icons.check_circle_outline_rounded,
+};
+
+Color deliveryTierAccent(String id) => switch (id) {
+  'standard' => SangaColors.tierStandard,
+  _ => SangaColors.primary,
 };

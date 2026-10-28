@@ -4,9 +4,10 @@ import 'package:sanga_ride/view/support/support_copy.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 class IssueTimeline extends StatelessWidget {
-  const IssueTimeline({super.key, required this.events, required this.status});
+  const IssueTimeline({super.key, required this.events, required this.steps, required this.status});
 
   final List<TicketEvent> events;
+  final List<TicketStep> steps;
   final TicketStatus status;
 
   static String _titleOf(TicketEventType type) => switch (type) {
@@ -32,7 +33,20 @@ class IssueTimeline extends StatelessWidget {
     return SangaTimelineState.done;
   }
 
+  List<SangaTimelineEntry> _stepEntries() {
+    return [
+      for (final step in steps)
+        SangaTimelineEntry.step(
+          title: step.title,
+          state: step.isDone ? SangaTimelineState.done : SangaTimelineState.pending,
+          time: step.at == null ? '--:--' : TimeFormat.ago(step.at!),
+          detail: step.detail.isEmpty ? null : step.detail,
+        ),
+    ];
+  }
+
   List<SangaTimelineEntry> _entries() {
+    if (events.isEmpty && steps.isNotEmpty) return _stepEntries();
     return [
       for (final (index, event) in events.indexed)
         SangaTimelineEntry.step(

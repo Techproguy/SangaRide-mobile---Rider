@@ -88,6 +88,7 @@ class _DeliveryTierScreenState extends State<DeliveryTierScreen> {
               isSelected: _delivery.draft.tierId == tier.id,
               isRecommended: tier.isRecommended || quote.recommendedTier == tier.id,
               onTap: () => _delivery.selectTier(tier.id),
+              accent: deliveryTierAccent(tier.id),
             ),
       ],
     );

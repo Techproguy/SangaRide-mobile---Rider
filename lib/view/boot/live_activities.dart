@@ -9,7 +9,9 @@ abstract final class LiveActivities {
   static const String tripId = 'trip';
   static const String sosId = 'sos';
   static const String requestId = 'request';
-  static const String _bookingPrefix = '/ride/';
+  static const List<String> _bookingPrefixes = ['/ride/', '/delivery/'];
+
+  static bool _isBooking(String path) => _bookingPrefixes.any(path.startsWith);
 
   static List<SangaLiveActivity> from(MeState? state, String path) {
     if (state == null) return const [];
@@ -23,7 +25,7 @@ abstract final class LiveActivities {
           title: 'SOS is active',
           subtitle: 'Tap to open your Safety Centre',
         ),
-      if (trip != null && !path.startsWith(TripRoutes.tripOf(trip.id)) && !path.startsWith(_bookingPrefix))
+      if (trip != null && !path.startsWith(TripRoutes.tripOf(trip.id)) && !_isBooking(path))
         const SangaLiveActivity(
           id: tripId,
           tone: SangaLiveActivityTone.live,
@@ -31,7 +33,7 @@ abstract final class LiveActivities {
           title: 'Trip in progress',
           subtitle: 'Tap to return to your trip',
         ),
-      if (state.activeRideRequest != null && !path.startsWith(_bookingPrefix))
+      if (state.activeRideRequest != null && !_isBooking(path))
         const SangaLiveActivity(
           id: requestId,
           tone: SangaLiveActivityTone.info,

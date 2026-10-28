@@ -89,7 +89,7 @@ class _SupportTicketScreenState extends State<SupportTicketScreen> {
       spacing: SangaSpacing.xl,
       children: [
         _header(ticket),
-        IssueTimeline(events: ticket.events, status: ticket.status),
+        IssueTimeline(events: ticket.events, steps: ticket.steps, status: ticket.status),
         if (needsDecision) _decision(state),
       ],
     );

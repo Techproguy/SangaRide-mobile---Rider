@@ -134,6 +134,22 @@ class TicketEvent {
   }
 }
 
+class TicketStep {
+  const TicketStep({required this.title, required this.detail, required this.at});
+
+  final String title;
+  final String detail;
+  final DateTime? at;
+
+  bool get isDone => at != null;
+
+  static TicketStep? tryFromReader(JsonReader reader) {
+    final title = reader.strOrNull('title');
+    if (title == null) return null;
+    return TicketStep(title: title, detail: reader.strOr('description', ''), at: reader.timeOrNull('at')?.toLocal());
+  }
+}
+
 class ResolutionOption {
   const ResolutionOption({required this.id, required this.label, required this.hint});
 
@@ -153,6 +169,7 @@ class SupportTicket {
     required this.typeLabel,
     required this.status,
     required this.events,
+    required this.steps,
     required this.resolutionOptions,
     required this.tripId,
   });
@@ -167,6 +184,7 @@ class SupportTicket {
       typeLabel: reader.strOrNull('typeLabel') ?? reader.strOr('categoryTitle', ''),
       status: TicketStatus.fromCode(reader.strOrNull('status')),
       events: [for (final event in reader.listOf('events', TicketEvent.tryFromReader)) ?event],
+      steps: [for (final step in reader.listOf('timeline', TicketStep.tryFromReader)) ?step],
       resolutionOptions: reader.listOf('resolutionOptions', ResolutionOption.fromReader),
       tripId: reader.strOrNull('tripId') ?? reader.strOrNull('rideId'),
     );
@@ -178,6 +196,7 @@ class SupportTicket {
   final String typeLabel;
   final TicketStatus status;
   final List<TicketEvent> events;
+  final List<TicketStep> steps;
   final List<ResolutionOption> resolutionOptions;
   final String? tripId;
 
