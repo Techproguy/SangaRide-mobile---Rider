@@ -13,16 +13,17 @@ class RatingTagWrap extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Wrap(
-          alignment: WrapAlignment.center,
-          spacing: SangaSpacing.sm,
-          runSpacing: SangaSpacing.xs,
-          children: [
-            for (final tag in tags)
-              SangaChoiceChip(label: tag.label, isSelected: selected.contains(tag), onSelected: (_) => onToggle(tag)),
-          ],
-        )
-        .animate()
-        .fadeIn(duration: SangaMotion.quick, curve: SangaMotion.fadeCurve)
-        .moveY(begin: SangaSpacing.xs, end: 0, duration: SangaMotion.morph, curve: SangaMotion.springBlock);
+      alignment: WrapAlignment.center,
+      spacing: SangaSpacing.sm,
+      runSpacing: SangaSpacing.xs,
+      children: [
+        for (final tag in tags)
+          SangaChoiceChip(label: tag.label, isSelected: selected.contains(tag), onSelected: (_) => onToggle(tag)),
+      ],
+    ).sangaAnimate(
+      (animate) => animate
+          .fadeIn(duration: SangaMotion.quick, curve: SangaMotion.fadeCurve)
+          .moveY(begin: SangaSpacing.xs, end: 0, duration: SangaMotion.morph, curve: SangaMotion.springBlock),
+    );
   }
 }

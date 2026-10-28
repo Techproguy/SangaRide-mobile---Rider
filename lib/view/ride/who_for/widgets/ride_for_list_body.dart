@@ -37,11 +37,11 @@ class RideForListBody<T> extends StatelessWidget {
         title: emptyTitle,
         message: emptyMessage,
       ),
-      RideForListLoaded<T>(:final items) =>
-        builder(context, items)
-            .animate()
+      RideForListLoaded<T>(:final items) => builder(context, items).sangaAnimate(
+        (animate) => animate
             .fadeIn(duration: SangaMotion.quick, curve: SangaMotion.fadeCurve)
             .moveY(begin: SangaSpacing.sm, end: 0, duration: SangaMotion.morph, curve: SangaMotion.springBlock),
+      ),
     };
   }
 }

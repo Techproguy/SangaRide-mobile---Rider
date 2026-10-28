@@ -63,7 +63,9 @@ class _BusinessProfileScreenState extends State<BusinessProfileScreen> {
                         text: 'This ride is charged to ${profile.companyName}, not to you.',
                       ),
                     ],
-                  ).animate().fadeIn(duration: SangaMotion.quick, curve: SangaMotion.fadeCurve),
+                  ).sangaAnimate(
+                    (animate) => animate.fadeIn(duration: SangaMotion.quick, curve: SangaMotion.fadeCurve),
+                  ),
               ],
             ),
           ),

@@ -76,7 +76,7 @@ class _CancelReasonsViewState extends State<CancelReasonsView> {
             hintText: CancelCopy.fewWordsIsPlenty,
             maxLength: CancelReason.maxNoteLength,
             onChanged: widget.onNote,
-          ).animate().fadeIn(duration: SangaMotion.quick, curve: SangaMotion.fadeCurve),
+          ).sangaAnimate((animate) => animate.fadeIn(duration: SangaMotion.quick, curve: SangaMotion.fadeCurve)),
         ],
       ],
     );

@@ -15,13 +15,14 @@ class CompletedHeader extends StatelessWidget {
     return Column(
       children: [
         Image(
-              image: const AssetImage(SangaAssets.statusSuccess, package: SangaAssets.package),
-              width: _imageSize,
-              height: _imageSize,
-            )
-            .animate()
-            .scaleXY(begin: 0.6, end: 1, duration: SangaMotion.sheetEnter, curve: SangaMotion.springDetail)
-            .fadeIn(duration: SangaMotion.quick, curve: SangaMotion.fadeCurve),
+          image: const AssetImage(SangaAssets.statusSuccess, package: SangaAssets.package),
+          width: _imageSize,
+          height: _imageSize,
+        ).sangaAnimate(
+          (animate) => animate
+              .scaleXY(begin: 0.6, end: 1, duration: SangaMotion.sheetEnter, curve: SangaMotion.springDetail)
+              .fadeIn(duration: SangaMotion.quick, curve: SangaMotion.fadeCurve),
+        ),
         const SizedBox(height: SangaSpacing.md),
         Text(title, textAlign: TextAlign.center, style: SangaTextStyles.statusTitle),
         const SizedBox(height: SangaSpacing.xs),

@@ -73,8 +73,9 @@ class OfferCard extends StatelessWidget {
         ],
       ),
     );
+    final isInstant = MediaQuery.disableAnimationsOf(context);
     return AnimatedSize(
-      duration: SangaMotion.morph,
+      duration: isInstant ? Duration.zero : SangaMotion.morph,
       curve: SangaMotion.fadeCurve,
       alignment: Alignment.topCenter,
       child: ClipRect(
@@ -85,7 +86,12 @@ class OfferCard extends StatelessWidget {
             padding: const EdgeInsets.only(bottom: SangaSpacing.md),
             child: card
                 .animate(target: isLeaving ? 1 : 0)
-                .fade(begin: 1, end: 0, duration: SangaMotion.quick, curve: SangaMotion.fadeExitCurve),
+                .fade(
+                  begin: 1,
+                  end: 0,
+                  duration: isInstant ? Duration.zero : SangaMotion.quick,
+                  curve: SangaMotion.fadeExitCurve,
+                ),
           ),
         ),
       ),

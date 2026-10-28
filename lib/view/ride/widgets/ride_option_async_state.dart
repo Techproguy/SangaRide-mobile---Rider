@@ -39,11 +39,12 @@ class RideOptionAsyncState extends StatelessWidget {
       );
     }
     return Obx(() {
-          _alwaysObserved.value;
-          return builder(context);
-        })
-        .animate()
-        .fadeIn(duration: SangaMotion.quick, curve: SangaMotion.fadeCurve)
-        .moveY(begin: SangaSpacing.sm, end: 0, duration: SangaMotion.morph, curve: SangaMotion.springBlock);
+      _alwaysObserved.value;
+      return builder(context);
+    }).sangaAnimate(
+      (animate) => animate
+          .fadeIn(duration: SangaMotion.quick, curve: SangaMotion.fadeCurve)
+          .moveY(begin: SangaSpacing.sm, end: 0, duration: SangaMotion.morph, curve: SangaMotion.springBlock),
+    );
   }
 }

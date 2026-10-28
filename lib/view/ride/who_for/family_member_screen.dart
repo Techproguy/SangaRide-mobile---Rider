@@ -67,7 +67,9 @@ class _FamilyMemberScreenState extends State<FamilyMemberScreen> {
                             'This ride can be paid from ${member.groupName}’s wallet, as long as ${member.isYou ? 'your' : '${member.firstName}’s'} limits allow it.',
                       ),
                     ],
-                  ).animate().fadeIn(duration: SangaMotion.quick, curve: SangaMotion.fadeCurve),
+                  ).sangaAnimate(
+                    (animate) => animate.fadeIn(duration: SangaMotion.quick, curve: SangaMotion.fadeCurve),
+                  ),
               ],
             ),
           ),
