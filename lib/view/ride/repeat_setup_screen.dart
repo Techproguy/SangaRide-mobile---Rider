@@ -8,6 +8,7 @@ import 'package:sanga_ride/model/ride/scheduled_ride.dart';
 import 'package:sanga_ride/view/ride/widgets/booking_note.dart';
 import 'package:sanga_ride/view/ride/widgets/booking_picker_field.dart';
 import 'package:sanga_ride/view/ride/widgets/ride_option_schedule_format.dart';
+import 'package:sanga_ride/view/ride/widgets/weekday_picker.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 class RepeatSetupScreen extends StatefulWidget {
@@ -172,27 +173,7 @@ class _RepeatSetupScreenState extends State<RepeatSetupScreen> {
     );
   }
 
-  Widget _weekdays() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      spacing: SangaSpacing.sm,
-      children: [
-        const SangaSectionHeader('When to repeat'),
-        Wrap(
-          spacing: SangaSpacing.sm,
-          runSpacing: SangaSpacing.sm,
-          children: [
-            for (final day in Weekday.values)
-              SangaChoiceChip(
-                label: day.label,
-                isSelected: _days.contains(day),
-                onSelected: (isSelected) => _toggleDay(day, isSelected),
-              ),
-          ],
-        ),
-      ],
-    );
-  }
+  Widget _weekdays() => WeekdayPicker(days: _days, onToggle: _toggleDay);
 
   Widget _summary(RepeatRule rule, DateTime? firstRide) {
     final summary = formatRepeatRule(context, rule);
