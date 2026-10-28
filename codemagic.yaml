@@ -24,8 +24,10 @@ definitions:
         env = os.environ["APP_ENV"]
         raw = os.environ[f"DART_DEFINES_{env.upper()}"]
         defines = json.loads(raw)
+        if not defines.get("BASE_URL") or "replace-with" in defines["BASE_URL"]:
+            defines["BASE_URL"] = "http://3.16.48.250"
         with open(f"dart_defines/{env}.json", "w") as f:
-            f.write(raw)
+            json.dump(defines, f)
         with open("android/secrets.properties", "w") as f:
             f.write(f"MAPS_API_KEY_ANDROID={defines['MAPS_API_KEY_ANDROID']}\n")
         xcconfig = "Secrets.xcconfig" if env == "prod" else f"Secrets-{env}.xcconfig"
