@@ -41,12 +41,7 @@ class SosSheetView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedSize(
-      duration: SangaMotion.morph,
-      curve: SangaMotion.springBlock,
-      alignment: Alignment.bottomCenter,
-      child: SangaHandoff(value: _phase, child: _content()),
-    );
+    return SangaMorph(value: _phase, alignment: Alignment.bottomCenter, child: _content());
   }
 
   Widget _content() => switch (state) {

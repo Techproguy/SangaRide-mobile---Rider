@@ -128,6 +128,8 @@ class _RateBody extends StatelessWidget {
   final ValueChanged<String> onComment;
   final VoidCallback onRetry;
 
+  static const double _starSize = 50;
+
   @override
   Widget build(BuildContext context) {
     final rating = state.rating;
@@ -142,7 +144,7 @@ class _RateBody extends StatelessWidget {
             const Text('Select stars', style: SangaTextStyles.label),
             IgnorePointer(
               ignoring: isLocked,
-              child: SangaStarInput(value: rating.stars, onChanged: onStars),
+              child: SangaStarInput(value: rating.stars, onChanged: onStars, size: _starSize),
             ),
           ],
         ),

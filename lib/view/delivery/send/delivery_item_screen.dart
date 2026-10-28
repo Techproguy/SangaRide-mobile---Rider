@@ -76,6 +76,8 @@ class _DeliveryItemScreenState extends State<DeliveryItemScreen> {
     );
   }
 
+  Widget _shaking(_Field field, Widget child) => SangaShake(isActive: _errors.containsKey(field), child: child);
+
   Widget _form(DeliveryCatalog catalog) {
     final draft = _delivery.draft;
     final isDocuments = _delivery.isDocuments;
@@ -83,53 +85,62 @@ class _DeliveryItemScreenState extends State<DeliveryItemScreen> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       spacing: SangaSpacing.lg,
       children: [
-        SangaTextField(
-          label: 'Item name',
-          isRequired: true,
-          hintText: isDocuments ? 'Contract, certificate, letter' : 'Birthday cake, phone, shoes',
-          controller: _name,
-          errorText: _errors[_Field.name],
-          textCapitalization: TextCapitalization.sentences,
-          inputFormatters: [LengthLimitingTextInputFormatter(DeliveryRules.itemNameMaxLength)],
-          onChanged: (value) {
-            _delivery.setName(value);
-            _clearError(_Field.name);
-          },
+        _shaking(
+          _Field.name,
+          SangaTextField(
+            label: 'Item name',
+            isRequired: true,
+            hintText: isDocuments ? 'Contract, certificate, letter' : 'Birthday cake, phone, shoes',
+            controller: _name,
+            errorText: _errors[_Field.name],
+            textCapitalization: TextCapitalization.sentences,
+            inputFormatters: [LengthLimitingTextInputFormatter(DeliveryRules.itemNameMaxLength)],
+            onChanged: (value) {
+              _delivery.setName(value);
+              _clearError(_Field.name);
+            },
+          ),
         ),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            SangaTextArea(
-              label: 'Description',
-              isRequired: true,
-              controller: _description,
-              hintText: 'What is it, and how should we handle it?',
-              minLines: 3,
-              maxLength: DeliveryRules.descriptionMaxLength,
-              onChanged: (value) {
-                _delivery.setDescription(value);
-                _clearError(_Field.description);
-              },
-            ),
-            SangaFieldError(_errors[_Field.description]),
-          ],
-        ),
-        if (!isDocuments) ...[
+        _shaking(
+          _Field.description,
           Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            spacing: SangaSpacing.sm,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const SangaFieldLabel('Package size', isRequired: true),
-              SangaChoiceChips<String>(
-                options: [for (final size in catalog.sizes) SangaSelectOption(size.id, size.chipLabel)],
-                value: draft.sizeId,
-                onChanged: (id) {
-                  _delivery.selectSize(id);
-                  _clearError(_Field.size);
+              SangaTextArea(
+                label: 'Description',
+                isRequired: true,
+                controller: _description,
+                hintText: 'What is it, and how should we handle it?',
+                minLines: 3,
+                maxLength: DeliveryRules.descriptionMaxLength,
+                onChanged: (value) {
+                  _delivery.setDescription(value);
+                  _clearError(_Field.description);
                 },
               ),
-              SangaFieldError(_errors[_Field.size]),
+              SangaFieldError(_errors[_Field.description]),
             ],
+          ),
+        ),
+        if (!isDocuments) ...[
+          _shaking(
+            _Field.size,
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              spacing: SangaSpacing.sm,
+              children: [
+                const SangaFieldLabel('Package size', isRequired: true),
+                SangaChoiceChips<String>(
+                  options: [for (final size in catalog.sizes) SangaSelectOption(size.id, size.chipLabel)],
+                  value: draft.sizeId,
+                  onChanged: (id) {
+                    _delivery.selectSize(id);
+                    _clearError(_Field.size);
+                  },
+                ),
+                SangaFieldError(_errors[_Field.size]),
+              ],
+            ),
           ),
           if (catalog.hasPackageTypes)
             SangaSelectField<String>(

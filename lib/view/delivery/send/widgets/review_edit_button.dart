@@ -18,9 +18,9 @@ class ReviewEditButton extends StatelessWidget {
       label: label,
       excludeSemantics: true,
       button: true,
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
+      child: SangaInkwell(
         onTap: onPressed,
+        behavior: HitTestBehavior.opaque,
         child: Container(
           width: _size,
           height: _size,
