@@ -34,6 +34,8 @@ class PermissionPrimer {
 }
 
 class PermissionCenter extends GetxService {
+  static const Duration _firstReadDelay = Duration(seconds: 1);
+
   static const Map<PermissionKind, PermissionPrimer> primers = {
     PermissionKind.location: PermissionPrimer(
       icon: Icons.location_on_outlined,
@@ -75,7 +77,7 @@ class PermissionCenter extends GetxService {
   void onInit() {
     super.onInit();
     _resumeSubscription = AppLifecycle.instance.onResume.listen((_) => unawaited(refreshAll()));
-    unawaited(refreshAll());
+    WidgetsBinding.instance.addPostFrameCallback((_) => Future<void>.delayed(_firstReadDelay, refreshAll));
   }
 
   @override

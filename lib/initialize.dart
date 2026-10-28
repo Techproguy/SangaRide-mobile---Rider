@@ -43,6 +43,10 @@ import 'package:sanga_ride_core/sanga_ride_core.dart';
 import 'package:sanga_ride_maps/sanga_ride_maps.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
+const Duration _preloadCap = Duration(seconds: 3);
+
+Future<void> _withinCap(Future<void> task) => Future.any([task, Future<void>.delayed(_preloadCap)]);
+
 Future<void> initializeSanga() async {
   WidgetsFlutterBinding.ensureInitialized();
   await GetStorage.init();
@@ -58,11 +62,16 @@ Future<void> initializeSanga() async {
   );
   await SessionStorage.tokens.hydrate();
   unawaited(SangaMarkerIcons.preload());
-  await SangaFrame.preload(SangaConstants.frame);
-  await SangaPhotoBackdrop.precache([
-    for (final image in AppAssets.firstScreenPhotos) AssetImage(image),
-    if (SessionStorage.tokens.hasSession) ...const [AssetImage(AppAssets.splashRoad), AssetImage(AppAssets.splashCar)],
-  ]);
+  await _withinCap(SangaFrame.preload(SangaConstants.frame));
+  await _withinCap(
+    SangaPhotoBackdrop.precache([
+      for (final image in AppAssets.firstScreenPhotos) AssetImage(image),
+      if (SessionStorage.tokens.hasSession) ...const [
+        AssetImage(AppAssets.splashRoad),
+        AssetImage(AppAssets.splashCar),
+      ],
+    ]),
+  );
 
   final api = Get.put(ApiService(), permanent: true);
   unawaited(AuthConfig.load(api));
