@@ -83,22 +83,20 @@ class _SignInScreenState extends State<SignInScreen> {
             onPressed: _canSubmit ? _submit : null,
           ),
         ),
-        if (AuthController.providersAvailable) ...[
-          const SizedBox(height: SangaSpacing.xl),
-          const SangaLabeledDivider('or'),
-          const SizedBox(height: SangaSpacing.md),
-          Obx(
-            () => SangaProviderButton.google(
-              onPressed: _auth.signingInWith == null ? () => _continueWith(AuthProvider.google) : null,
-            ),
+        const SizedBox(height: SangaSpacing.xl),
+        const SangaLabeledDivider('or'),
+        const SizedBox(height: SangaSpacing.md),
+        Obx(
+          () => SangaProviderButton.google(
+            onPressed: _auth.signingInWith == null ? () => _continueWith(AuthProvider.google) : null,
           ),
-          const SizedBox(height: SangaSpacing.xs),
-          Obx(
-            () => SangaProviderButton.apple(
-              onPressed: _auth.signingInWith == null ? () => _continueWith(AuthProvider.apple) : null,
-            ),
+        ),
+        const SizedBox(height: SangaSpacing.xs),
+        Obx(
+          () => SangaProviderButton.apple(
+            onPressed: _auth.signingInWith == null ? () => _continueWith(AuthProvider.apple) : null,
           ),
-        ],
+        ),
       ],
     );
   }

@@ -27,13 +27,12 @@ class GetStartedSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final canUseProviders = AuthController.providersAvailable;
     return SangaAuthChoiceSheet(
       onClose: onClose,
       onCreateAccount: () => context.push(SangaRoutes.signUp),
       onLogin: () => context.push(SangaRoutes.signIn),
-      onGoogle: canUseProviders ? () => _continueWith(context, AuthProvider.google) : null,
-      onApple: canUseProviders ? () => _continueWith(context, AuthProvider.apple) : null,
+      onGoogle: () => _continueWith(context, AuthProvider.google),
+      onApple: () => _continueWith(context, AuthProvider.apple),
     );
   }
 }

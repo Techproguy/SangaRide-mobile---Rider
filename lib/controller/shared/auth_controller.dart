@@ -4,7 +4,6 @@ import 'dart:developer';
 import 'package:get/get.dart';
 import 'package:sanga_ride/controller/shared/user_controller.dart';
 import 'package:sanga_ride/core/api/api.dart';
-import 'package:sanga_ride/core/api/api_environment.dart';
 import 'package:sanga_ride/core/api/app_endpoints.dart';
 import 'package:sanga_ride/core/api/idempotency_intents.dart';
 import 'package:sanga_ride/core/constants.dart';
@@ -29,8 +28,6 @@ class AuthController extends GetxController {
   static const Duration logoutRevokeCap = Duration(seconds: 3);
 
   static ProviderTokenSource? providerTokens;
-
-  static bool get providersAvailable => providerTokens != null || ApiEnvironment.usesMock;
 
   final _api = Get.find<ApiService>();
 
@@ -144,7 +141,6 @@ class AuthController extends GetxController {
     _signingInWith.value = provider;
     try {
       final token = await providerTokens?.call(provider);
-      if (token == null && !ApiEnvironment.usesMock) return false;
       final endpoint = switch (provider) {
         AuthProvider.google => AppEndpoints.googleSignIn,
         AuthProvider.apple => AppEndpoints.appleSignIn,
