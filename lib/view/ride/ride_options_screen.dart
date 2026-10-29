@@ -87,6 +87,7 @@ class _RideOptionsScreenState extends State<RideOptionsScreen> {
               description: option.description,
               seats: option.seats,
               price: _ride.priceLabel(option),
+              isPriceLoading: _ride.isPricing(option),
               isSelected: _ride.option?.id == option.id,
               onTap: _ride.fitsGroup(option) ? () => _ride.selectOption(option) : null,
             ),

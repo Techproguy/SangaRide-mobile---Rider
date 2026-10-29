@@ -43,6 +43,7 @@ class RideRequestController extends GetxController {
   final Rxn<Money> _fairFareOffer = Rxn<Money>();
   final Rxn<FareEstimate> _estimate = Rxn<FareEstimate>();
   final RxMap<String, Money> _optionFares = <String, Money>{}.obs;
+  final RxBool _isLoadingOptionFares = false.obs;
   String? _optionFaresKey;
   final Rx<RideTiming> _timing = RideTiming.now.obs;
   final Rxn<DateTime> _scheduledAt = Rxn<DateTime>();
@@ -171,6 +172,7 @@ class RideRequestController extends GetxController {
     if (key == _optionFaresKey) return;
     _optionFaresKey = key;
     _optionFares.clear();
+    _isLoadingOptionFares.value = true;
     await Future.wait([
       for (final option in _options)
         _api
@@ -192,7 +194,11 @@ class RideRequestController extends GetxController {
             })
             .catchError((Object e) => log('option fare failed: $e')),
     ]);
+    if (_optionFaresKey == key) _isLoadingOptionFares.value = false;
   }
+
+  bool isPricing(RideOption option) =>
+      _isLoadingOptionFares.value && tripType != TripType.hourly && !_optionFares.containsKey(option.id);
 
   String rateLabel(RideOption option) {
     final hourly = tripType == TripType.hourly ? readyCatalog?.hourly[option.category]?.hourlyRate : null;
