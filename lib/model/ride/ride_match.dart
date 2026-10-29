@@ -74,7 +74,8 @@ enum MatchFailure {
     'Your request may still be running. Check your connection and we’ll look again.',
   ),
   unconfirmed('We’re not sure it went through', 'We’ll check again. We won’t send your request twice.'),
-  quoteExpired('Your price changed', 'We updated it. Have a look, then go again.');
+  quoteExpired('Your price changed', 'We updated it. Have a look, then go again.'),
+  tripLost('Let’s plan this one again', 'Your search timed out while the app was closed. Start a new trip from home.');
 
   const MatchFailure(this.title, this.message);
 
@@ -207,6 +208,7 @@ class DriverOffer {
     required this.distanceKm,
     required this.driver,
     this.fare,
+    this.riderFare,
   });
 
   factory DriverOffer.fromJson(JsonReader json) => DriverOffer(
@@ -219,6 +221,7 @@ class DriverOffer {
     distanceKm: json.doubleOr('distanceKm', 0),
     driver: OfferDriver.fromJson(json.raw['driver']),
     fare: json.moneyOrNull('fee') ?? json.moneyOrNull('amount'),
+    riderFare: json.moneyOrNull('riderFare'),
   );
 
   static const String _counter = 'counter';
@@ -230,6 +233,7 @@ class DriverOffer {
   final double distanceKm;
   final OfferDriver driver;
   final Money? fare;
+  final Money? riderFare;
 
   bool get isAvailable => status == OfferStatus.pending || status == OfferStatus.selected;
 
@@ -241,6 +245,7 @@ class DriverOffer {
     distanceKm: distanceKm,
     driver: driver,
     fare: fare,
+    riderFare: riderFare,
   );
 }
 
@@ -313,6 +318,8 @@ class DriverHold {
     required this.distanceAwayKm,
     required this.driver,
     required this.vehicle,
+    this.pickup = '',
+    this.dropoff = '',
     this.etaMinutes = 0,
   });
 
@@ -325,13 +332,20 @@ class DriverHold {
       holdExpiresAt: expiresAt == null ? DateTime.now().add(confirmWindow) : deviceDeadlineAt(expiresAt),
       fare: json.moneyOr('fee', offer.counterOffer ?? fare),
       counterOffer: json.moneyOrNull('counterOfferAmount') ?? offer.counterOffer,
-      riderOffer: json.moneyOrNull('riderFare') ?? fare,
+      riderOffer: json.moneyOrNull('riderFare') ?? offer.riderFare ?? fare,
+      pickup: _placeTitleOf(json.raw['pickup']),
+      dropoff: _placeTitleOf(json.raw['dropoff']),
       matchLabel: _matchLabelOf(json.strOrNull('matchLabel')),
       distanceAwayKm: json.doubleOr('distanceKm', offer.distanceKm),
       driver: card == null ? offer.driver : OfferDriver.fromJson(card.raw),
       vehicle: DriverVehicle.fromJson(json.raw['vehicle']),
       etaMinutes: json.intOr('etaMin', offer.etaMinutes),
     );
+  }
+
+  static String _placeTitleOf(Object? place) {
+    final address = place is Map ? '${place['address'] ?? ''}' : '';
+    return address.split(',').first.trim();
   }
 
   static String? _matchLabelOf(String? code) {
@@ -351,6 +365,8 @@ class DriverHold {
   final double distanceAwayKm;
   final OfferDriver driver;
   final DriverVehicle vehicle;
+  final String pickup;
+  final String dropoff;
   final int etaMinutes;
 }
 

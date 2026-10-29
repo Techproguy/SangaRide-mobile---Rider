@@ -131,7 +131,7 @@ class RideMatchController extends GetxController {
     _state.value = const MatchStarting();
     final payload = await _trip.lockedRequestPayload();
     if (payload == null) {
-      _state.value = const MatchFailed(MatchFailure.couldNotStart);
+      _state.value = const MatchFailed(MatchFailure.tripLost);
       return;
     }
     await _send(payload);

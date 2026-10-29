@@ -120,6 +120,17 @@ Future<void> _showQuoteChanged(BuildContext context, RideRequestController trip)
 Future<void> _showFailure(BuildContext context, MatchFailure reason, {required bool replacingOffers}) async {
   final match = Get.find<RideMatchController>();
   final checksAgain = reason == MatchFailure.connectionLost || reason == MatchFailure.unconfirmed;
+  if (reason == MatchFailure.tripLost) {
+    await showSangaStatusSheet(
+      context: context,
+      status: SangaStatus.caution,
+      title: reason.title,
+      message: reason.message,
+      actionLabel: CommonCopy.backToHome,
+    );
+    if (context.mounted) context.go(SangaRoutes.home);
+    return;
+  }
   final shouldRetry = await showSangaStatusSheet(
     context: context,
     status: switch (reason) {

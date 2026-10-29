@@ -108,6 +108,7 @@ extension RideMatchOffers on RideMatchController {
     final epoch = _epoch.current;
     _state.value = MatchOffersListed(current.rows, acceptingOfferId: offer.id);
     try {
+      if (offer.status == OfferStatus.selected) await _dropStaleHold(id);
       final response = await _api.post(
         AppEndpoints.rideOfferHoldOf(id, offer.id),
         key: IdempotencyKey.newFor(IdempotencyIntent.holdOffer),
@@ -123,6 +124,14 @@ extension RideMatchOffers on RideMatchController {
       log('hold failed: $e');
       if (_epoch.isCurrent(epoch)) _backToOffers(e, offer.id);
       return false;
+    }
+  }
+
+  Future<void> _dropStaleHold(String id) async {
+    try {
+      await _api.delete(AppEndpoints.rideRequestHoldOf(id), suppressErrorToast: true);
+    } on ApiException catch (e) {
+      if (e.kind != ApiFailureKind.rejected) rethrow;
     }
   }
 
