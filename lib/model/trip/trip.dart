@@ -261,6 +261,8 @@ class Trip {
       rideType:
           RideCategory.values.asNameMap()[JsonReader.of(reader.raw['rideClass']).strOrNull('code')] ?? RideCategory.go,
       driver: OfferDriver.fromJson(driver.raw),
+      driverPosition: _driverPositionOf(driver.objectOrNull('location')),
+      unreadMessages: reader.intOr('unreadMessages', 0),
       vehicle: DriverVehicle.fromJson(driver.raw['vehicle']),
       pickup: TripPlace.fromJson(reader.object('pickup').raw),
       stops: reader.listOf('stops', (item) => TripPlace.fromJson(item.raw)),
@@ -289,6 +291,13 @@ class Trip {
       scheduledWait: ScheduledWait.maybeFrom(waiting ?? reader, pickupAt: _localTime(reader, 'scheduledFor')),
       hourlyMinutes: reader.intOrNull('hourlyDurationMin') ?? reader.objectOrNull('hourly')?.intOrNull('durationMin'),
     );
+  }
+
+  static DriverPosition? _driverPositionOf(JsonReader? location) {
+    final latitude = location?.doubleOrNull('latitude');
+    final longitude = location?.doubleOrNull('longitude');
+    if (latitude == null || longitude == null) return null;
+    return DriverPosition(position: LatLng(latitude, longitude), heading: location?.doubleOrNull('heading'));
   }
 
   static bool isRideShape(Map<String, dynamic> json) =>

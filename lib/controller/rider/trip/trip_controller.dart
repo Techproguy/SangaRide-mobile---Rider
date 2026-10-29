@@ -347,7 +347,7 @@ class TripController extends GetxController {
     _isRevealingPin = true;
     final epoch = _epoch.current;
     try {
-      final response = await _api.post(AppEndpoints.liveTripPinRefreshOf(id), suppressErrorToast: true);
+      final response = await _api.get(AppEndpoints.liveTripPinOf(id), suppressErrorToast: true);
       if (!_epoch.isCurrent(epoch)) return false;
       return _storePin(response.dataMapOrEmpty);
     } catch (error) {
@@ -420,7 +420,7 @@ class TripController extends GetxController {
       signature: before ?? '',
       send: (key) async {
         final id = _requireTripId();
-        final response = await _api.post(AppEndpoints.liveTripPinRefreshOf(id), key: key, suppressErrorToast: true);
+        final response = await _api.post(AppEndpoints.liveTripPinOf(id), key: key, suppressErrorToast: true);
         _storePin(response.dataMapOrEmpty);
         return _loadTrip(id);
       },

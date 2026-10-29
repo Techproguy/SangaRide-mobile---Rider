@@ -64,7 +64,7 @@ class AppEndpoints {
 
   static const String liveTrip = _liveTrip;
   static const String liveTripConfirmDetails = '$_liveTrip/match-check';
-  static const String liveTripPinRefresh = '$_liveTrip/pin';
+  static const String liveTripPin = '$_liveTrip/pin';
   static const String liveTripReport = '$_liveTrip/report';
   static const String liveTripComplete = '$_liveTrip/complete';
   static const String liveTripCall = '$_liveTrip/contact/call';
@@ -80,7 +80,7 @@ class AppEndpoints {
 
   static String liveTripConfirmDetailsOf(String id) => fillPath(liveTripConfirmDetails, {'id': id});
 
-  static String liveTripPinRefreshOf(String id) => fillPath(liveTripPinRefresh, {'id': id});
+  static String liveTripPinOf(String id) => fillPath(liveTripPin, {'id': id});
 
   static String liveTripReportOf(String id) => fillPath(liveTripReport, {'id': id});
 

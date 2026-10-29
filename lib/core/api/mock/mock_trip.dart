@@ -17,7 +17,8 @@ abstract final class MockTrip {
   static final List<MockRoute> routes = [
     MockRoute.get(AppEndpoints.activeTrip, (_) => _active()),
     MockRoute.post(AppEndpoints.liveTripConfirmDetails, _confirmDetails),
-    MockRoute.post(AppEndpoints.liveTripPinRefresh, _revealPin),
+    MockRoute.get(AppEndpoints.liveTripPin, _revealPin),
+    MockRoute.post(AppEndpoints.liveTripPin, _revealPin),
     MockRoute.post(AppEndpoints.liveTripReport, _report),
     MockRoute.post(AppEndpoints.liveTripCall, (_) => {'maskedNumber': MockRegion.maskedCallNumber}),
     MockRoute.post(AppEndpoints.tripShare, _share),
