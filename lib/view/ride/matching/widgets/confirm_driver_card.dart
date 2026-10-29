@@ -35,6 +35,7 @@ class ConfirmDriverCard extends StatelessWidget {
             photo: driver.photo,
             isVerified: driver.isVerified,
             caption: driver.ridesLabel,
+            nameMaxLines: 2,
             trailing: Row(
               spacing: SangaSpacing.sm,
               children: [
