@@ -53,7 +53,10 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
 
   Future<void> _call() async {
     final phone = _contact?.phone;
-    if (phone == null) return;
+    if (phone == null) {
+      SangaToast.show(SupportCopy.contactOptionsLoadFailed, tone: SangaToastTone.error);
+      return;
+    }
     await dialNumber(phone, failureMessage: SupportCopy.callFailed(phone));
   }
 
@@ -92,12 +95,11 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
               style: SangaTextStyles.toolbarTitle,
             ),
           ),
-          if (_contact != null)
-            IconButton(
-              tooltip: SupportCopy.callSupport,
-              onPressed: _call,
-              icon: const Icon(Icons.phone_rounded, color: SangaColors.primary),
-            ),
+          IconButton(
+            tooltip: SupportCopy.callSupport,
+            onPressed: _call,
+            icon: const Icon(Icons.phone_rounded, color: SangaColors.primary),
+          ),
           if (live != null)
             IconButton(
               tooltip: SupportCopy.endChat,

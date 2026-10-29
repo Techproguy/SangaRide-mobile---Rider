@@ -29,7 +29,12 @@ class _SupportContactScreenState extends State<SupportContactScreen> {
     });
   }
 
-  Future<void> _call(SupportContact contact) async {
+  Future<void> _call(SupportContact? contact) async {
+    if (contact == null) {
+      SangaToast.show(SupportCopy.contactOptionsLoadFailed, tone: SangaToastTone.error);
+      unawaited(_controller.loadHome());
+      return;
+    }
     await dialNumber(contact.phone, failureMessage: SupportCopy.callFailed(contact.phone));
   }
 
@@ -52,13 +57,12 @@ class _SupportContactScreenState extends State<SupportContactScreen> {
                 subtitle: _chatSubtitle(contact),
                 onTap: () => context.push(SupportRoutes.chatOf()),
               ),
-            if (contact != null)
-              SangaListRow(
-                leading: const SangaIconBadge(size: 36, child: Icon(Icons.call_outlined)),
-                title: SupportCopy.callSupport,
-                subtitle: SupportCopy.speakWithTeam(contact.hours),
-                onTap: () => _call(contact),
-              ),
+            SangaListRow(
+              leading: const SangaIconBadge(size: 36, child: Icon(Icons.call_outlined)),
+              title: SupportCopy.callSupport,
+              subtitle: SupportCopy.speakWithTeam(contact?.hours ?? ''),
+              onTap: () => _call(contact),
+            ),
             SangaListRow(
               leading: const SangaIconBadge(size: 36, child: Icon(Icons.shield_outlined)),
               title: CommonCopy.reportIssue,

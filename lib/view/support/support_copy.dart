@@ -73,6 +73,7 @@ abstract final class SupportCopy {
   static const String checkBackSoon = 'Check back soon, or talk to our team.';
   static const String contactSupport = 'Contact support';
   static const String searchArticles = 'Search for help articles';
+  static const String contactOptionsLoadFailed = 'We couldn’t load our contact options';
   static const String contactSubtitle = 'Chat, call or report an issue';
   static const String myReports = 'My reports';
   static const String followUp = 'Follow up on issues you reported';
@@ -128,7 +129,7 @@ abstract final class SupportCopy {
 
   static String chatWithTeamWait(int minutes) => '$chatWithTeam · about $minutes min wait';
 
-  static String speakWithTeam(String hours) => 'Speak with our team · $hours';
+  static String speakWithTeam(String hours) => hours.isEmpty ? 'Speak with our team' : 'Speak with our team · $hours';
 
   static const String chatReconnecting = 'Trouble reaching support. We’ll keep trying.';
   static const String chatLost = 'You’re offline. Messages will send when you’re back.';
