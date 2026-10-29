@@ -79,7 +79,7 @@ class ScheduledRideCard extends StatelessWidget {
         spacing: SangaSpacing.xs,
         children: [
           Image(image: ride.category.image, fit: BoxFit.contain),
-          if (ride.fare.isPositive) Text(ride.fare.format(), style: SangaTextStyles.cardValue),
+          Text(ride.fare.isPositive ? ride.fare.format() : '-', style: SangaTextStyles.cardValue),
         ],
       ),
     );
