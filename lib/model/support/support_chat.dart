@@ -86,7 +86,7 @@ class ChatMessage {
       text: reader.strOr('text', ''),
       role: ChatRole.fromCode(reader.strOrNull('senderRole')),
       sentAt: reader.timeOrNull('createdAt')?.toLocal() ?? DateTime.now(),
-      delivery: reader.strOrNull('status') == ChatDelivery.read.code ? ChatDelivery.read : ChatDelivery.sent,
+      delivery: reader.has('readAt') ? ChatDelivery.read : ChatDelivery.sent,
     );
   }
 
@@ -117,10 +117,10 @@ class ChatUpdate {
 
   factory ChatUpdate.fromJson(Map<String, dynamic> json) {
     final reader = JsonReader(json);
-    final raw = reader.raw['messages'];
+    final raw = reader.raw['items'];
     return ChatUpdate(
       chat: SupportChat.fromJson(reader.object('chat').raw),
-      messages: reader.listOf('messages', (item) => ChatMessage.fromJson(item.raw)),
+      messages: reader.listOf('items', (item) => ChatMessage.fromJson(item.raw)),
       cursor: raw is List && raw.isNotEmpty ? JsonReader.of(raw.last).strOrNull('id') : null,
     );
   }

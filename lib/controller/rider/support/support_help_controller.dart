@@ -23,9 +23,7 @@ class SupportHelpController extends GetxController {
       final response = await _api.get(SupportEndpoints.home, suppressErrorToast: true);
       _home.value = SupportHomeLoaded(SupportHome.fromJson(response.dataMapOrEmpty));
     } on Object catch (error) {
-      if (error is ApiException && error.isNotFound) {
-        _home.value = const SupportHomeLoaded(SupportHome.ticketsOnly);
-      } else if (_home.value is! SupportHomeLoaded) {
+      if (_home.value is! SupportHomeLoaded) {
         _home.value = SupportHomeFailed(SupportProblem.of(error));
       }
     }
@@ -73,12 +71,12 @@ class SupportHelpController extends GetxController {
     final vote = isHelpful ? ArticleVote.helpful : ArticleVote.notHelpful;
     _details[id] = ArticleLoaded(current.article, vote: vote, isVoting: true);
     try {
-      final response = await _api.post(
+      await _api.post(
         SupportEndpoints.of(SupportEndpoints.articleFeedback, id),
         data: {'helpful': isHelpful},
         suppressErrorToast: true,
       );
-      _details[id] = ArticleLoaded(SupportArticle.fromJson(response.dataMapOrEmpty), vote: vote);
+      _details[id] = ArticleLoaded(current.article, vote: vote);
     } on Object {
       _details[id] = ArticleLoaded(current.article, vote: vote);
     }
@@ -90,6 +88,6 @@ class SupportHelpController extends GetxController {
       queryParameters: {'topic': ?query.topic, if (query.text.isNotEmpty) 'q': query.text, 'page': page},
       suppressErrorToast: true,
     );
-    return ArticlePage.fromJson(response.dataMapOrEmpty);
+    return ArticlePage.fromBody(response.data);
   }
 }

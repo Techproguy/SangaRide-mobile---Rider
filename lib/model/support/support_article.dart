@@ -79,12 +79,13 @@ typedef ArticleQuery = ({String? topic, String text});
 class ArticlePage {
   const ArticlePage({required this.items, required this.page, required this.hasMore});
 
-  factory ArticlePage.fromJson(Map<String, dynamic> json) {
-    final reader = JsonReader(json);
+  factory ArticlePage.fromBody(Object? body) {
+    final envelope = JsonReader.of(body);
+    final meta = envelope.objectOrNull('meta');
     return ArticlePage(
-      items: reader.listOf('items', ArticleSummary.fromReader),
-      page: reader.intOr('page', 1),
-      hasMore: reader.boolOr('hasMore', false),
+      items: JsonReader.of(envelope.raw['data']).listOf('items', ArticleSummary.fromReader),
+      page: meta?.intOr('page', 1) ?? 1,
+      hasMore: meta?.boolOr('hasMore', false) ?? false,
     );
   }
 

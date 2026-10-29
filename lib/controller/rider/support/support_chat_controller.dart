@@ -119,11 +119,11 @@ class SupportChatController extends GetxController {
       run: (key) async {
         final response = await _api.post(
           SupportEndpoints.chats,
-          data: {'ticketId': ticketId, 'tripId': tripId},
+          data: {'ticketId': ?ticketId, 'tripId': ?tripId},
           key: key,
           suppressErrorToast: true,
         );
-        return SupportChat.fromJson(response.dataMapOrEmpty);
+        return SupportChat.fromJson(JsonReader.of(response.dataMapOrEmpty).object('chat').raw);
       },
     );
   }

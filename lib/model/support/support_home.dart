@@ -74,8 +74,6 @@ class SupportContact {
 class SupportHome {
   const SupportHome({required this.topics, required this.popular, required this.contact});
 
-  static const SupportHome ticketsOnly = SupportHome(topics: [], popular: [], contact: null);
-
   factory SupportHome.fromJson(Map<String, dynamic> json) {
     final reader = JsonReader(json);
     return SupportHome(
