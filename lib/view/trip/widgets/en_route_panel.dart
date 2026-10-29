@@ -33,7 +33,7 @@ class EnRoutePanel extends StatelessWidget {
       children: [
         TripDriverHeader(driver: trip.driver),
         const TripPanelDivider(),
-        TripEtaLine(etaAt: trip.etaAt, distanceRemainingKm: trip.distanceRemainingKm),
+        DriverApproachEta(trip: trip),
         TripActionTiles(
           unreadCount: unreadCount,
           onCall: onCall,

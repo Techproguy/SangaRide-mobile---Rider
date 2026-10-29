@@ -26,6 +26,7 @@ class RideRouteScreen extends StatefulWidget {
 
 class _RideRouteScreenState extends State<RideRouteScreen> {
   static const double _topInset = 200;
+  static const double _sideInset = 84;
 
   final _ride = Get.find<RideRequestController>();
   final _home = Get.find<RiderHomeController>();
@@ -65,7 +66,7 @@ class _RideRouteScreenState extends State<RideRouteScreen> {
 
   void _onSheetHeight(double height) {
     _camera.setInsets(
-      EdgeInsets.only(top: _topInset, bottom: height),
+      EdgeInsets.only(top: _topInset, bottom: height, left: _sideInset, right: _sideInset),
       onSettled: _frame,
     );
   }
