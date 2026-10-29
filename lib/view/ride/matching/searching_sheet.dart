@@ -56,7 +56,7 @@ class _SearchingSheetState extends State<_SearchingSheet> {
     ),
     MatchOffersReady(:final request, :final continueAt) => (
       steps: request.stepLabels,
-      doneCount: request.stepsDone,
+      doneCount: request.stepLabels.length,
       continueAt: continueAt,
       isReconnecting: false,
     ),

@@ -25,7 +25,7 @@ class RideRouteScreen extends StatefulWidget {
 }
 
 class _RideRouteScreenState extends State<RideRouteScreen> {
-  static const double _topInset = 120;
+  static const double _topInset = 200;
 
   final _ride = Get.find<RideRequestController>();
   final _home = Get.find<RiderHomeController>();
