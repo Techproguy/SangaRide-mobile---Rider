@@ -45,7 +45,7 @@ class ScheduledRidesController extends GetxController {
       final items = data is List ? data : (data is Map ? data['series'] : null);
       return [
         for (final item in items is List ? items : const [])
-          if (item is Map && item['isActive'] != false) ?_parseSeries(item),
+          if (item is Map) ?_parseSeries(item),
       ];
     } catch (e) {
       log('load repeat series failed: $e');
@@ -99,7 +99,7 @@ class ScheduledRidesController extends GetxController {
     if (ride == null) return null;
     final reply = (response.data as Map)['data'];
     final replied = reply is Map ? JsonReader.of(reply).timeOrNull('reminderAt')?.toLocal() : null;
-    return ride.copyWith(reminderAt: replied ?? ride.scheduledAt.subtract(ScheduledRide.reminderLead));
+    return ride.copyWith(reminderAt: replied);
   });
 
   ScheduledRide? _rideOf(String id) {
