@@ -4,7 +4,6 @@ import 'package:sanga_ride_core/sanga_ride_core.dart';
 
 enum SafetyProblem {
   sosAlreadyActive('sos_already_active', 'You already have an SOS running.'),
-  locationUnavailable('location_unavailable', 'We couldn’t find your location. We can still send your SOS without it.'),
   duplicateContact('duplicate_contact', 'That person is already one of your contacts.'),
   contactsLimit('contacts_limit', 'You’ve added the most contacts you can. Remove one to add another.'),
   invalidPhone(ServerCode.invalidPhone, CommonCopy.invalidPhoneSentence),

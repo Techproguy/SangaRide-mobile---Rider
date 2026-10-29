@@ -232,7 +232,6 @@ class SosController extends GetxController {
       return;
     }
     final problem = SafetyProblem.of(error);
-    if (problem == SafetyProblem.locationUnavailable) _coordinates = null;
     _state.value = SosFailed(problem);
   }
 
