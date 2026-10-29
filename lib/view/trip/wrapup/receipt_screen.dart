@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:sanga_ride/controller/rider/trip/trip_receipt_controller.dart';
+import 'package:sanga_ride/core/services/receipt_share.dart';
 import 'package:sanga_ride/model/trip/wrapup/wrapup.dart';
 import 'package:sanga_ride/view/trip/wrapup/widgets/receipt_delivery_card.dart';
 import 'package:sanga_ride/view/trip/wrapup/widgets/receipt_paid_with.dart';
@@ -28,12 +29,27 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
     unawaited(_receipt.open(widget.tripId));
   }
 
+  Future<void> _share(TripReceipt receipt) async {
+    try {
+      await ReceiptShare.shareTrip(receipt);
+    } catch (_) {
+      SangaToast.show('We couldn’t share your receipt. Give it another go.', tone: SangaToastTone.error);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Obx(() {
       final state = _receipt.state;
       return SangaPageLayout(
         title: state is ReceiptLoaded && state.receipt.isDelivery ? 'Delivery receipt' : 'Trip receipt',
+        trailing: IconButton(
+          tooltip: 'Share receipt',
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints.tightFor(width: 41, height: 41),
+          icon: const Icon(Icons.file_download_outlined, color: SangaColors.textPrimary),
+          onPressed: state is ReceiptLoaded ? () => unawaited(_share(state.receipt)) : null,
+        ),
         children: [
           WrapUpAsyncBody(
             isLoading: state is ReceiptLoading,

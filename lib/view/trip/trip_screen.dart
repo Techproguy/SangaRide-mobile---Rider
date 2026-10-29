@@ -134,6 +134,7 @@ class _TripScreenState extends State<TripScreen> {
         if (trip.isDelivery) _popPagesAbove();
         unawaited(_showCancelled(trip, reason));
       case TripRematching() when previous is! TripRematching:
+        SangaToast.show('Your driver cancelled. We’re finding you another one.', tone: SangaToastTone.info);
         unawaited(_resumeMatching());
       case TripCompleted(:final trip):
         _leaveForCompletion(trip.id);

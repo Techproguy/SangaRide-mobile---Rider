@@ -1,11 +1,36 @@
 import 'package:intl/intl.dart';
 import 'package:sanga_ride/model/history/history_detail.dart';
 import 'package:sanga_ride/model/ride/ride_match.dart';
+import 'package:sanga_ride/model/trip/wrapup/receipt.dart';
 import 'package:share_plus/share_plus.dart';
 
 abstract final class ReceiptShare {
   static Future<void> share(HistoryDetail detail) {
     return SharePlus.instance.share(ShareParams(text: textOf(detail), subject: 'My Sanga receipt'));
+  }
+
+  static Future<void> shareTrip(TripReceipt receipt) {
+    return SharePlus.instance.share(ShareParams(text: textOfTrip(receipt), subject: 'My Sanga receipt'));
+  }
+
+  static String textOfTrip(TripReceipt receipt) {
+    final lines = [
+      receipt.isDelivery ? 'Sanga delivery receipt' : 'Sanga ride receipt',
+      DateFormat('d MMM yyyy, h:mm a').format(receipt.paidAt),
+      '',
+      'From: ${_describe(receipt.pickup.name, receipt.pickup.address)}',
+      for (final (index, stop) in receipt.stops.indexed) 'Stop ${index + 1}: ${_describe(stop.name, stop.address)}',
+      'To: ${_describe(receipt.dropoff.name, receipt.dropoff.address)}',
+      'Distance: ${receipt.distanceLabel}',
+      'Time: ${receipt.durationLabel}',
+      '',
+      for (final line in receipt.lines) '${line.label}: ${line.amount.format()}',
+      'Total paid: ${receipt.total.format()}',
+      'Paid with: ${receipt.paidWith.label}',
+      '',
+      'Thanks for riding with Sanga.',
+    ];
+    return lines.join('\n');
   }
 
   static String textOf(HistoryDetail detail) {

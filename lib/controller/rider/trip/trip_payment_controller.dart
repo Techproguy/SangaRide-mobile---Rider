@@ -193,7 +193,7 @@ class TripPaymentController extends GetxController {
   void _onWalletChanged() {
     final current = state;
     if (current is! PaymentChoosing || current.selected != null) return;
-    final method = _preferredOf(current.payment);
+    final method = _isRechoosing ? _rechoiceOf(current.payment) : _preferredOf(current.payment);
     if (method != null) _state.value = PaymentChoosing(current.payment, selected: method);
   }
 
