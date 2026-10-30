@@ -74,23 +74,6 @@ class HistoryItem {
     this.packagePhotoUrl,
   });
 
-  factory HistoryItem.fromJson(Map<String, dynamic> json) {
-    final reader = JsonReader(json);
-    return HistoryItem(
-      id: reader.str('id'),
-      kind: HistoryKind.fromCode(reader.strOrNull('kind')),
-      status: HistoryStatus.fromCode(reader.strOrNull('status')),
-      category: RideCategory.values.asNameMap()[reader.strOrNull('category')] ?? RideCategory.go,
-      occurredAt: reader.time('occurredAt').toLocal(),
-      route: HistoryRoute.fromJson(json),
-      fare: reader.money('fare'),
-      itemName: reader.strOrNull('itemName'),
-      memberName: reader.strOrNull('memberName'),
-      purpose: reader.strOrNull('purpose'),
-      packagePhotoUrl: reader.strOrNull('packagePhotoUrl'),
-    );
-  }
-
   factory HistoryItem.fromRide(JsonReader ride) {
     final item = ride.objectOrNull('delivery')?.objectOrNull('item');
     return HistoryItem(
@@ -105,6 +88,20 @@ class HistoryItem {
       packagePhotoUrl: item?.strOrNull('photoUrl'),
     );
   }
+
+  factory HistoryItem.fromGroupRide(JsonReader ride) => HistoryItem(
+    id: ride.str('id'),
+    kind: HistoryKind.fromCode(ride.strOrNull('kind')),
+    status: HistoryStatus.fromCode(ride.strOrNull('status')),
+    category: RideCategory.go,
+    occurredAt: (ride.timeOrNull('completedAt') ?? ride.timeOrNull('scheduledFor') ?? ride.time('createdAt')).toLocal(),
+    route: HistoryRoute(
+      pickup: Place(placeId: '', name: '', address: ride.strOr('pickupAddress', '')),
+      stops: const [],
+      dropoff: Place(placeId: '', name: '', address: ride.strOr('dropoffAddress', '')),
+    ),
+    fare: ride.money('fare'),
+  );
 
   final String id;
   final HistoryKind kind;
@@ -124,18 +121,19 @@ class HistoryItem {
 class HistoryPage {
   const HistoryPage({required this.items, required this.page, required this.hasMore});
 
-  factory HistoryPage.fromJson(Map<String, dynamic> json) {
-    final reader = JsonReader(json);
-    return HistoryPage(
-      items: reader.listOf('items', (item) => HistoryItem.fromJson(item.raw)),
-      page: reader.intOr('page', 1),
-      hasMore: reader.boolOr('hasMore', false),
-    );
-  }
-
   factory HistoryPage.fromRides(Map<String, dynamic> data, {required int page, required int limit}) {
     final items = JsonReader(data).listOf('rides', HistoryItem.fromRide);
     return HistoryPage(items: items, page: page, hasMore: items.length >= limit);
+  }
+
+  factory HistoryPage.fromGroupRides(Object? body) {
+    final envelope = JsonReader.of(body);
+    final meta = envelope.objectOrNull('meta');
+    return HistoryPage(
+      items: JsonReader.of(envelope.raw['data']).listOf('rides', HistoryItem.fromGroupRide),
+      page: meta?.intOr('page', 1) ?? 1,
+      hasMore: meta?.boolOr('hasMore', false) ?? false,
+    );
   }
 
   final List<HistoryItem> items;

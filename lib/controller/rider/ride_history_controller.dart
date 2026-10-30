@@ -89,10 +89,10 @@ class RideHistoryController extends GetxController {
     if (groupId != null) {
       final response = await _api.get(
         GroupEndpoints.ridesOf(groupId),
-        queryParameters: {'status': status.code, 'page': page, 'pageSize': pageSize, 'memberId': ?memberId},
+        queryParameters: {'status': status.code, 'page': page, 'limit': pageSize, 'memberId': ?memberId},
         suppressErrorToast: true,
       );
-      return HistoryPage.fromJson(response.dataMapOrEmpty);
+      return HistoryPage.fromGroupRides(response.data);
     }
     final response = await _api.get(
       HistoryEndpoints.rides,

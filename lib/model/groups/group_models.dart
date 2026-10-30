@@ -130,7 +130,7 @@ class GroupDetail {
       role: GroupRole.fromCode(reader.strOrNull('role')),
       inviteCode: reader.strOr('inviteCode', ''),
       members: reader.listOf('members', (member) => GroupMember.fromJson(member.raw)),
-      recentRides: reader.listOf('recentRides', (ride) => HistoryItem.fromJson(ride.raw)),
+      recentRides: reader.listOf('recentRides', HistoryItem.fromGroupRide),
       company: company == null ? null : GroupCompany.fromJson(company.raw),
     );
   }
