@@ -1,5 +1,6 @@
 import 'package:sanga_ride/core/copy/common_copy.dart';
 import 'package:sanga_ride/core/format/money_json.dart';
+import 'package:sanga_ride/model/location/place.dart';
 import 'package:sanga_ride/model/ride/server_deadline.dart';
 import 'package:sanga_ride_core/sanga_ride_core.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
@@ -323,7 +324,13 @@ class DriverHold {
     this.etaMinutes = 0,
   });
 
-  factory DriverHold.fromJson(Object? body, {required DriverOffer offer, required Money fare}) {
+  factory DriverHold.fromJson(
+    Object? body, {
+    required DriverOffer offer,
+    required Money fare,
+    String pickupTitle = '',
+    String dropoffTitle = '',
+  }) {
     final json = JsonReader.of(body);
     final card = json.objectOrNull('driver');
     final expiresAt = serverInstantOrNull(json, 'confirmExpiresAt');
@@ -333,8 +340,8 @@ class DriverHold {
       fare: json.moneyOr('fee', offer.counterOffer ?? fare),
       counterOffer: json.moneyOrNull('counterOfferAmount') ?? offer.counterOffer,
       riderOffer: json.moneyOrNull('riderFare') ?? offer.riderFare ?? fare,
-      pickup: _placeTitleOf(json.raw['pickup']),
-      dropoff: _placeTitleOf(json.raw['dropoff']),
+      pickup: _placeTitleOf(json.raw['pickup'], pickupTitle),
+      dropoff: _placeTitleOf(json.raw['dropoff'], dropoffTitle),
       matchLabel: _matchLabelOf(json.strOrNull('matchLabel')),
       distanceAwayKm: json.doubleOr('distanceKm', offer.distanceKm),
       driver: card == null ? offer.driver : OfferDriver.fromJson(card.raw),
@@ -343,9 +350,10 @@ class DriverHold {
     );
   }
 
-  static String _placeTitleOf(Object? place) {
-    final address = place is Map ? '${place['address'] ?? ''}' : '';
-    return address.split(',').first.trim();
+  static String _placeTitleOf(Object? place, String bookedTitle) {
+    if (place is! Map) return bookedTitle;
+    final parsed = Place.fromJson(Map<String, dynamic>.from(place));
+    return parsed.name.trim().isEmpty && bookedTitle.isNotEmpty ? bookedTitle : parsed.title.trim();
   }
 
   static String? _matchLabelOf(String? code) {

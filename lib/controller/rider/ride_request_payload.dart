@@ -77,21 +77,33 @@ extension RideRequestPayload on RideRequestController {
   Future<Map<String, dynamic>?> lockedRequestPayload() async {
     if (tripType == TripType.delivery && options.isEmpty) await loadOptions();
     final payload = requestPayload();
-    if (payload == null || tripType == TripType.delivery) return payload;
+    if (payload == null) return null;
+    if (tripType == TripType.delivery) {
+      return {...payload, 'paymentMethod': await _paymentMethodFor(deliveryBooking?.fare)};
+    }
     final terms = {...payload}..remove('quoteId');
     final signature = jsonEncode(terms);
     if (_lockedTerms != signature) {
       final quoteId = await _quoteFor(terms);
-      if (quoteId == null) return payload;
+      if (quoteId == null) return {...payload, 'paymentMethod': await _paymentMethodFor(price)};
       _lockedTerms = signature;
       _lockedQuoteId = quoteId;
+      _lockedPaymentMethod = await _paymentMethodFor(price);
     }
-    return {...payload, 'quoteId': _lockedQuoteId};
+    return {...payload, 'quoteId': _lockedQuoteId, 'paymentMethod': _lockedPaymentMethod};
+  }
+
+  Future<String> _paymentMethodFor(Money? fare) async {
+    final wallet = Get.find<WalletController>();
+    if (wallet.state is! WalletLoaded) await wallet.open();
+    final covers = fare != null && WalletPayOption.from(wallet.state, fare) is WalletCovers;
+    return (covers ? PaymentMethod.wallet : PaymentMethod.cash).code;
   }
 
   void forgetLockedQuote() {
     _lockedTerms = null;
     _lockedQuoteId = null;
+    _lockedPaymentMethod = null;
   }
 
   Future<String?> _quoteFor(Map<String, dynamic> terms) async {

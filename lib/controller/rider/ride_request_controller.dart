@@ -9,10 +9,12 @@ import 'package:google_maps_flutter/google_maps_flutter.dart' show LatLng;
 import 'package:sanga_ride/core/api/api.dart';
 import 'package:sanga_ride/core/api/booking_endpoints.dart';
 import 'package:sanga_ride/core/api/app_endpoints.dart';
+import 'package:sanga_ride/controller/rider/wallet_controller.dart';
 import 'package:sanga_ride/core/api/idempotency_intents.dart';
 import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride/model/ride/booking.dart';
 import 'package:sanga_ride/model/ride/ride_load_problem.dart';
+import 'package:sanga_ride/model/wallet/wallet.dart';
 import 'package:sanga_ride_core/sanga_ride_core.dart';
 
 part 'ride_request_payload.dart';
@@ -31,6 +33,7 @@ class RideRequestController extends GetxController {
   String? _scheduleSignature;
   String? _lockedTerms;
   String? _lockedQuoteId;
+  String? _lockedPaymentMethod;
 
   final Rxn<Place> _pickup = Rxn<Place>();
   final Rxn<Place> _dropoff = Rxn<Place>();
