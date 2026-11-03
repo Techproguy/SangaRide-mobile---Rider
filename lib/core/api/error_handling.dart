@@ -31,6 +31,7 @@ abstract final class ApiFailureCopy {
   static String? _rejection(ApiException error, {required bool isAuthPath}) {
     final isSilent = error.statusCode == 403 && !isAuthPath;
     if (isSilent || error.message.isEmpty) return null;
+    if (error.isNotFound) return CommonCopy.notFound;
     return error.message;
   }
 }

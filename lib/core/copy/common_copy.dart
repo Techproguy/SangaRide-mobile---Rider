@@ -12,6 +12,7 @@ abstract final class CommonCopy {
   static const String processing = 'Hang tight, this only takes a moment.';
   static const String reportIssue = 'Report an issue';
   static const String serverTitle = 'Something went wrong';
+  static const String notFound = 'We couldn’t find that. It may have been moved or removed.';
   static const String serverTrouble = 'Something went wrong on our side. Try again in a moment.';
   static const String serverTroubleTitle = 'Something went wrong on our side';
   static const String tryAgainInAMoment = 'Try again in a moment.';
