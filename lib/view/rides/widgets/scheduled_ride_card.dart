@@ -92,7 +92,7 @@ class ScheduledRideCard extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       spacing: SangaSpacing.xxs,
       children: [
-        Text(whenLabel, maxLines: 1, overflow: TextOverflow.ellipsis, style: SangaTextStyles.cardTitle),
+        Text(whenLabel, maxLines: 2, overflow: TextOverflow.ellipsis, style: SangaTextStyles.cardTitle),
         if (repeatLabel != null) Text(repeatLabel!, style: SangaTextStyles.cardSubtitle),
         if (flightLabel != null) Text(flightLabel!, style: SangaTextStyles.cardSubtitle),
       ],
