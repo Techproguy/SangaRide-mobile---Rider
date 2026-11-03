@@ -230,8 +230,8 @@ class GroupApproval {
     memberId: reader.strOr('memberId', ''),
     memberName: reader.strOr('memberName', 'Someone'),
     fare: reader.money('fare'),
-    pickup: reader.object('pickup').strOr('name', ''),
-    dropoff: reader.object('dropoff').strOr('name', ''),
+    pickup: _placeLabel(reader, 'pickup'),
+    dropoff: _placeLabel(reader, 'dropoff'),
     purpose: reader.strOrNull('purpose'),
     requestedAt: reader.time('requestedAt').toLocal(),
     expiresAt: reader.timeOrNull('expiresAt'),
@@ -248,6 +248,11 @@ class GroupApproval {
   final DateTime? expiresAt;
 
   String get firstName => memberName.trim().split(RegExp(r'\s+')).first;
+}
+
+String _placeLabel(JsonReader reader, String key) {
+  final place = reader.objectOrNull(key);
+  return place == null ? reader.strOr(key, '') : place.strOr('name', '');
 }
 
 class PendingApproval {
