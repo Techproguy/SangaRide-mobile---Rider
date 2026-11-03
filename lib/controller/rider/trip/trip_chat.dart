@@ -122,7 +122,12 @@ extension TripChat on TripController {
 
   void _replaceByClientId(String clientId, TripMessage saved) {
     final index = messages.indexWhere((message) => message.clientId == clientId);
-    if (index < 0) {
+    final alreadyFetched = messages.any(
+      (message) => message.delivery == TripMessageDelivery.sent && message.id == saved.id,
+    );
+    if (alreadyFetched) {
+      if (index >= 0) messages.removeAt(index);
+    } else if (index < 0) {
       messages.add(saved);
     } else {
       messages[index] = saved;
