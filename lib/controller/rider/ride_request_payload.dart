@@ -4,7 +4,7 @@ extension RideRequestPayload on RideRequestController {
   Map<String, dynamic> get bookingJson => {
     'tripType': tripType.code,
     'timing': timing.name,
-    if (scheduledAt case final at?) ...{'scheduledFor': at.toUtc().toIso8601String(), 'timezone': BookingZone.of(at)},
+    if (scheduledAt case final at?) ...{'scheduledFor': at.toUtc().toIso8601String(), 'timezone': at.timeZoneName},
     if (repeatRule case final rule?) 'repeat': rule.toJson(),
     if (tripType == TripType.hourly) ...{
       'hourlyDurationMin': hours * Duration.minutesPerHour,
