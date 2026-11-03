@@ -12,6 +12,7 @@ import 'package:sanga_ride/core/api/idempotency_intents.dart';
 import 'package:sanga_ride/core/api/server_codes.dart';
 import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride_core/sanga_ride_core.dart';
+import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 class AddStopController extends GetxController {
   final _api = Get.find<ApiService>();
@@ -21,6 +22,7 @@ class AddStopController extends GetxController {
   Mutation<Trip>? _mutation;
   String? _mutationSignature;
   String? _tripId;
+  String? _awaitingDriverMessage;
   final Epoch _epoch = Epoch();
 
   Rx<AddStopState> get stateRx => _state;
@@ -160,7 +162,13 @@ class AddStopController extends GetxController {
       case MutationDone<Trip>(:final value):
         _releaseMutation();
         _trip.applyServerTrip(value);
-        _trip.announce(TripNotice.fareUpdated);
+        final awaiting = _awaitingDriverMessage;
+        _awaitingDriverMessage = null;
+        if (awaiting == null) {
+          _trip.announce(TripNotice.fareUpdated);
+        } else {
+          SangaToast.show(awaiting, tone: SangaToastTone.info);
+        }
         _state.value = AddStopApplied(value);
       case MutationRejected<Trip>(:final error):
         _releaseMutation();
@@ -200,6 +208,7 @@ class AddStopController extends GetxController {
           );
           body = response.dataMapOrEmpty;
         }
+        _awaitingDriverMessage = body['pending'] == true ? _pendingMessage(body) : null;
         return Trip.isRideShape(body) ? Trip.fromJson(body) : await _trip.loadLatest();
       },
       reconcile: () async {
@@ -209,6 +218,11 @@ class AddStopController extends GetxController {
         return applied ? ReconciledDone(trip) : const ReconciledNotDone();
       },
     );
+  }
+
+  String _pendingMessage(Map<String, dynamic> body) {
+    final message = body['message'];
+    return message is String && message.trim().isNotEmpty ? message : AddStopCopy.waitingForDriver;
   }
 
   bool resolveFailure({required bool isPrimary}) {

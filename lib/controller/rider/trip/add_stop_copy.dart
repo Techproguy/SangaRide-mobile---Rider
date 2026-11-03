@@ -1,4 +1,5 @@
 abstract final class AddStopCopy {
+  static const String waitingForDriver = 'Waiting for your driver to accept the new stop.';
   static const String unplaceable = 'We couldn’t place that stop. Try another one.';
   static const String sameAsPickup = 'Your stop can’t be the same as your pickup.';
   static const String sameAsDropoff = 'Your stop can’t be the same as your drop off.';
