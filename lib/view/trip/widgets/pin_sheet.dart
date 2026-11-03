@@ -18,7 +18,9 @@ class _PinSheetState extends State<PinSheet> {
   bool _isHidden = true;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => SangaSensitiveScreen(child: _screen(context));
+
+  Widget _screen(BuildContext context) {
     final code = widget.trip.pin ?? '';
     final expiresAt = widget.trip.pinExpiresAt;
     return SingleChildScrollView(

@@ -131,7 +131,9 @@ class _CardDetailsScreenState extends State<CardDetailsScreen> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => SangaSensitiveScreen(child: _screen(context));
+
+  Widget _screen(BuildContext context) {
     final amount = _amount;
     if (amount == null) return const Scaffold();
     return Obx(() {

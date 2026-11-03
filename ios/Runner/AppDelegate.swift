@@ -19,5 +19,8 @@ import GoogleMaps
 
   func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
     GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
+    if let messenger = engineBridge.pluginRegistry.registrar(forPlugin: "SensitiveScreenGuard")?.messenger() {
+      SensitiveScreenGuard.shared.register(with: messenger)
+    }
   }
 }

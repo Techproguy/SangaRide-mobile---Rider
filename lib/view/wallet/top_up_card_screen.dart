@@ -160,7 +160,9 @@ class _TopUpCardScreenState extends State<TopUpCardScreen> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => SangaSensitiveScreen(child: _screen(context));
+
+  Widget _screen(BuildContext context) {
     return Obx(() {
       final draft = _topUp.draft;
       final amount = draft.amount;
