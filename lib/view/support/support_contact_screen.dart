@@ -35,7 +35,12 @@ class _SupportContactScreenState extends State<SupportContactScreen> {
       unawaited(_controller.loadHome());
       return;
     }
-    await dialNumber(contact.phone, failureMessage: SupportCopy.callFailed(contact.phone));
+    final phone = contact.phone;
+    if (phone == null) {
+      SangaToast.show(SupportCopy.phoneLineNotOpen, tone: SangaToastTone.info);
+      return;
+    }
+    await dialNumber(phone, failureMessage: SupportCopy.callFailed(phone));
   }
 
   String _chatSubtitle(SupportContact contact) {

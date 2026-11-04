@@ -54,7 +54,7 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
   Future<void> _call() async {
     final phone = _contact?.phone;
     if (phone == null) {
-      SangaToast.show(SupportCopy.contactOptionsLoadFailed, tone: SangaToastTone.error);
+      SangaToast.show(SupportCopy.phoneLineNotOpen, tone: SangaToastTone.info);
       return;
     }
     await dialNumber(phone, failureMessage: SupportCopy.callFailed(phone));

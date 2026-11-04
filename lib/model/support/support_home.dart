@@ -55,17 +55,16 @@ class SupportContact {
   });
 
   static SupportContact? tryFromReader(JsonReader? reader) {
-    final phone = reader?.strOrNull('phone');
-    if (reader == null || phone == null) return null;
+    if (reader == null) return null;
     return SupportContact(
-      phone: phone,
+      phone: reader.strOrNull('phone'),
       hours: reader.strOr('hours', ''),
       chatAvailable: reader.boolOr('chatAvailable', false),
       chatWaitMinutes: reader.intOr('chatWaitMinutes', 0),
     );
   }
 
-  final String phone;
+  final String? phone;
   final String hours;
   final bool chatAvailable;
   final int chatWaitMinutes;

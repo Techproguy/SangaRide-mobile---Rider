@@ -73,6 +73,7 @@ abstract final class SupportCopy {
   static const String checkBackSoon = 'Check back soon, or talk to our team.';
   static const String contactSupport = 'Contact support';
   static const String searchArticles = 'Search for help articles';
+  static const String phoneLineNotOpen = 'Our phone line isn’t open just yet. Live chat is ready when you are.';
   static const String contactOptionsLoadFailed = 'We couldn’t load our contact options';
   static const String contactSubtitle = 'Chat, call or report an issue';
   static const String myReports = 'My reports';
