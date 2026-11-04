@@ -85,7 +85,9 @@ class _DeliveryReviewScreenState extends State<DeliveryReviewScreen> {
     await startMatching(context);
     if (!mounted) return;
     final state = _match.state;
-    if (state is MatchFailed && state.code != null) await _handleRejection(state);
+    if (state is MatchFailed && state.code != null && state.reason != MatchFailure.walletTooLow) {
+      await _handleRejection(state);
+    }
   }
 
   Future<void> _handleRejection(MatchFailed state) async {

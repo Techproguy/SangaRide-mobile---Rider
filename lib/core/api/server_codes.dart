@@ -16,6 +16,7 @@ abstract final class ServerCode {
   static const String groupWalletShort = 'group_wallet_short';
   static const String incomplete = 'incomplete';
   static const String insufficientBalance = 'insufficient_balance';
+  static const String insufficientWalletBalance = 'insufficient_wallet_balance';
   static const String invalidEmail = 'invalid_email';
   static const String invalidOption = 'invalid_option';
   static const String invalidPhone = 'invalid_phone';

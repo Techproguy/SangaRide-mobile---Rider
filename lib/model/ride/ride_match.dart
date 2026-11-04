@@ -76,6 +76,7 @@ enum MatchFailure {
   ),
   unconfirmed('We’re not sure it went through', 'We’ll check again. We won’t send your request twice.'),
   quoteExpired('Your price changed', 'We updated it. Have a look, then go again.'),
+  walletTooLow('Your wallet needs a top up', 'There isn’t enough in your wallet for this ride. Top up, then go again.'),
   tripLost('Let’s plan this one again', 'Your search timed out while the app was closed. Start a new trip from home.');
 
   const MatchFailure(this.title, this.message);

@@ -8,7 +8,7 @@ abstract final class WalletFormat {
   static final DateFormat _shortDay = DateFormat('d MMM');
   static final DateFormat _stamp = DateFormat('d MMM y · h:mm a');
 
-  static String money(Money amount) => amount.format();
+  static String money(Money amount) => amount.isNegative ? '-${amount.abs().format()}' : amount.format();
 
   static String signed(Money amount) => '${amount.isNegative ? '-' : '+'}${amount.abs().format()}';
 

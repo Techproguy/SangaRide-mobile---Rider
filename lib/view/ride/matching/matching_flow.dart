@@ -5,6 +5,7 @@ import 'package:sanga_ride/controller/rider/ride_match_controller.dart';
 import 'package:sanga_ride/controller/rider/ride_request_controller.dart';
 import 'package:sanga_ride/core/copy/common_copy.dart';
 import 'package:sanga_ride/core/router/routes.dart';
+import 'package:sanga_ride/core/router/wallet_routes.dart';
 import 'package:sanga_ride/model/groups/group_models.dart';
 import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride/view/ride/matching/approval_sheet.dart';
@@ -41,7 +42,11 @@ Future<void> _present(BuildContext context, {required bool replacingOffers}) asy
   switch (match.state) {
     case MatchBlocked(:final block):
       return _showBlocked(context, block);
-    case MatchFailed(:final code) when code != null && trip.tripType.handlesOwnRejections && !replacingOffers:
+    case MatchFailed(:final code, :final reason)
+        when code != null &&
+            reason != MatchFailure.walletTooLow &&
+            trip.tripType.handlesOwnRejections &&
+            !replacingOffers:
       return;
     case MatchFailed(:final reason) when reason == MatchFailure.quoteExpired:
       return _showQuoteChanged(context, trip);
@@ -102,6 +107,24 @@ Future<void> _showBlocked(BuildContext context, GroupRideBlock block) async {
   if (context.mounted && !stay) context.go(SangaRoutes.home);
 }
 
+Future<void> _showWalletTooLow(BuildContext context) async {
+  final shouldTopUp = await showSangaStatusSheet(
+    context: context,
+    status: SangaStatus.caution,
+    icon: Icons.account_balance_wallet_outlined,
+    title: MatchFailure.walletTooLow.title,
+    message: MatchFailure.walletTooLow.message,
+    actionLabel: 'Top up wallet',
+    secondaryLabel: CommonCopy.backToHome,
+  );
+  if (!context.mounted) return;
+  if (shouldTopUp) {
+    await context.push<bool>(WalletRoutes.topUpOf());
+  } else {
+    context.go(SangaRoutes.home);
+  }
+}
+
 Future<void> _showQuoteChanged(BuildContext context, RideRequestController trip) async {
   await trip.refreshQuote();
   if (!context.mounted) return;
@@ -131,6 +154,7 @@ Future<void> _showFailure(BuildContext context, MatchFailure reason, {required b
     if (context.mounted) context.go(SangaRoutes.home);
     return;
   }
+  if (reason == MatchFailure.walletTooLow) return _showWalletTooLow(context);
   final shouldRetry = await showSangaStatusSheet(
     context: context,
     status: switch (reason) {

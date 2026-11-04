@@ -3,6 +3,7 @@ import 'dart:developer';
 
 import 'package:get/get.dart';
 import 'package:sanga_ride/controller/rider/ride_request_controller.dart';
+import 'package:sanga_ride/controller/rider/wallet_controller.dart';
 import 'package:sanga_ride/core/api/api.dart';
 import 'package:sanga_ride/core/api/app_endpoints.dart';
 import 'package:sanga_ride/core/api/group_endpoints.dart';
@@ -272,6 +273,12 @@ class RideMatchController extends GetxController {
         return;
       }
       _state.value = MatchFailed(MatchFailure.quoteExpired, code: error.code, data: error.data);
+      return;
+    }
+    if (error.code == ServerCode.insufficientWalletBalance) {
+      _trip.forgetLockedQuote();
+      unawaited(Get.find<WalletController>().reloadQuietly());
+      _state.value = MatchFailed(MatchFailure.walletTooLow, code: error.code, data: error.data);
       return;
     }
     final block = GroupRideBlock.tryFromCode(error.code);
