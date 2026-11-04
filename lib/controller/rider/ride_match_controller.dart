@@ -49,6 +49,7 @@ class RideMatchController extends GetxController {
   String? _confirmSignature;
   String? _requestId;
   String? _approvalId;
+  String? _requotedApprovalId;
   Map<String, dynamic>? _approvalPayload;
   final _epoch = Epoch();
   bool _isFlushingCancels = false;
@@ -266,6 +267,10 @@ class RideMatchController extends GetxController {
     }
     if (error.code == ServerCode.quoteExpired) {
       _trip.forgetLockedQuote();
+      if (_shouldRequoteApproved(payload)) {
+        unawaited(_resendApprovedWithFreshQuote(payload));
+        return;
+      }
       _state.value = MatchFailed(MatchFailure.quoteExpired, code: error.code, data: error.data);
       return;
     }
@@ -273,6 +278,21 @@ class RideMatchController extends GetxController {
     _state.value = block == null
         ? MatchFailed(MatchFailure.couldNotStart, code: error.code, data: error.data)
         : MatchBlocked(block);
+  }
+
+  bool _shouldRequoteApproved(Map<String, dynamic> payload) {
+    final approvalId = payload['approvalId'];
+    return approvalId is String && approvalId != _requotedApprovalId;
+  }
+
+  Future<void> _resendApprovedWithFreshQuote(Map<String, dynamic> payload) async {
+    _requotedApprovalId = payload['approvalId'] as String;
+    final fresh = await _trip.lockedRequestPayload();
+    if (fresh == null || fresh['quoteId'] == payload['quoteId']) {
+      _state.value = const MatchFailed(MatchFailure.quoteExpired, code: ServerCode.quoteExpired);
+      return;
+    }
+    await _send({...fresh, 'approvalId': _requotedApprovalId});
   }
 
   void _waitForApproval(Map<String, dynamic> payload, PendingApproval approval) {
