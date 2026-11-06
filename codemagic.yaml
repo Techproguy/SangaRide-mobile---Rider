@@ -46,7 +46,6 @@ workflows:
   testflight:
     name: Sanga Ride · TestFlight
     max_build_duration: 90
-    triggering: *on_version_tag
     environment:
       <<: *environment
       groups:
