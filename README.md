@@ -10,18 +10,16 @@ The shared packages live in [sanga-ride-building-blocks](https://github.com/Tech
 
 | Env | Flavor | Talks to | Config file |
 |---|---|---|---|
-| `demo` | `dev` | In-app mock data, no server | `dart_defines/demo.json` |
 | `dev` | `dev` | The dev server | `dart_defines/dev.json` |
 | `prod` | `prod` | The production server | `dart_defines/prod.json` |
 
 The `dev` flavor installs as **Sanga Ride Dev** (`com.sangatechnologies.ride.dev`), so it sits next to the real app on one phone. The `prod` flavor is **Sanga Ride** (`com.sangatechnologies.ride`).
 
-Each config file sets `APP_ENV`. The app checks it at startup: `demo` and `dev` must run on the `dev` flavor and `prod` on the `prod` flavor, `prod` must use an HTTPS `BASE_URL`, and a live env refuses to start on a placeholder URL or Maps key.
+Each config file sets `APP_ENV`. The app checks it at startup: `dev` must run on the `dev` flavor and `prod` on the `prod` flavor, `prod` must use an HTTPS `BASE_URL`, and a live env refuses to start on a placeholder URL or Maps key.
 
 Config files are gitignored. Copy each example and fill it in:
 
 ```sh
-cp dart_defines/demo.example.json dart_defines/demo.json
 cp dart_defines/dev.example.json dart_defines/dev.json
 cp dart_defines/prod.example.json dart_defines/prod.json   # add the production URL here
 cp android/secrets.properties.example android/secrets.properties
@@ -31,10 +29,10 @@ cp ios/Flutter/Secrets.example.xcconfig ios/Flutter/Secrets.xcconfig
 ## Run
 
 ```sh
-make run env=dev     # or env=demo, env=prod
+make run env=dev     # or env=prod
 ```
 
-In VS Code, pick **Dev**, **Demo**, **Prod** or **Prod (release)** from the Run menu. Without make:
+In VS Code, pick **Dev**, **Prod** or **Prod (release)** from the Run menu. Without make:
 
 ```sh
 flutter run --flavor dev --dart-define-from-file=dart_defines/dev.json
@@ -71,16 +69,3 @@ Play holds each build as a draft: in Play Console open Test and release, Open te
 Anyone with the links can join: the TestFlight link takes up to 10,000 testers and Play open testing has no list. To invite someone by email instead, add them to "Sanga Ride External" in App Store Connect, TestFlight.
 
 Secrets live in the Codemagic variable group `sanga_ride_rider`. Set or refresh them with `python3 ../sanga-ride-building-blocks/tool/codemagic_setup.py`; every variable is explained in [CODEMAGIC.md](https://github.com/Techproguy/sanga-ride-building-blocks/blob/main/docs/ci/CODEMAGIC.md).
-
-## Mock data
-
-Until the backend exists, API calls are answered in-app from plain fixtures in `lib/core/api/mock/`. The sign-in code is `123456`.
-
-- `mock_endpoints.dart`: the paths
-- `mock_data.dart`: the fixtures
-- `mock_routes.dart`: which fixture each path returns
-- `mock_server.dart`: the interceptor that serves them
-
-A flow that needs data adds its path, fixture and route here, and nothing else.
-
-To remove the mocks, delete the `mock/` folder, drop the `MockServerInterceptor()` line in `api.dart`, and swap `MockEndpoints` for the real endpoints class.

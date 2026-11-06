@@ -26,8 +26,6 @@ import 'package:sanga_ride/controller/shared/auth_controller.dart';
 import 'package:sanga_ride/controller/shared/map_controller.dart';
 import 'package:sanga_ride/controller/shared/user_controller.dart';
 import 'package:sanga_ride/core/api/api.dart';
-import 'package:sanga_ride/core/api/api_environment.dart';
-import 'package:sanga_ride/core/api/mock/mock_card_tokenizer.dart';
 import 'package:sanga_ride/core/assets.dart';
 import 'package:sanga_ride/core/constants.dart';
 import 'package:sanga_ride/core/services/auth_config.dart';
@@ -51,6 +49,8 @@ Future<void> initializeSanga() async {
   WidgetsFlutterBinding.ensureInitialized();
   await GetStorage.init();
   RegionMemory.restore();
+  LegalLinks.restore();
+  ServerConfig.restore();
   SangaCountdown.serverClock = ServerClock.instance.now;
   SangaRouteService.configure(
     SangaRouteConfig(
@@ -60,6 +60,7 @@ Future<void> initializeSanga() async {
       androidPackage: SangaConstants.installedAppId,
     ),
   );
+  SocialSignIn.configure(googleServerClientId: SangaConstants.googleServerClientId);
   await SessionStorage.tokens.hydrate();
   unawaited(SangaMarkerIcons.preload());
   await _withinCap(SangaFrame.preload(SangaConstants.frame));
@@ -75,6 +76,7 @@ Future<void> initializeSanga() async {
 
   final api = Get.put(ApiService(), permanent: true);
   unawaited(AuthConfig.load(api));
+  unawaited(AuthConfig.loadServerConfig(api));
   final monitor = _startRuntime(api);
   Get.put(ConnectivityService(monitor), permanent: true);
   Get.put(SessionRestore(api), permanent: true);
@@ -116,4 +118,4 @@ ConnectionMonitor _startRuntime(ApiService api) {
   return monitor;
 }
 
-CardTokenizer _createCardTokenizer() => ApiEnvironment.usesMock ? MockCardTokenizer() : UnboundCardTokenizer();
+CardTokenizer _createCardTokenizer() => UnboundCardTokenizer();
