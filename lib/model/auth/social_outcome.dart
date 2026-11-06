@@ -1,10 +1,13 @@
-import 'package:sanga_ride_core/sanga_ride_core.dart' show SocialCredential;
+import 'package:sanga_ride_core/sanga_ride_core.dart' show SocialCredential, SocialSignupRequired;
 
 class SocialPrefill {
   const SocialPrefill({this.firstName, this.lastName, this.email});
 
-  factory SocialPrefill.of(SocialCredential credential) =>
-      SocialPrefill(firstName: credential.firstName, lastName: credential.lastName, email: credential.email);
+  factory SocialPrefill.of(SocialCredential credential, SocialSignupRequired reply) => SocialPrefill(
+    firstName: reply.firstName ?? credential.firstName,
+    lastName: reply.lastName ?? credential.lastName,
+    email: reply.email ?? credential.email,
+  );
 
   final String? firstName;
   final String? lastName;
@@ -16,9 +19,7 @@ sealed class SocialOutcome {
 }
 
 final class SocialSignedIn extends SocialOutcome {
-  const SocialSignedIn({required this.isNewUser});
-
-  final bool isNewUser;
+  const SocialSignedIn();
 }
 
 final class SocialNeedsSignUp extends SocialOutcome {

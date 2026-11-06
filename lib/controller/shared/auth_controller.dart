@@ -33,7 +33,10 @@ import 'package:sanga_ride_core/sanga_ride_core.dart'
         SocialProvider,
         SocialProviderLabel,
         SocialSignIn,
+        SocialReply,
+        SocialSession,
         SocialSignInResult,
+        SocialSignupRequired,
         SocialUnavailable;
 import 'package:sanga_ride_ui/sanga_ride_ui.dart' show SangaAuthCopy, SangaRegion, SangaToast, SangaToastTone;
 
@@ -183,12 +186,15 @@ class AuthController extends GetxController {
       SocialProvider.apple => AppEndpoints.appleSignIn,
     };
     try {
-      final response = await _api.post(endpoint, data: credential.requestBody, suppressErrorToast: true);
-      final data = response.dataMap;
-      await _startSession(data);
-      return SocialSignedIn(isNewUser: data['isNewUser'] == true);
+      final response = await _api.post(endpoint, data: credential.requestBodyFor('rider'), suppressErrorToast: true);
+      switch (SocialReply.fromData(response.dataMap)) {
+        case SocialSession(:final data):
+          await _startSession(data);
+          return const SocialSignedIn();
+        case final SocialSignupRequired reply:
+          return SocialNeedsSignUp(SocialPrefill.of(credential, reply));
+      }
     } on ApiException catch (e) {
-      if (e.hasCode(ServerCode.signupRequired)) return SocialNeedsSignUp(SocialPrefill.of(credential));
       log('continueWith ${credential.provider} failed: $e');
       SangaToast.show(_socialMessage(e), tone: SangaToastTone.error);
       return const SocialStopped();
