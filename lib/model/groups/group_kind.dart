@@ -42,7 +42,7 @@ enum MemberStatus {
 enum OverLimitAction {
   block('block'),
   askApproval('ask_approval'),
-  usePersonal('use_personal');
+  usePersonal('own_wallet');
 
   const OverLimitAction(this.code);
 
