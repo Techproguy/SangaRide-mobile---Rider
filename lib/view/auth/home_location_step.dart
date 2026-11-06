@@ -2,26 +2,26 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:go_router/go_router.dart';
 import 'package:sanga_ride/controller/rider/rider_sign_up_controller.dart';
 import 'package:sanga_ride/core/copy/common_copy.dart';
-import 'package:sanga_ride/core/router/routes.dart';
 import 'package:sanga_ride/core/services/location_service.dart';
 import 'package:sanga_ride/core/services/places_service.dart';
 import 'package:sanga_ride/core/services/permission_center.dart';
 import 'package:sanga_ride/view/auth/widgets/sign_up_error_notice.dart';
 import 'package:sanga_ride/model/models.dart';
-import 'package:sanga_ride/view/auth/sign_up_steps.dart';
+import 'package:sanga_ride/view/auth/sign_up_copy.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
-class HomeLocationScreen extends StatefulWidget {
-  const HomeLocationScreen({super.key});
+class HomeLocationStep extends StatefulWidget {
+  const HomeLocationStep({super.key, required this.onFinished});
+
+  final Future<void> Function() onFinished;
 
   @override
-  State<HomeLocationScreen> createState() => _HomeLocationScreenState();
+  State<HomeLocationStep> createState() => _HomeLocationStepState();
 }
 
-class _HomeLocationScreenState extends State<HomeLocationScreen> {
+class _HomeLocationStepState extends State<HomeLocationStep> {
   static const _debounce = Duration(milliseconds: 300);
 
   final _signUp = Get.find<RiderSignUpController>();
@@ -35,6 +35,7 @@ class _HomeLocationScreenState extends State<HomeLocationScreen> {
   var _isHomeFromGps = false;
   var _isSearching = false;
   var _isLocating = false;
+  var _isFinishing = false;
 
   @override
   void dispose() {
@@ -80,8 +81,8 @@ class _HomeLocationScreenState extends State<HomeLocationScreen> {
       final openSettings = await showSangaPromptSheet(
         context: context,
         icon: Icons.location_disabled_rounded,
-        title: 'Location access is off',
-        message: 'Let Sanga Ride use your location in Settings, or search for your address instead.',
+        title: SignUpCopy.locationOffTitle,
+        message: SignUpCopy.locationOffMessage,
         actionLabel: CommonCopy.openSettings,
       );
       if (openSettings) await _permissions.openSettings();
@@ -96,16 +97,17 @@ class _HomeLocationScreenState extends State<HomeLocationScreen> {
     setState(() => _isLocating = false);
     if (place != null) return _choose(place, isFromGps: true);
     SangaToast.show(switch (result.status) {
-      LocationStatus.serviceDisabled => 'Turn on location services to use where you are.',
-      LocationStatus.denied || LocationStatus.deniedForever => 'Allow location access to use where you are.',
-      _ => 'We couldn’t find where you are. Search for your address instead.',
+      LocationStatus.serviceDisabled => SignUpCopy.turnOnLocationServices,
+      LocationStatus.denied || LocationStatus.deniedForever => SignUpCopy.allowLocation,
+      _ => SignUpCopy.locationNotFound,
     }, tone: SangaToastTone.error);
   }
 
   Future<void> _save() async {
     final home = _home;
     if (home == null || _signUp.isSaving) return;
-    if (await _signUp.saveHome(home, isFromGps: _isHomeFromGps)) await _finish();
+    final isSaved = await _signUp.saveHome(home, isFromGps: _isHomeFromGps);
+    if (isSaved && mounted) await _finish();
   }
 
   Future<void> _skip() async {
@@ -114,66 +116,78 @@ class _HomeLocationScreenState extends State<HomeLocationScreen> {
   }
 
   Future<void> _finish() async {
-    await showSangaStatusSheet(
-      context: context,
-      status: SangaStatus.success,
-      title: 'You’re all set!',
-      message: 'Welcome to Sanga Ride. Let’s get you moving.',
-      actionLabel: 'Let’s go',
-    );
-    if (mounted) context.go(SangaRoutes.home);
+    if (!mounted || _isFinishing) return;
+    _isFinishing = true;
+    try {
+      await showSangaStatusSheet(
+        context: context,
+        status: SangaStatus.success,
+        title: SignUpCopy.allSetTitle,
+        message: SignUpCopy.allSetMessage,
+        actionLabel: SignUpCopy.letsGo,
+      );
+      if (mounted) await widget.onFinished();
+    } finally {
+      _isFinishing = false;
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final hasNoMatches = !_isSearching && _home == null && _query.text.trim().isNotEmpty && _results.isEmpty;
-    return SangaFormLayout(
-      title: 'Where’s home?',
-      subtitle: 'Save it once and home is always one tap away',
-      step: RiderSignUpStep.home.formStep,
+    return SangaStepPage(
+      title: SignUpCopy.whereIsHome,
+      subtitle: SignUpCopy.homeSubtitle,
       children: [
         SangaSearchField(
           controller: _query,
-          hintText: 'Enter your address',
+          hintText: SignUpCopy.enterYourAddress,
           onChanged: _onQueryChanged,
           onCleared: () => _onQueryChanged(''),
         ),
         const SizedBox(height: SangaSpacing.sm),
         SangaTonalButton(
           icon: SangaAssets.send,
-          label: 'Use my current location',
+          label: SignUpCopy.useMyCurrentLocation,
           isLoading: _isLocating,
           onPressed: _useCurrentLocation,
         ),
         const SizedBox(height: SangaSpacing.md),
-        for (final place in _results)
-          SangaPlaceTile(title: place.title, subtitle: place.subtitle, onTap: () => _choose(place)),
-        if (_isSearching)
-          const Padding(
+        SangaReveal(
+          isVisible: _results.isNotEmpty,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              for (final place in _results)
+                SangaPlaceTile(title: place.title, subtitle: place.subtitle, onTap: () => _choose(place)),
+            ],
+          ),
+        ),
+        SangaReveal(
+          isVisible: _isSearching,
+          child: const Padding(
             padding: EdgeInsets.all(SangaSpacing.md),
-            child: Center(child: SangaActivityIndicator(size: 24, color: SangaColors.primary)),
+            child: Center(child: SangaActivityIndicator.content(size: 24, color: SangaColors.primary)),
           ),
-        if (hasNoMatches)
-          Padding(
+        ),
+        SangaReveal(
+          isVisible: hasNoMatches,
+          child: Padding(
             padding: const EdgeInsets.symmetric(vertical: SangaSpacing.md),
-            child: Text(
-              'No matches yet. Try a street, area or landmark.',
-              textAlign: TextAlign.center,
-              style: SangaTextStyles.body,
-            ),
+            child: Text(SignUpCopy.noMatches, textAlign: TextAlign.center, style: SangaTextStyles.body),
           ),
-        const SizedBox(height: SangaSpacing.xxl),
+        ),
         const SignUpErrorNotice(),
         Obx(
           () => SangaButton.primary(
-            label: 'Continue',
+            label: SangaAuthCopy.continueLabel,
             isLoading: _signUp.isSaving,
             onPressed: _home == null ? null : _save,
           ),
         ),
         const SizedBox(height: SangaSpacing.xs),
         Center(
-          child: SangaTextAction(label: 'Skip for now', onPressed: _skip, isMuted: true),
+          child: SangaTextAction(label: SignUpCopy.skipForNow, onPressed: _skip, isMuted: true),
         ),
       ],
     );

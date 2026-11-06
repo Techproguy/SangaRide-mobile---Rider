@@ -1,10 +1,18 @@
-import 'package:sanga_ride_ui/sanga_ride_ui.dart';
+import 'package:sanga_ride/core/services/me_state.dart';
 
 enum RiderSignUpStep {
   details,
+  verify,
   aboutYou,
   selfie,
   home;
 
-  SangaFormStep get formStep => SangaFormStep(index + 1, values.length);
+  static RiderSignUpStep fromName(String? name) =>
+      values.firstWhere((step) => step.name == name, orElse: () => details);
+
+  static RiderSignUpStep fromOnboarding(OnboardingStep step) => switch (step) {
+    OnboardingStep.aboutYou => aboutYou,
+    OnboardingStep.selfie => selfie,
+    OnboardingStep.homePlace => home,
+  };
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:sanga_ride/core/assets.dart';
+import 'package:sanga_ride/view/auth/onboarding_copy.dart';
 import 'package:sanga_ride/view/auth/widgets/get_started_sheet.dart';
 
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
@@ -16,18 +17,18 @@ class _OnboardingScreenState extends State<OnboardingScreen> with SingleTickerPr
   static const _slides = [
     SangaOnboardingSlide(
       image: AppAssets.onboardingRide,
-      title: 'Book Rides Promptly',
-      message: 'Request a ride in seconds and get moving without the wait',
+      title: OnboardingCopy.bookRidesTitle,
+      message: OnboardingCopy.bookRidesMessage,
     ),
     SangaOnboardingSlide(
       image: AppAssets.onboardingDelivery,
-      title: 'Secure & Safe Delivery',
-      message: 'Fast pickups, secure handling, and reliable delivery from start to finish',
+      title: OnboardingCopy.safeDeliveryTitle,
+      message: OnboardingCopy.safeDeliveryMessage,
     ),
     SangaOnboardingSlide(
       image: AppAssets.onboardingFares,
-      title: 'Flexible, Negotiable Fares',
-      message: 'Agree on a fare that works for both you and the driver',
+      title: OnboardingCopy.faresTitle,
+      message: OnboardingCopy.faresMessage,
     ),
   ];
 
@@ -58,9 +59,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> with SingleTickerPr
 
   @override
   Widget build(BuildContext context) {
-    return PopScope(
+    return SangaBackScope(
       canPop: !_isChoosing,
-      onPopInvokedWithResult: (didPop, _) => didPop ? null : _choice.reverse(),
+      onBack: _choice.reverse,
       child: AnnotatedRegion(
         value: SangaSystemUi.onPhoto,
         child: Scaffold(
@@ -118,12 +119,9 @@ class _SlideOverlay extends StatelessWidget {
             alignment: Alignment.centerRight,
             child: Padding(
               padding: const EdgeInsets.only(top: SangaSpacing.lg, right: SangaSpacing.lg),
-              child: Visibility(
-                visible: !story.isLast,
-                maintainSize: true,
-                maintainAnimation: true,
-                maintainState: true,
-                child: SangaPillButton(label: 'Skip', onPressed: onSkip),
+              child: SangaFadeVisibility(
+                isVisible: !story.isLast,
+                child: SangaPillButton(label: SangaAuthCopy.skip, onPressed: onSkip),
               ),
             ),
           ),
@@ -149,7 +147,10 @@ class _SlideOverlay extends StatelessWidget {
           const SizedBox(height: SangaSpacing.xxl),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: SangaSpacing.heroInset),
-            child: SangaButton.primary(label: story.isLast ? 'Get started' : 'Next', onPressed: story.next),
+            child: SangaButton.primary(
+              label: story.isLast ? SangaAuthCopy.getStarted : SangaAuthCopy.next,
+              onPressed: story.next,
+            ),
           ),
           const SizedBox(height: SangaSpacing.md),
         ],

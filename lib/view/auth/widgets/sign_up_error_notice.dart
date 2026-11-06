@@ -11,16 +11,21 @@ class SignUpErrorNotice extends StatelessWidget {
     final signUp = Get.find<RiderSignUpController>();
     return Obx(() {
       final message = signUp.formError;
-      return AnimatedSize(
-        duration: SangaMotion.quick,
-        curve: SangaMotion.springBlock,
-        alignment: Alignment.topCenter,
-        child: message == null
-            ? const SizedBox(width: double.infinity)
-            : Padding(
-                padding: const EdgeInsets.only(bottom: SangaSpacing.md),
-                child: SangaNotice(message: message, tone: SangaTone.warning),
-              ),
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          SangaReveal(
+            isVisible: message != null,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: SangaSpacing.md),
+              child: SangaNotice(message: message ?? '', tone: SangaTone.warning),
+            ),
+          ),
+          SangaReveal(
+            isVisible: message == null,
+            child: const SizedBox(height: SangaSpacing.xxl),
+          ),
+        ],
       );
     });
   }

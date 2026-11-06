@@ -1,22 +1,27 @@
+import 'dart:async';
+
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:go_router/go_router.dart';
 import 'package:sanga_ride/controller/rider/rider_sign_up_controller.dart';
-import 'package:sanga_ride/core/router/routes.dart';
+import 'package:sanga_ride/controller/shared/user_controller.dart';
 import 'package:sanga_ride/core/services/legal.dart';
-import 'package:sanga_ride/view/auth/sign_up_steps.dart';
+import 'package:sanga_ride/view/auth/widgets/leave_sign_up.dart';
 import 'package:sanga_ride/view/auth/widgets/sign_up_error_notice.dart';
+import 'package:sanga_ride_core/sanga_ride_core.dart';
+import 'package:sanga_ride/view/auth/sign_up_copy.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
-class AboutYouScreen extends StatefulWidget {
-  const AboutYouScreen({super.key});
+class AboutYouStep extends StatefulWidget {
+  const AboutYouStep({super.key, required this.onSaved});
+
+  final VoidCallback onSaved;
 
   @override
-  State<AboutYouScreen> createState() => _AboutYouScreenState();
+  State<AboutYouStep> createState() => _AboutYouStepState();
 }
 
-class _AboutYouScreenState extends State<AboutYouScreen> {
+class _AboutYouStepState extends State<AboutYouStep> {
   static final _emailPattern = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
 
   final _signUp = Get.find<RiderSignUpController>();
@@ -33,6 +38,7 @@ class _AboutYouScreenState extends State<AboutYouScreen> {
   @override
   void initState() {
     super.initState();
+    _email.text = Get.find<UserController>().user?.email ?? _signUp.prefill?.email ?? '';
     _email.addListener(() => setState(() {}));
   }
 
@@ -48,7 +54,7 @@ class _AboutYouScreenState extends State<AboutYouScreen> {
   Future<void> _submit() async {
     if (_signUp.isSaving) return;
     if (!_emailPattern.hasMatch(_email.text.trim())) {
-      return setState(() => _emailError = 'Enter a valid email address');
+      return setState(() => _emailError = SangaAuthCopy.validEmail);
     }
     final referral = _referral.text.trim();
     final saved = await _signUp.saveProfile(
@@ -56,32 +62,50 @@ class _AboutYouScreenState extends State<AboutYouScreen> {
       birthday: _birthday,
       referralCode: referral.isEmpty ? null : referral,
     );
-    if (saved && mounted) context.push(SangaRoutes.selfie);
+    if (saved && mounted) widget.onSaved();
+  }
+
+  void _signInInstead() {
+    final phone = _signUp.draft?.phone ?? Get.find<UserController>().user?.phone;
+    unawaited(confirmLeaveSignUp(context, phone: phone));
   }
 
   @override
   Widget build(BuildContext context) {
-    return SangaFormLayout(
-      title: 'A bit about you',
-      subtitle: 'For receipts and keeping your account safe',
-      step: RiderSignUpStep.aboutYou.formStep,
+    return SangaStepPage(
+      title: SignUpCopy.aboutYou,
+      subtitle: SignUpCopy.aboutYouSubtitle,
       children: [
-        SangaTextField(
-          label: 'Email address',
-          isRequired: true,
-          hintText: 'user@gmail.com',
-          controller: _email,
-          errorText: _emailError,
-          keyboardType: TextInputType.emailAddress,
-          autofillHints: const [AutofillHints.email],
-          onChanged: (_) => setState(() => _emailError = null),
+        Obx(
+          () => SangaTextField(
+            label: SangaAuthCopy.emailAddress,
+            isRequired: true,
+            hintText: SignUpCopy.emailHint,
+            controller: _email,
+            errorText: _emailError ?? _signUp.emailError,
+            keyboardType: TextInputType.emailAddress,
+            autofillHints: const [AutofillHints.email],
+            onChanged: (_) {
+              _signUp.clearEmailError();
+              setState(() => _emailError = null);
+            },
+          ),
+        ),
+        Obx(
+          () => SangaReveal(
+            isVisible: _signUp.emailError != null,
+            child: SangaTextLink(label: SangaAuthCopy.signInInstead, onPressed: _signInInstead),
+          ),
         ),
         const SizedBox(height: SangaSpacing.xl),
-        SangaBirthdayField(minimumAge: 16, isRequired: false, onPicked: (date) => _birthday = date),
+        SangaBirthdayField(
+          minimumAge: ServerConfig.current.minimumRiderAge,
+          isRequired: false,
+          onPicked: (date) => _birthday = date,
+        ),
         const SizedBox(height: SangaSpacing.xl),
         SangaTextField(
-          label: 'Referral code (optional)',
-          hintText: 'Enter a referral code',
+          label: SignUpCopy.referralCode,
           controller: _referral,
           textInputAction: TextInputAction.done,
           textCapitalization: TextCapitalization.characters,
@@ -93,21 +117,20 @@ class _AboutYouScreenState extends State<AboutYouScreen> {
           label: Text.rich(
             TextSpan(
               children: [
-                const TextSpan(text: 'By continuing, you agree to Sanga Ride’s '),
-                TextSpan(text: 'Terms of Service', style: SangaTextStyles.link, recognizer: _terms),
-                const TextSpan(text: ' and '),
-                TextSpan(text: 'Privacy Policy', style: SangaTextStyles.link, recognizer: _privacy),
-                const TextSpan(text: '.'),
+                const TextSpan(text: SignUpCopy.agreePrefix),
+                TextSpan(text: SignUpCopy.termsOfService, style: SangaTextStyles.link, recognizer: _terms),
+                const TextSpan(text: SignUpCopy.and),
+                TextSpan(text: SignUpCopy.privacyPolicy, style: SangaTextStyles.link, recognizer: _privacy),
+                const TextSpan(text: SignUpCopy.sentenceEnd),
               ],
             ),
             style: SangaTextStyles.fine,
           ),
         ),
-        const SizedBox(height: SangaSpacing.xxl),
         const SignUpErrorNotice(),
         Obx(
           () => SangaButton.primary(
-            label: 'Continue',
+            label: SangaAuthCopy.continueLabel,
             isLoading: _signUp.isSaving,
             onPressed: _canContinue ? _submit : null,
           ),

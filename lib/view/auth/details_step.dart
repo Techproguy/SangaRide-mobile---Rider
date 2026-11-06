@@ -1,31 +1,44 @@
 import 'package:sanga_ride/core/services/region_memory.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:go_router/go_router.dart';
 import 'package:sanga_ride/controller/rider/rider_sign_up_controller.dart';
-import 'package:sanga_ride/controller/shared/auth_controller.dart';
-import 'package:sanga_ride/core/copy/common_copy.dart';
+import 'package:sanga_ride/core/router/router.dart';
 import 'package:sanga_ride/core/router/routes.dart';
-import 'package:sanga_ride/view/auth/sign_up_steps.dart';
-import 'package:sanga_ride/view/auth/verify_otp_screen.dart';
+import 'package:sanga_ride_core/sanga_ride_core.dart' show OtpSession;
 import 'package:sanga_ride/view/auth/widgets/sign_up_error_notice.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 enum _Field { firstName, lastName, phone }
 
-class SignUpScreen extends StatefulWidget {
-  const SignUpScreen({super.key});
+class SignUpDetailsStep extends StatefulWidget {
+  const SignUpDetailsStep({super.key, required this.onStarted});
+
+  final void Function(String phone, OtpSession session) onStarted;
 
   @override
-  State<SignUpScreen> createState() => _SignUpScreenState();
+  State<SignUpDetailsStep> createState() => _SignUpDetailsStepState();
 }
 
-class _SignUpScreenState extends State<SignUpScreen> {
+class _SignUpDetailsStepState extends State<SignUpDetailsStep> {
   final _signUp = Get.find<RiderSignUpController>();
   final _firstName = TextEditingController();
   final _lastName = TextEditingController();
   final _phone = SangaPhoneController();
   var _errors = <_Field, String>{};
+
+  @override
+  void initState() {
+    super.initState();
+    final draft = _signUp.draft;
+    if (draft == null) {
+      _firstName.text = _signUp.prefill?.firstName ?? '';
+      _lastName.text = _signUp.prefill?.lastName ?? '';
+      return;
+    }
+    _firstName.text = draft.firstName;
+    _lastName.text = draft.lastName;
+    _phone.setE164(draft.phone);
+  }
 
   @override
   void dispose() {
@@ -43,9 +56,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
   Map<_Field, String> _validate() {
     return {
-      if (_firstName.text.trim().isEmpty) _Field.firstName: 'Add your first name',
-      if (_lastName.text.trim().isEmpty) _Field.lastName: 'Add your last name',
-      if (!_phone.isValid) _Field.phone: CommonCopy.invalidPhone,
+      if (_firstName.text.trim().isEmpty) _Field.firstName: SangaAuthCopy.addFirstName,
+      if (_lastName.text.trim().isEmpty) _Field.lastName: SangaAuthCopy.addLastName,
+      if (!_phone.isValid) _Field.phone: SangaAuthCopy.invalidPhone,
     };
   }
 
@@ -59,20 +72,15 @@ class _SignUpScreenState extends State<SignUpScreen> {
       lastName: _lastName.text.trim(),
       phone: phone,
     );
-    if (session != null && mounted) {
-      context.push(
-        SangaRoutes.verifyOtp,
-        extra: OtpArgs(phone: phone, next: SangaRoutes.aboutYou, purpose: OtpPurpose.registration, session: session),
-      );
-    }
+    if (session != null && mounted) widget.onStarted(phone, session);
   }
+
+  void _signInInstead() => SangaRouter.switchTo(context, SangaRoutes.signIn, extra: _phone.e164);
 
   @override
   Widget build(BuildContext context) {
-    return SangaFormLayout(
-      title: 'Let’s get started',
-      subtitle: 'Tell us who’s riding',
-      step: RiderSignUpStep.details.formStep,
+    return SangaStepPage(
+      title: SangaAuthCopy.letsGetStarted,
       children: [
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -80,9 +88,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
           children: [
             Expanded(
               child: SangaTextField(
-                label: 'First name',
+                label: SangaAuthCopy.firstName,
                 isRequired: true,
-                hintText: 'Enter here',
                 controller: _firstName,
                 errorText: _errors[_Field.firstName],
                 textCapitalization: TextCapitalization.words,
@@ -92,9 +99,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
             ),
             Expanded(
               child: SangaTextField(
-                label: 'Last name',
+                label: SangaAuthCopy.lastName,
                 isRequired: true,
-                hintText: 'Enter here',
                 controller: _lastName,
                 errorText: _errors[_Field.lastName],
                 textCapitalization: TextCapitalization.words,
@@ -115,13 +121,16 @@ class _SignUpScreenState extends State<SignUpScreen> {
           ),
         ),
         Obx(
-          () => _signUp.phoneError == null
-              ? const SizedBox.shrink()
-              : SangaTextLink(label: 'Log in instead', onPressed: () => context.pushReplacement(SangaRoutes.signIn)),
+          () => SangaReveal(
+            isVisible: _signUp.phoneError != null,
+            child: SangaTextLink(label: SangaAuthCopy.signInInstead, onPressed: _signInInstead),
+          ),
         ),
-        const SizedBox(height: SangaSpacing.xxl),
         const SignUpErrorNotice(),
-        Obx(() => SangaButton.primary(label: 'Continue', isLoading: _signUp.isSaving, onPressed: _submit)),
+        Obx(
+          () =>
+              SangaButton.primary(label: SangaAuthCopy.continueLabel, isLoading: _signUp.isSaving, onPressed: _submit),
+        ),
       ],
     );
   }

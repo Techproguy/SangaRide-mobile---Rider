@@ -3,14 +3,17 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sanga_ride/controller/shared/auth_controller.dart';
-import 'package:sanga_ride/core/copy/common_copy.dart';
+import 'package:sanga_ride/core/router/router.dart';
 import 'package:sanga_ride/core/router/routes.dart';
-import 'package:sanga_ride/model/auth/otp_session.dart';
 import 'package:sanga_ride/view/auth/verify_otp_screen.dart';
+import 'package:sanga_ride/view/auth/widgets/social_sign_in_flow.dart';
+import 'package:sanga_ride_core/sanga_ride_core.dart' show OtpNotSent, OtpPurpose, OtpSent, OtpSession, SocialProvider;
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 class SignInScreen extends StatefulWidget {
-  const SignInScreen({super.key});
+  const SignInScreen({super.key, this.phone});
+
+  final String? phone;
 
   @override
   State<SignInScreen> createState() => _SignInScreenState();
@@ -18,7 +21,7 @@ class SignInScreen extends StatefulWidget {
 
 class _SignInScreenState extends State<SignInScreen> {
   final _auth = Get.find<AuthController>();
-  final _phone = SangaPhoneController();
+  late final _phone = SangaPhoneController.fromE164(widget.phone);
   String? _phoneError;
 
   bool get _canSubmit => _phone.isComplete;
@@ -33,29 +36,29 @@ class _SignInScreenState extends State<SignInScreen> {
   Future<void> _submit() async {
     if (_auth.isSendingCode) return;
     if (!_phone.isValid) {
-      setState(() => _phoneError = CommonCopy.invalidPhone);
+      setState(() => _phoneError = SangaAuthCopy.invalidPhone);
       return;
     }
     final phone = _phone.e164;
     final result = await _auth.requestOtp(phone, purpose: OtpPurpose.login);
-    if (result is! OtpSent || !mounted) return;
+    final session = switch (result) {
+      OtpSent(:final session) => session,
+      OtpNotSent(:final resendIn?) => OtpSession.fromData(null).restartedAfter(resendIn),
+      OtpNotSent() => null,
+    };
+    if (session == null || !mounted) return;
+    _auth.clearPhoneError();
     context.push(
       SangaRoutes.verifyOtp,
-      extra: OtpArgs(phone: phone, next: SangaRoutes.home, purpose: OtpPurpose.login, session: result.session),
+      extra: OtpArgs(phone: phone, next: SangaRoutes.home, session: session),
     );
-  }
-
-  Future<void> _continueWith(AuthProvider provider) async {
-    final signedIn = await _auth.continueWith(provider);
-    if (signedIn && mounted) context.go(SangaRoutes.home);
   }
 
   @override
   Widget build(BuildContext context) {
     return SangaFormLayout(
-      title: 'Welcome back',
+      title: SangaAuthCopy.welcomeBack,
       titleTrailing: const SangaIcon(SangaAssets.handWave, size: 24),
-      subtitle: 'Enter your phone number to continue',
       children: [
         Obx(
           () => SangaPhoneField(
@@ -71,30 +74,36 @@ class _SignInScreenState extends State<SignInScreen> {
           ),
         ),
         Obx(
-          () => _auth.phoneError == null
-              ? const SizedBox.shrink()
-              : SangaTextLink(label: 'Create an account', onPressed: () => context.pushReplacement(SangaRoutes.signUp)),
+          () => SangaReveal(
+            isVisible: _auth.phoneError != null,
+            child: SangaTextLink(
+              label: SangaAuthCopy.createAnAccount,
+              onPressed: () => SangaRouter.switchTo(context, SangaRoutes.signUp),
+            ),
+          ),
         ),
         const SizedBox(height: SangaSpacing.xxl),
         Obx(
           () => SangaButton.primary(
-            label: 'Continue',
+            label: SangaAuthCopy.continueLabel,
             isLoading: _auth.isSendingCode,
             onPressed: _canSubmit ? _submit : null,
           ),
         ),
         const SizedBox(height: SangaSpacing.xl),
-        const SangaLabeledDivider('or'),
+        const SangaLabeledDivider(SangaAuthCopy.orDivider),
         const SizedBox(height: SangaSpacing.md),
         Obx(
           () => SangaProviderButton.google(
-            onPressed: _auth.signingInWith == null ? () => _continueWith(AuthProvider.google) : null,
+            isLoading: _auth.signingInWith == SocialProvider.google,
+            onPressed: _auth.signingInWith == null ? () => SocialSignInFlow.run(context, SocialProvider.google) : null,
           ),
         ),
         const SizedBox(height: SangaSpacing.xs),
         Obx(
           () => SangaProviderButton.apple(
-            onPressed: _auth.signingInWith == null ? () => _continueWith(AuthProvider.apple) : null,
+            isLoading: _auth.signingInWith == SocialProvider.apple,
+            onPressed: _auth.signingInWith == null ? () => SocialSignInFlow.run(context, SocialProvider.apple) : null,
           ),
         ),
       ],
