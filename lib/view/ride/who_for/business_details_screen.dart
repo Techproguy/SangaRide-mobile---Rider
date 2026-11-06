@@ -73,7 +73,7 @@ class _BusinessDetailsScreenState extends State<BusinessDetailsScreen> {
             SangaTextField(
               label: 'Trip purpose',
               isRequired: true,
-              hintText: 'What is this trip for?',
+              hintText: 'e.g. Client meeting',
               controller: _purpose,
               errorText: _purposeError,
               textCapitalization: TextCapitalization.sentences,
@@ -100,13 +100,7 @@ class _BusinessDetailsScreenState extends State<BusinessDetailsScreen> {
                   ),
                 ],
               ),
-            SangaTextArea(
-              label: 'Additional details (optional)',
-              hintText: 'Write details',
-              controller: _note,
-              maxLength: noteLimit,
-              minLines: 3,
-            ),
+            SangaTextArea(label: 'Additional details (optional)', controller: _note, maxLength: noteLimit, minLines: 3),
           ],
         ),
       ],

@@ -23,7 +23,7 @@ class _ReportSheetState extends State<ReportSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
+    return SangaSheetScroll(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,

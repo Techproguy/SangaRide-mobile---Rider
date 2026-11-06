@@ -5,7 +5,7 @@ class BookingPickerField extends StatefulWidget {
   const BookingPickerField({
     super.key,
     required this.label,
-    required this.hintText,
+    this.hintText = 'Select',
     required this.icon,
     required this.onTap,
     this.value,

@@ -14,7 +14,7 @@ extension TripPaymentCash on TripPaymentController {
     if (deadline == null) return;
     final left = deadline.difference(DateTime.now());
     if (left <= Duration.zero) return;
-    _cashTimer = Timer(left, () {
+    _cashTimer = SessionHub.instance.timer(left, () {
       final current = state;
       if (current is PaymentAwaitingDriver) _state.value = current.withLink(CashWaitLink.timedOut);
       unawaited(_poller?.refreshNow());

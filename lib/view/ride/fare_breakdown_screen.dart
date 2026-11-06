@@ -16,7 +16,6 @@ class FareBreakdownScreen extends StatelessWidget {
     final ride = Get.find<RideRequestController>();
     return SangaPageLayout(
       title: 'Fare breakdown',
-      subtitle: 'See exactly what you pay for',
       footer: Obx(
         () => SangaButton.primary(
           label: 'Continue',

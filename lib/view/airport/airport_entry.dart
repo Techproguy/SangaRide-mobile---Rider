@@ -11,10 +11,23 @@ import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 enum AirportEntry { pickUp, dropOff }
 
 Future<void> openAirportRides(BuildContext context) async {
-  final entry = await showSangaSheet<AirportEntry>(
+  final entry = await showSangaOptionSheet<AirportEntry>(
     context: context,
-    padding: const EdgeInsets.fromLTRB(SangaSpacing.xl, SangaSpacing.xxl, SangaSpacing.xl, SangaSpacing.xl),
-    builder: (context) => const _AirportEntrySheet(),
+    title: 'Airport rides',
+    options: const [
+      SangaSheetOption(
+        value: AirportEntry.pickUp,
+        icon: Icons.flight_land_rounded,
+        title: 'Pick me up from the airport',
+        subtitle: 'Tell us your flight and we’ll time it for you',
+      ),
+      SangaSheetOption(
+        value: AirportEntry.dropOff,
+        icon: Icons.flight_takeoff_rounded,
+        title: 'Take me to the airport',
+        subtitle: 'Pick your airport and book as usual',
+      ),
+    ],
   );
   if (entry == null || !context.mounted) return;
   Get.find<RideForController>().reset();
@@ -26,37 +39,5 @@ Future<void> openAirportRides(BuildContext context) async {
       await context.push(BookingRoutes.afterTripType(TripType.airport));
     case AirportEntry.dropOff:
       await context.push(BookingRoutes.airportDestination);
-  }
-}
-
-class _AirportEntrySheet extends StatelessWidget {
-  const _AirportEntrySheet();
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      spacing: SangaSpacing.md,
-      children: [
-        const Text('Airport rides', style: SangaTextStyles.statusTitle),
-        SangaListGroup(
-          children: [
-            SangaListRow(
-              leading: const SangaIconBadge(child: Icon(Icons.flight_land_rounded)),
-              title: 'Pick me up from the airport',
-              subtitle: 'Tell us your flight and we’ll time it for you',
-              onTap: () => Navigator.of(context).pop(AirportEntry.pickUp),
-            ),
-            SangaListRow(
-              leading: const SangaIconBadge(child: Icon(Icons.flight_takeoff_rounded)),
-              title: 'Take me to the airport',
-              subtitle: 'Pick your airport and book as usual',
-              onTap: () => Navigator.of(context).pop(AirportEntry.dropOff),
-            ),
-          ],
-        ),
-      ],
-    );
   }
 }

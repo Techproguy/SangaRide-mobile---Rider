@@ -1,6 +1,5 @@
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:sanga_ride/core/api/error_handling.dart';
-import 'package:sanga_ride/core/copy/common_copy.dart';
 import 'package:sanga_ride/core/extensions/lat_lng.dart';
 import 'package:sanga_ride/core/format/money_json.dart';
 import 'package:sanga_ride/model/location/place.dart';
@@ -135,8 +134,8 @@ enum TripCancelReason {
 
 enum TripLoadFailure {
   notFound('We can’t find this trip', 'It may have ended. Head back home to see what’s next.', canRetry: false),
-  connection('We couldn’t load your trip', CommonCopy.connectionBody, canRetry: true),
-  unknown(CommonCopy.serverTitle, CommonCopy.serverTrouble, canRetry: true);
+  connection('We couldn’t load your trip', SangaCommonCopy.connectionAnotherGo, canRetry: true),
+  unknown(SangaCommonCopy.somethingWentWrong, SangaCommonCopy.serverTrouble, canRetry: true);
 
   const TripLoadFailure(this.title, this.message, {required this.canRetry});
 

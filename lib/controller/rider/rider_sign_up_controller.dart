@@ -10,11 +10,15 @@ import 'package:sanga_ride/core/api/idempotency_intents.dart';
 import 'package:sanga_ride/core/api/places_endpoints.dart';
 import 'package:sanga_ride/core/constants.dart';
 import 'package:sanga_ride/core/services/selfie_verifier.dart';
-import 'package:sanga_ride/model/auth/otp_session.dart';
+import 'package:sanga_ride/core/copy/auth_problem_copy.dart';
+import 'package:sanga_ride/model/auth/auth_problem.dart';
+import 'package:sanga_ride/model/auth/social_outcome.dart';
 import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride/model/places/saved_place.dart';
-import 'package:sanga_ride_core/sanga_ride_core.dart' show ConnectionMonitor;
+import 'package:sanga_ride_core/sanga_ride_core.dart' show ConnectionMonitor, OtpSession;
 import 'package:sanga_ride_ui/sanga_ride_ui.dart' show SangaRegion, SangaSelfieOutcome;
+
+typedef SignUpDraft = ({String firstName, String lastName, String phone});
 
 class RiderSignUpController extends GetxController {
   static const String homeStepCode = 'home';
@@ -26,17 +30,25 @@ class RiderSignUpController extends GetxController {
   final RxBool _isSaving = false.obs;
   final RxnString _phoneError = RxnString();
   final RxnString _formError = RxnString();
+  final RxnString _emailError = RxnString();
 
   IdempotencyKey? _signUpKey;
   String? _signUpSignature;
   IdempotencyKey? _homeKey;
   String? _homeSignature;
 
+  SignUpDraft? draft;
+  SocialPrefill? prefill;
+
   bool get isSaving => _isSaving.value;
 
   String? get phoneError => _phoneError.value;
 
   String? get formError => _formError.value;
+
+  String? get emailError => _emailError.value;
+
+  void clearEmailError() => _emailError.value = null;
 
   void clearPhoneError() {
     _phoneError.value = null;
@@ -56,7 +68,7 @@ class RiderSignUpController extends GetxController {
     _isSaving.value = true;
     try {
       if (await Get.find<AuthController>().isRegistered(phone)) {
-        _phoneError.value = 'This number already has an account.';
+        _phoneError.value = AccountProblem.phoneTaken.message;
         return null;
       }
       final body = {
@@ -73,9 +85,14 @@ class RiderSignUpController extends GetxController {
         suppressErrorToast: true,
       );
       _signUpKey = null;
+      draft = (firstName: firstName, lastName: lastName, phone: phone);
       return OtpSession.fromData((response.data as Map)['data']);
     } catch (e) {
       log('start sign up failed: $e');
+      if (AccountProblem.of(e) == AccountProblem.phoneTaken) {
+        _phoneError.value = AccountProblem.phoneTaken.message;
+        return null;
+      }
       _formError.value = _messageOf(e);
       return null;
     } finally {
@@ -160,6 +177,7 @@ class RiderSignUpController extends GetxController {
   Future<bool> _save(Future<Object?> Function() request, {void Function()? onDone}) async {
     if (_isSaving.value) return false;
     _formError.value = null;
+    _emailError.value = null;
     if (_isOffline) {
       _formError.value = AuthProblem.offline.message;
       return false;
@@ -171,6 +189,11 @@ class RiderSignUpController extends GetxController {
       return true;
     } catch (e) {
       log('sign up step failed: $e');
+      final problem = AccountProblem.of(e);
+      if (problem == AccountProblem.emailTaken) {
+        _emailError.value = problem.message;
+        return false;
+      }
       _formError.value = _messageOf(e);
       return false;
     } finally {
@@ -179,9 +202,7 @@ class RiderSignUpController extends GetxController {
   }
 
   String _messageOf(Object error) {
-    if (error is ApiException && error.kind == ApiFailureKind.rejected && error.message.isNotEmpty) {
-      return error.message;
-    }
+    if (error is ApiException && error.kind == ApiFailureKind.rejected) return ApiFailureCopy.rejectionMessage(error);
     return AuthProblem.of(error).message;
   }
 }

@@ -157,11 +157,9 @@ class _AddStopScreenState extends State<AddStopScreen> {
             ],
           );
         }
-        return PopScope(
+        return SangaBackScope(
           canPop: state is AddStopDrafting,
-          onPopInvokedWithResult: (didPop, _) {
-            if (!didPop) _handleBack(state);
-          },
+          onBack: () => _handleBack(state),
           child: _body(trip, state),
         );
       }),

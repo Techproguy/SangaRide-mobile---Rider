@@ -147,7 +147,7 @@ class TopUpController extends GetxController {
     switch (result) {
       case MutationDone<TopUp>(:final value):
         await _apply(value, amount: amount, method: TopUpMethod.card, epoch: epoch);
-      case MutationRejected<TopUp>(:final error) when error.code == ServerCode.otpMismatch:
+      case MutationRejected<TopUp>(:final error) when ServerCode.isOtpMismatch(error.code):
         _state.value = current.withStage(OtpStage.mismatch);
       case MutationRejected<TopUp>(:final error):
         await _clearSaved();

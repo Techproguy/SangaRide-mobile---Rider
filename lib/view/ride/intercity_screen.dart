@@ -110,7 +110,6 @@ class _IntercityScreenState extends State<IntercityScreen> {
         _cities(),
         BookingPickerField(
           label: 'Departure date and time',
-          hintText: 'Choose when',
           icon: Icons.event_rounded,
           value: departure == null ? null : formatRideSchedule(context, departure),
           errorText: isStale ? 'That time is too soon. Pick a later one.' : null,

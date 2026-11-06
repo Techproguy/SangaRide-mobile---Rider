@@ -20,7 +20,7 @@ class WhoForAvatar extends StatelessWidget {
       height: size,
       alignment: Alignment.center,
       decoration: const BoxDecoration(color: SangaColors.primarySoft, borderRadius: SangaRadii.digit),
-      child: Text(_initials, style: SangaTextStyles.label.copyWith(color: SangaColors.primary)),
+      child: Text(_initials, style: SangaTextStyles.label.copyWith(color: SangaColors.primaryStrong)),
     );
   }
 }

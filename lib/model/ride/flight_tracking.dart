@@ -1,4 +1,4 @@
-import 'package:sanga_ride/core/copy/common_copy.dart';
+import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 import 'package:sanga_ride/model/ride/flight.dart';
 import 'package:sanga_ride_core/sanga_ride_core.dart';
 
@@ -99,8 +99,8 @@ class FlightTracking {
 
 enum FlightTrackingFailure {
   notFound('We can’t find this flight', 'It may no longer be on your ride. Head back and try again.', canRetry: false),
-  connection('We couldn’t load your flight', CommonCopy.connectionBody, canRetry: true),
-  unknown('We couldn’t load your flight', CommonCopy.serverTrouble, canRetry: true);
+  connection('We couldn’t load your flight', SangaCommonCopy.connectionAnotherGo, canRetry: true),
+  unknown('We couldn’t load your flight', SangaCommonCopy.serverTrouble, canRetry: true);
 
   const FlightTrackingFailure(this.title, this.message, {required this.canRetry});
 

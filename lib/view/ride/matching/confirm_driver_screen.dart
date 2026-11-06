@@ -83,11 +83,9 @@ class _ConfirmDriverScreenState extends State<ConfirmDriverScreen> {
   Widget build(BuildContext context) {
     final hold = _hold;
     if (hold == null) return const Scaffold();
-    return PopScope(
+    return SangaBackScope(
       canPop: false,
-      onPopInvokedWithResult: (didPop, _) {
-        if (!didPop) _back();
-      },
+      onBack: _back,
       child: SangaPageLayout(
         title: 'Confirm driver',
         onBack: _back,

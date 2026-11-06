@@ -5,7 +5,6 @@ import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sanga_ride/controller/rider/ride_request_controller.dart';
 import 'package:sanga_ride/controller/rider/trip/trip_controller.dart';
-import 'package:sanga_ride/core/copy/common_copy.dart';
 import 'package:sanga_ride/core/router/booking_routes.dart';
 import 'package:sanga_ride/core/router/delivery_live_routes.dart';
 import 'package:sanga_ride/core/router/routes.dart';

@@ -1,20 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:sanga_ride/core/copy/common_copy.dart';
 import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride/view/trip/cancel/widgets/cancel_copy.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
-const EdgeInsets _statusPadding = EdgeInsets.fromLTRB(
-  SangaSpacing.xl,
-  SangaSpacing.xxl,
-  SangaSpacing.xl,
-  SangaSpacing.xl,
-);
-
 Future<bool> showCancelConfirmSheet(BuildContext context, CancelCopy copy) async {
   final confirmed = await showSangaSheet<bool>(
     context: context,
-    padding: _statusPadding,
     builder: (sheet) => SangaStatusContent(
       status: SangaStatus.caution,
       title: copy.confirmTitle,
@@ -32,7 +23,7 @@ Future<void> showCancelledSheet(BuildContext context, CancelOutcome outcome, Can
     status: SangaStatus.success,
     title: copy.doneTitle,
     message: outcome.message,
-    actionLabel: CommonCopy.backToHome,
+    actionLabel: SangaCommonCopy.backToHome,
   );
 }
 
@@ -53,6 +44,6 @@ Future<void> showCancelSettledSheet(BuildContext context, CancelSettled settled)
     status: settled.isCancelled ? SangaStatus.success : SangaStatus.caution,
     title: settled.failure.title,
     message: settled.message ?? settled.failure.message,
-    actionLabel: settled.isCancelled ? CommonCopy.backToHome : CancelCopy.gotIt,
+    actionLabel: settled.isCancelled ? SangaCommonCopy.backToHome : CancelCopy.gotIt,
   );
 }

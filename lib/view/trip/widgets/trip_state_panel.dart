@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:sanga_ride/core/copy/common_copy.dart';
 import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride/view/trip/widgets/trip_action_tiles.dart';
 import 'package:sanga_ride/view/trip/widgets/trip_panel_body.dart';
@@ -13,7 +12,7 @@ class TripLoadingPanel extends StatelessWidget {
     return const TripPanelBody(
       children: [
         SizedBox(height: SangaSpacing.md),
-        Center(child: SangaActivityIndicator(size: 32)),
+        Center(child: SangaActivityIndicator.content(size: 32)),
         SizedBox(height: SangaSpacing.md),
       ],
     );
@@ -35,9 +34,9 @@ class TripFailedPanel extends StatelessWidget {
         Text(reason.message, textAlign: TextAlign.center, style: SangaTextStyles.statusMessage),
         if (reason.canRetry) SangaButton.primary(label: 'Try again', onPressed: onRetry),
         if (reason.canRetry)
-          SangaButton.muted(label: CommonCopy.backToHome, onPressed: onHome)
+          SangaButton.muted(label: SangaCommonCopy.backToHome, onPressed: onHome)
         else
-          SangaButton.primary(label: CommonCopy.backToHome, onPressed: onHome),
+          SangaButton.primary(label: SangaCommonCopy.backToHome, onPressed: onHome),
       ],
     );
   }
@@ -100,7 +99,7 @@ class TripEndedPanel extends StatelessWidget {
             title: 'Return fee',
             rows: [SangaDetailRow(icon: Icons.undo_rounded, label: 'Charged for the way back', value: fee.format())],
           ),
-        SangaButton.primary(label: CommonCopy.backToHome, onPressed: onHome),
+        SangaButton.primary(label: SangaCommonCopy.backToHome, onPressed: onHome),
       ],
     );
   }

@@ -74,44 +74,52 @@ class _FlightTrackingScreenState extends State<FlightTrackingScreen> {
     }
   }
 
+  Widget? _footerOrNull() {
+    final tracking = _tracking.tracking;
+    return tracking == null ? null : _footer(tracking);
+  }
+
   @override
   Widget build(BuildContext context) {
     return AnnotatedRegion(
       value: SangaSystemUi.onLight,
       child: Scaffold(
-        body: SafeArea(
-          child: Column(
-            children: [
-              const SangaPageHeader(title: 'Flight tracking'),
-              Expanded(
-                child: RefreshIndicator(
-                  color: SangaColors.primary,
-                  onRefresh: _tracking.reload,
-                  child: Obx(
-                    () => ListView(
-                      physics: const AlwaysScrollableScrollPhysics(parent: SangaMotion.pagePhysics),
-                      padding: const EdgeInsets.fromLTRB(
-                        SangaSpacing.gutter,
-                        SangaSpacing.md,
-                        SangaSpacing.gutter,
-                        SangaSpacing.xl,
-                      ),
-                      children: [_body(context, _tracking.state)],
-                    ),
-                  ),
-                ),
+        appBar: const SangaAppBar(title: 'Flight tracking'),
+        body: Column(
+          children: [
+            Expanded(
+              child: RefreshIndicator(
+                color: SangaColors.primary,
+                onRefresh: _tracking.reload,
+                child: Obx(() {
+                  const padding = EdgeInsets.fromLTRB(
+                    SangaSpacing.gutter,
+                    SangaSpacing.md,
+                    SangaSpacing.gutter,
+                    SangaSpacing.xl,
+                  );
+                  return ListView(
+                    physics: const AlwaysScrollableScrollPhysics(parent: SangaMotion.pagePhysics),
+                    padding: _footerOrNull() == null ? padding.withBottomInset(context) : padding,
+                    children: [_body(context, _tracking.state)],
+                  );
+                }),
               ),
-              Obx(() {
-                final tracking = _tracking.tracking;
-                final footer = tracking == null ? null : _footer(tracking);
-                if (footer == null) return const SizedBox.shrink();
-                return Padding(
-                  padding: const EdgeInsets.fromLTRB(SangaSpacing.gutter, 0, SangaSpacing.gutter, SangaSpacing.md),
-                  child: footer,
-                );
-              }),
-            ],
-          ),
+            ),
+            Obx(() {
+              final footer = _footerOrNull();
+              if (footer == null) return const SizedBox.shrink();
+              return Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  SangaSpacing.gutter,
+                  0,
+                  SangaSpacing.gutter,
+                  SangaSpacing.md,
+                ).withBottomInset(context),
+                child: footer,
+              );
+            }),
+          ],
         ),
       ),
     );

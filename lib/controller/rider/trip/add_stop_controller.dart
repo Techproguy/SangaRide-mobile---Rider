@@ -135,12 +135,9 @@ class AddStopController extends GetxController {
     }
   }
 
-  static const String _validationFailed = 'Validation failed';
-
   String? _rejection(Object error) {
     if (error is! ApiException || error.kind != ApiFailureKind.rejected) return null;
-    final message = error.message.trim();
-    return message.isEmpty || message == _validationFailed ? null : message;
+    return AddStopFailure.of(error) == AddStopFailure.unknown ? ApiFailureCopy.rejectionMessage(error) : null;
   }
 
   Future<void> confirm() async {

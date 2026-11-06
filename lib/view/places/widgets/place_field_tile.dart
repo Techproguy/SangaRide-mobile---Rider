@@ -33,7 +33,7 @@ class PlaceFieldTile extends StatelessWidget {
         child: ConstrainedBox(
           constraints: const BoxConstraints(minHeight: _minHeight),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: SangaSpacing.md, vertical: SangaSpacing.sm),
+            padding: const EdgeInsets.symmetric(horizontal: SangaTextField.inset, vertical: SangaSpacing.sm),
             child: Row(
               spacing: SangaSpacing.sm,
               children: [

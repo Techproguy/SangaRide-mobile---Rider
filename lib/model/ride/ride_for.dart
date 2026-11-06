@@ -1,5 +1,5 @@
+import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 import 'package:sanga_ride/core/api/server_codes.dart';
-import 'package:sanga_ride/core/copy/common_copy.dart';
 import 'package:sanga_ride/model/ride/ride_load_problem.dart';
 import 'package:sanga_ride/model/ride/server_deadline.dart';
 import 'package:sanga_ride_core/sanga_ride_core.dart';
@@ -30,17 +30,17 @@ enum PassengerGender {
 
 enum PassengerFailure {
   otpMismatch(ServerCode.otpMismatch, 'That code didn’t match. Give it another go.', needsNewCode: false),
-  otpExpired(ServerCode.otpExpired, 'That code has expired. Grab a new one below.', needsNewCode: true),
-  tooManyAttempts('too_many_attempts', 'Too many wrong tries. Grab a new code below.', needsNewCode: true),
+  otpExpired(ServerCode.otpExpired, 'That code has expired. Tap Resend to get a new one.', needsNewCode: true),
+  tooManyAttempts('too_many_attempts', 'Too many wrong tries. Tap Resend to get a new code.', needsNewCode: true),
   verificationNotFound(
     'verification_not_found',
-    'We lost track of that code. Grab a new one below.',
+    'We lost track of that code. Tap Resend to get a new one.',
     needsNewCode: true,
   ),
   ownNumber('own_number', 'That’s your own number. Pick Just for me instead.', needsNewCode: false),
   invalidPhone(ServerCode.invalidPhone, 'We can’t text that number. Check it and try again.', needsNewCode: false),
-  connection('connection', CommonCopy.offline, needsNewCode: false),
-  unknown('unknown', CommonCopy.serverTrouble, needsNewCode: false);
+  connection('connection', SangaCommonCopy.offlineAnotherGo, needsNewCode: false),
+  unknown('unknown', SangaCommonCopy.serverTrouble, needsNewCode: false);
 
   const PassengerFailure(this.code, this.message, {required this.needsNewCode});
 
@@ -48,7 +48,12 @@ enum PassengerFailure {
   final String message;
   final bool needsNewCode;
 
-  static PassengerFailure fromCode(String? code) => enumByCode(values, code, (failure) => failure.code, unknown);
+  static PassengerFailure fromCode(String? code) => enumByCode(
+    values,
+    ServerCode.isOtpMismatch(code) ? ServerCode.otpMismatch : code,
+    (failure) => failure.code,
+    unknown,
+  );
 
   static PassengerFailure of(Object error) => switch (ProblemKind.of(error)) {
     ProblemOffline() => connection,
@@ -86,12 +91,12 @@ class PassengerVerification {
 
   factory PassengerVerification.fromJson(Object? body, {String? id}) {
     final json = JsonReader.of(body);
-    final otp = json.object('otp');
+    final otp = json.objectOrNull('otp') ?? json;
     return PassengerVerification(
       id: id ?? json.object('passenger').str('id'),
       expiresAt: deviceDeadlineAt(serverInstantOf(otp, 'expiresAt')),
       sentAt: DateTime.now(),
-      resendAfter: Duration(seconds: otp.intOr('resendInSec', 60)),
+      resendAfter: Duration(seconds: otp.intOrNull('resendInSeconds') ?? otp.intOrNull('resendInSec') ?? 60),
     );
   }
 
@@ -99,6 +104,9 @@ class PassengerVerification {
   final DateTime expiresAt;
   final DateTime sentAt;
   final Duration resendAfter;
+
+  PassengerVerification restartedAfter(Duration resendAfter) =>
+      PassengerVerification(id: id, expiresAt: expiresAt, sentAt: DateTime.now(), resendAfter: resendAfter);
 }
 
 class FamilyMember {

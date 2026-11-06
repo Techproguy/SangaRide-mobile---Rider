@@ -1,4 +1,4 @@
-import 'package:sanga_ride/core/copy/common_copy.dart';
+import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 import 'package:sanga_ride/model/ride/airport_catalog.dart';
 import 'package:sanga_ride_core/sanga_ride_core.dart';
 
@@ -128,7 +128,7 @@ enum FlightProblem {
   wrongAirport('wrong_airport', 'That flight lands at a different airport. Check your flight or pick another airport.'),
   dateOutOfRange('date_out_of_range', 'We can only plan pick ups from today up to 30 days ahead.'),
   alreadyArrived('flight_already_arrived', 'That flight landed a while ago. Check the date and number.'),
-  connection('connection', CommonCopy.offline),
+  connection('connection', SangaCommonCopy.offlineAnotherGo),
   unknown('unknown', 'We couldn’t check that flight. Try again in a moment.');
 
   const FlightProblem(this.code, this.message);

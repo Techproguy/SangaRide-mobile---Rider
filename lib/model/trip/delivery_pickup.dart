@@ -1,5 +1,5 @@
+import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 import 'package:sanga_ride/core/api/server_codes.dart';
-import 'package:sanga_ride/core/copy/common_copy.dart';
 import 'package:sanga_ride_core/sanga_ride_core.dart';
 
 enum DeliveryPickupProblem {
@@ -14,6 +14,12 @@ enum DeliveryPickupProblem {
     'camera_unavailable',
     'We can’t reach your camera',
     'Give it another go in a moment.',
+    isPhotoProblem: true,
+  ),
+  noCamera(
+    'no_camera',
+    'There’s no camera on this phone',
+    'Open Sanga on a phone with a camera to photograph the package.',
     isPhotoProblem: true,
   ),
   unreadablePhoto(
@@ -37,7 +43,7 @@ enum DeliveryPickupProblem {
   uploadFailed(
     ServerCode.uploadFailed,
     'We couldn’t upload your photo',
-    CommonCopy.connectionBody,
+    SangaCommonCopy.connectionAnotherGo,
     isPhotoProblem: true,
   ),
   movedOn(
@@ -46,8 +52,13 @@ enum DeliveryPickupProblem {
     'Your driver has already carried on with the delivery.',
     isPhotoProblem: false,
   ),
-  connection('connection', CommonCopy.unreachableTitle, CommonCopy.connectionBody, isPhotoProblem: false),
-  unknown('unknown', CommonCopy.serverTitle, CommonCopy.serverTrouble, isPhotoProblem: false);
+  connection(
+    'connection',
+    SangaCommonCopy.unreachableTitle,
+    SangaCommonCopy.connectionAnotherGo,
+    isPhotoProblem: false,
+  ),
+  unknown('unknown', SangaCommonCopy.somethingWentWrong, SangaCommonCopy.serverTrouble, isPhotoProblem: false);
 
   const DeliveryPickupProblem(
     this.code,

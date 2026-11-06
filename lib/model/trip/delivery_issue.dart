@@ -1,4 +1,4 @@
-import 'package:sanga_ride/core/copy/common_copy.dart';
+import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 import 'package:sanga_ride_core/sanga_ride_core.dart';
 
 enum DeliveryIssueReason {
@@ -148,8 +148,8 @@ enum DeliveryIssueProblem {
     'Pick one of the options on screen to carry on.',
     canRetry: true,
   ),
-  connection('connection', CommonCopy.unreachableTitle, CommonCopy.connectionBody, canRetry: true),
-  unknown('unknown', CommonCopy.serverTitle, CommonCopy.serverTrouble, canRetry: true);
+  connection('connection', SangaCommonCopy.unreachableTitle, SangaCommonCopy.connectionAnotherGo, canRetry: true),
+  unknown('unknown', SangaCommonCopy.somethingWentWrong, SangaCommonCopy.serverTrouble, canRetry: true);
 
   const DeliveryIssueProblem(this.code, this.title, this.message, {required this.canRetry});
 

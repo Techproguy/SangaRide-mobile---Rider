@@ -140,7 +140,6 @@ class _RepeatSetupScreenState extends State<RepeatSetupScreen> {
           children: [
             BookingPickerField(
               label: 'Time',
-              hintText: 'Choose daily time',
               icon: Icons.schedule_rounded,
               value: time == null ? null : formatRideClock(context, time),
               onTap: _pickTime,
@@ -148,7 +147,6 @@ class _RepeatSetupScreenState extends State<RepeatSetupScreen> {
             _weekdays(),
             BookingPickerField(
               label: 'Start date',
-              hintText: 'Choose date',
               icon: Icons.event_rounded,
               value: formatRideDate(_start),
               onTap: _pickStart,

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:sanga_ride/controller/rider/ride_for_controller.dart';
-import 'package:sanga_ride/core/copy/common_copy.dart';
 import 'package:sanga_ride/core/router/who_for_routes.dart';
 import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride/view/ride/who_for/widgets/passenger_gender_picker.dart';
@@ -50,7 +49,7 @@ class _PassengerInfoScreenState extends State<PassengerInfoScreen> {
     return {
       if (_name.text.trim().isEmpty) _Field.name: 'Add the passenger’s name',
       if (email.isNotEmpty && !_emailPattern.hasMatch(email)) _Field.email: 'Enter a valid email or leave it blank',
-      if (!_phone.isValid) _Field.phone: CommonCopy.invalidPhone,
+      if (!_phone.isValid) _Field.phone: SangaAuthCopy.invalidPhone,
     };
   }
 
@@ -107,7 +106,7 @@ class _PassengerInfoScreenState extends State<PassengerInfoScreen> {
             SangaTextField(
               label: 'Name',
               isRequired: true,
-              hintText: 'Enter the passenger’s full name',
+              hintText: 'Full name',
               controller: _name,
               errorText: _errors[_Field.name],
               keyboardType: TextInputType.name,
@@ -115,8 +114,7 @@ class _PassengerInfoScreenState extends State<PassengerInfoScreen> {
               onChanged: (_) => _clearError(_Field.name),
             ),
             SangaTextField(
-              label: 'Passenger’s email',
-              hintText: 'Enter the passenger’s email',
+              label: 'Passenger’s email (optional)',
               controller: _email,
               errorText: _errors[_Field.email],
               keyboardType: TextInputType.emailAddress,

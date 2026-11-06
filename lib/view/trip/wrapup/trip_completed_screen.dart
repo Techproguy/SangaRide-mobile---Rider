@@ -33,77 +33,76 @@ class _TripCompletedScreenState extends State<TripCompletedScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return PopScope(
+    return SangaBackScope(
       canPop: false,
-      onPopInvokedWithResult: (didPop, _) {
-        if (!didPop) _home();
-      },
+      onBack: _home,
       child: AnnotatedRegion(
         value: SangaSystemUi.onLight,
         child: Scaffold(
-          body: SafeArea(
-            child: Column(
-              children: [
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(SangaSpacing.gutter, SangaSpacing.xs, SangaSpacing.sm, 0),
-                    child: SangaTextAction(label: 'Done', onPressed: _home),
-                  ),
-                ),
-                Expanded(
-                  child: Obx(() {
-                    final state = _receipt.state;
-                    return ListView(
-                      padding: const EdgeInsets.fromLTRB(
-                        SangaSpacing.gutter,
-                        SangaSpacing.xs,
-                        SangaSpacing.gutter,
-                        SangaSpacing.xl,
-                      ),
-                      children: [
-                        WrapUpAsyncBody(
-                          isLoading: state is ReceiptLoading,
-                          failure: switch (state) {
-                            ReceiptFailed(:final reason) => WrapUpFailure(
-                              title: reason.title,
-                              message: reason.message,
-                              onRetry: reason.canRetry ? _receipt.reload : null,
-                            ),
-                            ReceiptLoading() || ReceiptLoaded() => null,
-                          },
-                          skeletonHeights: const [120, 64, 80, 80],
-                          builder: (context) => state is ReceiptLoaded
-                              ? CompletedSummary(receipt: state.receipt)
-                              : const SizedBox.shrink(),
-                        ),
-                      ],
-                    );
-                  }),
-                ),
-                Obx(() {
-                  final receipt = _receipt.receipt;
-                  if (receipt == null) return const SizedBox.shrink();
-                  return Padding(
-                    padding: const EdgeInsets.fromLTRB(SangaSpacing.gutter, 0, SangaSpacing.gutter, SangaSpacing.md),
-                    child: Column(
-                      spacing: SangaSpacing.sm,
-                      children: [
-                        SangaButton.primary(
-                          label: 'View receipt',
-                          onPressed: () => context.push(TripWrapUpRoutes.receiptOf(widget.tripId)),
-                        ),
-                        if (!receipt.isRated)
-                          SangaButton.muted(
-                            label: receipt.isDelivery ? 'Rate your driver' : 'Rate your ride',
-                            onPressed: () => context.push(TripWrapUpRoutes.rateOf(widget.tripId)),
+          appBar: SangaAppBar(
+            leading: SangaStepLeading.none,
+            topInset: SangaSpacing.xs,
+            actions: [SangaTextAction(label: 'Done', onPressed: _home)],
+          ),
+          body: Column(
+            children: [
+              Expanded(
+                child: Obx(() {
+                  final state = _receipt.state;
+                  const padding = EdgeInsets.fromLTRB(
+                    SangaSpacing.gutter,
+                    SangaSpacing.xs,
+                    SangaSpacing.gutter,
+                    SangaSpacing.xl,
+                  );
+                  return ListView(
+                    padding: _receipt.receipt == null ? padding.withBottomInset(context) : padding,
+                    children: [
+                      WrapUpAsyncBody(
+                        isLoading: state is ReceiptLoading,
+                        failure: switch (state) {
+                          ReceiptFailed(:final reason) => WrapUpFailure(
+                            title: reason.title,
+                            message: reason.message,
+                            onRetry: reason.canRetry ? _receipt.reload : null,
                           ),
-                      ],
-                    ),
+                          ReceiptLoading() || ReceiptLoaded() => null,
+                        },
+                        skeletonHeights: const [120, 64, 80, 80],
+                        builder: (context) =>
+                            state is ReceiptLoaded ? CompletedSummary(receipt: state.receipt) : const SizedBox.shrink(),
+                      ),
+                    ],
                   );
                 }),
-              ],
-            ),
+              ),
+              Obx(() {
+                final receipt = _receipt.receipt;
+                if (receipt == null) return const SizedBox.shrink();
+                return Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    SangaSpacing.gutter,
+                    0,
+                    SangaSpacing.gutter,
+                    SangaSpacing.md,
+                  ).withBottomInset(context),
+                  child: Column(
+                    spacing: SangaSpacing.sm,
+                    children: [
+                      SangaButton.primary(
+                        label: 'View receipt',
+                        onPressed: () => context.push(TripWrapUpRoutes.receiptOf(widget.tripId)),
+                      ),
+                      if (!receipt.isRated)
+                        SangaButton.muted(
+                          label: receipt.isDelivery ? 'Rate your driver' : 'Rate your ride',
+                          onPressed: () => context.push(TripWrapUpRoutes.rateOf(widget.tripId)),
+                        ),
+                    ],
+                  ),
+                );
+              }),
+            ],
           ),
         ),
       ),

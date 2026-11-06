@@ -95,7 +95,9 @@ class ContactsController extends GetxController {
       },
       reconcile: () async {
         final response = await _api.get(SafetyEndpoints.contacts, suppressErrorToast: true);
-        final found = EmergencyContact.listFromBody(response.data).where((contact) => contact.phone == phone).firstOrNull;
+        final found = EmergencyContact.listFromBody(response.data)
+            .where((contact) => contact.phone == phone)
+            .firstOrNull;
         return found == null ? const ReconciledNotDone() : ReconciledDone(found);
       },
     );

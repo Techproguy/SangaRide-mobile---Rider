@@ -6,7 +6,6 @@ class CancelCopy {
 
   static CancelCopy of({required bool isDelivery}) => isDelivery ? delivery : ride;
 
-  static const String continueLabel = 'Continue';
   static const String whyCancelling = 'Why are you cancelling?';
   static const String tellUsWhatHappened = 'Tell us what happened';
   static const String fewWordsIsPlenty = 'A few words is plenty';

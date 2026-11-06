@@ -48,7 +48,7 @@ class _CancelReasonsViewState extends State<CancelReasonsView> {
     return SangaPageLayout(
       title: widget.copy.title,
       footer: SangaButton.primary(
-        label: CancelCopy.continueLabel,
+        label: SangaAuthCopy.continueLabel,
         isLoading: widget.isLoading,
         onPressed: widget.canContinue ? widget.onContinue : null,
       ),

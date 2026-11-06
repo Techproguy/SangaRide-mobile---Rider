@@ -1,9 +1,9 @@
-import 'package:sanga_ride/core/copy/common_copy.dart';
+import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 import 'package:sanga_ride_core/sanga_ride_core.dart';
 
 enum RideLoadProblem {
   connection('You’re offline. Check your connection and try again.'),
-  unknown(CommonCopy.serverTrouble);
+  unknown(SangaCommonCopy.serverTrouble);
 
   const RideLoadProblem(this.message);
 

@@ -9,7 +9,7 @@ import 'package:sanga_ride/core/api/who_for_endpoints.dart';
 import 'package:sanga_ride/model/groups/group_models.dart';
 import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride/model/ride/ride_load_problem.dart';
-import 'package:sanga_ride_core/sanga_ride_core.dart' show ConnectionMonitor, ResponseData;
+import 'package:sanga_ride_core/sanga_ride_core.dart' show ConnectionMonitor, OtpSession, ResponseData;
 
 class RideForController extends GetxController {
   final _api = Get.find<ApiService>();
@@ -209,9 +209,10 @@ class RideForController extends GetxController {
       return true;
     } catch (e) {
       log('resendPassengerCode failed: $e');
+      final delay = e is ApiException ? OtpSession.resendDelayOf(e) : null;
       _passenger.value = PassengerCodePending(
         info: state.info,
-        verification: state.verification,
+        verification: delay == null ? state.verification : state.verification.restartedAfter(delay),
         failure: PassengerFailure.of(e),
       );
       return false;

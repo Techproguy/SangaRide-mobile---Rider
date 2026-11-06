@@ -7,8 +7,6 @@ import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride_core/sanga_ride_core.dart';
 
 class PhoneChangeController extends GetxController {
-  static const Duration _fallbackLifetime = Duration(minutes: 5);
-
   final _api = Get.find<ApiService>();
 
   final Rx<PhoneChangeState> _state = Rx<PhoneChangeState>(const PhoneEntry());
@@ -23,7 +21,7 @@ class PhoneChangeController extends GetxController {
     final current = _state.value;
     if (current is PhoneEntry && current.problem != null) _state.value = const PhoneEntry();
     if (current is PhoneCode && current.problem != null) {
-      _state.value = PhoneCode(current.phone, current.sentAt, current.lifetime);
+      _state.value = PhoneCode(current.phone, current.session);
     }
   }
 
@@ -41,7 +39,7 @@ class PhoneChangeController extends GetxController {
         key: IdempotencyKey.newFor(IdempotencyIntent.phoneChange),
         suppressErrorToast: true,
       );
-      _state.value = PhoneCode(phone, DateTime.now(), _lifetimeOf(response.dataMapOrEmpty));
+      _state.value = PhoneCode(phone, OtpSession.fromData(response.dataMapOrEmpty));
     } on Object catch (error) {
       _state.value = PhoneEntry(problem: AccountProblem.of(error));
     }
@@ -51,7 +49,7 @@ class PhoneChangeController extends GetxController {
     final current = _state.value;
     if (current is! PhoneCode) return;
     if (_isOffline) {
-      _state.value = PhoneCode(current.phone, current.sentAt, current.lifetime, problem: AccountProblem.connection);
+      _state.value = PhoneCode(current.phone, current.session, problem: AccountProblem.connection);
       return;
     }
     try {
@@ -61,20 +59,25 @@ class PhoneChangeController extends GetxController {
         key: IdempotencyKey.newFor(IdempotencyIntent.phoneChange),
         suppressErrorToast: true,
       );
-      _state.value = PhoneCode(current.phone, DateTime.now(), _lifetimeOf(response.dataMapOrEmpty));
+      _state.value = PhoneCode(current.phone, OtpSession.fromData(response.dataMapOrEmpty));
     } on Object catch (error) {
-      _state.value = PhoneCode(current.phone, current.sentAt, current.lifetime, problem: AccountProblem.of(error));
+      _state.value = PhoneCode(current.phone, _throttled(current.session, error), problem: AccountProblem.of(error));
     }
+  }
+
+  OtpSession _throttled(OtpSession session, Object error) {
+    final delay = error is ApiException ? OtpSession.resendDelayOf(error) : null;
+    return delay == null ? session : session.restartedAfter(delay);
   }
 
   Future<bool> verify(String code) async {
     final current = _state.value;
     if (current is! PhoneCode || current.isVerifying) return false;
     if (_isOffline) {
-      _state.value = PhoneCode(current.phone, current.sentAt, current.lifetime, problem: AccountProblem.connection);
+      _state.value = PhoneCode(current.phone, current.session, problem: AccountProblem.connection);
       return false;
     }
-    _state.value = PhoneCode(current.phone, current.sentAt, current.lifetime, isVerifying: true);
+    _state.value = PhoneCode(current.phone, current.session, isVerifying: true);
     try {
       final response = await _api.post(
         AccountEndpoints.phoneVerify,
@@ -86,17 +89,10 @@ class PhoneChangeController extends GetxController {
       _state.value = const PhoneChanged();
       return true;
     } on Object catch (error) {
-      _state.value = PhoneCode(current.phone, current.sentAt, current.lifetime, problem: AccountProblem.of(error));
+      _state.value = PhoneCode(current.phone, current.session, problem: AccountProblem.of(error));
       return false;
     }
   }
 
   bool get _isOffline => ConnectionMonitor.current?.isOnline == false;
-
-  Duration _lifetimeOf(Map<String, dynamic> data) {
-    final expiresAt = JsonReader(data).timeOrNull('expiresAt');
-    if (expiresAt == null) return _fallbackLifetime;
-    final remaining = ServerClock.instance.remaining(expiresAt);
-    return remaining == Duration.zero ? _fallbackLifetime : remaining;
-  }
 }

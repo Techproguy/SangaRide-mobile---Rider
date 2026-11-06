@@ -2,19 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
-const EdgeInsets _statusPadding = EdgeInsets.fromLTRB(
-  SangaSpacing.xl,
-  SangaSpacing.xxl,
-  SangaSpacing.xl,
-  SangaSpacing.xl,
-);
-
 Future<void> showStopUpdatingSheet(BuildContext context) {
   return showSangaSheet<void>(
     context: context,
     isDismissible: false,
     enableDrag: false,
-    padding: _statusPadding,
     builder: (_) => const PopScope(
       canPop: false,
       child: SangaStatusContent(

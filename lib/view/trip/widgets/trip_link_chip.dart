@@ -17,7 +17,7 @@ class TripLinkChip extends StatelessWidget {
         onTap: onPressed,
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: SangaSpacing.md, vertical: SangaSpacing.xs),
-          child: Text(label, style: SangaTextStyles.cardTitle.copyWith(color: SangaColors.primary)),
+          child: Text(label, style: SangaTextStyles.cardTitle.copyWith(color: SangaColors.primaryStrong)),
         ),
       ),
     );

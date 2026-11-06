@@ -1,11 +1,12 @@
+import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 import 'package:sanga_ride/core/copy/common_copy.dart';
 import 'package:sanga_ride/model/trip/wrapup/payment.dart';
 import 'package:sanga_ride_core/sanga_ride_core.dart';
 
 enum PaymentProblem {
-  connection(CommonCopy.offlineTitle, '${CommonCopy.connectionBody} You haven’t been charged.'),
-  server('Our side is struggling', CommonCopy.serverTrouble),
-  unknown(CommonCopy.serverTitle, CommonCopy.serverTrouble);
+  connection(CommonCopy.offlineTitle, '${SangaCommonCopy.connectionAnotherGo} You haven’t been charged.'),
+  server('Our side is struggling', SangaCommonCopy.serverTrouble),
+  unknown(SangaCommonCopy.somethingWentWrong, SangaCommonCopy.serverTrouble);
 
   const PaymentProblem(this.title, this.message);
 

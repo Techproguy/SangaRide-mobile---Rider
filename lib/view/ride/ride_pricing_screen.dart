@@ -130,10 +130,7 @@ class _RidePricingScreenState extends State<RidePricingScreen> {
           onTap: () => _ride.selectPricing(PricingOption.fairFare),
         ),
         if (problem != null)
-          Text(
-            problem.messageFor(range),
-            style: SangaTextStyles.cardSubtitle.copyWith(color: SangaColors.dangerStrong),
-          ),
+          Text(problem.messageFor(range), style: SangaTextStyles.chipText.copyWith(color: SangaColors.dangerInk)),
       ],
     );
   }

@@ -135,7 +135,12 @@ class GroupController extends GetxController {
         signature: 'member:$memberId:${changes.toString()}',
         intent: IdempotencyIntent.memberUpdate,
         send: (key) async {
-          await _api.patch(GroupEndpoints.memberOf(groupId, memberId), data: changes, key: key, suppressErrorToast: true);
+          await _api.patch(
+            GroupEndpoints.memberOf(groupId, memberId),
+            data: changes,
+            key: key,
+            suppressErrorToast: true,
+          );
           await reloadQuietly();
           return detail?.memberOf(memberId) ?? member;
         },

@@ -89,7 +89,10 @@ class RideMatchController extends GetxController {
     super.onInit();
     _cancels.load();
     SessionHub.instance.register(SessionNames.rideMatch, (_) => _teardown());
-    _resumeSubscription = AppLifecycle.instance.onResume.listen((_) => unawaited(flushPendingCancels()));
+    _resumeSubscription = SessionHub.instance.listen(
+      AppLifecycle.instance.onResume,
+      (_) => unawaited(flushPendingCancels()),
+    );
     _monitor = ConnectionMonitor.current;
     _monitor?.status.addListener(_onConnectionChanged);
     unawaited(flushPendingCancels());
@@ -493,7 +496,10 @@ class RideMatchController extends GetxController {
     );
     poller.link.addListener(() => _onLink(epoch, poller));
     _searchPoller = poller..start();
-    _expiryTimer = Timer(ServerClock.instance.remaining(request.searchDeadline) + retryDelay, () => _onExpiry(epoch));
+    _expiryTimer = SessionHub.instance.timer(
+      ServerClock.instance.remaining(request.searchDeadline) + retryDelay,
+      () => _onExpiry(epoch),
+    );
   }
 
   void _stopSearchPolling() {

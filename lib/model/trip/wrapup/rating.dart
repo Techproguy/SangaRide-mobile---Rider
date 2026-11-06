@@ -1,4 +1,4 @@
-import 'package:sanga_ride/core/copy/common_copy.dart';
+import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 enum RatingTag {
   fastAndPolite('FAST_AND_POLITE', 'Fast and polite', isPositive: true),
@@ -93,5 +93,5 @@ final class RatingFailed extends RatingState {
   const RatingFailed(super.rating);
 
   static const String title = 'We couldn’t send your rating';
-  static const String message = '${CommonCopy.connectionBody} Your review is still here.';
+  static const String message = '${SangaCommonCopy.connectionAnotherGo} Your review is still here.';
 }

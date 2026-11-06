@@ -366,7 +366,7 @@ class TripPaymentController extends GetxController {
       _state.value = PaymentDeclined(payment, reason: PaymentDeclineReason.fromCode(code));
       return;
     }
-    final notice = PaymentNotice(PaymentProblem.unknown, serverMessage: error.message);
+    final notice = PaymentNotice(PaymentProblem.unknown, serverMessage: ApiFailureCopy.rejectionMessage(error));
     _state.value = method == PaymentMethod.card
         ? PaymentCardEntry(payment, notice: notice)
         : PaymentChoosing(payment, selected: method, notice: notice);

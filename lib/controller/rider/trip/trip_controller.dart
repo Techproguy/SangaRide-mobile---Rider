@@ -226,7 +226,7 @@ class TripController extends GetxController {
     );
     _livePosition = null;
     _positionSubscription?.cancel();
-    _positionSubscription = RideEvents.instance.driverLocationsOf(id).listen(_onDriverLocation);
+    _positionSubscription = SessionHub.instance.listen(RideEvents.instance.driverLocationsOf(id), _onDriverLocation);
     void mirror() => _link.value = poller.link.value;
     poller.link.addListener(mirror);
     _detachTripLink = () => poller.link.removeListener(mirror);

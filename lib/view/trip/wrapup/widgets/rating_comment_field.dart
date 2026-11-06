@@ -12,9 +12,8 @@ class RatingCommentField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SangaTextArea(
-      label: 'Short review',
+      label: 'Short review (optional)',
       controller: controller,
-      hintText: 'Write here...',
       maxLength: DriverRating.maxCommentLength,
       minLines: 5,
       isEnabled: isEnabled,

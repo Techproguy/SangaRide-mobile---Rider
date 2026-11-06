@@ -8,7 +8,6 @@ Future<bool> showCancelScheduledSheet({
 }) async {
   final confirmed = await showSangaSheet<bool>(
     context: context,
-    padding: const EdgeInsets.fromLTRB(SangaSpacing.xl, SangaSpacing.xxl, SangaSpacing.xl, SangaSpacing.xl),
     builder: (context) => Column(
       mainAxisSize: MainAxisSize.min,
       children: [

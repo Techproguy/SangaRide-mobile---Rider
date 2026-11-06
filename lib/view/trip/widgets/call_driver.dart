@@ -20,7 +20,6 @@ Future<void> callDriver(BuildContext context, {required String firstName}) async
     context: context,
     isDismissible: false,
     enableDrag: false,
-    padding: const EdgeInsets.fromLTRB(SangaSpacing.xl, SangaSpacing.xxl, SangaSpacing.xl, SangaSpacing.xl),
     builder: (context) => PopScope(
       canPop: false,
       child: SangaStatusContent(

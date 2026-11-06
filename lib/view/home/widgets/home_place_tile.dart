@@ -13,7 +13,7 @@ class HomePlaceTile extends StatelessWidget {
 
   static const double height = 88;
   static const double _iconBox = 32;
-  static const double _captionHeight = 11;
+  static const double _captionHeight = 15;
   static const BorderRadius _radius = BorderRadius.all(Radius.circular(7));
 
   final String icon;
@@ -62,7 +62,7 @@ class HomePlaceTile extends StatelessWidget {
                             fit: BoxFit.scaleDown,
                             child: Text(
                               caption!,
-                              style: SangaTextStyles.caption.copyWith(fontSize: 9, color: SangaColors.textFaint),
+                              style: SangaTextStyles.caption.copyWith(color: SangaColors.textFaint),
                             ),
                           ),
                   ),

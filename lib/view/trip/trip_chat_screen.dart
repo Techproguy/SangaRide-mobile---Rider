@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:sanga_ride/controller/rider/trip/trip_controller.dart';
-import 'package:sanga_ride/core/copy/common_copy.dart';
 import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride/view/trip/widgets/call_driver.dart';
 import 'package:sanga_ride/view/trip/widgets/chat_message_list.dart';
@@ -49,7 +48,7 @@ class _TripChatScreenState extends State<TripChatScreen> {
       TripChatStatus.failed => Center(
         child: SangaFailureMessage(
           title: 'We couldn’t load your chat',
-          message: CommonCopy.connectionBody,
+          message: SangaCommonCopy.connectionAnotherGo,
           onRetry: _trip.reloadChat,
         ),
       ),
@@ -67,23 +66,20 @@ class _TripChatScreenState extends State<TripChatScreen> {
   Widget build(BuildContext context) {
     return AnnotatedRegion(
       value: SangaSystemUi.onLight,
-      child: Scaffold(
-        body: SafeArea(
-          child: Column(
+      child: Obx(() {
+        final driver = _trip.trip?.driver;
+        return Scaffold(
+          appBar: SangaAppBar(
+            title: driver?.name ?? '',
+            trailing: IconButton(
+              tooltip: 'Call',
+              padding: EdgeInsets.zero,
+              onPressed: driver == null ? null : () => callDriver(context, firstName: driver.firstName),
+              icon: const Icon(Icons.phone_rounded, color: SangaColors.primary),
+            ),
+          ),
+          body: Column(
             children: [
-              Obx(() {
-                final driver = _trip.trip?.driver;
-                return SangaPageHeader(
-                  title: driver?.name ?? '',
-                  isSingleLine: true,
-                  trailing: IconButton(
-                    tooltip: 'Call',
-                    padding: EdgeInsets.zero,
-                    onPressed: driver == null ? null : () => callDriver(context, firstName: driver.firstName),
-                    icon: const Icon(Icons.phone_rounded, color: SangaColors.primary),
-                  ),
-                );
-              }),
               Obx(
                 () => _trip.isChatStale && _trip.messages.isNotEmpty
                     ? Padding(
@@ -103,8 +99,8 @@ class _TripChatScreenState extends State<TripChatScreen> {
               SangaChatComposer(controller: _composer, onSend: _trip.sendMessage),
             ],
           ),
-        ),
-      ),
+        );
+      }),
     );
   }
 }

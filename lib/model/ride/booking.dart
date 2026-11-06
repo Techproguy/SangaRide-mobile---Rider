@@ -1,6 +1,5 @@
 import 'package:google_maps_flutter/google_maps_flutter.dart' show LatLng;
 import 'package:sanga_ride/core/api/server_codes.dart';
-import 'package:sanga_ride/core/copy/common_copy.dart';
 import 'package:sanga_ride/core/extensions/lat_lng.dart';
 import 'package:sanga_ride/core/format/money_json.dart';
 import 'package:sanga_ride/model/ride/ride_match.dart' show ScheduledBooking;
@@ -299,9 +298,9 @@ enum BookingProblem {
   tooEarly('too_early', 'Your flight hasn’t landed yet. You can notify your driver once it has.'),
   quoteExpired(ServerCode.quoteExpired, 'Your price changed. Have a look at the new one, then go again.'),
   notFound(ServerCode.notFound, 'We can’t find that ride. It may already be gone.'),
-  connection('connection', CommonCopy.offline),
+  connection('connection', SangaCommonCopy.offlineAnotherGo),
   rejected('rejected', 'We couldn’t book that. Check your trip details and try again.'),
-  unknown('unknown', CommonCopy.serverTrouble);
+  unknown('unknown', SangaCommonCopy.serverTrouble);
 
   const BookingProblem(this.code, this.message);
 

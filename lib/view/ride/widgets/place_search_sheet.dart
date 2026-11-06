@@ -27,6 +27,7 @@ class PlaceSearchSheet extends StatefulWidget {
     return showSangaSheet<Place>(
       context: context,
       padding: const EdgeInsets.fromLTRB(SangaSpacing.md, SangaSpacing.md, SangaSpacing.md, 0),
+      scrolls: true,
       builder: (context) => PlaceSearchSheet(kind: kind, hintText: hintText, origin: origin, onPick: onPick),
     );
   }
@@ -86,7 +87,10 @@ class _PlaceSearchSheetState extends State<PlaceSearchSheet> {
               listenable: _search,
               builder: (context, _) => ListView(
                 keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-                padding: const EdgeInsets.symmetric(vertical: SangaSpacing.md),
+                padding: EdgeInsets.only(
+                  top: SangaSpacing.md,
+                  bottom: SangaSpacing.md + SangaSheetClearance.of(context),
+                ),
                 children: [
                   if (_search.isIdle)
                     PlaceSuggestions(

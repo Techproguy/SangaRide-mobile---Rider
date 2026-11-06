@@ -237,6 +237,7 @@ class AccountController extends GetxController {
     DeliveryFailure.fileTooLarge => AccountProblem.photoTooLarge,
     DeliveryFailure.cameraDenied => AccountProblem.cameraDenied,
     DeliveryFailure.photosDenied => AccountProblem.photosDenied,
+    DeliveryFailure.noCamera => AccountProblem.noCamera,
     _ => AccountProblem.photoUnreadable,
   };
 }

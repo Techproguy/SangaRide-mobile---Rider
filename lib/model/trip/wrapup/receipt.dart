@@ -1,4 +1,3 @@
-import 'package:sanga_ride/core/copy/common_copy.dart';
 import 'package:sanga_ride/core/format/money_json.dart';
 import 'package:sanga_ride/model/ride/ride_match.dart';
 import 'package:sanga_ride/model/ride/ride_request.dart';
@@ -175,7 +174,7 @@ enum ReceiptFailure {
   notReady('payment_pending', 'Your receipt isn’t ready yet', 'It shows up as soon as your payment is confirmed.'),
   notFound('trip_not_found', 'We can’t find this receipt', 'This trip may have been removed. Head back and try again.'),
   connection('connection', 'We couldn’t load your receipt', 'Check your connection and try again.'),
-  unknown('unknown', CommonCopy.serverTitle, CommonCopy.serverTrouble);
+  unknown('unknown', SangaCommonCopy.somethingWentWrong, SangaCommonCopy.serverTrouble);
 
   const ReceiptFailure(this.code, this.title, this.message);
 

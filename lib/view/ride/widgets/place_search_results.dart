@@ -20,7 +20,7 @@ class PlaceSearchResults extends StatelessWidget {
       PlaceSearchStatus.idle => const SizedBox.shrink(),
       PlaceSearchStatus.searching => const Padding(
         padding: EdgeInsets.all(SangaSpacing.xl),
-        child: Center(child: SangaActivityIndicator(size: 24, color: SangaColors.primary)),
+        child: Center(child: SangaActivityIndicator.content(size: 24, color: SangaColors.primary)),
       ),
       PlaceSearchStatus.failed => SangaFailureMessage(
         title: 'Search hit a bump',

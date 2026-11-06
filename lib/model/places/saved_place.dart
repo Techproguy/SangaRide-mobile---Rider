@@ -1,6 +1,6 @@
+import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart' show LatLng;
 import 'package:sanga_ride/core/api/server_codes.dart';
-import 'package:sanga_ride/core/copy/common_copy.dart';
 import 'package:sanga_ride/model/location/place.dart';
 import 'package:sanga_ride/model/ride/ride_load_problem.dart';
 import 'package:sanga_ride_core/sanga_ride_core.dart';
@@ -48,7 +48,11 @@ class SavedPlace {
   final String label;
   final Place place;
 
-  static Map<String, dynamic> requestBody({required SavedPlaceKind kind, required String label, required Place place}) => {
+  static Map<String, dynamic> requestBody({
+    required SavedPlaceKind kind,
+    required String label,
+    required Place place,
+  }) => {
     'label': kind.apiLabel,
     'name': label.trim(),
     'address': place.address,
@@ -137,8 +141,8 @@ enum SavedPlaceProblem {
   invalidLabel('invalid_label', 'Give this place a short name.'),
   invalidPlace('invalid_place', 'We couldn’t use that location. Pick another one.'),
   notFound(ServerCode.notFound, 'We can’t find that place. It may already be gone.'),
-  connection('connection', CommonCopy.offline),
-  unknown('unknown', CommonCopy.serverTrouble);
+  connection('connection', SangaCommonCopy.offlineAnotherGo),
+  unknown('unknown', SangaCommonCopy.serverTrouble);
 
   const SavedPlaceProblem(this.code, this.message);
 

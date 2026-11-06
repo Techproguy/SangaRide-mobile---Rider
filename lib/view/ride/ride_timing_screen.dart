@@ -122,7 +122,6 @@ class _RideTimingScreenState extends State<RideTimingScreen> {
     final schedule = _schedule;
     return BookingPickerField(
       label: 'Pick up date and time',
-      hintText: 'Choose when',
       icon: Icons.event_rounded,
       value: schedule == null ? null : formatRideSchedule(context, schedule),
       onTap: _pickSchedule,
@@ -134,7 +133,6 @@ class _RideTimingScreenState extends State<RideTimingScreen> {
     final rule = _ride.repeatRule;
     return BookingPickerField(
       label: 'Repeat schedule',
-      hintText: 'Choose days and time',
       icon: Icons.repeat_rounded,
       value: rule == null ? null : formatRepeatRule(context, rule),
       onTap: () => context.push(BookingRoutes.repeatSetup),

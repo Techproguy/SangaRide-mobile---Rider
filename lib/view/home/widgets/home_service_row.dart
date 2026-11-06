@@ -85,7 +85,7 @@ class _HomeServiceTile extends StatelessWidget {
               textAlign: TextAlign.center,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: SangaTextStyles.tileCaption.copyWith(color: isSelected ? SangaColors.primary : null),
+              style: SangaTextStyles.tileCaption.copyWith(color: isSelected ? SangaColors.primaryStrong : null),
             ),
           ],
         ),

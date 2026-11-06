@@ -1,18 +1,13 @@
 part of 'trip_screen.dart';
 
 const EdgeInsets _sheetPadding = EdgeInsets.all(SangaSpacing.gutter);
-const EdgeInsets _statusPadding = EdgeInsets.fromLTRB(
-  SangaSpacing.xl,
-  SangaSpacing.xxl,
-  SangaSpacing.xl,
-  SangaSpacing.xl,
-);
 
 extension _TripSheets on _TripScreenState {
   Future<void> _present({
     required WidgetBuilder builder,
     bool isDismissible = true,
     EdgeInsets padding = _sheetPadding,
+    bool scrolls = false,
   }) async {
     _closeSheet();
     if (!mounted) return;
@@ -21,6 +16,7 @@ extension _TripSheets on _TripScreenState {
       isDismissible: isDismissible,
       enableDrag: isDismissible,
       padding: padding,
+      scrolls: scrolls,
       builder: builder,
     );
   }
@@ -30,6 +26,7 @@ extension _TripSheets on _TripScreenState {
     if (trip == null) return;
     unawaited(
       _present(
+        scrolls: true,
         builder: (_) => Obx(
           () => DetailsCheckSheet(
             trip: trip,
@@ -48,6 +45,7 @@ extension _TripSheets on _TripScreenState {
   Future<void> _showPin(Trip initial) {
     var latest = initial;
     return _present(
+      scrolls: true,
       builder: (_) => Obx(() {
         if (_trip.state case TripVerifying(:final trip)) latest = trip;
         return PinSheet(
@@ -63,6 +61,7 @@ extension _TripSheets on _TripScreenState {
   void _openReport() {
     unawaited(
       _present(
+        scrolls: true,
         builder: (_) => Obx(
           () => ReportSheet(isReporting: _trip.isReporting.value, onReport: _trip.reportIssue, onDismiss: _closeSheet),
         ),
@@ -73,7 +72,7 @@ extension _TripSheets on _TripScreenState {
   Future<void> _showAuthenticated() {
     return _present(
       isDismissible: false,
-      padding: _statusPadding,
+      padding: SangaSheetInsets.standard,
       builder: (_) => PopScope(
         canPop: false,
         child: SangaStatusContent(
@@ -101,7 +100,7 @@ extension _TripSheets on _TripScreenState {
     }
     await _present(
       isDismissible: false,
-      padding: _statusPadding,
+      padding: SangaSheetInsets.standard,
       builder: (_) => PopScope(
         canPop: false,
         child: SangaStatusContent(
@@ -117,7 +116,7 @@ extension _TripSheets on _TripScreenState {
   Future<void> _showRefused(DeliveryRefusal refusal) {
     return _present(
       isDismissible: false,
-      padding: _statusPadding,
+      padding: SangaSheetInsets.standard,
       builder: (_) => PopScope(
         canPop: false,
         child: DeliveryRefusedContent(refusal: refusal, onHome: _goHome),
@@ -128,7 +127,7 @@ extension _TripSheets on _TripScreenState {
   Future<void> _showCancelled(Trip trip, TripCancelReason reason) {
     return _present(
       isDismissible: false,
-      padding: _statusPadding,
+      padding: SangaSheetInsets.standard,
       builder: (_) => PopScope(
         canPop: false,
         child: reason.offersRematch && !trip.isDelivery
@@ -137,7 +136,7 @@ extension _TripSheets on _TripScreenState {
                 status: reason.didNotHappen ? SangaStatus.failure : SangaStatus.caution,
                 title: reason.title,
                 message: trip.cancellationMessage ?? reason.message,
-                action: SangaButton.primary(label: CommonCopy.backToHome, onPressed: _goHome),
+                action: SangaButton.primary(label: SangaCommonCopy.backToHome, onPressed: _goHome),
               ),
       ),
     );
@@ -153,7 +152,7 @@ extension _TripSheets on _TripScreenState {
         isLoading: _ride.isRestoring,
         onPressed: () => unawaited(_findAnotherDriver(trip)),
       ),
-      secondary: SangaButton.muted(label: CommonCopy.backToHome, onPressed: _goHome),
+      secondary: SangaButton.muted(label: SangaCommonCopy.backToHome, onPressed: _goHome),
     );
   }
 

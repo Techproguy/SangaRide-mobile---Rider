@@ -46,8 +46,8 @@ enum OfferStatus {
 enum OfferUnavailableReason {
   offerUnavailable('offer_unavailable', 'That driver is no longer available.'),
   holdExpired('hold_expired', 'That hold ran out. Pick a driver again.'),
-  connection('connection', CommonCopy.offline),
-  unknown('unknown', CommonCopy.serverTrouble);
+  connection('connection', SangaCommonCopy.offlineAnotherGo),
+  unknown('unknown', SangaCommonCopy.serverTrouble);
 
   const OfferUnavailableReason(this.code, this.message);
 
@@ -67,9 +67,9 @@ enum OfferUnavailableReason {
 
 enum MatchFailure {
   noDriverFound('No driver found', 'Drivers are busy right now. Give it another go in a moment.'),
-  offline(CommonCopy.offlineTitle, CommonCopy.connectionBody),
-  serverTrouble('We couldn’t start your search', CommonCopy.serverTrouble),
-  couldNotStart('We couldn’t start your search', CommonCopy.serverTrouble),
+  offline(CommonCopy.offlineTitle, SangaCommonCopy.connectionAnotherGo),
+  serverTrouble('We couldn’t start your search', SangaCommonCopy.serverTrouble),
+  couldNotStart('We couldn’t start your search', SangaCommonCopy.serverTrouble),
   connectionLost(
     'We lost the connection',
     'Your request may still be running. Check your connection and we’ll look again.',

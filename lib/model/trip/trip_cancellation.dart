@@ -1,4 +1,3 @@
-import 'package:sanga_ride/core/copy/common_copy.dart';
 import 'package:sanga_ride/core/format/money_json.dart';
 import 'package:sanga_ride/model/trip/trip.dart';
 import 'package:sanga_ride/model/trip/wrapup/payment.dart';
@@ -127,21 +126,21 @@ enum CancelFailure {
   reviewUnavailable(
     'review_unavailable',
     'We couldn’t check the fee',
-    '${CommonCopy.connectionBody} Your ride is still on.',
+    '${SangaCommonCopy.connectionAnotherGo} Your ride is still on.',
     primaryLabel: 'Try again',
     secondaryLabel: 'Not now',
   ),
   connection(
     'connection',
     'We couldn’t cancel your ride',
-    '${CommonCopy.connectionBody} Your ride is still on.',
+    '${SangaCommonCopy.connectionAnotherGo} Your ride is still on.',
     primaryLabel: 'Try again',
     secondaryLabel: 'Not now',
   ),
   unknown(
     'unknown',
-    CommonCopy.serverTitle,
-    '${CommonCopy.serverTrouble} Your ride is still on.',
+    SangaCommonCopy.somethingWentWrong,
+    '${SangaCommonCopy.serverTrouble} Your ride is still on.',
     primaryLabel: 'Try again',
     secondaryLabel: 'Not now',
   ),

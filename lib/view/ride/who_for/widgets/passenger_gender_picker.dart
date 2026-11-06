@@ -13,7 +13,7 @@ class PassengerGenderPicker extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const SangaFieldLabel('Gender'),
+        const SangaFieldLabel('Gender (optional)'),
         Row(
           spacing: SangaSpacing.xl,
           children: [

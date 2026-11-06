@@ -59,7 +59,6 @@ class RoundTripReturnScreen extends StatelessWidget {
               ),
               BookingPickerField(
                 label: 'Return date and time',
-                hintText: 'Choose when',
                 icon: Icons.event_rounded,
                 value: returnAt == null ? null : formatRideSchedule(context, returnAt),
                 onTap: () => _pickReturn(context, ride),

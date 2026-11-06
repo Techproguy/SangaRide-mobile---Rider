@@ -8,7 +8,6 @@ import 'package:sanga_ride/controller/rider/ride_match_controller.dart';
 import 'package:sanga_ride/controller/rider/saved_places_controller.dart';
 import 'package:sanga_ride/core/api/api.dart';
 import 'package:sanga_ride/core/api/app_endpoints.dart';
-import 'package:sanga_ride/core/api/mock/mock_places.dart';
 import 'package:sanga_ride/core/services/location_service.dart';
 import 'package:sanga_ride/core/services/me_state.dart';
 import 'package:sanga_ride/core/services/permission_center.dart';
@@ -159,7 +158,6 @@ class RiderHomeController extends GetxController {
   Future<String?> _cityOf(Place place) async {
     final coordinates = place.coordinates;
     if (coordinates == null) return null;
-    if (!SangaMapsKeys.isConfigured) return MockPlaces.cityAt(coordinates);
     final geocoded = await _places.reverseGeocode(coordinates);
     if (geocoded == null) return null;
     return geocoded.city.isNotEmpty ? geocoded.city : geocoded.state;

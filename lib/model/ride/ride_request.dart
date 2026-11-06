@@ -192,7 +192,10 @@ class FareEstimate {
     final json = JsonReader.of(body);
     final pricing = <PricingOption, Money>{
       for (final card in json.listOf('pricingOptions', (item) => item))
-        if ((PricingOption.fromCode(card.strOrNull('code')), card.moneyOrNull('price')) case (final option?, final price?))
+        if ((PricingOption.fromCode(card.strOrNull('code')), card.moneyOrNull('price')) case (
+          final option?,
+          final price?,
+        ))
           option: price,
     };
     final lines = {for (final line in json.listOf('lines', (item) => item)) line.strOr('code', ''): line};
@@ -212,7 +215,9 @@ class FareEstimate {
       meetGreetFee: lines['meet_greet']?.moneyOrNull('amount'),
       quoteId: json.strOrNull('quoteId'),
       pricing: pricing,
-      fairFare: minimumOffer == null || maximumOffer == null ? null : FairFareRange(min: minimumOffer, max: maximumOffer),
+      fairFare: minimumOffer == null || maximumOffer == null
+          ? null
+          : FairFareRange(min: minimumOffer, max: maximumOffer),
       otherLines: [
         for (final MapEntry(key: code, value: line) in lines.entries)
           if (!_knownLineCodes.contains(code))

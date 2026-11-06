@@ -144,58 +144,48 @@ class _RideSearchScreenState extends State<RideSearchScreen> {
       value: SangaSystemUi.onLight,
       child: Scaffold(
         backgroundColor: SangaColors.surface,
-        body: SafeArea(
-          bottom: false,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  SangaSpacing.gutter,
-                  SangaSpacing.sm,
-                  SangaSpacing.gutter,
-                  SangaSpacing.md,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  spacing: SangaSpacing.sm,
+        appBar: SangaAppBar(topInset: SangaSpacing.sm, onBack: context.pop, reservesTrailing: false),
+        body: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                SangaSpacing.gutter,
+                SangaSpacing.sm + SangaSpacing.xs + SangaSpacing.sm,
+                SangaSpacing.gutter,
+                SangaSpacing.md,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                spacing: SangaSpacing.sm,
+                children: [_pickupField(), _dropoffField()],
+              ),
+            ),
+            Expanded(
+              child: ListenableBuilder(
+                listenable: _search,
+                builder: (context, _) => ListView(
+                  keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+                  padding: const EdgeInsets.fromLTRB(
+                    SangaSpacing.gutter,
+                    SangaSpacing.md,
+                    SangaSpacing.gutter,
+                    SangaSpacing.xl,
+                  ).withBottomInset(context),
                   children: [
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: SangaCircleButton.back(onPressed: context.pop),
-                    ),
-                    const SizedBox(height: SangaSpacing.xs),
-                    _pickupField(),
-                    _dropoffField(),
+                    if (_search.isIdle)
+                      PlaceSuggestions(
+                        onPick: _pick,
+                        origin: _search.origin,
+                        showsCurrentLocation: _target == RoutePoint.pickup,
+                      )
+                    else
+                      PlaceSearchResults(search: _search, onPick: _open),
                   ],
                 ),
               ),
-              Expanded(
-                child: ListenableBuilder(
-                  listenable: _search,
-                  builder: (context, _) => ListView(
-                    keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-                    padding: EdgeInsets.fromLTRB(
-                      SangaSpacing.gutter,
-                      SangaSpacing.md,
-                      SangaSpacing.gutter,
-                      SangaSpacing.xl + MediaQuery.paddingOf(context).bottom,
-                    ),
-                    children: [
-                      if (_search.isIdle)
-                        PlaceSuggestions(
-                          onPick: _pick,
-                          origin: _search.origin,
-                          showsCurrentLocation: _target == RoutePoint.pickup,
-                        )
-                      else
-                        PlaceSearchResults(search: _search, onPick: _open),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

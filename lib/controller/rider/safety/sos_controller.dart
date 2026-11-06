@@ -94,7 +94,7 @@ class SosController extends GetxController {
     _pendingLocation = _locate();
     _state.value = SosActivating(DateTime.now());
     _graceTimer?.cancel();
-    _graceTimer = Timer(grace, () => unawaited(send()));
+    _graceTimer = SessionHub.instance.timer(grace, () => unawaited(send()));
   }
 
   void cancel() {

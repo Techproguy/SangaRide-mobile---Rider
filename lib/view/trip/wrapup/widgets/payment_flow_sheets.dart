@@ -10,7 +10,6 @@ Future<bool?> showPaymentUnconfirmedSheet({required BuildContext context}) {
     context: context,
     isDismissible: false,
     enableDrag: false,
-    padding: paymentSheetPadding,
     builder: (context) => PopScope(
       canPop: false,
       child: SangaStatusContent(
@@ -30,7 +29,6 @@ Future<bool?> showCashWaitingSheet({required BuildContext context, required Trip
     context: context,
     isDismissible: false,
     enableDrag: false,
-    padding: paymentSheetPadding,
     builder: (context) => PopScope(
       canPop: false,
       child: Obx(() {

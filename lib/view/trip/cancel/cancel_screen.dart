@@ -147,11 +147,9 @@ class _CancelScreenState extends State<CancelScreen> {
             ],
           );
         }
-        return PopScope(
+        return SangaBackScope(
           canPop: state is CancelChoosing,
-          onPopInvokedWithResult: (didPop, _) {
-            if (!didPop) _handleBack(state);
-          },
+          onBack: () => _handleBack(state),
           child: _body(trip, state),
         );
       }),

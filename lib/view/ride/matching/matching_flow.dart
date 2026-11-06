@@ -3,7 +3,6 @@ import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sanga_ride/controller/rider/ride_match_controller.dart';
 import 'package:sanga_ride/controller/rider/ride_request_controller.dart';
-import 'package:sanga_ride/core/copy/common_copy.dart';
 import 'package:sanga_ride/core/router/routes.dart';
 import 'package:sanga_ride/core/router/wallet_routes.dart';
 import 'package:sanga_ride/model/groups/group_models.dart';
@@ -102,7 +101,7 @@ Future<void> _showBlocked(BuildContext context, GroupRideBlock block) async {
     title: block.title,
     message: block.message,
     actionLabel: 'Got it',
-    secondaryLabel: CommonCopy.backToHome,
+    secondaryLabel: SangaCommonCopy.backToHome,
   );
   if (context.mounted && !stay) context.go(SangaRoutes.home);
 }
@@ -115,7 +114,7 @@ Future<void> _showWalletTooLow(BuildContext context) async {
     title: MatchFailure.walletTooLow.title,
     message: MatchFailure.walletTooLow.message,
     actionLabel: 'Top up wallet',
-    secondaryLabel: CommonCopy.backToHome,
+    secondaryLabel: SangaCommonCopy.backToHome,
   );
   if (!context.mounted) return;
   if (shouldTopUp) {
@@ -149,7 +148,7 @@ Future<void> _showFailure(BuildContext context, MatchFailure reason, {required b
       status: SangaStatus.caution,
       title: reason.title,
       message: reason.message,
-      actionLabel: CommonCopy.backToHome,
+      actionLabel: SangaCommonCopy.backToHome,
     );
     if (context.mounted) context.go(SangaRoutes.home);
     return;
@@ -169,7 +168,7 @@ Future<void> _showFailure(BuildContext context, MatchFailure reason, {required b
     title: reason.title,
     message: reason.message,
     actionLabel: checksAgain ? 'Check again' : 'Try again',
-    secondaryLabel: CommonCopy.backToHome,
+    secondaryLabel: SangaCommonCopy.backToHome,
   );
   if (!context.mounted) return;
   if (!shouldRetry) return context.go(SangaRoutes.home);

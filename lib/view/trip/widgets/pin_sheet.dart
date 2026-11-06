@@ -23,7 +23,7 @@ class _PinSheetState extends State<PinSheet> {
   Widget _screen(BuildContext context) {
     final code = widget.trip.pin ?? '';
     final expiresAt = widget.trip.pinExpiresAt;
-    return SingleChildScrollView(
+    return SangaSheetScroll(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -111,7 +111,7 @@ class _ExpiryLine extends StatelessWidget {
       children: [
         const Icon(Icons.schedule_rounded, size: 18, color: SangaColors.textPrimary),
         if (isExpired)
-          Text('PIN expired', style: SangaTextStyles.label.copyWith(color: SangaColors.danger))
+          Text('PIN expired', style: SangaTextStyles.label.copyWith(color: SangaColors.dangerInk))
         else
           Text.rich(
             TextSpan(
@@ -120,7 +120,7 @@ class _ExpiryLine extends StatelessWidget {
                 const TextSpan(text: 'Expires in '),
                 TextSpan(
                   text: remaining.minutesAndSeconds,
-                  style: const TextStyle(color: SangaColors.danger),
+                  style: const TextStyle(color: SangaColors.dangerInk),
                 ),
               ],
             ),

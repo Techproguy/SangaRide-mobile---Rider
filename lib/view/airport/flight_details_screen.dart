@@ -121,7 +121,6 @@ class _FlightDetailsScreenState extends State<FlightDetailsScreen> {
       children: [
         SangaSelectField<Airline>(
           label: 'Airline',
-          hintText: 'Choose airline',
           icon: Icons.flight_rounded,
           value: draft.airline,
           options: [for (final airline in catalog.airlines) SangaSelectOption(airline, airline.name)],
@@ -129,7 +128,7 @@ class _FlightDetailsScreenState extends State<FlightDetailsScreen> {
         ),
         SangaTextField(
           label: 'Flight number',
-          hintText: 'Enter flight number, like 75',
+          hintText: 'e.g. 75',
           controller: _number,
           focusNode: _numberFocus,
           errorText: _numberError(draft),
@@ -140,7 +139,7 @@ class _FlightDetailsScreenState extends State<FlightDetailsScreen> {
           onSubmitted: (_) => FocusScope.of(context).unfocus(),
           prefix: switch (draft.airline) {
             final airline? => Padding(
-              padding: const EdgeInsets.only(left: SangaSpacing.md),
+              padding: const EdgeInsets.only(left: SangaTextField.inset),
               child: Text(airline.code, style: SangaTextStyles.input.copyWith(color: SangaColors.textMuted)),
             ),
             null => null,
@@ -149,7 +148,6 @@ class _FlightDetailsScreenState extends State<FlightDetailsScreen> {
         ),
         BookingPickerField(
           label: 'Arrival date',
-          hintText: 'Choose arrival date',
           icon: Icons.calendar_today_outlined,
           value: arrival == null ? null : formatRideDate(arrival),
           onTap: _pickDate,

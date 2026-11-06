@@ -59,12 +59,7 @@ class TripRatingController extends GetxController {
     _state.value = RatingSubmitting(rating);
     final body = rating.toJson();
     try {
-      await _api.post(
-        AppEndpoints.tripRatingOf(id),
-        data: body,
-        key: _keyFor('$id $body'),
-        suppressErrorToast: true,
-      );
+      await _api.post(AppEndpoints.tripRatingOf(id), data: body, key: _keyFor('$id $body'), suppressErrorToast: true);
     } catch (e) {
       log('rating failed: ${e is ApiException ? e.code : e.runtimeType}');
       final isDone = e is ApiException && e.statusCode == 409 && e.code == ServerCode.alreadyRated;

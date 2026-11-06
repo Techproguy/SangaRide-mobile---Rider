@@ -12,7 +12,6 @@ Future<SearchOutcome?> showSearchingSheet(BuildContext context) {
     context: context,
     isDismissible: false,
     enableDrag: false,
-    padding: const EdgeInsets.fromLTRB(SangaSpacing.xl, SangaSpacing.xxl, SangaSpacing.xl, SangaSpacing.xl),
     builder: (context) => const PopScope(canPop: false, child: _SearchingSheet()),
   );
 }
