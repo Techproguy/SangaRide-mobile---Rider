@@ -10,8 +10,6 @@ import 'package:sanga_ride_core/sanga_ride_core.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart' show SangaSelfieOutcome;
 
 class SelfieVerifier {
-  static const Set<String> _acceptedStatuses = {'verified', 'pending'};
-
   final _api = Get.find<ApiService>();
   final Map<String, String> _uploadIds = {};
 
@@ -26,7 +24,11 @@ class SelfieVerifier {
         suppressErrorToast: true,
       );
       final status = JsonReader(response.dataMapOrEmpty).strOrNull('status');
-      return _acceptedStatuses.contains(status) ? SangaSelfieOutcome.passed : SangaSelfieOutcome.serverTrouble;
+      return switch (status) {
+        'verified' => SangaSelfieOutcome.passed,
+        'pending' => SangaSelfieOutcome.pending,
+        _ => SangaSelfieOutcome.serverTrouble,
+      };
     } on Object catch (error) {
       return switch (ProblemKind.of(error)) {
         ProblemOffline() => SangaSelfieOutcome.noConnection,

@@ -149,7 +149,7 @@ class VerificationController extends GetxController {
 
   Future<SangaSelfieOutcome> verifySelfie(String photoPath) async {
     final outcome = await _selfie.verify(photoPath);
-    if (outcome == SangaSelfieOutcome.passed) await load();
+    if (outcome == SangaSelfieOutcome.passed || outcome == SangaSelfieOutcome.pending) await load();
     return outcome;
   }
 
