@@ -260,7 +260,7 @@ class Trip {
       rideType:
           RideCategory.values.asNameMap()[JsonReader.of(reader.raw['rideClass']).strOrNull('code')] ?? RideCategory.go,
       driver: OfferDriver.fromJson(driver.raw),
-      driverPosition: _driverPositionOf(driver.objectOrNull('location')),
+      driverPosition: _driverPositionOf(reader.objectOrNull('driverLocation') ?? driver.objectOrNull('location')),
       unreadMessages: reader.intOr('unreadMessages', 0),
       vehicle: DriverVehicle.fromJson(driver.raw['vehicle']),
       pickup: TripPlace.fromJson(reader.object('pickup').raw),
@@ -293,8 +293,8 @@ class Trip {
   }
 
   static DriverPosition? _driverPositionOf(JsonReader? location) {
-    final latitude = location?.doubleOrNull('latitude');
-    final longitude = location?.doubleOrNull('longitude');
+    final latitude = location?.doubleOrNull('latitude') ?? location?.doubleOrNull('lat');
+    final longitude = location?.doubleOrNull('longitude') ?? location?.doubleOrNull('lng');
     if (latitude == null || longitude == null) return null;
     return DriverPosition(position: LatLng(latitude, longitude), heading: location?.doubleOrNull('heading'));
   }

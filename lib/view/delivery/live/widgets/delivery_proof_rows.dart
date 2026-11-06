@@ -13,6 +13,8 @@ class DeliveryProofRows extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isVerified = proof.isAtDropoff(dropoff.position);
+    final at = proof.at;
+    final hasPosition = proof.position != null;
     return Column(
       spacing: SangaSpacing.md,
       children: [
@@ -20,13 +22,13 @@ class DeliveryProofRows extends StatelessWidget {
           icon: Icons.photo_camera_outlined,
           tone: _ProofTone.green,
           title: proof.photoUrl == null ? 'No photo taken' : 'Photo captured',
-          subtitle: '${ClockFormats.time(proof.at)} · ${ClockFormats.weekdayDate(proof.at)}',
+          subtitle: at == null ? 'At the drop off' : '${ClockFormats.time(at)} · ${ClockFormats.weekdayDate(at)}',
         ),
         _ProofRow(
           icon: Icons.location_on_outlined,
           tone: _ProofTone.blue,
           title: isVerified ? 'Location verified' : 'Location recorded',
-          subtitle: isVerified ? dropoff.name : 'A little way from ${dropoff.name}',
+          subtitle: isVerified || !hasPosition ? dropoff.name : 'A little way from ${dropoff.name}',
         ),
         _ProofRow(
           icon: Icons.person_outline_rounded,

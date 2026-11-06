@@ -98,7 +98,8 @@ enum DeliveryKind {
   final String code;
   final String label;
 
-  static DeliveryKind fromCode(String? code) => codedEnum(values, (kind) => kind.code, code, orElse: package);
+  static DeliveryKind fromCode(String? code) =>
+      codedEnum(values, (kind) => kind.code, code == 'document' ? 'documents' : code, orElse: package);
 }
 
 enum DeliveryPackageType {
@@ -150,13 +151,15 @@ class DeliveryItem {
     return DeliveryItem(
       name: reader.str('name'),
       description: reader.strOrNull('description'),
-      sizeLabel: reader.strOr('sizeLabel', ''),
+      sizeLabel: reader.strOrNull('sizeLabel') ?? _capitalized(reader.strOr('size', '')),
       weightLabel: reader.strOrNull('weightLabel'),
       packageType: DeliveryPackageType.fromCode(reader.strOrNull('packageType')),
       photoUrl: reader.strOrNull('photoUrl'),
       declaredValue: reader.moneyOrNull('declaredValue'),
     );
   }
+
+  static String _capitalized(String value) => value.isEmpty ? '' : '${value[0].toUpperCase()}${value.substring(1)}';
 
   final String name;
   final String? description;
@@ -188,11 +191,13 @@ class PickupProof {
 
   factory PickupProof.fromJson(Map<String, dynamic> json) {
     final reader = JsonReader.of(json);
-    return PickupProof(photoUrl: reader.strOrNull('photoUrl'), at: reader.time('at').toLocal());
+    return PickupProof(photoUrl: reader.strOrNull('photoUrl'), at: reader.timeOrNull('at')?.toLocal());
   }
 
+  factory PickupProof.fromUrl(String url) => PickupProof(photoUrl: url, at: null);
+
   final String? photoUrl;
-  final DateTime at;
+  final DateTime? at;
 }
 
 class SenderConfirmation {
@@ -219,20 +224,29 @@ class DeliveryProof {
     final reader = JsonReader.of(json);
     return DeliveryProof(
       photoUrl: reader.strOrNull('photoUrl'),
-      at: reader.time('at').toLocal(),
-      position: LatLng(reader.number('lat').toDouble(), reader.number('lng').toDouble()),
+      at: reader.timeOrNull('at')?.toLocal(),
+      position: _positionOf(reader),
       recipientConfirmed: reader.boolOr('recipientConfirmed', false),
     );
+  }
+
+  factory DeliveryProof.fromUrl(String url, {required bool recipientConfirmed}) =>
+      DeliveryProof(photoUrl: url, at: null, position: null, recipientConfirmed: recipientConfirmed);
+
+  static LatLng? _positionOf(JsonReader reader) {
+    final lat = reader.doubleOrNull('lat');
+    final lng = reader.doubleOrNull('lng');
+    return lat == null || lng == null ? null : LatLng(lat, lng);
   }
 
   static const double verifiedRadiusMeters = 150;
 
   final String? photoUrl;
-  final DateTime at;
-  final LatLng position;
+  final DateTime? at;
+  final LatLng? position;
   final bool recipientConfirmed;
 
-  bool isAtDropoff(LatLng dropoff) => position.metersTo(dropoff) <= verifiedRadiusMeters;
+  bool isAtDropoff(LatLng dropoff) => (position?.metersTo(dropoff) ?? double.infinity) <= verifiedRadiusMeters;
 }
 
 enum DeliveryRefusalReason {
@@ -296,16 +310,21 @@ class TripDelivery {
 
   factory TripDelivery.fromJson(Map<String, dynamic> json) {
     final reader = JsonReader.of(json);
+    final item = reader.object('item');
+    final recipient = reader.object('recipient');
+    final proofs = reader.objectOrNull('proofs');
     return TripDelivery(
-      tier: reader.strOr('tier', 'standard'),
-      kind: DeliveryKind.fromCode(reader.strOrNull('kind')),
-      item: DeliveryItem.fromJson(reader.object('item').raw),
-      recipient: DeliveryRecipient.fromJson(reader.object('recipient').raw),
+      tier: reader.strOrNull('tier') ?? item.strOrNull('tier') ?? 'standard',
+      kind: DeliveryKind.fromCode(reader.strOrNull('kind') ?? item.strOrNull('type')),
+      item: DeliveryItem.fromJson(item.raw),
+      recipient: DeliveryRecipient.fromJson(recipient.raw),
       stage: DeliveryStage.fromCode(reader.strOrNull('stage')),
-      pickupProof: _optional(reader, 'pickupProof', PickupProof.fromJson),
+      pickupProof: _optional(reader, 'pickupProof', PickupProof.fromJson) ?? _pickupUrlProof(proofs),
       senderConfirmation: _optional(reader, 'senderConfirmation', SenderConfirmation.fromJson),
-      deliveryProof: _optional(reader, 'deliveryProof', DeliveryProof.fromJson),
-      refusal: _optional(reader, 'refusal', DeliveryRefusal.fromJson),
+      deliveryProof:
+          _optional(reader, 'deliveryProof', DeliveryProof.fromJson) ??
+          _deliveryUrlProof(proofs, recipientConfirmed: recipient.boolOr('confirmed', false)),
+      refusal: _optional(reader, 'refusal', DeliveryRefusal.fromJson) ?? _refusalOf(reader),
       events: reader.listOf('events', (item) => DeliveryEvent.tryParse(item.raw)!),
       openIssueId: reader.strOrNull('openIssueId'),
     );
@@ -354,6 +373,27 @@ class TripDelivery {
       TripStatus.completed => DeliveryStage.delivered,
       TripStatus.cancelled || TripStatus.rematching || TripStatus.unknown => DeliveryStage.unknown,
     };
+  }
+
+  static PickupProof? _pickupUrlProof(JsonReader? proofs) {
+    final url = proofs?.strOrNull('pickup');
+    return url == null ? null : PickupProof.fromUrl(url);
+  }
+
+  static DeliveryProof? _deliveryUrlProof(JsonReader? proofs, {required bool recipientConfirmed}) {
+    final url = proofs?.strOrNull('delivery');
+    return url == null ? null : DeliveryProof.fromUrl(url, recipientConfirmed: recipientConfirmed);
+  }
+
+  static DeliveryRefusal? _refusalOf(JsonReader reader) {
+    final code = reader.strOrNull('refusalReason');
+    if (code == null) return null;
+    return DeliveryRefusal(
+      reason: DeliveryRefusalReason.fromCode(code),
+      note: null,
+      message: reader.strOrNull('failureReason'),
+      at: DateTime.now(),
+    );
   }
 
   static T? _optional<T>(JsonReader reader, String key, T Function(Map<String, dynamic> json) parse) {
