@@ -4,10 +4,8 @@ import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:sanga_ride/core/api/maps_endpoints.dart';
-import 'package:sanga_ride/core/api/mock/mock_places.dart';
 import 'package:sanga_ride/core/constants.dart';
 import 'package:sanga_ride/core/services/app_signature.dart';
-import 'package:sanga_ride/core/storage_keys.dart';
 import 'package:sanga_ride/model/models.dart';
 
 class PlacesService {
@@ -37,7 +35,6 @@ class PlacesService {
   }) async {
     input = input.trim();
     if (input.isEmpty) return [];
-    if (!SangaMapsKeys.isConfigured) return MockPlaces.autocomplete(input, origin: origin);
 
     final response = await _dio.post(
       MapsEndpoints.placesAutocomplete,
@@ -66,7 +63,6 @@ class PlacesService {
   }
 
   Future<Place?> getPlaceDetails(String placeId, {String? sessionToken}) async {
-    if (!SangaMapsKeys.isConfigured) return MockPlaces.details(placeId);
     final response = await _dio.get(
       MapsEndpoints.placeDetailsOf(placeId),
       queryParameters: {'sessionToken': ?sessionToken},
@@ -81,7 +77,6 @@ class PlacesService {
   Future<List<Place>> searchPlaces(String query) async {
     query = query.trim();
     if (query.isEmpty) return [];
-    if (!SangaMapsKeys.isConfigured) return MockPlaces.search(query);
     try {
       return await _textSearch(query);
     } catch (e) {
@@ -106,7 +101,6 @@ class PlacesService {
   }
 
   Future<Place?> placeAt(LatLng coordinates) async {
-    if (!SangaMapsKeys.isConfigured) return MockPlaces.nearest(coordinates);
     final location = await reverseGeocode(coordinates);
     if (location == null) return null;
     final area = location.neighborhood ?? location.subLocality ?? location.locality ?? location.route;

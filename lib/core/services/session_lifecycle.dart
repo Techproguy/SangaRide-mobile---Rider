@@ -2,10 +2,12 @@ import 'dart:async';
 
 import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
+import 'package:get_storage/get_storage.dart';
 import 'package:sanga_ride/controller/shared/user_controller.dart';
 import 'package:sanga_ride/core/services/session_restore.dart';
 import 'package:sanga_ride/core/services/session_storage.dart';
 import 'package:sanga_ride/core/storage/draft_keys.dart';
+import 'package:sanga_ride/core/storage_keys.dart';
 import 'package:sanga_ride_core/sanga_ride_core.dart';
 
 abstract final class SessionLifecycle {
@@ -15,6 +17,7 @@ abstract final class SessionLifecycle {
     hub.register(SessionNames.tokens, (_) => SessionStorage.tokens.clear());
     hub.register(SessionNames.user, (_) => Get.find<UserController>().clear());
     hub.register(SessionNames.drafts, _clearDrafts);
+    hub.register(SessionNames.localCache, (_) => GetStorage().remove(SangaStorageKeys.lastCity));
     hub.register(SessionNames.controllers, (_) => _scheduleControllerReset());
   }
 

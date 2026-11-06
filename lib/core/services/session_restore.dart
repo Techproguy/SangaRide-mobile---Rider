@@ -15,6 +15,7 @@ import 'package:sanga_ride/core/router/trip_wrapup_routes.dart';
 import 'package:sanga_ride/core/services/me_state.dart';
 import 'package:sanga_ride/core/services/session_storage.dart';
 import 'package:sanga_ride/core/services/skipped_ratings.dart';
+import 'package:sanga_ride/view/auth/sign_up_steps.dart';
 import 'package:sanga_ride_core/sanga_ride_core.dart';
 
 class SessionRestore extends GetxService {
@@ -66,7 +67,6 @@ class SessionRestore extends GetxService {
 
   Future<List<String>> resolveBoot() async {
     _isRestoring.value = true;
-    unawaited(Get.find<UserController>().fetchMe());
     try {
       final state = await _fetch(bootCap);
       if (state == null) {
@@ -74,6 +74,7 @@ class SessionRestore extends GetxService {
         _isAwaitingLateBoot = true;
         return const [SangaRoutes.home];
       }
+      _loadProfileIfOnboarded(state);
       return _stackFor(state);
     } finally {
       _isRestoring.value = false;
@@ -166,6 +167,7 @@ class SessionRestore extends GetxService {
   void _openLateBoot(MeState state) {
     if (!_isAwaitingLateBoot) return;
     _isAwaitingLateBoot = false;
+    _loadProfileIfOnboarded(state);
     final stack = _stackFor(state);
     if (stack.length > 1 && SangaRouter.currentPath == SangaRoutes.home) unawaited(open(stack));
   }
@@ -176,6 +178,10 @@ class SessionRestore extends GetxService {
     _restoreFailed.value = false;
     _pendingRideRequestId.value = state.activeRideRequest?.id;
     _openLateBoot(state);
+  }
+
+  void _loadProfileIfOnboarded(MeState state) {
+    if (state.onboardingStep == null) unawaited(Get.find<UserController>().fetchMe());
   }
 
   List<String> _stackFor(MeState state) {
@@ -195,9 +201,9 @@ class SessionRestore extends GetxService {
 
   String _onboardingRoute(OnboardingStep step) {
     return switch (step) {
-      OnboardingStep.aboutYou => SangaRoutes.aboutYou,
-      OnboardingStep.selfie => SangaRoutes.selfie,
-      OnboardingStep.homePlace => SangaRoutes.homeLocation,
+      OnboardingStep.aboutYou => SangaRoutes.signUpAt(RiderSignUpStep.aboutYou),
+      OnboardingStep.selfie => SangaRoutes.signUpAt(RiderSignUpStep.selfie),
+      OnboardingStep.homePlace => SangaRoutes.signUpAt(RiderSignUpStep.home),
     };
   }
 }

@@ -23,9 +23,20 @@ class AuthConfig {
     try {
       final response = await api.get(AppEndpoints.authConfig, suppressErrorToast: true);
       current = AuthConfig.fromData(response.dataMap);
+      LegalLinks.apply(JsonReader.of(response.dataMap).objectOrNull('legal'));
       SangaRegion.offerOnly(JsonReader.of(response.dataMap).listOf('countries', (country) => country.str('code')));
     } catch (e) {
       log('auth config failed: $e');
+    }
+  }
+
+  static Future<void> loadServerConfig(ApiService api) async {
+    try {
+      final response = await api.get(AppEndpoints.config, suppressErrorToast: true);
+      LegalLinks.apply(JsonReader.of(response.dataMap).objectOrNull('legal'));
+      ServerConfig.apply(response.dataMap);
+    } catch (e) {
+      log('server config failed: $e');
     }
   }
 }

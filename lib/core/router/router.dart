@@ -20,10 +20,19 @@ class SangaRouter {
   );
 
   static String? _guard(BuildContext context, GoRouterState state) {
-    final isPublic = SangaRoutes.publicPaths.contains(state.uri.path);
-    if (isPublic || SessionStorage.tokens.hasSession) return null;
-    return SangaRoutes.onboarding;
+    if (SessionStorage.tokens.hasSession) return null;
+    final isSignUpResume =
+        state.uri.path == SangaRoutes.signUp && state.uri.queryParameters.containsKey(SangaRoutes.stepParam);
+    if (isSignUpResume) return SangaRoutes.onboarding;
+    return SangaRoutes.publicPaths.contains(state.uri.path) ? null : SangaRoutes.onboarding;
   }
 
   static String get currentPath => router.routerDelegate.currentConfiguration.lastOrNull?.matchedLocation ?? '';
+
+  static void switchTo(BuildContext context, String path, {Object? extra}) {
+    final matches = router.routerDelegate.currentConfiguration.matches;
+    final below = matches.length > 1 ? matches[matches.length - 2].matchedLocation : null;
+    if (extra == null && below == path && context.canPop()) return context.pop();
+    context.push(path, extra: extra);
+  }
 }

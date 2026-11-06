@@ -1,4 +1,7 @@
+import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
+import 'package:sanga_ride/core/services/session_restore.dart';
+import 'package:sanga_ride/core/services/session_storage.dart';
 import 'package:sanga_ride/core/router/account_routes.dart';
 import 'package:sanga_ride/core/router/boot_routes.dart';
 import 'package:sanga_ride/core/router/dev_routes.dart';
@@ -17,12 +20,10 @@ import 'package:sanga_ride/core/router/trip_routes.dart';
 import 'package:sanga_ride/core/router/trip_wrapup_routes.dart';
 import 'package:sanga_ride/core/router/verification_routes.dart';
 import 'package:sanga_ride/core/router/wallet_routes.dart';
-import 'package:sanga_ride/view/auth/about_you_screen.dart';
-import 'package:sanga_ride/view/auth/home_location_screen.dart';
 import 'package:sanga_ride/view/auth/onboarding_screen.dart';
-import 'package:sanga_ride/view/auth/selfie_screen.dart';
+import 'package:sanga_ride/view/auth/rider_sign_up_flow.dart';
+import 'package:sanga_ride/view/auth/sign_up_steps.dart';
 import 'package:sanga_ride/view/auth/sign_in_screen.dart';
-import 'package:sanga_ride/view/auth/sign_up_screen.dart';
 import 'package:sanga_ride/view/auth/verify_otp_screen.dart';
 import 'package:sanga_ride/view/home/rider_home_screen.dart';
 import 'package:sanga_ride/view/ride/fare_breakdown_screen.dart';
@@ -46,9 +47,19 @@ class SangaRoutes {
   static const String signIn = '/sign-in';
   static const String verifyOtp = '/verify-otp';
   static const String signUp = '/sign-up';
-  static const String aboutYou = '/sign-up/about-you';
-  static const String selfie = '/sign-up/selfie';
-  static const String homeLocation = '/sign-up/home';
+  static const String stepParam = 'step';
+
+  static String signUpAt(RiderSignUpStep step) => Uri(path: signUp, queryParameters: {stepParam: step.name}).toString();
+
+  static String? _signUpRedirect(String? stepName) {
+    if (!SessionStorage.tokens.hasSession || !Get.isRegistered<SessionRestore>()) return null;
+    final onboarding = Get.find<SessionRestore>().meState?.onboardingStep;
+    final isOnboarded = Get.find<SessionRestore>().meState != null && onboarding == null;
+    if (isOnboarded) return home;
+    if (onboarding == null) return null;
+    final current = RiderSignUpStep.fromOnboarding(onboarding);
+    return RiderSignUpStep.fromName(stepName).index < current.index ? signUpAt(current) : null;
+  }
 
   static const String boot = BootRoutes.boot;
   static const String dev = DevRoutes.dev;
@@ -112,11 +123,16 @@ class SangaRoutes {
 
   static final List<RouteBase> authRoutes = [
     GoRoute(path: onboarding, builder: (context, state) => const OnboardingScreen()),
-    GoRoute(path: signIn, builder: (context, state) => const SignInScreen()),
-    GoRoute(path: signUp, builder: (context, state) => const SignUpScreen()),
-    GoRoute(path: aboutYou, builder: (context, state) => const AboutYouScreen()),
-    GoRoute(path: selfie, builder: (context, state) => const SelfieScreen()),
-    GoRoute(path: homeLocation, builder: (context, state) => const HomeLocationScreen()),
+    GoRoute(
+      path: signIn,
+      builder: (context, state) => SignInScreen(phone: state.extra as String?),
+    ),
+    GoRoute(
+      path: signUp,
+      redirect: (context, state) => _signUpRedirect(state.uri.queryParameters[stepParam]),
+      builder: (context, state) =>
+          RiderSignUpFlow(initial: RiderSignUpStep.fromName(state.uri.queryParameters[stepParam])),
+    ),
     GoRoute(path: verifyOtp, builder: (context, state) => VerifyOtpScreen(state.extra as OtpArgs)),
   ];
 

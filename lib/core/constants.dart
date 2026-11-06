@@ -9,6 +9,7 @@ class SangaConstants {
   static const String appId = 'com.sangatechnologies.ride';
   static const String appName = 'Sanga Ride';
   static const String userType = 'rider';
+  static const String googleServerClientId = '889203916709-9raiunpo9og0deo7p3r18a6ghhm812se.apps.googleusercontent.com';
 
   static const String baseUrl = String.fromEnvironment('BASE_URL');
 

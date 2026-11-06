@@ -6,6 +6,7 @@ class AppEndpoints {
 
   static const String _auth = '/auth';
 
+  static const String config = '/config';
   static const String authConfig = '$_auth/config';
   static const String signUp = '$_auth/register';
   static const String checkExistence = '$_auth/check-existence';

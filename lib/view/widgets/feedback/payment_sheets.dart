@@ -1,13 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
-const EdgeInsets paymentSheetPadding = EdgeInsets.fromLTRB(
-  SangaSpacing.xl,
-  SangaSpacing.xxl,
-  SangaSpacing.xl,
-  SangaSpacing.xl,
-);
-
 class PaymentSheetSlot {
   int _generation = 0;
   bool _isOpen = false;
@@ -42,7 +35,6 @@ Future<bool?> showPaymentPendingSheet({
     context: context,
     isDismissible: false,
     enableDrag: false,
-    padding: paymentSheetPadding,
     builder: (context) => PopScope(
       canPop: false,
       child: SangaStatusContent(
@@ -70,7 +62,6 @@ Future<bool?> showPaymentFailureSheet({
     context: context,
     isDismissible: false,
     enableDrag: false,
-    padding: paymentSheetPadding,
     builder: (context) => PopScope(
       canPop: false,
       child: SangaStatusContent(

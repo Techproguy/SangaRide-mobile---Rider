@@ -30,7 +30,7 @@ class SelfieVerifier {
     } on Object catch (error) {
       return switch (ProblemKind.of(error)) {
         ProblemOffline() => SangaSelfieOutcome.noConnection,
-        ProblemRejected(code: ServerCode.faceNotMatched) => SangaSelfieOutcome.noMatch,
+        ProblemRejected(code: ServerCode.faceNotMatched || ServerCode.photoUnreadable) => SangaSelfieOutcome.noMatch,
         _ => SangaSelfieOutcome.serverTrouble,
       };
     }

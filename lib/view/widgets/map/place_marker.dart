@@ -67,7 +67,7 @@ abstract final class PlaceMarker {
     final titlePainter = _text(title, SangaTextStyles.mapLabel.copyWith(fontSize: 12, fontWeight: FontWeight.w600));
     final subtitlePainter = subtitle == null
         ? null
-        : _text(subtitle, SangaTextStyles.mapLabel.copyWith(fontSize: 9, color: SangaColors.textSecondary));
+        : _text(subtitle, SangaTextStyles.mapLabel.copyWith(color: SangaColors.textSecondary));
     const padH = 10.0;
     const padV = 6.0;
     final textWidth = [titlePainter.width, subtitlePainter?.width ?? 0].reduce((a, b) => a > b ? a : b);

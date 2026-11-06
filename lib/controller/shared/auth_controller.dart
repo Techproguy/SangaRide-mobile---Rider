@@ -5,35 +5,47 @@ import 'package:get/get.dart';
 import 'package:sanga_ride/controller/shared/user_controller.dart';
 import 'package:sanga_ride/core/api/api.dart';
 import 'package:sanga_ride/core/api/app_endpoints.dart';
+import 'package:sanga_ride/core/api/server_codes.dart';
 import 'package:sanga_ride/core/api/idempotency_intents.dart';
 import 'package:sanga_ride/core/constants.dart';
+import 'package:sanga_ride/core/copy/auth_problem_copy.dart';
 import 'package:sanga_ride/core/services/auth_config.dart';
 import 'package:sanga_ride/core/services/realtime.dart';
 import 'package:sanga_ride/core/services/session_restore.dart';
 import 'package:sanga_ride/core/services/session_storage.dart';
-import 'package:sanga_ride/model/auth/otp_session.dart';
+import 'package:sanga_ride/model/auth/auth_problem.dart';
+import 'package:sanga_ride/model/auth/social_outcome.dart';
 import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride_core/sanga_ride_core.dart'
-    show ConnectionMonitor, ResponseData, SessionEndReason, SessionHub;
-import 'package:sanga_ride_ui/sanga_ride_ui.dart' show SangaRegion, SangaToast, SangaToastTone;
-
-enum AuthProvider { google, apple }
-
-enum OtpPurpose { login, registration }
-
-typedef ProviderTokenSource = Future<String?> Function(AuthProvider provider);
+    show
+        ConnectionMonitor,
+        OtpNotSent,
+        OtpPurpose,
+        OtpRequestResult,
+        OtpSent,
+        OtpSession,
+        ResponseData,
+        SessionEndReason,
+        SessionHub,
+        SocialCredential,
+        SocialFailed,
+        SocialObtained,
+        SocialProvider,
+        SocialProviderLabel,
+        SocialSignIn,
+        SocialSignInResult,
+        SocialUnavailable;
+import 'package:sanga_ride_ui/sanga_ride_ui.dart' show SangaAuthCopy, SangaRegion, SangaToast, SangaToastTone;
 
 class AuthController extends GetxController {
   static int get otpLength => AuthConfig.current.otpLength;
   static const Duration logoutRevokeCap = Duration(seconds: 3);
 
-  static ProviderTokenSource? providerTokens;
-
   final _api = Get.find<ApiService>();
 
   final RxBool _isSendingCode = false.obs;
   final RxBool _isVerifying = false.obs;
-  final Rxn<AuthProvider> _signingInWith = Rxn<AuthProvider>();
+  final Rxn<SocialProvider> _signingInWith = Rxn<SocialProvider>();
   final RxnString _otpError = RxnString();
   final RxnString _phoneError = RxnString();
   final RxnString _requestError = RxnString();
@@ -42,7 +54,7 @@ class AuthController extends GetxController {
 
   bool get isVerifying => _isVerifying.value;
 
-  AuthProvider? get signingInWith => _signingInWith.value;
+  SocialProvider? get signingInWith => _signingInWith.value;
 
   String? get otpError => _otpError.value;
 
@@ -87,10 +99,12 @@ class AuthController extends GetxController {
       return OtpSent(OtpSession.fromData((response.data as Map)['data']));
     } on ApiException catch (e) {
       if (e.kind == ApiFailureKind.rejected && purpose == OtpPurpose.login && e.statusCode != 429) {
-        _phoneError.value = e.message;
-        return OtpNotSent(e.message);
+        final message = _rejectedMessage(e);
+        _phoneError.value = message;
+        return OtpNotSent(message, resendIn: OtpSession.resendDelayOf(e));
       }
-      return _failRequest(e.kind == ApiFailureKind.rejected ? e.message : AuthProblem.of(e).message, purpose);
+      final message = e.kind == ApiFailureKind.rejected ? _rejectedMessage(e) : AuthProblem.of(e).message;
+      return _failRequest(message, purpose, resendIn: OtpSession.resendDelayOf(e));
     } catch (e) {
       log('requestOtp failed: $e');
       return _failRequest(AuthProblem.unknown.message, purpose);
@@ -99,9 +113,14 @@ class AuthController extends GetxController {
     }
   }
 
-  OtpNotSent _failRequest(String message, OtpPurpose purpose) {
+  String _rejectedMessage(ApiException error) {
+    if (error.isNotFound) return SangaAuthCopy.noAccountForNumber;
+    return ApiFailureCopy.rejectionMessage(error);
+  }
+
+  OtpNotSent _failRequest(String message, OtpPurpose purpose, {Duration? resendIn}) {
     if (purpose == OtpPurpose.login) _requestError.value = message;
-    return OtpNotSent(message);
+    return OtpNotSent(message, resendIn: resendIn);
   }
 
   Future<bool> verifyOtp({required String phone, required String code, required OtpPurpose purpose}) async {
@@ -121,43 +140,71 @@ class AuthController extends GetxController {
       await _startSession(response.dataMap);
       return true;
     } on ApiException catch (e) {
-      _otpError.value = e.kind == ApiFailureKind.rejected ? e.message : AuthProblem.of(e).message;
+      _otpError.value = e.kind == ApiFailureKind.rejected ? _rejectedMessage(e) : AuthProblem.of(e).message;
       return false;
     } catch (e) {
       log('verifyOtp failed: $e');
-      _otpError.value = "We couldn't check that code. Try again.";
+      _otpError.value = SangaAuthCopy.couldntCheckCode;
       return false;
     } finally {
       _isVerifying.value = false;
     }
   }
 
-  Future<bool> continueWith(AuthProvider provider) async {
-    if (_signingInWith.value != null) return false;
+  Future<SocialOutcome> continueWith(SocialProvider provider) async {
+    if (_signingInWith.value != null) return const SocialStopped();
     if (_isOffline) {
       SangaToast.show(AuthProblem.offline.message, tone: SangaToastTone.error);
-      return false;
+      return const SocialStopped();
     }
     _signingInWith.value = provider;
     try {
-      final token = await providerTokens?.call(provider);
-      final endpoint = switch (provider) {
-        AuthProvider.google => AppEndpoints.googleSignIn,
-        AuthProvider.apple => AppEndpoints.appleSignIn,
-      };
-      final response = await _api.post(endpoint, data: {'idToken': ?token}, suppressErrorToast: true);
-      await _startSession(response.dataMap);
-      return true;
-    } catch (e) {
-      log('continueWith $provider failed: $e');
-      final message = e is ApiException && e.kind == ApiFailureKind.rejected && e.message.isNotEmpty
-          ? e.message
-          : AuthProblem.of(e).message;
-      SangaToast.show(message, tone: SangaToastTone.error);
-      return false;
+      final result = await SocialSignIn.acquire(provider);
+      if (result is SocialObtained) return await _exchange(result.credential);
+      _reportUnobtained(provider, result);
+      return const SocialStopped();
     } finally {
       _signingInWith.value = null;
     }
+  }
+
+  void _reportUnobtained(SocialProvider provider, SocialSignInResult result) {
+    final message = switch (result) {
+      SocialUnavailable() => SangaAuthCopy.socialUnavailable(provider.label),
+      SocialFailed() => SangaAuthCopy.socialFailed,
+      _ => null,
+    };
+    if (message != null) SangaToast.show(message, tone: SangaToastTone.error);
+  }
+
+  Future<SocialOutcome> _exchange(SocialCredential credential) async {
+    final endpoint = switch (credential.provider) {
+      SocialProvider.google => AppEndpoints.googleSignIn,
+      SocialProvider.apple => AppEndpoints.appleSignIn,
+    };
+    try {
+      final response = await _api.post(endpoint, data: credential.requestBody, suppressErrorToast: true);
+      final data = response.dataMap;
+      await _startSession(data);
+      return SocialSignedIn(isNewUser: data['isNewUser'] == true);
+    } on ApiException catch (e) {
+      if (e.hasCode(ServerCode.signupRequired)) return SocialNeedsSignUp(SocialPrefill.of(credential));
+      log('continueWith ${credential.provider} failed: $e');
+      SangaToast.show(_socialMessage(e), tone: SangaToastTone.error);
+      return const SocialStopped();
+    } catch (e) {
+      log('continueWith ${credential.provider} failed: $e');
+      SangaToast.show(AuthProblem.of(e).message, tone: SangaToastTone.error);
+      return const SocialStopped();
+    }
+  }
+
+  String _socialMessage(ApiException error) {
+    if (error.hasCode(ServerCode.invalidSocialToken) || error.hasCode(ServerCode.invalidProviderToken)) {
+      return SangaAuthCopy.socialFailed;
+    }
+    final isRefusal = error.kind == ApiFailureKind.rejected || error.kind == ApiFailureKind.unauthorized;
+    return isRefusal ? _rejectedMessage(error) : AuthProblem.of(error).message;
   }
 
   Future<void> logout() async {

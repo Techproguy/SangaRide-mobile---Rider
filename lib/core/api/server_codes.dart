@@ -1,4 +1,11 @@
 abstract final class ServerCode {
+  static const String validationFailed = 'validation_failed';
+  static const String tooManyAttempts = 'too_many_attempts';
+  static const String tokenExpired = 'token_expired';
+  static const String sessionRevoked = 'session_revoked';
+  static const String rateLimited = 'rate_limited';
+  static const String accountSuspended = 'account_suspended';
+  static const String accountNotFound = 'account_not_found';
   static const String activeTrip = 'active_trip';
   static const String alreadyNotified = 'already_notified';
   static const String alreadyPaid = 'already_paid';
@@ -10,6 +17,7 @@ abstract final class ServerCode {
   static const String chatEnded = 'chat_ended';
   static const String chatUnavailable = 'chat_unavailable';
   static const String driverNotFound = 'driver_not_found';
+  static const String emailAlreadyExists = 'email_already_exists';
   static const String emailTaken = 'email_taken';
   static const String faceNotMatched = 'face_not_matched';
   static const String fileTooLarge = 'file_too_large';
@@ -20,11 +28,18 @@ abstract final class ServerCode {
   static const String invalidEmail = 'invalid_email';
   static const String invalidOption = 'invalid_option';
   static const String invalidPhone = 'invalid_phone';
+  static const String invalidSocialToken = 'invalid_social_token';
+  static const String invalidProviderToken = 'invalid_provider_token';
+  static const String signupRequired = 'signup_required';
   static const String nameRequired = 'name_required';
   static const String notFound = 'not_found';
   static const String noteTooLong = 'note_too_long';
   static const String otpExpired = 'otp_expired';
-  static const String otpMismatch = 'otp_invalid';
+  static const String otpInvalid = 'otp_invalid';
+  static const String otpMismatch = 'otp_mismatch';
+  static const String otpTooManyAttempts = 'otp_too_many_attempts';
+  static const String otpTooSoon = 'otp_too_soon';
+  static const String phoneAlreadyExists = 'phone_already_exists';
   static const String phoneTaken = 'phone_taken';
   static const String photoUnreadable = 'photo_unreadable';
   static const String quoteExpired = 'quote_expired';
@@ -38,6 +53,8 @@ abstract final class ServerCode {
   static const String unsupportedType = 'unsupported_type';
   static const String uploadFailed = 'upload_failed';
   static const String wrongStage = 'wrong_stage';
+
+  static bool isOtpMismatch(String? code) => code == otpMismatch || code == otpInvalid;
 
   static const Set<String> paymentDeclines = {cardDeclined, cardExpired, insufficientBalance, groupWalletShort};
 }

@@ -1,7 +1,5 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:sanga_ride/core/api/mock/mock_capture.dart';
 import 'package:sanga_ride/core/services/document_file_service.dart';
 import 'package:sanga_ride/core/services/image_compression_service.dart';
 import 'package:sanga_ride/model/models.dart';
@@ -28,8 +26,7 @@ abstract final class PackagePhotoService {
 
   static Future<String?> _pickOriginal(PhotoSource source) async {
     if (source == PhotoSource.camera && !await SangaCamera.hasCamera()) {
-      if (kDebugMode) return MockCapture.photo('Package');
-      throw const PhotoException(DeliveryFailure.cameraUnavailable);
+      throw const PhotoException(DeliveryFailure.noCamera);
     }
     try {
       final photo = await ImagePicker().pickImage(
@@ -43,7 +40,6 @@ abstract final class PackagePhotoService {
     } on PlatformException catch (error) {
       final denied = _deniedCodes[error.code];
       if (denied != null) throw PhotoException(denied);
-      if (kDebugMode && source == PhotoSource.camera) return MockCapture.photo('Package');
       throw PhotoException(
         source == PhotoSource.camera ? DeliveryFailure.cameraUnavailable : DeliveryFailure.unreadablePhoto,
       );

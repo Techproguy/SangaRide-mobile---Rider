@@ -13,7 +13,7 @@ abstract final class SessionNames {
   static const String tokens = 'tokens';
   static const String user = 'user';
   static const String drafts = 'drafts';
+  static const String localCache = 'local_cache';
   static const String controllers = 'controllers';
   static const String rideMatch = 'ride_match';
-  static const String realtime = 'realtime';
 }

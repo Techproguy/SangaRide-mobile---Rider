@@ -17,8 +17,8 @@ class AmountTile extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         spacing: SangaSpacing.xs,
         children: [
-          Text(label, style: SangaTextStyles.cardSubtitle.copyWith(color: SangaColors.primary)),
-          Text(amount.format(), style: SangaTextStyles.title.copyWith(color: SangaColors.primary)),
+          Text(label, style: SangaTextStyles.cardBody.copyWith(color: SangaColors.primaryStrong)),
+          Text(amount.format(), style: SangaTextStyles.title.copyWith(color: SangaColors.primaryStrong)),
         ],
       ),
     );
