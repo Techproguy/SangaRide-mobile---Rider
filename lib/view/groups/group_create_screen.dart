@@ -85,14 +85,12 @@ class _GroupCreateScreenState extends State<GroupCreateScreen> {
             if (kind == GroupKind.business) ...[
               SangaTextField(
                 label: GroupCopy.rcNumber,
-                hintText: GroupCopy.optional,
                 controller: _rcNumber,
                 textCapitalization: TextCapitalization.characters,
                 inputFormatters: [LengthLimitingTextInputFormatter(rcLimit)],
               ),
               SangaTextField(
                 label: GroupCopy.companyAddress,
-                hintText: GroupCopy.optional,
                 controller: _address,
                 textCapitalization: TextCapitalization.words,
                 inputFormatters: [LengthLimitingTextInputFormatter(addressLimit)],

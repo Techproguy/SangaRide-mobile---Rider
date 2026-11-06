@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:sanga_ride/controller/rider/groups/group_controller.dart';
 import 'package:sanga_ride/controller/rider/ride_request_controller.dart';
-import 'package:sanga_ride/core/copy/common_copy.dart';
 import 'package:sanga_ride/model/groups/group_models.dart';
 import 'package:sanga_ride/model/ride/ride_request.dart';
 import 'package:sanga_ride/view/groups/group_copy.dart';
@@ -100,11 +99,11 @@ class _FormState extends State<_Form> {
         children: [
           Text(GroupCopy.pickRideTypes(widget.member.firstName), style: SangaTextStyles.body),
           if (options.isEmpty && _booking.isLoadingOptions)
-            const Center(child: SangaActivityIndicator(size: 32))
+            const Center(child: SangaActivityIndicator.content(size: 32))
           else if (options.isEmpty)
             SangaFailureMessage(
               title: GroupCopy.rideTypesLoadFailed,
-              message: CommonCopy.connectionBody,
+              message: SangaCommonCopy.connectionAnotherGo,
               onRetry: _booking.loadOptions,
             )
           else

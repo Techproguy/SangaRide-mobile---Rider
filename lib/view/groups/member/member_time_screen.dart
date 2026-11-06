@@ -155,7 +155,7 @@ class _TimeField extends StatelessWidget {
             child: SizedBox(
               height: SangaTextField.height,
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: SangaSpacing.md),
+                padding: const EdgeInsets.symmetric(horizontal: SangaTextField.inset),
                 child: Row(
                   spacing: SangaSpacing.xs,
                   children: [

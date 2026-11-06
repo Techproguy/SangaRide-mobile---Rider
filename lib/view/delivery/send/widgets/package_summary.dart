@@ -50,7 +50,7 @@ class PackageSummary extends StatelessWidget {
                       style: SangaTextStyles.cardSubtitle,
                     ),
                     if (facts.isNotEmpty)
-                      Text(facts, style: SangaTextStyles.cardSubtitle.copyWith(color: SangaColors.primary)),
+                      Text(facts, style: SangaTextStyles.cardBody.copyWith(color: SangaColors.primaryStrong)),
                   ],
                 ),
               ),

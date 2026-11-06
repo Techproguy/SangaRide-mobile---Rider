@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sanga_ride/controller/rider/groups/group_controller.dart';
-import 'package:sanga_ride/core/copy/common_copy.dart';
 import 'package:sanga_ride/model/groups/group_models.dart';
 import 'package:sanga_ride/view/groups/group_copy.dart';
 import 'package:sanga_ride/view/groups/widgets/group_member_gate.dart';
@@ -56,7 +55,7 @@ class _InviteFormState extends State<_InviteForm> {
   Future<void> _send() async {
     FocusScope.of(context).unfocus();
     if (!_phone.isValid) {
-      return setState(() => _phoneError = CommonCopy.invalidPhone);
+      return setState(() => _phoneError = SangaAuthCopy.invalidPhone);
     }
     final outcome = await widget.group.invite(
       phone: _phone.e164,

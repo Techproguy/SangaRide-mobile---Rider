@@ -1,5 +1,5 @@
+import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 import 'package:sanga_ride/core/api/server_codes.dart';
-import 'package:sanga_ride/core/copy/common_copy.dart';
 import 'package:sanga_ride_core/sanga_ride_core.dart';
 
 enum DeliveryFailure {
@@ -23,6 +23,7 @@ enum DeliveryFailure {
     'We can’t reach your camera',
     'Try again, or choose a photo from your gallery.',
   ),
+  noCamera('no_camera', 'There’s no camera on this phone', 'Choose a photo from your gallery instead.'),
   quoteExpired(
     ServerCode.quoteExpired,
     'Your price timed out',
@@ -38,8 +39,8 @@ enum DeliveryFailure {
     'That phone number looks off',
     'Check the recipient’s number so your driver can reach them.',
   ),
-  connection('connection', CommonCopy.unreachableTitle, CommonCopy.connectionBody),
-  unknown('unknown', CommonCopy.serverTitle, 'Give it another go in a moment.');
+  connection('connection', SangaCommonCopy.unreachableTitle, SangaCommonCopy.connectionAnotherGo),
+  unknown('unknown', SangaCommonCopy.somethingWentWrong, 'Give it another go in a moment.');
 
   const DeliveryFailure(this.code, this.title, this.message, {this.opensSettings = false});
 

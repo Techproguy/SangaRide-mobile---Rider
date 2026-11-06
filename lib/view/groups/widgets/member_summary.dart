@@ -20,7 +20,12 @@ class MemberSummary extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             spacing: SangaSpacing.xxs,
             children: [
-              Text(GroupCopy.memberTitle(member), maxLines: 1, overflow: TextOverflow.ellipsis, style: SangaTextStyles.cardHeading),
+              Text(
+                GroupCopy.memberTitle(member),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: SangaTextStyles.cardHeading,
+              ),
               Text(GroupCopy.roleCaption(member), style: SangaTextStyles.cardSubtitle),
             ],
           ),

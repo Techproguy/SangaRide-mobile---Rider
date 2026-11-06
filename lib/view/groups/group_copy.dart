@@ -57,9 +57,7 @@ abstract final class GroupCopy {
   static const String invitesHeading = 'Waiting for you';
 
   static const String back = 'Back';
-  static const String tryAgain = 'Try again';
   static const String confirm = 'Confirm';
-  static const String optional = 'Optional';
   static const String copy = 'Copy';
   static const String share = 'Share';
   static const String review = 'Review';
@@ -87,8 +85,8 @@ abstract final class GroupCopy {
   static const String allCaughtUpMessage = 'When a ride goes past someone’s limit, it lands here for your OK.';
   static const String rideRequests = 'Ride requests';
   static const String requestClosed = 'This request has closed';
-  static const String rcNumber = 'RC number';
-  static const String companyAddress = 'Company address';
+  static const String rcNumber = 'RC number (optional)';
+  static const String companyAddress = 'Company address (optional)';
   static const String inviteSomeone = 'Invite someone';
   static const String inviteHow = 'By phone number or with the invite code';
   static const String sendInvite = 'Send invite';

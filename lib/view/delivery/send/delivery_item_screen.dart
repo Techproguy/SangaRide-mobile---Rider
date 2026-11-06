@@ -64,7 +64,6 @@ class _DeliveryItemScreenState extends State<DeliveryItemScreen> {
   Widget build(BuildContext context) {
     return SangaPageLayout(
       title: _delivery.isDocuments ? 'Document details' : 'Package details',
-      subtitle: 'Tell us a bit about what you’re sending',
       footer: SangaButton.primary(label: widget.isEditing ? 'Save' : 'Continue', onPressed: _submit),
       children: [
         DeliveryCatalogGate(
@@ -146,7 +145,6 @@ class _DeliveryItemScreenState extends State<DeliveryItemScreen> {
             SangaSelectField<String>(
               label: 'Package type',
               isRequired: true,
-              hintText: 'Choose type',
               value: draft.packageTypeId,
               errorText: _errors[_Field.packageType],
               options: [for (final type in catalog.packageTypes) SangaSelectOption(type.id, type.label)],

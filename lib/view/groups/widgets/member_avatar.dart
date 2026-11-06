@@ -16,7 +16,7 @@ class MemberAvatar extends StatelessWidget {
   }
 
   Widget get _placeholder => _letter.hasMatch(name)
-      ? Text(_initials, style: SangaTextStyles.label.copyWith(color: SangaColors.primary))
+      ? Text(_initials, style: SangaTextStyles.label.copyWith(color: SangaColors.primaryStrong))
       : Icon(Icons.person_rounded, size: size / 2, color: SangaColors.primary);
 
   @override

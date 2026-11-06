@@ -150,7 +150,7 @@ class _GroupScreenState extends State<GroupScreen> with SingleTickerProviderStat
           title: failure.title,
           message: failure.message,
           icon: failure.isNotFound ? Icons.search_off_rounded : Icons.cloud_off_rounded,
-          retryLabel: failure.isNotFound ? GroupCopy.back : GroupCopy.tryAgain,
+          retryLabel: failure.isNotFound ? GroupCopy.back : SangaCommonCopy.tryAgain,
           onRetry: failure.isNotFound ? context.pop : _group.reload,
         ),
       ],

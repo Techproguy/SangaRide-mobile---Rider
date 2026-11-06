@@ -1,5 +1,5 @@
+import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 import 'package:sanga_ride/core/api/server_codes.dart';
-import 'package:sanga_ride/core/copy/common_copy.dart';
 import 'package:sanga_ride_core/sanga_ride_core.dart';
 
 enum GroupFailure {
@@ -27,8 +27,8 @@ enum GroupFailure {
   approvalExpired('approval_expired', 'That request ran out of time', 'Nobody answered in time, so it has closed.'),
   rideCancelled('ride_cancelled', 'The ride was cancelled', 'The rider cancelled before anyone answered.'),
   memberNotFound('member_not_found', 'They’re no longer here', 'That person has already left or been removed.'),
-  connection('connection', CommonCopy.unreachableTitle, CommonCopy.connectionBody),
-  unknown('unknown', CommonCopy.serverTroubleTitle, CommonCopy.tryAgainInAMoment),
+  connection('connection', SangaCommonCopy.unreachableTitle, SangaCommonCopy.connectionAnotherGo),
+  unknown('unknown', SangaCommonCopy.somethingWentWrongOurSide, SangaCommonCopy.tryAgainInAMoment),
   unconfirmed(
     'unconfirmed',
     'We’re not sure that went through',

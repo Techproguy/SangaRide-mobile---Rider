@@ -97,7 +97,6 @@ class _DeliveryIssueScreenState extends State<DeliveryIssueScreen> {
                   SangaTextArea(
                     label: reason.needsNote ? 'Tell us what happened' : 'Anything else we should know? (optional)',
                     controller: _note,
-                    hintText: 'Share as much as you can',
                     maxLength: DeliveryIssueRules.maxNoteLength,
                     minLines: 3,
                     isEnabled: !isSubmitting,

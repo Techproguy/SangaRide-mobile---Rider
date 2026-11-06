@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:sanga_ride/controller/rider/delivery/send_delivery_controller.dart';
-import 'package:sanga_ride/core/copy/common_copy.dart';
 import 'package:sanga_ride/core/router/delivery_routes.dart';
 import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride/view/ride/who_for/widgets/passenger_gender_picker.dart';
@@ -47,7 +46,7 @@ class _DeliveryRecipientScreenState extends State<DeliveryRecipientScreen> {
     return {
       if (_name.text.trim().isEmpty) _Field.name: 'Add the recipient’s name',
       if (email.isNotEmpty && !_emailPattern.hasMatch(email)) _Field.email: 'Enter a valid email or leave it blank',
-      if (!_phone.isValid) _Field.phone: CommonCopy.invalidPhone,
+      if (!_phone.isValid) _Field.phone: SangaAuthCopy.invalidPhone,
     };
   }
 
@@ -71,7 +70,6 @@ class _DeliveryRecipientScreenState extends State<DeliveryRecipientScreen> {
   Widget build(BuildContext context) {
     return SangaPageLayout(
       title: 'Recipient info',
-      subtitle: 'Who should your driver hand it to?',
       footer: SangaButton.primary(label: widget.isEditing ? 'Save' : 'Continue', onPressed: _submit),
       children: [
         Column(
@@ -81,7 +79,7 @@ class _DeliveryRecipientScreenState extends State<DeliveryRecipientScreen> {
             SangaTextField(
               label: 'Name',
               isRequired: true,
-              hintText: 'Enter the recipient’s full name',
+              hintText: 'Full name',
               controller: _name,
               errorText: _errors[_Field.name],
               keyboardType: TextInputType.name,
@@ -91,8 +89,7 @@ class _DeliveryRecipientScreenState extends State<DeliveryRecipientScreen> {
               onChanged: (_) => _clearError(_Field.name),
             ),
             SangaTextField(
-              label: 'Recipient’s email',
-              hintText: 'Optional',
+              label: 'Recipient’s email (optional)',
               controller: _email,
               errorText: _errors[_Field.email],
               keyboardType: TextInputType.emailAddress,

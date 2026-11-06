@@ -71,7 +71,7 @@ class DeliveryPhotoScreen extends StatelessWidget {
     if (source == null || !context.mounted) return;
     if (source == PhotoSource.camera) {
       final access = await Get.find<PermissionCenter>().prime(PermissionKind.camera, context);
-      if (access.canAskAgain) return;
+      if (!context.mounted || access.canAskAgain) return;
     }
     await delivery.pickPhoto(source);
   }

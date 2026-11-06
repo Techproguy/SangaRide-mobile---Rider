@@ -57,7 +57,6 @@ class _DeliveryValueScreenState extends State<DeliveryValueScreen> {
   Widget build(BuildContext context) {
     return SangaPageLayout(
       title: 'Declare value',
-      subtitle: 'Tell us what it’s worth',
       footer: Obx(() {
         final hasValue = _delivery.draft.declaredValue != null;
         return Column(
@@ -91,7 +90,7 @@ class _DeliveryValueScreenState extends State<DeliveryValueScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           spacing: SangaSpacing.xs,
           children: [
-            const SangaFieldLabel('Package value'),
+            const SangaFieldLabel('Package value (optional)'),
             SangaMoneyField(
               controller: _value,
               hintText: '350,000',
@@ -114,7 +113,7 @@ class _DeliveryValueScreenState extends State<DeliveryValueScreen> {
           const SangaNotice(
             tone: SangaTone.neutral,
             icon: Icons.info_outline_rounded,
-            message: 'Declaring a value is optional. It helps us handle your item with the right care, especially pricey ones.',
+            message: 'Declaring a value helps us handle your item with the right care, especially pricey ones.',
           ),
       ],
     );

@@ -86,7 +86,7 @@ class _TakePhotoTile extends StatelessWidget {
                       const Icon(Icons.photo_camera_outlined, size: 36, color: SangaColors.primary),
                     Text(
                       isPreparing ? 'Getting your photo ready…' : 'Tap to take photo',
-                      style: SangaTextStyles.caption.copyWith(color: SangaColors.primary),
+                      style: SangaTextStyles.chipText.copyWith(color: SangaColors.primaryStrong),
                     ),
                   ],
                 ),
