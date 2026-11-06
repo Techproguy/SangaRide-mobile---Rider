@@ -124,7 +124,7 @@ class HistoryCard extends StatelessWidget {
             purpose == null ? name : '$name · $purpose',
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: SangaTextStyles.tileSubtitle.copyWith(color: SangaColors.primary),
+            style: SangaTextStyles.chipText.copyWith(color: SangaColors.primaryStrong),
           ),
         ),
       ],

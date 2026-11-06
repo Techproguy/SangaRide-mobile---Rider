@@ -30,7 +30,7 @@ class NotificationMenuBadge extends StatelessWidget {
                   textAlign: TextAlign.center,
                   style: SangaTextStyles.cardSubtitle.copyWith(
                     color: SangaColors.onPrimary,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
               ),

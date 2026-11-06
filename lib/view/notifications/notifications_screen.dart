@@ -78,8 +78,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     });
   }
 
-  Widget _header() {
-    return SangaPageHeader(
+  PreferredSizeWidget _appBar() {
+    return SangaAppBar(
       title: NotificationCopy.title,
       trailing: Obx(
         () => _controller.unreadCount == 0
@@ -114,7 +114,12 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       child: ListView.separated(
         controller: _scroll,
         physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.fromLTRB(SangaSpacing.gutter, SangaSpacing.md, SangaSpacing.gutter, SangaSpacing.xl),
+        padding: const EdgeInsets.fromLTRB(
+          SangaSpacing.gutter,
+          SangaSpacing.md,
+          SangaSpacing.gutter,
+          SangaSpacing.xl,
+        ).withBottomInset(context),
         itemCount: state.items.length + 1 + staleOffset,
         separatorBuilder: (context, index) => const SizedBox(height: SangaSpacing.sm),
         itemBuilder: (context, rawIndex) {
@@ -135,7 +140,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     if (state.isLoadingMore) return const SangaSkeleton.heights([72]);
     if (state.loadMoreFailed) {
       return SangaFailureMessage(
-        title: CommonCopy.loadMoreFailed,
+        title: SangaCommonCopy.loadMoreFailed,
         message: LoadProblem.connection.message,
         onRetry: _controller.loadMore,
       );
@@ -148,33 +153,31 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     return AnnotatedRegion(
       value: SangaSystemUi.onLight,
       child: Scaffold(
-        body: SafeArea(
-          child: Column(
-            children: [
-              _header(),
-              _permissionNotice(),
-              Expanded(
-                child: Obx(() {
-                  final state = _controller.state;
-                  return switch (state) {
-                    NotificationsLoading() => const Padding(
-                      padding: EdgeInsets.all(SangaSpacing.gutter),
-                      child: SangaSkeleton.list(count: 4, height: 80),
+        appBar: _appBar(),
+        body: Column(
+          children: [
+            _permissionNotice(),
+            Expanded(
+              child: Obx(() {
+                final state = _controller.state;
+                return switch (state) {
+                  NotificationsLoading() => const Padding(
+                    padding: EdgeInsets.all(SangaSpacing.gutter),
+                    child: SangaSkeleton.list(count: 4, height: 80),
+                  ),
+                  NotificationsFailed(:final problem) => Padding(
+                    padding: const EdgeInsets.all(SangaSpacing.gutter),
+                    child: SangaFailureMessage(
+                      title: NotificationCopy.loadFailed,
+                      message: problem.message,
+                      onRetry: _controller.retry,
                     ),
-                    NotificationsFailed(:final problem) => Padding(
-                      padding: const EdgeInsets.all(SangaSpacing.gutter),
-                      child: SangaFailureMessage(
-                        title: NotificationCopy.loadFailed,
-                        message: problem.message,
-                        onRetry: _controller.retry,
-                      ),
-                    ),
-                    NotificationsLoaded() => _list(state),
-                  };
-                }),
-              ),
-            ],
-          ),
+                  ),
+                  NotificationsLoaded() => _list(state),
+                };
+              }),
+            ),
+          ],
         ),
       ),
     );

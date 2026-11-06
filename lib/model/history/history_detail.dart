@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:sanga_ride/core/api/server_codes.dart';
-import 'package:sanga_ride/core/copy/common_copy.dart';
 import 'package:sanga_ride/core/format/money_json.dart';
 import 'package:sanga_ride/model/history/history_item.dart';
 import 'package:sanga_ride_core/sanga_ride_core.dart';
@@ -308,8 +307,8 @@ class HistoryDetail {
 
 enum HistoryFailure {
   notFound(ServerCode.notFound, 'We can’t find this one', 'It may have been removed. Head back and try again.'),
-  connection('connection', 'We couldn’t load the details', CommonCopy.connectionBody),
-  unknown('unknown', CommonCopy.serverTroubleTitle, CommonCopy.tryAgainInAMoment);
+  connection('connection', 'We couldn’t load the details', SangaCommonCopy.connectionAnotherGo),
+  unknown('unknown', SangaCommonCopy.somethingWentWrongOurSide, SangaCommonCopy.tryAgainInAMoment);
 
   const HistoryFailure(this.code, this.title, this.message);
 

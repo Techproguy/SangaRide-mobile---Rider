@@ -1,9 +1,9 @@
-import 'package:sanga_ride/core/copy/common_copy.dart';
+import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 import 'package:sanga_ride_core/sanga_ride_core.dart';
 
 enum LoadProblem {
-  connection(CommonCopy.connectionBody),
-  unknown(CommonCopy.serverTrouble);
+  connection(SangaCommonCopy.connectionAnotherGo),
+  unknown(SangaCommonCopy.serverTrouble);
 
   const LoadProblem(this.message);
 

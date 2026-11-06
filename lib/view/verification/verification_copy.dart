@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:sanga_ride/model/models.dart';
+import 'package:sanga_ride_ui/sanga_ride_ui.dart' show SangaCommonCopy;
 
 class VerificationHeroCopy {
   const VerificationHeroCopy({required this.title, required this.message});
@@ -10,7 +11,6 @@ class VerificationHeroCopy {
 
 abstract final class VerificationCopy {
   static const String done = 'Done';
-  static const String tryAgain = 'Try again';
   static const String addYourId = 'Add your ID';
   static const String underReviewTitle = 'Verification under review';
   static const String idSavedTakeSelfie = 'Your ID is saved. Take your selfie and we’ll send it all off.';
@@ -20,7 +20,6 @@ abstract final class VerificationCopy {
   static const String backOfId = 'Back of ID';
   static const String documentVerification = 'Document verification';
   static const String submitForReview = 'Submit for review';
-  static const String uploadValidId = 'Upload a valid ID';
   static const String verifiedTitle = 'You’re verified';
   static const String verifiedMessage = 'Thanks for waiting. Your account is all set.';
   static const String anotherGoTitle = 'Verification needs another go';
@@ -29,7 +28,7 @@ abstract final class VerificationCopy {
   static const String talkToSupport = 'Need help? Talk to support';
   static const String centreTitle = 'Verification centre';
   static const String selfieTitle = 'Selfie verification';
-  static const String selfieSubtitle = 'Verify your identity';
+  static const String selfieSubtitle = 'So drivers know it’s you';
   static const String selfiePassed = 'Looking good! Your selfie is saved.';
   static const String uploaded = 'Uploaded';
   static const String choosePhoto = 'Choose a photo';
@@ -84,7 +83,7 @@ abstract final class VerificationCopy {
     if (next == null) {
       return verification.isReadyToSubmit ? submitForReview : done;
     }
-    if (status.needsAction) return tryAgain;
+    if (status.needsAction) return SangaCommonCopy.tryAgain;
     return next.status == ItemStatus.missing && verification.items.every((item) => item.status == ItemStatus.missing)
         ? 'Start verification'
         : 'Continue';

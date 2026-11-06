@@ -29,7 +29,6 @@ abstract final class SosLauncher {
       context: context,
       isDismissible: false,
       enableDrag: false,
-      padding: const EdgeInsets.fromLTRB(SangaSpacing.xl, SangaSpacing.xxl, SangaSpacing.xl, SangaSpacing.xl),
       builder: (sheet) => PopScope(
         canPop: false,
         child: _SosSheet(

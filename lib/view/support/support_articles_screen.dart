@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sanga_ride/controller/rider/support/support_help_controller.dart';
-import 'package:sanga_ride/core/copy/common_copy.dart';
 import 'package:sanga_ride/core/router/support_routes.dart';
 import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride/view/support/support_copy.dart';
@@ -86,7 +85,7 @@ class _SupportArticlesScreenState extends State<SupportArticlesScreen> {
         if (state.loadMoreFailed)
           SangaFailureMessage(
             message: SupportProblem.connection.message,
-            title: CommonCopy.loadMoreFailed,
+            title: SangaCommonCopy.loadMoreFailed,
             onRetry: () => _controller.loadMoreArticles(_query),
           ),
       ],

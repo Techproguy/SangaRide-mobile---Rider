@@ -58,7 +58,7 @@ class _SupportTicketsScreenState extends State<SupportTicketsScreen> {
         if (state.isLoadingMore) const SangaSkeleton.heights([56]),
         if (state.loadMoreFailed)
           SangaFailureMessage(
-            title: CommonCopy.loadMoreFailed,
+            title: SangaCommonCopy.loadMoreFailed,
             message: SupportProblem.connection.message,
             onRetry: _controller.loadMore,
           ),

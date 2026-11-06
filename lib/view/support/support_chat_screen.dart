@@ -79,37 +79,23 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
     _ => SupportCopy.customerSupport,
   };
 
-  Widget _header(ChatState state) {
+  PreferredSizeWidget _appBar(ChatState state) {
     final live = state is ChatLive && state.chat.status != ChatStatus.ended ? state : null;
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(SangaSpacing.gutter, SangaSpacing.md, SangaSpacing.xs, 0),
-      child: Row(
-        children: [
-          const SangaCircleButton.back(),
-          Expanded(
-            child: Text(
-              _title(state),
-              textAlign: TextAlign.center,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: SangaTextStyles.toolbarTitle,
-            ),
-          ),
+    return SangaAppBar(
+      title: _title(state),
+      actions: [
+        IconButton(
+          tooltip: SupportCopy.callSupport,
+          onPressed: _call,
+          icon: const Icon(Icons.phone_rounded, color: SangaColors.primary),
+        ),
+        if (live != null)
           IconButton(
-            tooltip: SupportCopy.callSupport,
-            onPressed: _call,
-            icon: const Icon(Icons.phone_rounded, color: SangaColors.primary),
+            tooltip: SupportCopy.endChat,
+            onPressed: live.isEnding ? null : _end,
+            icon: const Icon(Icons.more_vert_rounded, color: SangaColors.textPrimary),
           ),
-          if (live != null)
-            IconButton(
-              tooltip: SupportCopy.endChat,
-              onPressed: live.isEnding ? null : _end,
-              icon: const Icon(Icons.more_vert_rounded, color: SangaColors.textPrimary),
-            )
-          else
-            const SizedBox(width: SangaSpacing.xs),
-        ],
-      ),
+      ],
     );
   }
 
@@ -218,26 +204,17 @@ class _SupportChatScreenState extends State<SupportChatScreen> {
   Widget build(BuildContext context) {
     return AnnotatedRegion(
       value: SangaSystemUi.onLight,
-      child: Scaffold(
-        body: SafeArea(
-          bottom: false,
-          child: Obx(() {
-            final state = _controller.state;
-            return Column(
-              children: [
-                _header(state),
-                Expanded(
-                  child: switch (state) {
-                    ChatConnecting() => const Center(child: SangaActivityIndicator(size: 32)),
-                    ChatUnavailable(:final problem) => _unavailable(problem),
-                    final ChatLive live => _live(live),
-                  },
-                ),
-              ],
-            );
-          }),
-        ),
-      ),
+      child: Obx(() {
+        final state = _controller.state;
+        return Scaffold(
+          appBar: _appBar(state),
+          body: switch (state) {
+            ChatConnecting() => const Center(child: SangaActivityIndicator.content(size: 32)),
+            ChatUnavailable(:final problem) => _unavailable(problem),
+            final ChatLive live => _live(live),
+          },
+        );
+      }),
     );
   }
 }

@@ -98,7 +98,6 @@ class _SupportReportScreenState extends State<SupportReportScreen> {
         SangaTextArea(
           label: SupportCopy.anythingElse,
           controller: _note,
-          hintText: SupportCopy.shareAsMuch,
           maxLength: _maxNoteLength,
           minLines: 4,
           isEnabled: !draft.isSubmitting,

@@ -63,7 +63,6 @@ abstract final class SupportCopy {
   static const String whatHappened = 'What happened?';
   static const String whichTrip = 'Which trip? (optional)';
   static const String anythingElse = 'Anything else we should know? (optional)';
-  static const String shareAsMuch = 'Share as much as you can';
   static const String submitReport = 'Submit report';
   static const String whatsThisAbout = 'What’s this about?';
   static const String helpArticles = 'Help articles';

@@ -40,24 +40,21 @@ class _HistoryScreenState extends State<HistoryScreen> with SingleTickerProvider
     return AnnotatedRegion(
       value: SangaSystemUi.onLight,
       child: Scaffold(
-        body: SafeArea(
-          bottom: false,
-          child: Column(
-            children: [
-              const SangaPageHeader(title: 'Rides'),
-              const SizedBox(height: SangaSpacing.sm),
-              HistoryTabBar(controller: _tabs, labels: [for (final tab in HistoryTab.values) tab.label]),
-              Expanded(
-                child: ListenableBuilder(
-                  listenable: _tabs,
-                  builder: (context, _) {
-                    final tab = HistoryTab.values[_tabs.index];
-                    return SangaHandoff(value: tab, child: _body(tab));
-                  },
-                ),
+        appBar: const SangaAppBar(title: 'Rides'),
+        body: Column(
+          children: [
+            const SizedBox(height: SangaSpacing.sm),
+            HistoryTabBar(controller: _tabs, labels: [for (final tab in HistoryTab.values) tab.label]),
+            Expanded(
+              child: ListenableBuilder(
+                listenable: _tabs,
+                builder: (context, _) {
+                  final tab = HistoryTab.values[_tabs.index];
+                  return SangaHandoff(value: tab, child: _body(tab));
+                },
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

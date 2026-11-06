@@ -82,10 +82,7 @@ class _SafetyReportScreenState extends State<SafetyReportScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           spacing: SangaSpacing.lg,
           children: [
-            const Text(
-              'Tell our safety team what happened. We take every report seriously.',
-              style: SangaTextStyles.body,
-            ),
+            const Text('We take every report seriously.', style: SangaTextStyles.body),
             ReportCategoryChips(selected: _category, onSelected: (category) => setState(() => _category = category)),
             ListenableBuilder(
               listenable: _details,
@@ -96,7 +93,6 @@ class _SafetyReportScreenState extends State<SafetyReportScreen> {
                   SangaTextArea(
                     label: 'What happened?',
                     controller: _details,
-                    hintText: 'Share as much as you can',
                     maxLength: SafetyReportRules.maxDetailsLength,
                     minLines: 5,
                   ),

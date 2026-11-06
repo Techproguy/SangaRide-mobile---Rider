@@ -30,6 +30,8 @@ class NotificationBell extends StatelessWidget {
           isLabelVisible: count > 0,
           label: Text(AccountCopy.unreadLabel(count)),
           backgroundColor: SangaColors.dangerStrong,
+          textStyle: SangaTextStyles.cardSubtitle.copyWith(color: SangaColors.onPrimary, fontWeight: FontWeight.w700),
+          largeSize: 18,
           child: const Icon(Icons.notifications_none_rounded, color: SangaColors.textPrimary, size: 26),
         ),
       );

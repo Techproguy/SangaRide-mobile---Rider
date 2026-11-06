@@ -17,7 +17,7 @@ class VerificationItemTile extends StatelessWidget {
       label: VerificationCopy.tagInReview,
       icon: Icons.hourglass_top_rounded,
     ),
-    ItemStatus.rejected => const SangaTag.urgent(label: VerificationCopy.tryAgain, icon: Icons.error_outline_rounded),
+    ItemStatus.rejected => const SangaTag.urgent(label: SangaCommonCopy.tryAgain, icon: Icons.error_outline_rounded),
     ItemStatus.expired => const SangaTag.urgent(label: VerificationCopy.tagExpired, icon: Icons.error_outline_rounded),
     ItemStatus.expiring => const SangaTag.warning(label: VerificationCopy.tagExpiringSoon),
     ItemStatus.missing => onTap == null ? null : SangaListRow.chevron,

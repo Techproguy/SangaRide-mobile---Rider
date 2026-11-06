@@ -5,7 +5,6 @@ import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sanga_ride/controller/rider/groups/group_bindings.dart';
 import 'package:sanga_ride/controller/rider/ride_history_controller.dart';
-import 'package:sanga_ride/core/copy/common_copy.dart';
 import 'package:sanga_ride/core/router/history_routes.dart';
 import 'package:sanga_ride/core/router/routes.dart';
 import 'package:sanga_ride/model/account/load_problem.dart';
@@ -172,10 +171,10 @@ class _HistoryFeedState extends State<HistoryFeed> {
     return switch (state.more) {
       HistoryMore.loading => const Padding(
         padding: EdgeInsets.all(SangaSpacing.md),
-        child: Center(child: SangaActivityIndicator(size: 24)),
+        child: Center(child: SangaActivityIndicator.content(size: 24)),
       ),
       HistoryMore.failed => SangaFailureMessage(
-        title: CommonCopy.loadMoreFailed,
+        title: SangaCommonCopy.loadMoreFailed,
         message: LoadProblem.connection.message,
         onRetry: () => _history.loadMore(widget.status),
       ),

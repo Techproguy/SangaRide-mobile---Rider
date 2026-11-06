@@ -25,7 +25,9 @@ class EmergencyContactsCard extends StatelessWidget {
     return SangaSectionCard(
       title: 'Emergency contacts',
       subtitle: 'We’ll let them know if you need help',
-      action: onAdd == null || contacts.isEmpty ? null : SangaSquareAction(label: 'Add emergency contact', onPressed: onAdd),
+      action: onAdd == null || contacts.isEmpty
+          ? null
+          : SangaSquareAction(label: 'Add emergency contact', onPressed: onAdd),
       children: [
         if (contacts.isEmpty)
           SangaEmptyMessage(

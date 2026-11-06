@@ -3,9 +3,7 @@ import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sanga_ride/controller/rider/account/phone_change_controller.dart';
 import 'package:sanga_ride/controller/shared/auth_controller.dart';
-import 'package:sanga_ride/core/copy/common_copy.dart';
 import 'package:sanga_ride/model/models.dart';
-import 'package:sanga_ride/view/account/account_copy.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 class ChangePhoneScreen extends StatefulWidget {
@@ -18,27 +16,19 @@ class ChangePhoneScreen extends StatefulWidget {
 class _ChangePhoneScreenState extends State<ChangePhoneScreen> {
   final _controller = Get.find<PhoneChangeController>();
   final _phone = SangaPhoneController();
-  final _code = TextEditingController();
-  bool _isExpired = false;
   String? _localError;
 
   @override
   void initState() {
     super.initState();
-    _code.addListener(() => setState(() {}));
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _controller.start();
-    });
+    _controller.start();
   }
 
   @override
   void dispose() {
     _phone.dispose();
-    _code.dispose();
     super.dispose();
   }
-
-  bool get _canVerify => _code.text.length == AuthController.otpLength && !_isExpired;
 
   Future<void> _send() async {
     if (!_phone.isValid) {
@@ -47,31 +37,22 @@ class _ChangePhoneScreenState extends State<ChangePhoneScreen> {
     await _controller.sendCode(_phone.e164);
   }
 
-  Future<void> _verify() async {
-    if (!_canVerify) return;
-    final changed = await _controller.verify(_code.text);
-    if (!mounted) return;
+  Future<bool> _verify(String code) async {
+    final changed = await _controller.verify(code);
+    if (!mounted) return changed;
     if (changed) {
-      SangaToast.show(AccountCopy.phoneUpdated, tone: SangaToastTone.success);
-      return context.pop();
+      SangaToast.show(SangaAuthCopy.phoneUpdated, tone: SangaToastTone.success);
+      context.pop();
     }
-    _code.clear();
+    return changed;
   }
 
-  Future<void> _resend() async {
+  Future<SangaResendOutcome> _resend() async {
     await _controller.resend();
-    if (!mounted) return;
-    _code.clear();
-    setState(() => _isExpired = false);
-    if (_controller.state case PhoneCode(problem: null)) {
-      SangaToast.show(CommonCopy.newCodeSent, tone: SangaToastTone.success);
-    }
-  }
-
-  void _useAnotherNumber() {
-    _code.clear();
-    setState(() => _isExpired = false);
-    _controller.editNumber();
+    final state = _controller.state;
+    return state is PhoneCode && state.problem == null
+        ? SangaResendOutcome.sent(cooldown: state.session.resendAfter)
+        : const SangaResendOutcome.failed();
   }
 
   List<Widget> _entry({required AccountProblem? problem, required bool isSending}) {
@@ -87,33 +68,24 @@ class _ChangePhoneScreenState extends State<ChangePhoneScreen> {
         onSubmitted: (_) => _send(),
       ),
       const SizedBox(height: SangaSpacing.xxl),
-      SangaButton.primary(label: AccountCopy.sendCode, isLoading: isSending, onPressed: _send),
+      SangaButton.primary(label: SangaAuthCopy.sendCode, isLoading: isSending, onPressed: _send),
     ];
   }
 
   List<Widget> _verification(PhoneCode state) {
     return [
-      SangaOtpField(
+      SangaCodeEntry(
         length: AuthController.otpLength,
-        controller: _code,
+        sentAt: state.session.sentAt,
+        cooldown: state.session.resendAfter,
+        actionLabel: SangaAuthCopy.verify,
         errorText: state.problem?.message,
-        onChanged: (_) => _controller.clearProblem(),
-        onCompleted: (_) => _verify(),
+        isBusy: state.isVerifying,
+        onEdited: _controller.clearProblem,
+        onSubmit: _verify,
+        onResend: _resend,
+        footer: SangaTextLink(label: SangaAuthCopy.useDifferentNumber, onPressed: _controller.editNumber),
       ),
-      const SizedBox(height: SangaSpacing.lg),
-      SangaOtpExpiryNotice(
-        sentAt: state.sentAt,
-        lifetime: state.lifetime,
-        onExpired: () => setState(() => _isExpired = true),
-      ),
-      const SizedBox(height: SangaSpacing.xxl),
-      SangaButton.primary(
-        label: AccountCopy.verify,
-        isLoading: state.isVerifying,
-        onPressed: _canVerify ? _verify : null,
-      ),
-      const SizedBox(height: SangaSpacing.sm),
-      SangaTextLink(label: AccountCopy.useDifferentNumber, onPressed: _useAnotherNumber),
     ];
   }
 
@@ -123,11 +95,10 @@ class _ChangePhoneScreenState extends State<ChangePhoneScreen> {
       final state = _controller.state;
       final code = state is PhoneCode ? state : null;
       return SangaFormLayout(
-        title: code == null ? AccountCopy.changeYourNumber : AccountCopy.enterOtp,
+        title: code == null ? SangaAuthCopy.changeYourNumber : SangaAuthCopy.enterCode,
         subtitle: code == null
-            ? AccountCopy.changeNumberLead
-            : AccountCopy.enterCodeLead(AuthController.otpLength, SangaPhoneNumber.masked(code.phone)),
-        footer: code == null ? null : SangaResendCodeButton(sentAt: code.sentAt, onResend: _resend),
+            ? SangaAuthCopy.changeNumberLead
+            : SangaAuthCopy.enterCodeSentTo(AuthController.otpLength, SangaPhoneNumber.masked(code.phone)),
         children: switch (state) {
           PhoneCode() => _verification(state),
           PhoneEntry(:final problem) => _entry(problem: problem, isSending: false),

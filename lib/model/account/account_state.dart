@@ -1,5 +1,6 @@
 import 'package:sanga_ride/model/account/account.dart';
 import 'package:sanga_ride/model/account/account_problem.dart';
+import 'package:sanga_ride_core/sanga_ride_core.dart' show OtpSession;
 
 sealed class AccountState {
   const AccountState();
@@ -56,11 +57,10 @@ final class PhoneSending extends PhoneChangeState {
 }
 
 final class PhoneCode extends PhoneChangeState {
-  const PhoneCode(this.phone, this.sentAt, this.lifetime, {this.problem, this.isVerifying = false});
+  const PhoneCode(this.phone, this.session, {this.problem, this.isVerifying = false});
 
   final String phone;
-  final DateTime sentAt;
-  final Duration lifetime;
+  final OtpSession session;
   final AccountProblem? problem;
   final bool isVerifying;
 }

@@ -1,9 +1,7 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sanga_ride/controller/rider/account/verification_controller.dart';
-import 'package:sanga_ride/core/api/mock/mock_capture.dart';
 import 'package:sanga_ride/core/services/permission_center.dart';
 import 'package:sanga_ride/view/verification/verification_copy.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
@@ -40,7 +38,6 @@ class _VerificationSelfieScreenState extends State<VerificationSelfieScreen> {
       subtitle: VerificationCopy.selfieSubtitle,
       header: SangaSelfieHeader.page,
       verify: _controller.verifySelfie,
-      fallbackCapture: kDebugMode ? () => MockCapture.photo('Selfie') : null,
       onOpenSettings: _permissions.openSettings,
       passedMessage: VerificationCopy.selfiePassed,
       onPassed: () => context.pop(true),

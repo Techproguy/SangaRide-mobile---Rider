@@ -32,10 +32,10 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
       context: context,
       status: SangaStatus.caution,
       icon: Icons.delete_outline_rounded,
-      title: AccountCopy.deleteConfirmTitle,
-      message: AccountCopy.deleteConfirmMessage,
-      actionLabel: AccountCopy.deleteConfirmAction,
-      secondaryLabel: AccountCopy.keepMyAccount,
+      title: SangaAccountCopy.deleteConfirmTitle,
+      message: SangaAccountCopy.deleteConfirmMessage,
+      actionLabel: SangaAccountCopy.deleteConfirmAction,
+      secondaryLabel: SangaAccountCopy.keepMyAccount,
       isDestructive: true,
     );
     if (!isConfirmed || !mounted) return;
@@ -50,18 +50,18 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
     await showSangaStatusSheet(
       context: context,
       status: SangaStatus.success,
-      title: AccountCopy.deletionScheduled,
+      title: SangaAccountCopy.deletionScheduled,
       message: deletesAt != null
-          ? AccountCopy.deletionDate(TimeFormat.longDate(deletesAt))
-          : AccountCopy.deletionWindow,
-      actionLabel: AccountCopy.logOut,
+          ? SangaAccountCopy.deletionDate(TimeFormat.longDate(deletesAt))
+          : SangaAccountCopy.deletionWindow,
+      actionLabel: SangaAccountCopy.logOut,
     );
     await _controller.logout();
   }
 
   Widget _footer(DeleteAccountState state) {
     return SangaButton.danger(
-      label: state is DeleteUnknown ? AccountCopy.checkAgain : AccountCopy.deleteMyAccount,
+      label: state is DeleteUnknown ? AccountCopy.checkAgain : SangaAccountCopy.deleteMyAccount,
       isLoading: state is DeleteDeleting,
       onPressed: state is DeleteUnknown ? () => unawaited(_checkAgain()) : (_isUnderstood ? _confirm : null),
     );
@@ -78,15 +78,13 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
       final state = _controller.deleteState;
       final block = state is DeleteIdle ? state.block : null;
       return SangaPageLayout(
-        title: AccountCopy.deleteAccount,
+        title: SangaAccountCopy.deleteAccount,
         footer: _footer(state),
         children: [
-          Text(AccountCopy.beforeYouGo, style: SangaTextStyles.title),
-          const SizedBox(height: SangaSpacing.xs),
-          Text(AccountCopy.deleteLead, style: SangaTextStyles.body),
+          Text(SangaAccountCopy.beforeYouGo, style: SangaTextStyles.title),
           const SizedBox(height: SangaSpacing.lg),
           SangaSectionCard(
-            title: AccountCopy.whatToExpect,
+            title: SangaAccountCopy.whatToExpect,
             children: [
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: SangaSpacing.md, vertical: SangaSpacing.xs),
@@ -98,7 +96,7 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
             ],
           ),
           const SizedBox(height: SangaSpacing.xl),
-          const SangaSectionHeader(AccountCopy.whyLeaving),
+          const SangaSectionHeader(SangaAccountCopy.whyLeaving),
           const SizedBox(height: SangaSpacing.sm),
           SangaChoiceChips<DeleteReason>(
             options: [for (final reason in DeleteReason.values) SangaSelectOption(reason, reason.label)],
@@ -109,7 +107,7 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
           SangaCheckRow.text(
             isChecked: _isUnderstood,
             onChanged: (value) => setState(() => _isUnderstood = value),
-            text: AccountCopy.understandDeletion,
+            text: SangaAccountCopy.understandDeletion,
           ),
           if (block != null) ...[const SizedBox(height: SangaSpacing.lg), SangaNotice(message: block.message)],
           if (state is DeleteUnknown) ...[

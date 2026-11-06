@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:sanga_ride/controller/rider/account/account_controller.dart';
 import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride/view/account/account_copy.dart';
+import 'package:sanga_ride_core/sanga_ride_core.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 enum ProfileField { name, email, birthday }
@@ -11,7 +12,6 @@ enum ProfileField { name, email, birthday }
 Future<void> showProfileEditSheet(BuildContext context, {required ProfileField field, required Account account}) {
   return showSangaSheet<void>(
     context: context,
-    padding: const EdgeInsets.fromLTRB(SangaSpacing.xl, SangaSpacing.xxl, SangaSpacing.xl, SangaSpacing.xl),
     builder: (context) => _ProfileEditSheet(field: field, account: account),
   );
 }
@@ -47,9 +47,9 @@ class _ProfileEditSheetState extends State<_ProfileEditSheet> {
   }
 
   String get _title => switch (widget.field) {
-    ProfileField.name => AccountCopy.yourName,
-    ProfileField.email => AccountCopy.yourEmail,
-    ProfileField.birthday => AccountCopy.yourBirthday,
+    ProfileField.name => SangaAccountCopy.yourName,
+    ProfileField.email => SangaAccountCopy.yourEmail,
+    ProfileField.birthday => SangaAccountCopy.yourBirthday,
   };
 
   AccountProblem? _localProblem() => switch (widget.field) {
@@ -84,7 +84,7 @@ class _ProfileEditSheetState extends State<_ProfileEditSheet> {
     if (!mounted) return;
     if (problem == null) {
       Navigator.of(context).pop();
-      return SangaToast.show(AccountCopy.profileUpdated, tone: SangaToastTone.success);
+      return SangaToast.show(SangaAccountCopy.profileUpdated, tone: SangaToastTone.success);
     }
     setState(() {
       _isSaving = false;
@@ -104,7 +104,7 @@ class _ProfileEditSheetState extends State<_ProfileEditSheet> {
             children: [
               Expanded(
                 child: SangaTextField(
-                  label: AccountCopy.firstName,
+                  label: SangaAuthCopy.firstName,
                   controller: _firstName,
                   textCapitalization: TextCapitalization.words,
                   autofillHints: const [AutofillHints.givenName],
@@ -113,7 +113,7 @@ class _ProfileEditSheetState extends State<_ProfileEditSheet> {
               ),
               Expanded(
                 child: SangaTextField(
-                  label: AccountCopy.lastName,
+                  label: SangaAuthCopy.lastName,
                   controller: _lastName,
                   textCapitalization: TextCapitalization.words,
                   textInputAction: TextInputAction.done,
@@ -128,7 +128,7 @@ class _ProfileEditSheetState extends State<_ProfileEditSheet> {
         ],
       ),
       ProfileField.email => SangaTextField(
-        label: AccountCopy.emailAddress,
+        label: SangaAuthCopy.emailAddress,
         controller: _email,
         errorText: message,
         keyboardType: TextInputType.emailAddress,
@@ -138,7 +138,7 @@ class _ProfileEditSheetState extends State<_ProfileEditSheet> {
         onSubmitted: (_) => _save(),
       ),
       ProfileField.birthday => SangaBirthdayField(
-        minimumAge: 16,
+        minimumAge: ServerConfig.current.minimumRiderAge,
         initialDate: _birthday,
         errorText: message,
         onPicked: (date) => setState(() {

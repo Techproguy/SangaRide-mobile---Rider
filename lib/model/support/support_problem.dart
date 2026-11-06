@@ -1,10 +1,10 @@
+import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 import 'package:sanga_ride/core/api/server_codes.dart';
-import 'package:sanga_ride/core/copy/common_copy.dart';
 import 'package:sanga_ride_core/sanga_ride_core.dart';
 
 enum SupportProblem {
-  connection(CommonCopy.unreachableTryAgain),
-  unknown(CommonCopy.serverTrouble),
+  connection(SangaCommonCopy.unreachableTryAgain),
+  unknown(SangaCommonCopy.serverTrouble),
   unconfirmed('We’re not sure that went through. Check before you send it again.'),
   articleNotFound('We couldn’t find that article. It may have moved.'),
   ticketNotFound('We couldn’t find that report.'),

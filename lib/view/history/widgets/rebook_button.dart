@@ -21,7 +21,7 @@ class RebookButton extends StatelessWidget {
             spacing: SangaSpacing.xxs,
             children: [
               const Icon(Icons.history_rounded, size: 18, color: SangaColors.primary),
-              Text('Rebook', style: SangaTextStyles.caption.copyWith(color: SangaColors.primary)),
+              Text('Rebook', style: SangaTextStyles.chipText.copyWith(color: SangaColors.primaryStrong)),
             ],
           ),
         ),

@@ -159,11 +159,7 @@ class _VerificationDocumentScreenState extends State<VerificationDocumentScreen>
           isLoading: draft.isSubmitting,
           onPressed: draft.isReady ? _submit : null,
         ),
-        children: [
-          Text(VerificationCopy.uploadValidId, style: SangaTextStyles.body),
-          const SizedBox(height: SangaSpacing.lg),
-          ..._children(draft),
-        ],
+        children: [..._children(draft)],
       );
     });
   }

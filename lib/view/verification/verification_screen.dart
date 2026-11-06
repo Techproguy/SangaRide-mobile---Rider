@@ -67,7 +67,7 @@ class _VerificationScreenState extends State<VerificationScreen> {
       status: SangaStatus.caution,
       title: VerificationCopy.anotherGoTitle,
       message: reason ?? VerificationCopy.anotherGoMessage,
-      actionLabel: VerificationCopy.tryAgain,
+      actionLabel: SangaCommonCopy.tryAgain,
       secondaryLabel: VerificationCopy.notNow,
     );
     if (isRetry && mounted) _continue(verification);

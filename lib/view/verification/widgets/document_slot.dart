@@ -120,7 +120,7 @@ class DocumentSlot extends StatelessWidget {
         if (problem.opensSettings)
           SangaButton.primary(label: CommonCopy.openSettings, size: SangaButtonSize.compact, onPressed: onOpenSettings)
         else if (failed.failure.isRetriable && path != null)
-          SangaButton.primary(label: VerificationCopy.tryAgain, size: SangaButtonSize.compact, onPressed: onRetry),
+          SangaButton.primary(label: SangaCommonCopy.tryAgain, size: SangaButtonSize.compact, onPressed: onRetry),
         SangaButton.outline(
           label: path == null ? VerificationCopy.choosePhoto : VerificationCopy.chooseAnother,
           size: SangaButtonSize.compact,
