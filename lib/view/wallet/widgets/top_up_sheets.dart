@@ -5,19 +5,11 @@ import 'package:sanga_ride/model/wallet/wallet.dart';
 import 'package:sanga_ride/view/wallet/wallet_copy.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
-const EdgeInsets _sheetPadding = EdgeInsets.fromLTRB(
-  SangaSpacing.xl,
-  SangaSpacing.xxl,
-  SangaSpacing.xl,
-  SangaSpacing.xl,
-);
-
 Future<bool?> showTopUpProcessingSheet({required BuildContext context, required TopUpController controller}) {
   return showSangaSheet<bool>(
     context: context,
     isDismissible: false,
     enableDrag: false,
-    padding: _sheetPadding,
     builder: (sheetContext) => PopScope(
       canPop: false,
       child: Obx(() {
@@ -41,7 +33,6 @@ Future<bool?> showTopUpUnknownSheet({required BuildContext context}) {
     context: context,
     isDismissible: false,
     enableDrag: false,
-    padding: _sheetPadding,
     builder: (sheetContext) => PopScope(
       canPop: false,
       child: SangaStatusContent(

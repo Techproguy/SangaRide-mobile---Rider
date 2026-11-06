@@ -135,7 +135,7 @@ class _TopUpAmountScreenState extends State<TopUpAmountScreen> {
       final canContinue = amount != null && limits != null && limits.problemWith(amount) == null;
       return SangaPageLayout(
         title: WalletCopy.addMoney,
-        footer: SangaButton.primary(label: WalletCopy.continueLabel, onPressed: canContinue ? _continue : null),
+        footer: SangaButton.primary(label: SangaAuthCopy.continueLabel, onPressed: canContinue ? _continue : null),
         children: [_body(state, amount)],
       );
     });

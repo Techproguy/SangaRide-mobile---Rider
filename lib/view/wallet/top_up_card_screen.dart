@@ -109,7 +109,7 @@ class _TopUpCardScreenState extends State<TopUpCardScreen> {
         context: context,
         title: failure.title,
         message: failure.message,
-        primaryLabel: WalletCopy.tryAgain,
+        primaryLabel: SangaCommonCopy.tryAgain,
         secondaryLabel: WalletCopy.pickAnotherWay,
       ),
     );

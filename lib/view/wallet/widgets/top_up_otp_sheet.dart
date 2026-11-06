@@ -10,7 +10,6 @@ Future<void> showTopUpOtpSheet({required BuildContext context, required TopUpCon
     context: context,
     isDismissible: false,
     enableDrag: false,
-    padding: const EdgeInsets.fromLTRB(SangaSpacing.xl, SangaSpacing.xxl, SangaSpacing.xl, SangaSpacing.xl),
     builder: (context) => PopScope(
       canPop: false,
       child: Obx(() {

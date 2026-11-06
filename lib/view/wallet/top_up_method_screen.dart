@@ -41,7 +41,7 @@ class TopUpMethodScreen extends StatelessWidget {
       return SangaPageLayout(
         title: WalletCopy.addMoney,
         footer: SangaButton.primary(
-          label: WalletCopy.continueLabel,
+          label: SangaAuthCopy.continueLabel,
           onPressed: () => _continue(context, topUp, selected),
         ),
         children: [

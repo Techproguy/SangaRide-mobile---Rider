@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sanga_ride/controller/rider/wallet_bindings.dart';
-import 'package:sanga_ride/core/copy/common_copy.dart';
 import 'package:sanga_ride/core/router/wallet_routes.dart';
 import 'package:sanga_ride/model/account/load_problem.dart';
 import 'package:sanga_ride/model/wallet/wallet.dart';
@@ -61,10 +60,10 @@ class _WalletTransactionsScreenState extends State<WalletTransactionsScreen> {
   Widget _footer(TransactionsLoaded feed) => switch (feed.more) {
     TransactionMore.loading => const Padding(
       padding: EdgeInsets.all(SangaSpacing.md),
-      child: Center(child: SangaActivityIndicator(size: 24)),
+      child: Center(child: SangaActivityIndicator.content(size: 24)),
     ),
     TransactionMore.failed => SangaFailureMessage(
-      title: CommonCopy.loadMoreFailed,
+      title: SangaCommonCopy.loadMoreFailed,
       message: LoadProblem.connection.message,
       onRetry: _transactions.loadMore,
     ),

@@ -1,5 +1,5 @@
+import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 import 'package:sanga_ride/core/api/server_codes.dart';
-import 'package:sanga_ride/core/copy/common_copy.dart';
 import 'package:sanga_ride/model/account/load_problem.dart';
 import 'package:sanga_ride/model/wallet/wallet_transaction.dart';
 import 'package:sanga_ride_core/sanga_ride_core.dart';
@@ -9,10 +9,8 @@ class TransactionPage {
 
   factory TransactionPage.fromBody(Object? body, {required int page, required int limit}) {
     final envelope = JsonReader.of(body);
-    final entries = JsonReader.of(envelope.raw['data']).listOf(
-      'transactions',
-      (item) => WalletTransaction.fromJson(item.raw),
-    );
+    final entries = JsonReader.of(envelope.raw['data'])
+        .listOf('transactions', (item) => WalletTransaction.fromJson(item.raw));
     final meta = JsonReader.of(envelope.raw['meta']);
     return TransactionPage(
       entries: entries,
@@ -66,8 +64,8 @@ final class TransactionsLoaded extends TransactionFeed {
 
 enum TransactionFailure {
   notFound('We can’t find that transaction', 'It may have been removed. Head back to your history.', canRetry: false),
-  connection(CommonCopy.unreachableTitle, CommonCopy.connectionBody),
-  unknown(CommonCopy.serverTroubleTitle, CommonCopy.tryAgainInAMoment);
+  connection(SangaCommonCopy.unreachableTitle, SangaCommonCopy.connectionAnotherGo),
+  unknown(SangaCommonCopy.somethingWentWrongOurSide, SangaCommonCopy.tryAgainInAMoment);
 
   const TransactionFailure(this.title, this.message, {this.canRetry = true});
 

@@ -115,7 +115,7 @@ class _TopUpTransferScreenState extends State<TopUpTransferScreen> {
       TopUpFailed(:final failure) => TransferFailedView(failure: failure),
       _ => const Padding(
         padding: EdgeInsets.only(top: SangaSpacing.xxl),
-        child: Center(child: SangaActivityIndicator(size: 32)),
+        child: Center(child: SangaActivityIndicator.content(size: 32)),
       ),
     };
   }

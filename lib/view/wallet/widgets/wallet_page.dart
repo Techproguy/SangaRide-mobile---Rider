@@ -13,15 +13,12 @@ class WalletPage extends StatelessWidget {
     return AnnotatedRegion(
       value: SangaSystemUi.onLight,
       child: Scaffold(
-        body: SafeArea(
-          bottom: false,
-          child: Column(
-            children: [
-              SangaPageHeader(title: title),
-              ?tabs,
-              Expanded(child: body),
-            ],
-          ),
+        appBar: SangaAppBar(title: title),
+        body: Column(
+          children: [
+            ?tabs,
+            Expanded(child: body),
+          ],
         ),
       ),
     );

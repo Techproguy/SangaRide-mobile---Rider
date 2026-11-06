@@ -18,9 +18,7 @@ abstract final class WalletCopy {
   static const String reconnecting = 'Trouble reaching Sanga. We’ll keep trying.';
 
   static const String addMoney = 'Add money';
-  static const String continueLabel = 'Continue';
-  static const String enterAmount = 'Enter amount';
-  static const String tryAgain = 'Try again';
+  static const String enterAmount = 'Amount';
   static const String pickAnotherWay = 'Pick another way';
   static const String saveCardForNextTime = 'Save this card for next time';
   static const String sentIt = 'I’ve sent it';

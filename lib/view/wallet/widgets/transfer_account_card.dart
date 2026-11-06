@@ -101,8 +101,8 @@ class _CopyButton extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               spacing: SangaSpacing.xxs,
               children: [
-                const Icon(Icons.copy_rounded, size: 18, color: SangaColors.primary),
-                Text(WalletCopy.copy, style: SangaTextStyles.action),
+                const Icon(Icons.copy_rounded, size: 18, color: SangaColors.primaryStrong),
+                Text(WalletCopy.copy, style: SangaTextStyles.action.copyWith(color: SangaColors.primaryStrong)),
               ],
             ),
           ),
