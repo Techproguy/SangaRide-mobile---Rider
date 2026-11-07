@@ -194,7 +194,7 @@ class PickupProof {
     return PickupProof(photoUrl: reader.strOrNull('photoUrl'), at: reader.timeOrNull('at')?.toLocal());
   }
 
-  factory PickupProof.fromUrl(String url) => PickupProof(photoUrl: url, at: null);
+  factory PickupProof.fromRef(ProofRef ref) => PickupProof(photoUrl: ref.url, at: ref.at?.toLocal());
 
   final String? photoUrl;
   final DateTime? at;
@@ -230,8 +230,16 @@ class DeliveryProof {
     );
   }
 
-  factory DeliveryProof.fromUrl(String url, {required bool recipientConfirmed}) =>
-      DeliveryProof(photoUrl: url, at: null, position: null, recipientConfirmed: recipientConfirmed);
+  factory DeliveryProof.fromRef(ProofRef ref, {required bool recipientConfirmed}) {
+    final latitude = ref.latitude;
+    final longitude = ref.longitude;
+    return DeliveryProof(
+      photoUrl: ref.url,
+      at: ref.at?.toLocal(),
+      position: latitude == null || longitude == null ? null : LatLng(latitude, longitude),
+      recipientConfirmed: recipientConfirmed,
+    );
+  }
 
   static LatLng? _positionOf(JsonReader reader) {
     final lat = reader.doubleOrNull('lat');
@@ -376,13 +384,13 @@ class TripDelivery {
   }
 
   static PickupProof? _pickupUrlProof(JsonReader? proofs) {
-    final url = proofs?.strOrNull('pickup');
-    return url == null ? null : PickupProof.fromUrl(url);
+    final proof = ProofRef.read(proofs, 'pickup');
+    return proof == null ? null : PickupProof.fromRef(proof);
   }
 
   static DeliveryProof? _deliveryUrlProof(JsonReader? proofs, {required bool recipientConfirmed}) {
-    final url = proofs?.strOrNull('delivery');
-    return url == null ? null : DeliveryProof.fromUrl(url, recipientConfirmed: recipientConfirmed);
+    final proof = ProofRef.read(proofs, 'delivery');
+    return proof == null ? null : DeliveryProof.fromRef(proof, recipientConfirmed: recipientConfirmed);
   }
 
   static DeliveryRefusal? _refusalOf(JsonReader reader) {
