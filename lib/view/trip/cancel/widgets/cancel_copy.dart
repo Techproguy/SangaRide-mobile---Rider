@@ -10,14 +10,14 @@ class CancelCopy {
   static const String tellUsWhatHappened = 'Tell us what happened';
   static const String fewWordsIsPlenty = 'A few words is plenty';
   static const String getHelpFirst = 'If you feel unsafe right now, get help first';
-  static const String fareBreakdown = 'Fare breakdown';
+  static const String fareBreakdown = 'Cancellation summary';
   static const String cancellationFee = 'Cancellation fee';
   static const String free = 'Free';
   static const String paymentMethod = 'Payment method';
   static const String notSetYet = 'Not set yet';
   static const String refund = 'Refund';
   static const String reason = 'Reason';
-  static const String notApplicable = 'Not applicable';
+  static const String notApplicable = 'Nothing to refund';
   static const String cannotUndo = 'You can’t undo this.';
   static const String gotIt = 'Got it';
 

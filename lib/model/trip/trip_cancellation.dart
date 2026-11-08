@@ -110,11 +110,9 @@ class CancelOutcome {
 
   factory CancelOutcome.fromJson(Map<String, dynamic> json) {
     final reader = JsonReader.of(json);
-    return CancelOutcome(
-      tripId: reader.str('id'),
-      feeCharged: reader.money('cancellationFee'),
-      message: reader.strOr('message', 'Your ride is cancelled.'),
-    );
+    final fee = reader.money('cancellationFee');
+    final feeNote = fee.isPositive ? '${fee.format()} cancellation fee applied.' : 'No fee was charged.';
+    return CancelOutcome(tripId: reader.str('id'), feeCharged: fee, message: reader.strOr('message', feeNote));
   }
 
   final String tripId;
