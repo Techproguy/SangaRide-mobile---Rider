@@ -91,6 +91,17 @@ class ReceiptDelivery {
     );
   }
 
+  factory ReceiptDelivery.fromTrip(TripDelivery delivery) {
+    final proof = delivery.deliveryProof;
+    return ReceiptDelivery(
+      tier: delivery.tier,
+      itemName: delivery.item.name,
+      recipientName: delivery.recipient.name,
+      deliveredAt: proof?.at,
+      proofPhotoUrl: proof?.photoUrl,
+    );
+  }
+
   final String tier;
   final String itemName;
   final String recipientName;
@@ -162,6 +173,24 @@ class TripReceipt {
   final ReceiptDelivery? delivery;
 
   bool get isDelivery => delivery != null;
+
+  TripReceipt withDelivery(ReceiptDelivery value) => TripReceipt(
+    tripId: tripId,
+    pickup: pickup,
+    dropoff: dropoff,
+    stops: stops,
+    distanceKm: distanceKm,
+    durationMinutes: durationMinutes,
+    lines: lines,
+    total: total,
+    paidWith: paidWith,
+    paidAt: paidAt,
+    driver: driver,
+    vehicle: vehicle,
+    category: category,
+    ratedStars: ratedStars,
+    delivery: value,
+  );
 
   bool get isRated => ratedStars != null;
 

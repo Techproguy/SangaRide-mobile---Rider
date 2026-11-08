@@ -19,6 +19,11 @@ enum RatingTag {
   final String label;
   final bool isPositive;
 
+  bool get suitsDelivery => switch (this) {
+    cleanCar || greatConversation || expertNavigation || dirtyCar || wrongRoute => false,
+    _ => true,
+  };
+
   static List<RatingTag> forStars(int stars) {
     if (stars <= 0) return const [];
     return [

@@ -155,7 +155,14 @@ class _RateBody extends StatelessWidget {
           child: rating.hasStars
               ? IgnorePointer(
                   ignoring: isLocked,
-                  child: RatingTagWrap(tags: rating.availableTags, selected: rating.tags, onToggle: onTag),
+                  child: RatingTagWrap(
+                    tags: [
+                      for (final tag in rating.availableTags)
+                        if (!isDelivery || tag.suitsDelivery) tag,
+                    ],
+                    selected: rating.tags,
+                    onToggle: onTag,
+                  ),
                 )
               : const SizedBox(width: double.infinity),
         ),

@@ -3,6 +3,7 @@ import 'dart:developer';
 import 'package:get/get.dart';
 import 'package:sanga_ride/core/api/api.dart';
 import 'package:sanga_ride/core/api/app_endpoints.dart';
+import 'package:sanga_ride/model/trip/trip.dart';
 import 'package:sanga_ride/model/trip/wrapup/wrapup.dart';
 import 'package:sanga_ride_core/sanga_ride_core.dart';
 
@@ -39,6 +40,16 @@ class TripReceiptController extends GetxController {
     await _load();
   }
 
+  Future<TripReceipt> _withDelivery(String id, TripReceipt receipt) async {
+    try {
+      final response = await _api.get(AppEndpoints.liveTripOf(id), suppressErrorToast: true);
+      final delivery = Trip.fromJson(response.dataMapOrEmpty).delivery;
+      return delivery == null ? receipt : receipt.withDelivery(ReceiptDelivery.fromTrip(delivery));
+    } catch (_) {
+      return receipt;
+    }
+  }
+
   Future<void> _load({bool isQuiet = false}) async {
     final id = _tripId;
     if (id == null) return;
@@ -51,7 +62,11 @@ class TripReceiptController extends GetxController {
         profile: RequestProfile.interactive,
       );
       if (!_epoch.isCurrent(epoch)) return;
-      _state.value = ReceiptLoaded(TripReceipt.fromJson(JsonReader.of(JsonReader.of(response.data).raw['data']).raw));
+      final json = JsonReader.of(JsonReader.of(response.data).raw['data']).raw;
+      var receipt = TripReceipt.fromJson(json);
+      if (json['kind'] == 'delivery' && !receipt.isDelivery) receipt = await _withDelivery(id, receipt);
+      if (!_epoch.isCurrent(epoch)) return;
+      _state.value = ReceiptLoaded(receipt);
     } catch (e) {
       log('receipt load failed: ${e is ApiException ? e.code : e.runtimeType}');
       if (!_epoch.isCurrent(epoch) || isQuiet) return;

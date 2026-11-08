@@ -34,7 +34,11 @@ class HistoryDeliveryCards extends StatelessWidget {
           title: 'Recipient details',
           rows: [
             SangaDetailRow(icon: Icons.person_outline_rounded, label: 'Name', value: delivery.recipientName),
-            SangaDetailRow(icon: Icons.phone_outlined, label: 'Phone', value: delivery.recipientPhone),
+            SangaDetailRow(
+              icon: Icons.phone_outlined,
+              label: 'Phone',
+              value: delivery.recipientPhone.isEmpty ? '' : SangaPhoneNumber.international(delivery.recipientPhone),
+            ),
           ],
         ),
         if (fee != null && fee.isPositive)
