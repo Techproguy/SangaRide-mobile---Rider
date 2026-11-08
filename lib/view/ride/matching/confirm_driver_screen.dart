@@ -36,6 +36,11 @@ class _ConfirmDriverScreenState extends State<ConfirmDriverScreen> {
     _ => false,
   };
 
+  RideCategory get _vehicleCategory {
+    if (_trip.tripType == TripType.delivery) return RideCategory.moto;
+    return _trip.option?.category ?? RideCategory.go;
+  }
+
   void _popOnce() {
     if (_isLeaving || !mounted) return;
     _isLeaving = true;
@@ -113,7 +118,7 @@ class _ConfirmDriverScreenState extends State<ConfirmDriverScreen> {
             pickup: _trip.pickup?.title ?? hold.pickup,
             dropoff: _trip.dropoff?.title ?? hold.dropoff,
             stops: [for (final stop in _trip.stops) stop.title],
-            vehicleImage: (_trip.option?.category ?? RideCategory.go).image,
+            vehicleImage: _vehicleCategory.image,
           ),
         ],
       ),

@@ -190,7 +190,7 @@ class _DeliveryReviewScreenState extends State<DeliveryReviewScreen> {
     final path = photo.localPath;
     final size = catalog?.sizeOf(draft.sizeId);
     final type = catalog?.packageTypeOf(draft.packageTypeId);
-    final facts = _delivery.isDocuments ? (_delivery.kind?.label ?? '') : [?size?.label, ?type?.label].join(' · ');
+    final facts = _delivery.isDocuments ? (_delivery.kind?.label ?? '') : [?size?.chipLabel, ?type?.label].join(' · ');
     final value = draft.declaredValue;
     return SangaSectionCard(
       title: _delivery.isDocuments ? 'Document details' : 'Package details',

@@ -154,7 +154,7 @@ class _DeliveryItemScreenState extends State<DeliveryItemScreen> {
               },
             ),
         ],
-        SangaNotice(message: catalog.prohibitedNotice),
+        SangaNotice(message: catalog.prohibitedNotice, tone: SangaTone.warning),
       ],
     );
   }

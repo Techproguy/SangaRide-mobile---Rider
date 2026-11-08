@@ -90,6 +90,7 @@ class _DeliveryRecipientScreenState extends State<DeliveryRecipientScreen> {
             ),
             SangaTextField(
               label: 'Recipient’s email (optional)',
+              hintText: 'name@example.com',
               controller: _email,
               errorText: _errors[_Field.email],
               keyboardType: TextInputType.emailAddress,

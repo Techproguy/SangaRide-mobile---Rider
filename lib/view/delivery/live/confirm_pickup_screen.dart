@@ -107,6 +107,7 @@ class _ConfirmPickupScreenState extends State<ConfirmPickupScreen> {
                     SangaNotice(message: problem.message, tone: SangaTone.warning, icon: Icons.error_outline_rounded),
                   const SangaNotice(
                     message: 'Make sure you’re handing your driver the right package before you confirm.',
+                    tone: SangaTone.neutral,
                     icon: Icons.info_outline_rounded,
                   ),
                 ],

@@ -66,7 +66,11 @@ class _PinSheetState extends State<PinSheet> {
         Center(child: _ExpiryLine(remaining: remaining)),
         const SizedBox(height: SangaSpacing.md),
         if (!isExpired) ...[
-          const SangaNotice(message: 'Only share your PIN with the driver you just checked'),
+          const SangaNotice(
+            message: 'Only share your PIN with the driver you just checked',
+            tone: SangaTone.warning,
+            icon: Icons.shield_outlined,
+          ),
           const SizedBox(height: SangaSpacing.lg),
           SangaButton.muted(
             label: _isHidden ? 'Show PIN' : 'Hide PIN',
@@ -120,7 +124,7 @@ class _ExpiryLine extends StatelessWidget {
                 const TextSpan(text: 'Expires in '),
                 TextSpan(
                   text: remaining.minutesAndSeconds,
-                  style: const TextStyle(color: SangaColors.dangerInk),
+                  style: remaining.inSeconds <= 60 ? const TextStyle(color: SangaColors.dangerInk) : null,
                 ),
               ],
             ),

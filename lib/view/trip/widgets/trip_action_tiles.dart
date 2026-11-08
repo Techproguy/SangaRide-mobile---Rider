@@ -40,7 +40,7 @@ class TripActionTiles extends StatelessWidget {
     if (onReportIssue != null)
       SangaActionTile(
         icon: Icons.report_gmailerrorred_rounded,
-        label: 'Report issue',
+        label: 'Report',
         onPressed: onReportIssue,
         tone: SangaTone.danger,
       ),
