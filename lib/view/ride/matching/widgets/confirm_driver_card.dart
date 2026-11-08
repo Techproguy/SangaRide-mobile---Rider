@@ -73,13 +73,14 @@ class ConfirmDriverCard extends StatelessWidget {
                       style: counter == null ? SangaTextStyles.cardValue : SangaTextStyles.cardSubtitle,
                     ),
                   ),
-                  Flexible(
-                    child: Text(
-                      counter == null ? 'No counter offer' : 'Counter offer ${counter.format()}',
-                      textAlign: TextAlign.end,
-                      style: counter == null ? SangaTextStyles.cardSubtitle : SangaTextStyles.cardValue,
+                  if (counter != null)
+                    Flexible(
+                      child: Text(
+                        'Counter offer ${counter.format()}',
+                        textAlign: TextAlign.end,
+                        style: SangaTextStyles.cardValue,
+                      ),
                     ),
-                  ),
                 ],
               ),
             ],

@@ -281,9 +281,15 @@ class DriverVehicle {
       year: json.intOr('year', 0),
       colour: json.strOr('colour', ''),
       plate: json.strOr('plateNumber', ''),
-      features: json.strings('featureLabels'),
+      features: json.strings('featureLabels').map(_featureLabel).toList(),
       summary: json.strOr('display', ''),
     );
+  }
+
+  static String _featureLabel(String label) {
+    if (!label.contains('_')) return label;
+    final words = label.replaceAll('_', ' ').trim();
+    return words.isEmpty ? label : '${words[0].toUpperCase()}${words.substring(1)}';
   }
 
   static final RegExp _plateBreaks = RegExp(r'(?<=[A-Za-z])(?=\d)|(?<=\d)(?=[A-Za-z])');

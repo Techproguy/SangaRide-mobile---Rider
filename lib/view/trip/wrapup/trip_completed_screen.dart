@@ -42,7 +42,12 @@ class _TripCompletedScreenState extends State<TripCompletedScreen> {
           appBar: SangaAppBar(
             leading: SangaStepLeading.none,
             topInset: SangaSpacing.xs,
-            actions: [SangaTextAction(label: 'Done', onPressed: _home)],
+            actions: [
+              Padding(
+                padding: const EdgeInsets.only(right: SangaSpacing.gutter - SangaSpacing.xs),
+                child: SangaTextAction(label: 'Done', onPressed: _home),
+              ),
+            ],
           ),
           body: Column(
             children: [
