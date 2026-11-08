@@ -46,7 +46,7 @@ workflows:
   testflight:
     name: Sanga Ride · TestFlight
     max_build_duration: 90
-    environment:
+    environment: &testflight_environment
       <<: *environment
       groups:
         - sanga_ride_rider
@@ -54,7 +54,7 @@ workflows:
         APP_ENV: prod
         BUNDLE_ID: com.sangatechnologies.ride
         APP_STORE_APPLE_ID: 6824516357
-    scripts:
+    scripts: &testflight_scripts
       - *fetch_building_blocks
       - *write_env_config
       - *ios_signing
@@ -65,7 +65,7 @@ workflows:
             --dart-define-from-file=dart_defines/prod.json \
             --build-number=$((LATEST + 1)) \
             --export-options-plist=/Users/builder/export_options.plist
-    artifacts:
+    artifacts: &testflight_artifacts
       - build/ios/ipa/*.ipa
       - /tmp/xcodebuild_logs/*.log
     publishing:
@@ -81,7 +81,7 @@ workflows:
     name: Sanga Ride · Play open testing
     max_build_duration: 60
     triggering: *on_version_tag
-    environment:
+    environment: &play_open_testing_environment
       <<: *environment
       groups:
         - sanga_ride_rider
@@ -89,7 +89,7 @@ workflows:
         APP_ENV: prod
         PACKAGE_NAME: com.sangatechnologies.ride
         CM_KEYSTORE_PATH: /tmp/upload.keystore
-    scripts:
+    scripts: &play_open_testing_scripts
       - *fetch_building_blocks
       - *write_env_config
       - name: Android upload keystore
@@ -100,7 +100,7 @@ workflows:
           flutter build appbundle --release --flavor prod \
             --dart-define-from-file=dart_defines/prod.json \
             --build-number=$((LATEST + 1))
-    artifacts:
+    artifacts: &play_open_testing_artifacts
       - build/app/outputs/bundle/**/*.aab
       - build/app/outputs/mapping/**/mapping.txt
     publishing:
@@ -108,3 +108,31 @@ workflows:
         credentials: $GCLOUD_SERVICE_ACCOUNT_CREDENTIALS
         track: beta
         submit_as_draft: false
+
+  app-store-review:
+    name: Sanga Ride · App Store review
+    max_build_duration: 90
+    environment: *testflight_environment
+    scripts: *testflight_scripts
+    artifacts: *testflight_artifacts
+    publishing:
+      app_store_connect:
+        api_key: $APP_STORE_CONNECT_PRIVATE_KEY
+        key_id: $APP_STORE_CONNECT_KEY_IDENTIFIER
+        issuer_id: $APP_STORE_CONNECT_ISSUER_ID
+        submit_to_testflight: false
+        submit_to_app_store: true
+        release_type: MANUAL
+
+  play-production:
+    name: Sanga Ride · Play production
+    max_build_duration: 60
+    environment: *play_open_testing_environment
+    scripts: *play_open_testing_scripts
+    artifacts: *play_open_testing_artifacts
+    publishing:
+      google_play:
+        credentials: $GCLOUD_SERVICE_ACCOUNT_CREDENTIALS
+        track: production
+        submit_as_draft: false
+        changes_not_sent_for_review: false
