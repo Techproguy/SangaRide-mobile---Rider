@@ -98,10 +98,10 @@ class _CurrentLocationRowState extends State<CurrentLocationRow> {
   }
 
   Future<void> _useCurrentLocation() async {
-    final current = _home.currentPlace;
-    if (_home.locationStatus == LocationStatus.granted && current != null) return widget.onPick(current);
+    final previous = _home.currentPlace;
     var status = await _home.locate();
     if (!mounted) return;
+    if (status == LocationStatus.error && previous != null) return widget.onPick(previous);
     if (status != LocationStatus.granted) {
       final retry = await LocationPermissionPrompt.show(context, status);
       if (!retry || !mounted) return;
