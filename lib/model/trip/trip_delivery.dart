@@ -328,7 +328,8 @@ class TripDelivery {
       recipient: DeliveryRecipient.fromJson(recipient.raw),
       stage: DeliveryStage.fromCode(reader.strOrNull('stage')),
       pickupProof: _optional(reader, 'pickupProof', PickupProof.fromJson) ?? _pickupUrlProof(proofs),
-      senderConfirmation: _optional(reader, 'senderConfirmation', SenderConfirmation.fromJson),
+      senderConfirmation:
+          _optional(reader, 'senderConfirmation', SenderConfirmation.fromJson) ?? _senderConfirmedAt(reader, proofs),
       deliveryProof:
           _optional(reader, 'deliveryProof', DeliveryProof.fromJson) ??
           _deliveryUrlProof(proofs, recipientConfirmed: recipient.boolOr('confirmed', false)),
@@ -381,6 +382,12 @@ class TripDelivery {
       TripStatus.completed => DeliveryStage.delivered,
       TripStatus.cancelled || TripStatus.rematching || TripStatus.unknown => DeliveryStage.unknown,
     };
+  }
+
+  static SenderConfirmation? _senderConfirmedAt(JsonReader reader, JsonReader? proofs) {
+    final at = reader.timeOrNull('senderConfirmedAt');
+    if (at == null) return null;
+    return SenderConfirmation(photoUrl: ProofRef.read(proofs, 'sender')?.url, at: at.toLocal());
   }
 
   static PickupProof? _pickupUrlProof(JsonReader? proofs) {

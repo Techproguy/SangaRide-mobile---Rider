@@ -12,6 +12,12 @@ class DeliveryProofScreen extends StatelessWidget {
 
   final String tripId;
 
+  Future<void> _complete(BuildContext context, TripController controller) async {
+    final isCompleted = await controller.completeRide();
+    if (isCompleted || !context.mounted) return;
+    SangaToast.show('Your driver is still wrapping up. Give it a moment.');
+  }
+
   @override
   Widget build(BuildContext context) {
     final controller = Get.find<TripController>();
@@ -28,7 +34,7 @@ class DeliveryProofScreen extends StatelessWidget {
               ? SangaButton.primary(
                   label: 'Complete delivery',
                   isLoading: controller.isCompleting.value,
-                  onPressed: controller.completeRide,
+                  onPressed: () => _complete(context, controller),
                 )
               : null,
           children: [
