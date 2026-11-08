@@ -8,7 +8,6 @@ import 'package:sanga_ride/core/router/support_routes.dart';
 import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride/view/support/support_copy.dart';
 import 'package:sanga_ride/view/support/widgets/article_row.dart';
-import 'package:sanga_ride/view/support/widgets/support_topic_grid.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 class SupportHomeScreen extends StatefulWidget {
@@ -74,9 +73,16 @@ class _SupportHomeScreenState extends State<SupportHomeScreen> {
             spacing: SangaSpacing.sm,
             children: [
               const SangaSectionHeader(SupportCopy.commonTopics),
-              SupportTopicGrid(
-                topics: home.topics,
-                onSelected: (topic) => context.push(SupportRoutes.articlesOf(topic: topic.id)),
+              SangaTopicGrid(
+                columns: 2,
+                items: [
+                  for (final topic in home.topics)
+                    SangaTopicItem(
+                      label: topic.label,
+                      icon: SupportCopy.topicIconOf(topic.icon),
+                      onTap: () => context.push(SupportRoutes.articlesOf(topic: topic.id)),
+                    ),
+                ],
               ),
             ],
           ),
