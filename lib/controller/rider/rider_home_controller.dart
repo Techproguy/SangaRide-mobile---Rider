@@ -137,7 +137,6 @@ class RiderHomeController extends GetxController {
       final position = result.position;
       if (position == null) return result.status;
       final place = await _places.placeAt(position);
-      if (place == null) return _locationStatus.value = LocationStatus.error;
       _currentPlace.value = place;
       unawaited(_checkCity(place));
       unawaited(_loadWeather(place));

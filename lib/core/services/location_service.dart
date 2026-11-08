@@ -15,7 +15,12 @@ class LocationResult {
 }
 
 class LocationService {
-  static const _fixSettings = LocationSettings(accuracy: LocationAccuracy.high, timeLimit: Duration(seconds: 10));
+  static const _recentFixAge = Duration(minutes: 2);
+  static const _attemptLimit = Duration(seconds: 12);
+  static const _fixAttempts = [
+    LocationSettings(accuracy: LocationAccuracy.high, timeLimit: Duration(seconds: 8)),
+    LocationSettings(accuracy: LocationAccuracy.medium, timeLimit: Duration(seconds: 10)),
+  ];
 
   static Future<LocationResult>? _inFlight;
 
@@ -33,11 +38,33 @@ class LocationService {
       if (permission == LocationPermission.denied) return const LocationResult(LocationStatus.denied);
       if (permission == LocationPermission.deniedForever) return const LocationResult(LocationStatus.deniedForever);
 
-      final position = await Geolocator.getCurrentPosition(locationSettings: _fixSettings);
+      final position = await _bestFix();
+      if (position == null) return const LocationResult(LocationStatus.error);
       return LocationResult(LocationStatus.granted, LatLng(position.latitude, position.longitude));
     } catch (e) {
       log('resolveCurrentLocation error: $e');
       return const LocationResult(LocationStatus.error);
+    }
+  }
+
+  static Future<Position?> _bestFix() async {
+    final lastKnown = await _lastKnown();
+    if (lastKnown != null && DateTime.now().difference(lastKnown.timestamp) < _recentFixAge) return lastKnown;
+    for (final settings in _fixAttempts) {
+      try {
+        return await Geolocator.getCurrentPosition(locationSettings: settings).timeout(_attemptLimit);
+      } catch (e) {
+        log('location fix at ${settings.accuracy.name} failed: ${e.runtimeType}');
+      }
+    }
+    return lastKnown;
+  }
+
+  static Future<Position?> _lastKnown() async {
+    try {
+      return await Geolocator.getLastKnownPosition();
+    } catch (_) {
+      return null;
     }
   }
 

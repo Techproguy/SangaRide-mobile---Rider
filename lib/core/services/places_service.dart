@@ -1,3 +1,4 @@
+import 'package:sanga_ride/core/copy/common_copy.dart';
 import 'dart:developer';
 import 'dart:io';
 
@@ -100,9 +101,11 @@ class PlacesService {
     return places.whereType<Map>().map((p) => Place.fromJson(Map<String, dynamic>.from(p))).toList();
   }
 
-  Future<Place?> placeAt(LatLng coordinates) async {
+  Future<Place> placeAt(LatLng coordinates) async {
     final location = await reverseGeocode(coordinates);
-    if (location == null) return null;
+    if (location == null) {
+      return Place(placeId: '', name: CommonCopy.currentLocation, address: CommonCopy.pinnedOnMap, coordinates: coordinates);
+    }
     final area = location.neighborhood ?? location.subLocality ?? location.locality ?? location.route;
     return Place(
       placeId: location.placeId ?? '',
