@@ -71,12 +71,12 @@ class _ScheduledTab extends StatelessWidget {
       onRefresh: () => Get.find<ScheduledRidesController>().load(),
       child: ListView(
         physics: const AlwaysScrollableScrollPhysics(),
-        padding: EdgeInsets.fromLTRB(
+        padding: const EdgeInsets.fromLTRB(
           SangaSpacing.gutter,
           SangaSpacing.md,
           SangaSpacing.gutter,
-          SangaSpacing.xl + MediaQuery.paddingOf(context).bottom,
-        ),
+          SangaSpacing.xl,
+        ).withBottomInset(context),
         children: const [ScheduledRidesBody()],
       ),
     );

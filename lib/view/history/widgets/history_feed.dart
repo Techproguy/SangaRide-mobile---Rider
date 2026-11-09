@@ -48,12 +48,9 @@ class _HistoryFeedState extends State<HistoryFeed> {
     super.dispose();
   }
 
-  EdgeInsets get _padding => EdgeInsets.fromLTRB(
-    SangaSpacing.gutter,
-    SangaSpacing.md,
-    SangaSpacing.gutter,
-    SangaSpacing.xl + MediaQuery.paddingOf(context).bottom,
-  );
+  EdgeInsets get _padding =>
+      const EdgeInsets.fromLTRB(SangaSpacing.gutter, SangaSpacing.md, SangaSpacing.gutter, SangaSpacing.xl)
+          .withBottomInset(context);
 
   bool _onScroll(ScrollNotification notification) {
     final state = _history.feed(widget.status);
