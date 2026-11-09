@@ -3,7 +3,9 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:get/get.dart';
 import 'package:sanga_ride/controller/rider/ride_for_controller.dart';
 import 'package:sanga_ride/core/router/who_for_routes.dart';
+import 'package:sanga_ride/model/groups/group_kind.dart';
 import 'package:sanga_ride/model/models.dart';
+import 'package:sanga_ride/view/groups/group_copy.dart';
 import 'package:sanga_ride/view/ride/who_for/widgets/ride_for_list_body.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
@@ -39,7 +41,7 @@ class _BusinessProfileScreenState extends State<BusinessProfileScreen> {
         Obx(
           () => RideForListBody<BusinessProfile>(
             state: _flow.business,
-            emptyIcon: Icons.apartment_rounded,
+            emptyIcon: GroupCopy.icon(GroupKind.business),
             emptyTitle: 'No business profile yet',
             emptyMessage: 'You’re not on a company profile, so this ride has nowhere to be charged.',
             failedTitle: 'We couldn’t load your profiles',
@@ -49,7 +51,7 @@ class _BusinessProfileScreenState extends State<BusinessProfileScreen> {
               children: [
                 for (final profile in profiles)
                   SangaOptionCard(
-                    leading: const SangaIconBadge(child: Icon(Icons.apartment_rounded)),
+                    leading: SangaIconBadge(child: Icon(GroupCopy.icon(GroupKind.business))),
                     title: profile.companyName,
                     subtitle: profile.role,
                     isSelected: _flow.pickedProfile?.id == profile.id,

@@ -3,7 +3,9 @@ import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sanga_ride/controller/rider/ride_for_controller.dart';
 import 'package:sanga_ride/core/router/who_for_routes.dart';
+import 'package:sanga_ride/model/groups/group_kind.dart';
 import 'package:sanga_ride/model/models.dart';
+import 'package:sanga_ride/view/groups/group_copy.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 class WhoForScreen extends StatefulWidget {
@@ -19,9 +21,9 @@ class _WhoForScreenState extends State<WhoForScreen> {
 
   static IconData _iconFor(RideForKind kind) => switch (kind) {
     RideForKind.me => Icons.person_rounded,
-    RideForKind.family => Icons.groups_rounded,
+    RideForKind.family => GroupCopy.icon(GroupKind.family),
     RideForKind.someone => Icons.person_outline_rounded,
-    RideForKind.business => Icons.apartment_rounded,
+    RideForKind.business => GroupCopy.icon(GroupKind.business),
   };
 
   String? _subtitleFor(RideForKind kind) {

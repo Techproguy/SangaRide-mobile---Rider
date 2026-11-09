@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:sanga_ride/model/groups/group_kind.dart';
+import 'package:sanga_ride/view/groups/group_copy.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 class BusinessPaidByRow extends StatelessWidget {
@@ -15,7 +17,7 @@ class BusinessPaidByRow extends StatelessWidget {
         child: Row(
           spacing: SangaSpacing.md,
           children: [
-            const SangaIconBadge(child: Icon(Icons.apartment_rounded)),
+            SangaIconBadge(child: Icon(GroupCopy.icon(GroupKind.business))),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,

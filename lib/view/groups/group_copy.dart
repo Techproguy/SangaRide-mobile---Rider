@@ -10,8 +10,8 @@ abstract final class GroupCopy {
   };
 
   static IconData icon(GroupKind kind) => switch (kind) {
-    GroupKind.family => Icons.family_restroom_rounded,
-    GroupKind.business => Icons.apartment_rounded,
+    GroupKind.family => Icons.people_outline_rounded,
+    GroupKind.business => Icons.work_outline_rounded,
   };
 
   static String hubTitle(GroupKind kind) => switch (kind) {

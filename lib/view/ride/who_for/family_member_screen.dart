@@ -3,7 +3,9 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sanga_ride/controller/rider/ride_for_controller.dart';
+import 'package:sanga_ride/model/groups/group_kind.dart';
 import 'package:sanga_ride/model/models.dart';
+import 'package:sanga_ride/view/groups/group_copy.dart';
 import 'package:sanga_ride/view/ride/who_for/widgets/ride_for_list_body.dart';
 import 'package:sanga_ride/view/ride/who_for/widgets/who_for_avatar.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
@@ -40,7 +42,7 @@ class _FamilyMemberScreenState extends State<FamilyMemberScreen> {
         Obx(
           () => RideForListBody<FamilyMember>(
             state: _flow.family,
-            emptyIcon: Icons.groups_rounded,
+            emptyIcon: GroupCopy.icon(GroupKind.family),
             emptyTitle: _flow.isInFamily ? 'Ask your admin first' : 'No family members yet',
             emptyMessage: _flow.isInFamily
                 ? 'Your family admin hasn’t let you book rides for the group yet.'

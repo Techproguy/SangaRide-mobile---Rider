@@ -10,6 +10,7 @@ import 'package:sanga_ride/core/router/safety_routes.dart';
 import 'package:sanga_ride/core/router/support_routes.dart';
 import 'package:sanga_ride/core/router/verification_routes.dart';
 import 'package:sanga_ride/model/groups/group_kind.dart';
+import 'package:sanga_ride/view/groups/group_copy.dart';
 import 'package:sanga_ride/view/groups/widgets/group_menu_trailing.dart';
 import 'package:sanga_ride/view/notifications/widgets/notification_menu_badge.dart';
 import 'package:sanga_ride/view/verification/widgets/verification_menu_badge.dart';
@@ -46,14 +47,14 @@ abstract final class MenuEntries {
       entries: [
         MenuEntry(
           label: 'Family',
-          icon: Icons.family_restroom_outlined,
+          icon: GroupCopy.icon(GroupKind.family),
           route: GroupRoutes.hubOf(GroupKind.family),
           trailing: const GroupMenuTrailing(kind: GroupKind.family),
           subtitle: () => Get.find<GroupsController>().groupOf(GroupKind.family)?.name,
         ),
         MenuEntry(
           label: 'Business',
-          icon: Icons.apartment_outlined,
+          icon: GroupCopy.icon(GroupKind.business),
           route: GroupRoutes.hubOf(GroupKind.business),
           trailing: const GroupMenuTrailing(kind: GroupKind.business),
           subtitle: () => Get.find<GroupsController>().groupOf(GroupKind.business)?.name,
