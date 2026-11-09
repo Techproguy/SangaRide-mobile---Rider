@@ -75,7 +75,7 @@ class _SangaRideState extends State<SangaRide> {
       debugShowCheckedModeBanner: false,
       builder: (context, child) => SangaFrame(
         config: SangaConstants.frame,
-        child: AppOverlays(child: child!),
+        child: SangaKeyboardDoneBar(child: AppOverlays(child: child!)),
       ),
     );
   }

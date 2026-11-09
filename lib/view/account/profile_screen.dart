@@ -11,7 +11,6 @@ import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride/view/account/account_copy.dart';
 import 'package:sanga_ride/view/account/widgets/account_image.dart';
 import 'package:sanga_ride/view/account/widgets/profile_edit_sheet.dart';
-import 'package:sanga_ride/view/account/widgets/profile_photo_editor.dart';
 import 'package:sanga_ride/view/delivery/send/widgets/photo_source_sheet.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
@@ -70,7 +69,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Column(
       spacing: SangaSpacing.xs,
       children: [
-        ProfilePhotoEditor(
+        SangaPhotoEditor(
           name: account.fullName,
           image: accountImageOf(account.photoUrl),
           isUploading: state.isUploadingPhoto,
