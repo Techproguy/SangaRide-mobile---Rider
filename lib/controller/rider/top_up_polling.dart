@@ -48,10 +48,21 @@ extension TopUpPolling on TopUpController {
     final amount = topUp.amount ?? draft.amount ?? Money.zero();
     if (topUp.status == TopUpStatus.awaitingTransfer) {
       _markDelayedIfDue(current, topUp);
+    } else if (current is TopUpConfirming && _isStillUnsettled(topUp)) {
+      _giveUpIfDue(current, topUp);
     } else if (topUp.status != TopUpStatus.pending && topUp.status != TopUpStatus.unknown) {
       _stopPolling();
       await _apply(topUp, amount: amount, method: method, epoch: epoch);
     }
+  }
+
+  bool _isStillUnsettled(TopUp topUp) => topUp.status == TopUpStatus.pending || topUp.status == TopUpStatus.unknown;
+
+  void _giveUpIfDue(TopUpConfirming current, TopUp topUp) {
+    final since = _watchStartedAt ?? ServerClock.instance.now();
+    if (ServerClock.instance.now().difference(since) < TopUpController.confirmGiveUpAfter) return;
+    _stopPolling();
+    _state.value = TopUpStillProcessing(topUp);
   }
 
   void _markDelayedIfDue(TopUpState current, TopUp topUp) {

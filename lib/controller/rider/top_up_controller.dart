@@ -24,6 +24,7 @@ class TopUpController extends GetxController {
   static const Duration transferPollInterval = Duration(seconds: 3);
   static const Duration confirmPollInterval = Duration(seconds: 2);
   static const Duration transferDelayedAfter = Duration(seconds: 90);
+  static const Duration confirmGiveUpAfter = Duration(seconds: 90);
   static const Duration creationClockSkew = Duration(seconds: 5);
 
   final WalletScope scope;
@@ -72,6 +73,14 @@ class TopUpController extends GetxController {
   }
 
   void prepareCard() => selectSavedCard(_wallet.overview?.savedCards.firstOrNull?.id);
+
+  void keepWatching() {
+    final current = state;
+    if (current is! TopUpStillProcessing) return;
+    final epoch = _epoch.next();
+    _state.value = TopUpConfirming(current.topUp);
+    _startPolling(epoch, confirmPollInterval);
+  }
 
   void pause() {
     if (state is TopUpTransferWatching || state is TopUpTransferDelayed) _stopPolling();

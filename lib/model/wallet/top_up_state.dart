@@ -67,6 +67,12 @@ final class TopUpConfirming extends TopUpState {
   final TopUp topUp;
 }
 
+final class TopUpStillProcessing extends TopUpState {
+  const TopUpStillProcessing(this.topUp);
+
+  final TopUp topUp;
+}
+
 final class TopUpTransferWatching extends TopUpState {
   const TopUpTransferWatching(this.expectation);
 

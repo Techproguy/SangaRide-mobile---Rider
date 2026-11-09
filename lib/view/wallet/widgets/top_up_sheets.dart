@@ -28,6 +28,31 @@ Future<bool?> showTopUpProcessingSheet({required BuildContext context, required 
   );
 }
 
+Future<bool?> showTopUpStillProcessingSheet({required BuildContext context}) {
+  return showSangaSheet<bool>(
+    context: context,
+    isDismissible: false,
+    enableDrag: false,
+    builder: (sheetContext) => PopScope(
+      canPop: false,
+      child: SangaStatusContent(
+        status: SangaStatus.pending,
+        icon: Icons.hourglass_top_rounded,
+        title: WalletCopy.stillProcessingTitle,
+        message: WalletCopy.stillProcessingMessage,
+        action: SangaButton.primary(
+          label: WalletCopy.checkMyWallet,
+          onPressed: () => Navigator.of(sheetContext).pop(true),
+        ),
+        secondary: SangaTextAction(
+          label: WalletCopy.checkAgain,
+          onPressed: () => Navigator.of(sheetContext).pop(false),
+        ),
+      ),
+    ),
+  );
+}
+
 Future<bool?> showTopUpUnknownSheet({required BuildContext context}) {
   return showSangaSheet<bool>(
     context: context,

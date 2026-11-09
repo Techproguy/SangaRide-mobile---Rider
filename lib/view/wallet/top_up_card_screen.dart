@@ -66,6 +66,9 @@ class _TopUpCardScreenState extends State<TopUpCardScreen> {
       case TopUpSucceeded():
         _closeSheets();
         _celebrate(state);
+      case TopUpStillProcessing():
+        _closeSheets();
+        _showStillProcessing();
       case TopUpUnknown(method: TopUpMethod.card):
         _closeSheets();
         _showUnknown();
@@ -90,6 +93,17 @@ class _TopUpCardScreenState extends State<TopUpCardScreen> {
 
   Future<void> _showOtp() async {
     await _otp.show(() => showTopUpOtpSheet(context: context, controller: _topUp));
+  }
+
+  Future<void> _showStillProcessing() async {
+    final checksWallet = await _processing.show(() => showTopUpStillProcessingSheet(context: context));
+    if (!mounted || checksWallet == null) return;
+    if (checksWallet) {
+      unawaited(_wallet.reloadQuietly());
+      context.pop(true);
+      return;
+    }
+    _topUp.keepWatching();
   }
 
   Future<void> _showUnknown() async {

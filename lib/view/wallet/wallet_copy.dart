@@ -15,6 +15,9 @@ abstract final class WalletCopy {
       'Your payment may still land. Check your wallet before you try again so you’re never charged twice.';
   static const String unknownTransferMessage =
       'We didn’t hear back from the server. Check your wallet before you try again so there’s only one top up.';
+  static const String stillProcessingTitle = 'Still processing';
+  static const String stillProcessingMessage =
+      'Your top up is taking longer than usual. We’ll update your balance as soon as it lands.';
   static const String reconnecting = 'Trouble reaching Sanga. We’ll keep trying.';
 
   static const String addMoney = 'Add money';
