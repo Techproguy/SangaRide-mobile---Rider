@@ -162,24 +162,33 @@ class _RideSearchScreenState extends State<RideSearchScreen> {
               ),
             ),
             Expanded(
-              child: ListenableBuilder(
-                listenable: _search,
-                builder: (context, _) => ListView(
-                  padding: const EdgeInsets.fromLTRB(
-                    SangaSpacing.gutter,
-                    SangaSpacing.sm,
-                    SangaSpacing.gutter,
-                    SangaSpacing.xl,
-                  ).withBottomInset(context),
+              child: SangaScrollEdgeListener(
+                builder: (context, edges) => Column(
                   children: [
-                    if (_search.isIdle)
-                      PlaceSuggestions(
-                        onPick: _pick,
-                        origin: _search.origin,
-                        showsCurrentLocation: _target == RoutePoint.pickup,
-                      )
-                    else
-                      PlaceSearchResults(search: _search, onPick: _open),
+                    SangaScrollEdgeDivider(isVisible: edges.isScrolledUnderTop),
+                    Expanded(
+                      child: ListenableBuilder(
+                        listenable: _search,
+                        builder: (context, _) => ListView(
+                          padding: const EdgeInsets.fromLTRB(
+                            SangaSpacing.gutter,
+                            SangaSpacing.sm,
+                            SangaSpacing.gutter,
+                            SangaSpacing.xl,
+                          ).withScrollEndInset(context),
+                          children: [
+                            if (_search.isIdle)
+                              PlaceSuggestions(
+                                onPick: _pick,
+                                origin: _search.origin,
+                                showsCurrentLocation: _target == RoutePoint.pickup,
+                              )
+                            else
+                              PlaceSearchResults(search: _search, onPick: _open),
+                          ],
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ),
