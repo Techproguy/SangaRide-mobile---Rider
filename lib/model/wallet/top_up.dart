@@ -188,13 +188,7 @@ enum TopUpFailure {
 }
 
 class SavedTopUp {
-  const SavedTopUp({
-    required this.intentKey,
-    required this.method,
-    required this.amount,
-    this.topUpId,
-    this.status,
-  });
+  const SavedTopUp({required this.intentKey, required this.method, required this.amount, this.topUpId, this.status});
 
   static SavedTopUp? tryFromJson(Map<String, dynamic>? json) {
     if (json == null) return null;

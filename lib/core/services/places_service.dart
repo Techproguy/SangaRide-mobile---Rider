@@ -1,4 +1,5 @@
 import 'package:sanga_ride/core/copy/common_copy.dart';
+
 import 'dart:developer';
 import 'dart:io';
 
@@ -104,7 +105,12 @@ class PlacesService {
   Future<Place> placeAt(LatLng coordinates) async {
     final location = await reverseGeocode(coordinates);
     if (location == null) {
-      return Place(placeId: '', name: CommonCopy.currentLocation, address: CommonCopy.pinnedOnMap, coordinates: coordinates);
+      return Place(
+        placeId: '',
+        name: CommonCopy.currentLocation,
+        address: CommonCopy.pinnedOnMap,
+        coordinates: coordinates,
+      );
     }
     final area = location.neighborhood ?? location.subLocality ?? location.locality ?? location.route;
     return Place(

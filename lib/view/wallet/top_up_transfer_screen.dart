@@ -151,7 +151,12 @@ class _TopUpTransferScreenState extends State<TopUpTransferScreen> {
         SangaButton.outline(label: WalletCopy.backToWallet, onPressed: _leave),
       ],
     ),
-    TopUpOtp() || TopUpCheckout() || TopUpConfirming() || TopUpStillProcessing() || TopUpChecking() || TopUpSucceeded() => null,
+    TopUpOtp() ||
+    TopUpCheckout() ||
+    TopUpConfirming() ||
+    TopUpStillProcessing() ||
+    TopUpChecking() ||
+    TopUpSucceeded() => null,
   };
 
   @override

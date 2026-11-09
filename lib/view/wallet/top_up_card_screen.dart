@@ -170,10 +170,7 @@ class _TopUpCardScreenState extends State<TopUpCardScreen> {
         canPop: !isBusy,
         child: SangaPageLayout(
           title: WalletCopy.addMoney,
-          footer: SangaButton.primary(
-            label: WalletCopy.addAmount(amount),
-            onPressed: isBusy ? null : _submit,
-          ),
+          footer: SangaButton.primary(label: WalletCopy.addAmount(amount), onPressed: isBusy ? null : _submit),
           children: [
             Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,

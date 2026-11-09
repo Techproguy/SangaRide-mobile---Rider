@@ -61,7 +61,13 @@ class WalletMethodTile extends StatelessWidget {
 }
 
 class _UnavailableTile extends StatelessWidget {
-  const _UnavailableTile({required this.icon, required this.title, required this.subtitle, this.actionLabel, this.onAction});
+  const _UnavailableTile({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    this.actionLabel,
+    this.onAction,
+  });
 
   static const double _mutedOpacity = 0.55;
 
