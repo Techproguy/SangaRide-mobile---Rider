@@ -38,7 +38,7 @@ class PlaceSearchResults extends StatelessWidget {
             SangaListRow.place(
               title: prediction.title,
               subtitle: subtitleOf(prediction),
-              trailing: search.isOpening(prediction) ? SangaListRow.spinner : SangaListRow.chevron,
+              trailing: search.isOpening(prediction) ? SangaListRow.spinner : null,
               onTap: () => onPick(prediction),
             ),
         ],

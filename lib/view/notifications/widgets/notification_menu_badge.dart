@@ -13,31 +13,8 @@ class NotificationMenuBadge extends StatelessWidget {
     final controller = Get.find<NotificationsController>();
     return Obx(() {
       final count = controller.unreadCount;
-      return Row(
-        mainAxisSize: MainAxisSize.min,
-        spacing: SangaSpacing.sm,
-        children: [
-          if (count > 0)
-            Semantics(
-              label: NotificationCopy.unread(count),
-              excludeSemantics: true,
-              child: Container(
-                constraints: const BoxConstraints(minWidth: 22),
-                padding: const EdgeInsets.symmetric(horizontal: SangaSpacing.xs, vertical: SangaSpacing.xxs),
-                decoration: const BoxDecoration(color: SangaColors.primary, borderRadius: SangaRadii.pill),
-                child: Text(
-                  AccountCopy.unreadLabel(count),
-                  textAlign: TextAlign.center,
-                  style: SangaTextStyles.cardSubtitle.copyWith(
-                    color: SangaColors.onPrimary,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-            ),
-          SangaListRow.chevron,
-        ],
-      );
+      if (count == 0) return const SizedBox.shrink();
+      return SangaCountBadge(label: AccountCopy.unreadLabel(count), semanticLabel: NotificationCopy.unread(count));
     });
   }
 }

@@ -40,11 +40,7 @@ class _VerificationMenuBadgeState extends State<VerificationMenuBadge> {
   Widget build(BuildContext context) {
     return Obx(() {
       final status = _controller.account?.verification;
-      return Row(
-        mainAxisSize: MainAxisSize.min,
-        spacing: SangaSpacing.sm,
-        children: [if (status != null) _tag(status), SangaListRow.chevron],
-      );
+      return status == null ? const SizedBox.shrink() : _tag(status);
     });
   }
 }

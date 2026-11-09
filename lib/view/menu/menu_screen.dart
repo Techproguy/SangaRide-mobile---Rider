@@ -15,24 +15,22 @@ class MenuScreen extends StatelessWidget {
   const MenuScreen({super.key});
 
   Widget _section(BuildContext context, MenuSection section) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      spacing: SangaSpacing.xs,
-      children: [
-        SangaSectionHeader(section.title),
-        SangaListGroup(
-          children: [
-            for (final entry in section.entries)
-              SangaListRow.badge(
-                icon: entry.icon,
-                title: entry.label,
-                trailing: entry.trailing ?? SangaListRow.chevron,
-                onTap: () => context.push(entry.route),
-              ),
-          ],
-        ),
-      ],
+    return SangaListSection(
+      title: section.title,
+      children: [for (final entry in section.entries) _row(context, entry)],
     );
+  }
+
+  Widget _row(BuildContext context, MenuEntry entry) {
+    final subtitle = entry.subtitle;
+    SangaListRow build(String? text) => SangaListRow.badge(
+      icon: entry.icon,
+      title: entry.label,
+      subtitle: text,
+      accessory: entry.trailing,
+      onTap: () => context.push(entry.route),
+    );
+    return subtitle == null ? build(null) : Obx(() => build(subtitle()));
   }
 
   @override

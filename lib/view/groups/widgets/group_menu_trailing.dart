@@ -17,8 +17,6 @@ class GroupMenuTrailing extends StatefulWidget {
 }
 
 class _GroupMenuTrailingState extends State<GroupMenuTrailing> {
-  static const double _maxNameWidth = 120;
-
   final _groups = Get.find<GroupsController>();
 
   @override
@@ -34,20 +32,9 @@ class _GroupMenuTrailingState extends State<GroupMenuTrailing> {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      spacing: SangaSpacing.sm,
-      children: [
-        Obx(() {
-          final group = _groups.groupOf(widget.kind);
-          if (group == null) return _invites(_groups.overview?.invitesOf(widget.kind).length ?? 0);
-          return ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: _maxNameWidth),
-            child: Text(group.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: SangaTextStyles.cardSubtitle),
-          );
-        }),
-        SangaListRow.chevron,
-      ],
-    );
+    return Obx(() {
+      if (_groups.groupOf(widget.kind) != null) return const SizedBox.shrink();
+      return _invites(_groups.overview?.invitesOf(widget.kind).length ?? 0);
+    });
   }
 }

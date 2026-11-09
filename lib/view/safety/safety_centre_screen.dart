@@ -92,7 +92,7 @@ class _SafetyCentreScreenState extends State<SafetyCentreScreen> {
 
   WrapUpFailure? _failureOf(SafetyCentreState state) => switch (state) {
     SafetyCentreFailed(:final problem) => WrapUpFailure(
-      title: 'We couldn’t load your Safety Centre',
+      title: 'We couldn’t load your Safety centre',
       message: problem.message,
       onRetry: () => unawaited(_centre.retry()),
     ),
@@ -126,7 +126,7 @@ class _SafetyCentreScreenState extends State<SafetyCentreScreen> {
       final state = _centre.state;
       final contactsState = _contacts.state;
       return SangaPageLayout(
-        title: 'Safety Centre',
+        title: 'Safety centre',
         children: [
           WrapUpAsyncBody(
             isLoading: !_isOpened || state is SafetyCentreLoading,

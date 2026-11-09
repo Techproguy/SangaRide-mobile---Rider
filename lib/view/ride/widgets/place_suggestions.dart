@@ -16,6 +16,14 @@ class PlaceSuggestions extends StatelessWidget {
   final LatLng? origin;
   final bool showsCurrentLocation;
 
+  static const double _sameSpotMeters = 50;
+
+  bool _isAtOrigin(Place place) {
+    final from = origin;
+    final to = place.coordinates;
+    return !showsCurrentLocation && from != null && to != null && from.metersTo(to) < _sameSpotMeters;
+  }
+
   String _subtitleOf(Place place) {
     final from = origin;
     final to = place.coordinates;
@@ -35,15 +43,20 @@ class PlaceSuggestions extends StatelessWidget {
         if (home.work != null) (SangaAssets.placeWork, 'Work', home.work!),
         for (final other in places.others) (SangaAssets.placeSaved, other.label, other.place),
       ];
+      final recent = [
+        for (final place in home.recent)
+          if (!_isAtOrigin(place)) place,
+      ];
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         spacing: SangaSpacing.xl,
         children: [
           if (showsCurrentLocation) SangaListGroup(children: [CurrentLocationRow(onPick: onPick)]),
-          if (home.recent.isNotEmpty)
-            SangaListGroup(
+          if (recent.isNotEmpty)
+            SangaListSection(
+              title: 'Recent',
               children: [
-                for (final place in home.recent)
+                for (final place in recent)
                   Dismissible(
                     key: ValueKey(place.placeId),
                     direction: DismissDirection.endToStart,
@@ -58,7 +71,8 @@ class PlaceSuggestions extends StatelessWidget {
               ],
             ),
           if (saved.isNotEmpty)
-            SangaListGroup(
+            SangaListSection(
+              title: 'Saved',
               children: [
                 for (final (icon, label, place) in saved)
                   SangaListRow.saved(
@@ -118,7 +132,7 @@ class _CurrentLocationRowState extends State<CurrentLocationRow> {
         leading: const Icon(Icons.near_me_rounded, size: 20, color: SangaColors.primary),
         title: 'Use my current location',
         subtitle: _subtitle,
-        trailing: _home.isLocating ? SangaListRow.spinner : SangaListRow.chevron,
+        trailing: _home.isLocating ? SangaListRow.spinner : null,
         onTap: _home.isLocating ? null : _useCurrentLocation,
       ),
     );
