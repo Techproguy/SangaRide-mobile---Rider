@@ -22,7 +22,7 @@ class HourlyDurationOptions extends StatelessWidget {
   final VoidCallback onCustom;
   final ValueChanged<int> onHoursChanged;
 
-  static String hoursLabel(int hours) => hours == 1 ? '1 hour' : '$hours hours';
+  static String hoursLabel(int hours) => SangaPlural.count(hours, 'hour');
 
   @override
   Widget build(BuildContext context) {

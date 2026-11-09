@@ -226,7 +226,7 @@ class _RideReviewScreenState extends State<RideReviewScreen> {
     ];
   }
 
-  String _hoursLabel(int hours) => hours == 1 ? '1 hour' : '$hours hours';
+  String _hoursLabel(int hours) => SangaPlural.count(hours, 'hour');
 
   String _preferencesLabel(RidePreferences preferences) {
     final labels = preferences.activeLabels;

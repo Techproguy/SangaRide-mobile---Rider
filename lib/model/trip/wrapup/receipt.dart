@@ -196,7 +196,7 @@ class TripReceipt {
 
   String get distanceLabel => SangaDistance.fromKilometers(distanceKm);
 
-  String get durationLabel => durationMinutes == 1 ? '1 minute' : '$durationMinutes minutes';
+  String get durationLabel => SangaPlural.count(durationMinutes, 'minute');
 }
 
 enum ReceiptFailure {

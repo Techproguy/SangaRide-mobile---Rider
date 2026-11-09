@@ -1,6 +1,7 @@
 import 'package:flutter/widgets.dart';
 import 'package:intl/intl.dart';
 import 'package:sanga_ride/model/ride/booking.dart';
+import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 String formatRideClock(BuildContext context, DateTime time) =>
     DateFormat(MediaQuery.alwaysUse24HourFormatOf(context) ? 'HH:mm' : 'h:mm a').format(time).replaceAll(' ', '\u00A0');
@@ -39,7 +40,7 @@ String formatRideDuration(Duration duration) {
   final minutes = duration.inMinutes.remainder(60);
   return switch ((hours, minutes)) {
     (0, final minutes) => '$minutes min',
-    (final hours, 0) => hours == 1 ? '1 hour' : '$hours hours',
+    (final hours, 0) => SangaPlural.count(hours, 'hour'),
     (final hours, final minutes) => '${hours}h ${minutes}m',
   };
 }

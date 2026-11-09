@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:sanga_ride/model/models.dart';
-import 'package:sanga_ride_ui/sanga_ride_ui.dart' show SangaCommonCopy;
+import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 class VerificationHeroCopy {
   const VerificationHeroCopy({required this.title, required this.message});
@@ -72,9 +72,9 @@ abstract final class VerificationCopy {
   static String hoursLabel(int hours) {
     if (hours % 24 == 0) {
       final days = hours ~/ 24;
-      return days == 1 ? '24 hours' : '$days days';
+      return days == 1 ? '24 hours' : SangaPlural.count(days, 'day');
     }
-    return hours == 1 ? '1 hour' : '$hours hours';
+    return SangaPlural.count(hours, 'hour');
   }
 
   static String primaryLabelOf(Verification verification) {

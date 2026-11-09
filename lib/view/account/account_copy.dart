@@ -1,6 +1,6 @@
 import 'package:intl/intl.dart';
-import 'package:sanga_ride/core/format/number_formats.dart';
 import 'package:sanga_ride/model/models.dart';
+import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 abstract final class AccountCopy {
   static final DateFormat _month = DateFormat('MMMM y');
@@ -18,7 +18,7 @@ abstract final class AccountCopy {
 
   static String tripsLine(Account account) {
     final rides = account.ridesCount;
-    return rides == 1 ? '1 trip' : '${NumberFormats.grouped.format(rides)} trips';
+    return SangaPlural.count(rides, 'trip');
   }
 
   static String memberLine(Account account) {

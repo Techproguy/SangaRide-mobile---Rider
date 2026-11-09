@@ -1,6 +1,7 @@
 import 'package:sanga_ride/model/ride/airport_catalog.dart';
 import 'package:sanga_ride/model/ride/flight.dart';
 import 'package:sanga_ride_core/sanga_ride_core.dart';
+import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 enum LuggageSize {
   small('small', 'Small'),
@@ -54,19 +55,14 @@ class ArrivalDetails {
 
   String get luggageLabel {
     if (luggageCount == 0) return 'No luggage';
-    final bags = luggageCount == 1 ? 'bag' : 'bags';
-    return '$luggageCount ${luggageSize.label.toLowerCase()} $bags';
+    return '$luggageCount ${luggageSize.label.toLowerCase()} ${SangaPlural.noun(luggageCount, 'bag')}';
   }
 
   String get passengersLabel => passengersLabelOf(passengers);
 
-  static String passengersLabelOf(int count) => count == 1 ? '1 passenger' : '$count passengers';
+  static String passengersLabelOf(int count) => SangaPlural.count(count, 'passenger');
 
-  static String bagsLabel(int count) => switch (count) {
-    0 => 'No luggage',
-    1 => '1 bag',
-    _ => '$count bags',
-  };
+  static String bagsLabel(int count) => count == 0 ? 'No luggage' : SangaPlural.count(count, 'bag');
 
   ArrivalDetails copyWith({int? luggageCount, LuggageSize? luggageSize, int? passengers, Assistance? assistance}) =>
       ArrivalDetails(
@@ -157,13 +153,9 @@ class ScheduledAirport {
 
   String get passengersLabel => passengersLabelOf(passengers);
 
-  static String passengersLabelOf(int count) => count == 1 ? '1 passenger' : '$count passengers';
+  static String passengersLabelOf(int count) => SangaPlural.count(count, 'passenger');
 
-  static String bagsLabel(int count) => switch (count) {
-    0 => 'No luggage',
-    1 => '1 bag',
-    _ => '$count bags',
-  };
+  static String bagsLabel(int count) => count == 0 ? 'No luggage' : SangaPlural.count(count, 'bag');
 }
 
 class TripAirport {

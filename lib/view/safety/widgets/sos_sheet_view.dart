@@ -111,7 +111,7 @@ class SosSheetView extends StatelessWidget {
           icon: Icons.person_rounded,
           title: 'Emergency contacts',
           subtitle: sos.hasNotifiedContacts
-              ? '${sos.contactsNotified} ${sos.contactsNotified == 1 ? 'contact' : 'contacts'} notified'
+              ? '${SangaPlural.count(sos.contactsNotified, 'contact')} notified'
               : 'No contacts to notify yet',
           onTap: onOpenContacts,
         ),

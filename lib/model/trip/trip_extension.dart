@@ -33,7 +33,7 @@ abstract final class ExtendOptions {
   static String label(int minutes) {
     final hours = minutes ~/ Duration.minutesPerHour;
     final rest = minutes % Duration.minutesPerHour;
-    final hoursLabel = hours == 1 ? '1 hour' : '$hours hours';
+    final hoursLabel = SangaPlural.count(hours, 'hour');
     if (hours == 0) return '$rest mins';
     return rest == 0 ? hoursLabel : '$hoursLabel $rest mins';
   }

@@ -277,7 +277,7 @@ class HistoryDetail {
   String? get durationLabel {
     final minutes = durationMinutes;
     if (minutes == null) return null;
-    return minutes == 1 ? '1 minute' : '$minutes minutes';
+    return SangaPlural.count(minutes, 'minute');
   }
 
   HistoryDetail withDriver(HistoryDriver value) => HistoryDetail(

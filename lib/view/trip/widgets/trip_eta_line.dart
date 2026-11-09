@@ -16,7 +16,7 @@ class TripEtaLine extends StatelessWidget {
   static String labelFor(Duration remaining) {
     if (remaining < const Duration(minutes: 1)) return 'Arriving now';
     final minutes = (remaining.inSeconds / 60).ceil();
-    return minutes == 1 ? '1 minute away' : '$minutes minutes away';
+    return '${SangaPlural.count(minutes, 'minute')} away';
   }
 
   @override

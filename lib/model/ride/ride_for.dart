@@ -63,7 +63,7 @@ enum PassengerFailure {
 
   String messageWith({int? attemptsLeft}) {
     if (this != otpMismatch || attemptsLeft == null) return message;
-    final tries = attemptsLeft == 1 ? '1 try left' : '$attemptsLeft tries left';
+    final tries = '${SangaPlural.count(attemptsLeft, 'try', plural: 'tries')} left';
     return 'That code didn’t match. $tries.';
   }
 }

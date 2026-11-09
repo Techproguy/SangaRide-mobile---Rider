@@ -16,7 +16,7 @@ class MenuProfile extends StatelessWidget {
     if (rider == null) return '';
     final trips = rider.tripCount;
     return [
-      if (trips > 0) trips == 1 ? '1 trip' : '$trips trips',
+      if (trips > 0) SangaPlural.count(trips, 'trip'),
       if (rider.rating case final rating?) '${rating.toStringAsFixed(1)} rating',
     ].join(' · ');
   }

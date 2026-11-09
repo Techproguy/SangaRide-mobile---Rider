@@ -1,6 +1,7 @@
 import 'package:flutter/widgets.dart';
 import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride/view/ride/widgets/ride_option_schedule_format.dart';
+import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 extension TripWaitCopy on Trip {
   String? enRouteWaitNotice(BuildContext context) {
@@ -15,7 +16,7 @@ extension TripWaitCopy on Trip {
     if (wait != null) return wait.freeWaitSentence(context);
     final minutes = freeWait.inMinutes;
     if (minutes <= 0) return null;
-    return 'Your driver will wait up to $minutes ${minutes == 1 ? 'minute' : 'minutes'} for you.';
+    return 'Your driver will wait up to ${SangaPlural.count(minutes, 'minute')} for you.';
   }
 }
 

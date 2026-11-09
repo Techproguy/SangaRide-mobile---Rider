@@ -156,7 +156,7 @@ abstract final class GroupCopy {
 
   static String whoIsToYou(String firstName) => 'Who is $firstName to you?';
 
-  static String rideCount(int count) => count == 1 ? '1 ride' : '$count rides';
+  static String rideCount(int count) => SangaPlural.count(count, 'ride');
 
   static String capRides(String firstName) => 'Cap how many group rides $firstName can take each day.';
 
@@ -178,7 +178,7 @@ abstract final class GroupCopy {
 
   static String countWithCompany(String count, String company) => '$count · $company';
 
-  static String invitesCount(int count) => count == 1 ? '1 invite' : '$count invites';
+  static String invitesCount(int count) => SangaPlural.count(count, 'invite');
 
   static String shareText({required GroupKind kind, required String groupName, required String formattedCode}) =>
       'Join $groupName on Sanga Ride. Open the app, go to Menu, then ${label(kind)}, tap '
@@ -219,7 +219,7 @@ abstract final class GroupCopy {
     GroupKind.business => const ['Employee', 'Manager', 'Contractor', 'Other'],
   };
 
-  static String membersCount(int count) => count == 1 ? '1 member' : '$count members';
+  static String membersCount(int count) => SangaPlural.count(count, 'member');
 
   static String inviteTitle(GroupKind kind) => switch (kind) {
     GroupKind.family => 'Invite to your family',
@@ -295,13 +295,13 @@ abstract final class GroupCopy {
   static String ridesSummary(MemberLimits limits) {
     final perDay = limits.ridesPerDay;
     if (perDay == null) return 'No limit';
-    return perDay == 1 ? '1 ride a day' : '$perDay rides a day';
+    return '${SangaPlural.count(perDay, 'ride')} a day';
   }
 
   static String placesSummary(MemberLimits limits) {
     final count = limits.approvedPlaces.length;
     if (count == 0) return 'Anywhere';
-    return count == 1 ? '1 place' : '$count places';
+    return SangaPlural.count(count, 'place');
   }
 
   static String timeSummary(MemberLimits limits, MaterialLocalizations localizations) {

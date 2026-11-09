@@ -25,8 +25,7 @@ SangaFareLine _usageLine(FareEstimate estimate, Money pricePerKm, TripType tripT
   final hours = estimate.hours;
   final hourlyRate = estimate.hourlyRate;
   if (hours != null && hourlyRate != null) {
-    final unit = hours == 1 ? 'hour' : 'hours';
-    return SangaFareLine('$hours $unit at ${SangaMoney.perHourOf(hourlyRate)}', estimate.distanceFare.format());
+    return SangaFareLine('${SangaPlural.count(hours, 'hour')} at ${SangaMoney.perHourOf(hourlyRate)}', estimate.distanceFare.format());
   }
   final label = switch (tripType) {
     TripType.roundTrip => 'Round trip distance',
