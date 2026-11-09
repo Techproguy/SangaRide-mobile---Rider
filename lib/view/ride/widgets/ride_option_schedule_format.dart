@@ -39,7 +39,7 @@ String formatRideDuration(Duration duration) {
   final hours = duration.inHours;
   final minutes = duration.inMinutes.remainder(60);
   return switch ((hours, minutes)) {
-    (0, final minutes) => '$minutes min',
+    (0, final minutes) => SangaPlural.count(minutes, 'min', plural: 'mins'),
     (final hours, 0) => SangaPlural.count(hours, 'hour'),
     (final hours, final minutes) => '${hours}h ${minutes}m',
   };

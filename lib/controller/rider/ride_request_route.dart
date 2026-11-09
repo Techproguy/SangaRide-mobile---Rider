@@ -32,7 +32,7 @@ extension RideRequestRoute on RideRequestController {
         final index = edit.stopIndex;
         if (index == null) {
           const limit = RideRequestController.maxStops;
-          if (stops.length >= limit) return 'You can add up to $limit stops.';
+          if (stops.length >= limit) return AddStopCopy.stopLimit(limit);
           _stops.add(place);
         } else {
           _stops[index] = place;

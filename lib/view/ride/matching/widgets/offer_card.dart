@@ -117,7 +117,7 @@ class _EtaChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: SangaSpacing.md, vertical: SangaSpacing.sm),
       decoration: const BoxDecoration(color: SangaColors.fill, borderRadius: SangaRadii.digit),
-      child: Text('$minutes min', style: SangaTextStyles.chip),
+      child: Text(SangaPlural.count(minutes, 'min', plural: 'mins'), style: SangaTextStyles.chip),
     );
   }
 }

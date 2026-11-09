@@ -145,7 +145,7 @@ abstract final class GroupCopy {
 
   static String alertsLead(String firstName) => 'What should we ping you about for $firstName?';
 
-  static String placesCap(int maxPlaces) => 'You can add up to $maxPlaces places.';
+  static String placesCap(int maxPlaces) => 'You can add up to ${SangaPlural.count(maxPlaces, 'place')}.';
 
   static String placesLead(String firstName) =>
       'When there are places on this list, $firstName’s rides have to start or end at one of them.';
@@ -371,7 +371,7 @@ abstract final class GroupCopy {
     return {status, member.relation}.where((part) => part.isNotEmpty).join(' · ');
   }
 
-  static String approvalsTitle(int count) => count == 1 ? '1 ride needs your OK' : '$count rides need your OK';
+  static String approvalsTitle(int count) => '${SangaPlural.count(count, 'ride')} ${count == 1 ? 'needs' : 'need'} your OK';
 
   static String approvalsSubtitle(List<GroupApproval> approvals) {
     if (approvals.isEmpty) return '';
@@ -384,7 +384,7 @@ abstract final class GroupCopy {
 
   static String approvalExpiry(Duration remaining) {
     final minutes = remaining.inMinutes;
-    if (minutes >= 1) return 'Closes in $minutes min';
-    return 'Closes in ${remaining.inSeconds} sec';
+    if (minutes >= 1) return 'Closes in ${SangaPlural.count(minutes, 'min', plural: 'mins')}';
+    return 'Closes in ${SangaPlural.count(remaining.inSeconds, 'second')}';
   }
 }

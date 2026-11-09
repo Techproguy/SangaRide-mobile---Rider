@@ -5,6 +5,7 @@ import 'dart:developer';
 import 'package:get/get.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 import 'package:sanga_ride/controller/rider/ride_for_controller.dart';
+import 'package:sanga_ride/controller/rider/trip/add_stop_copy.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart' show LatLng;
 import 'package:sanga_ride/core/api/api.dart';
 import 'package:sanga_ride/core/api/booking_endpoints.dart';

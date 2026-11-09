@@ -102,7 +102,7 @@ class _SavedPlacesScreenState extends State<SavedPlacesScreen> {
 
   Widget _limitNotice(SavedPlaceBook book) {
     return SangaNotice(
-      message: 'You’ve saved ${book.maxOthers} places, the most we can hold. Remove one to add another.',
+      message: 'You’ve saved ${SangaPlural.count(book.maxOthers, 'place')}, the most we can hold. Remove one to add another.',
       tone: SangaTone.neutral,
       icon: Icons.info_outline_rounded,
     );

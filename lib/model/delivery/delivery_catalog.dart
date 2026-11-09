@@ -14,7 +14,7 @@ abstract final class DeliveryRules {
 
 String deliveryEtaLabel(List<int> minutes) {
   if (minutes.isEmpty) return '';
-  if (minutes.length == 1 || minutes.first == minutes.last) return '${minutes.first} mins';
+  if (minutes.length == 1 || minutes.first == minutes.last) return SangaPlural.count(minutes.first, 'min', plural: 'mins');
   return '${minutes.first} to ${minutes.last} mins';
 }
 

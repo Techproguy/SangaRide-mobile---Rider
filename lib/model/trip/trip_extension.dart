@@ -34,8 +34,8 @@ abstract final class ExtendOptions {
     final hours = minutes ~/ Duration.minutesPerHour;
     final rest = minutes % Duration.minutesPerHour;
     final hoursLabel = SangaPlural.count(hours, 'hour');
-    if (hours == 0) return '$rest mins';
-    return rest == 0 ? hoursLabel : '$hoursLabel $rest mins';
+    if (hours == 0) return SangaPlural.count(rest, 'min', plural: 'mins');
+    return rest == 0 ? hoursLabel : '$hoursLabel ${SangaPlural.count(rest, 'min', plural: 'mins')}';
   }
 
   static String presetLabel(int minutes) => '+ ${label(minutes)}';

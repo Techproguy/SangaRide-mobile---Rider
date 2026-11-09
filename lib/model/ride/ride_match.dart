@@ -196,8 +196,7 @@ class OfferDriver {
 
   String get ridesLabel => switch (ridesCompleted) {
     0 => 'New driver',
-    1 => '1 ride completed',
-    _ => '$ridesCompleted rides completed',
+    _ => '${SangaPlural.count(ridesCompleted, 'ride')} completed',
   };
 }
 
