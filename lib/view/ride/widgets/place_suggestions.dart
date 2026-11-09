@@ -24,6 +24,15 @@ class PlaceSuggestions extends StatelessWidget {
     return !showsCurrentLocation && from != null && to != null && from.metersTo(to) < _sameSpotMeters;
   }
 
+  bool _isSavedPlace(Place place, List<Place> saved) {
+    final at = place.coordinates;
+    return saved.any((other) {
+      if (place.placeId.isNotEmpty && other.placeId == place.placeId) return true;
+      final there = other.coordinates;
+      return at != null && there != null && at.metersTo(there) < _sameSpotMeters;
+    });
+  }
+
   String _subtitleOf(Place place) {
     final from = origin;
     final to = place.coordinates;
@@ -43,9 +52,10 @@ class PlaceSuggestions extends StatelessWidget {
         if (home.work != null) (SangaAssets.placeWork, 'Work', home.work!),
         for (final other in places.others) (SangaAssets.placeSaved, other.label, other.place),
       ];
+      final savedPlaces = [for (final (_, _, place) in saved) place];
       final recent = [
         for (final place in home.recent)
-          if (!_isAtOrigin(place)) place,
+          if (!_isAtOrigin(place) && !_isSavedPlace(place, savedPlaces)) place,
       ];
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,

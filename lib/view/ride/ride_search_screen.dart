@@ -153,7 +153,7 @@ class _RideSearchScreenState extends State<RideSearchScreen> {
                 SangaSpacing.gutter,
                 SangaSpacing.sm + SangaSpacing.xs + SangaSpacing.sm,
                 SangaSpacing.gutter,
-                SangaSpacing.sm,
+                SangaSpacing.md,
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
