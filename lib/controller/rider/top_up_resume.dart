@@ -82,8 +82,8 @@ extension TopUpResume on TopUpController {
     return null;
   }
 
-  Future<void> _persistIntent(Mutation<TopUp> mutation, TopUpMethod method, Money amount, String? savedCardId) {
-    final intent = SavedTopUp(intentKey: mutation.key.value, method: method, amount: amount, savedCardId: savedCardId);
+  Future<void> _persistIntent(Mutation<TopUp> mutation, TopUpMethod method, Money amount) {
+    final intent = SavedTopUp(intentKey: mutation.key.value, method: method, amount: amount);
     _saved.value = null;
     return SessionStorage.drafts.write(_draftKey, intent.toJson());
   }

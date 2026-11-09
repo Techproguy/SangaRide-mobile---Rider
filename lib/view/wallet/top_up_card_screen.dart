@@ -4,14 +4,12 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sanga_ride/controller/rider/wallet_bindings.dart';
+import 'package:sanga_ride/core/services/checkout_page.dart';
 import 'package:sanga_ride/model/wallet/wallet.dart';
-import 'package:sanga_ride/view/wallet/widgets/saved_card_picker.dart';
 import 'package:sanga_ride/view/wallet/widgets/top_up_otp_sheet.dart';
 import 'package:sanga_ride/view/wallet/widgets/top_up_sheets.dart';
 import 'package:sanga_ride/view/wallet/widgets/top_up_success_sheet.dart';
 import 'package:sanga_ride/view/wallet/wallet_copy.dart';
-import 'package:sanga_ride/view/widgets/card/card_details_fields.dart';
-import 'package:sanga_ride/view/widgets/card/card_form_model.dart';
 import 'package:sanga_ride/view/widgets/feedback/payment_sheets.dart';
 import 'package:sanga_ride/view/widgets/layout/amount_tile.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
@@ -28,7 +26,6 @@ class TopUpCardScreen extends StatefulWidget {
 class _TopUpCardScreenState extends State<TopUpCardScreen> {
   late final _wallet = WalletControllers.wallet(widget.scope);
   late final _topUp = WalletControllers.topUp(widget.scope);
-  final _form = CardFormModel(isPinRequired: false);
   final _processing = PaymentSheetSlot();
   final _otp = PaymentSheetSlot();
   late final Worker _stateWorker;
@@ -46,7 +43,6 @@ class _TopUpCardScreenState extends State<TopUpCardScreen> {
   @override
   void dispose() {
     _stateWorker.dispose();
-    _form.dispose();
     super.dispose();
   }
 
@@ -60,6 +56,9 @@ class _TopUpCardScreenState extends State<TopUpCardScreen> {
     switch (state) {
       case TopUpSubmitting(method: TopUpMethod.card) || TopUpConfirming() || TopUpChecking(method: TopUpMethod.card):
         _showProcessing();
+      case TopUpCheckout(:final topUp):
+        _showProcessing();
+        unawaited(_openCheckout(topUp));
       case TopUpOtp():
         _processing.close(context);
         _showOtp();
@@ -83,6 +82,17 @@ class _TopUpCardScreenState extends State<TopUpCardScreen> {
           TopUpTransferDelayed() ||
           TopUpFailed():
         _closeSheets();
+    }
+  }
+
+  Future<void> _openCheckout(TopUp topUp) async {
+    final url = topUp.authorizationUrl;
+    final isOpen = url != null && await openCheckoutPage(url);
+    if (!mounted) return;
+    if (isOpen) {
+      _topUp.checkoutOpened();
+    } else {
+      await _topUp.checkoutUnavailable();
     }
   }
 
@@ -143,43 +153,14 @@ class _TopUpCardScreenState extends State<TopUpCardScreen> {
     if (mounted) context.pop(true);
   }
 
-  void _submit() {
-    final draft = _topUp.draft;
-    if (draft.savedCardId != null) {
-      unawaited(_topUp.submitCard(null));
-      return;
-    }
-    final details = _form.take();
-    if (details != null) unawaited(_topUp.submitCard(details));
-  }
-
-  Widget _cardSection(WalletOverview overview, TopUpDraft draft) {
-    final isNewCard = draft.savedCardId == null;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      spacing: SangaSpacing.lg,
-      children: [
-        if (overview.savedCards.isNotEmpty)
-          SavedCardPicker(cards: overview.savedCards, selectedId: draft.savedCardId, onSelect: _topUp.selectSavedCard),
-        if (isNewCard) ...[
-          CardDetailsFields(model: _form, onDone: _submit),
-          SangaCheckRow.text(
-            isChecked: draft.saveCard,
-            onChanged: _topUp.setSaveCard,
-            text: WalletCopy.saveCardForNextTime,
-          ),
-        ],
-      ],
-    );
-  }
+  void _submit() => unawaited(_topUp.submitCard());
 
   @override
   Widget build(BuildContext context) => SangaSensitiveScreen(child: _screen(context));
 
   Widget _screen(BuildContext context) {
     return Obx(() {
-      final draft = _topUp.draft;
-      final amount = draft.amount;
+      final amount = _topUp.draft.amount;
       final overview = _wallet.overview;
       final state = _topUp.state;
       final isBusy =
@@ -189,12 +170,9 @@ class _TopUpCardScreenState extends State<TopUpCardScreen> {
         canPop: !isBusy,
         child: SangaPageLayout(
           title: WalletCopy.addMoney,
-          footer: ListenableBuilder(
-            listenable: _form,
-            builder: (context, _) => SangaButton.primary(
-              label: WalletCopy.addAmount(amount),
-              onPressed: !isBusy && (draft.savedCardId != null || _form.isValid) ? _submit : null,
-            ),
+          footer: SangaButton.primary(
+            label: WalletCopy.addAmount(amount),
+            onPressed: isBusy ? null : _submit,
           ),
           children: [
             Column(
@@ -202,7 +180,11 @@ class _TopUpCardScreenState extends State<TopUpCardScreen> {
               spacing: SangaSpacing.lg,
               children: [
                 AmountTile(label: WalletCopy.addingTo(widget.scope), amount: amount),
-                _cardSection(overview, draft),
+                const SangaNotice(
+                  message: WalletCopy.cardCheckoutNote,
+                  tone: SangaTone.neutral,
+                  icon: Icons.lock_outline_rounded,
+                ),
               ],
             ),
           ],

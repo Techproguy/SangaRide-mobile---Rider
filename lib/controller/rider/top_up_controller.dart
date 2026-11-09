@@ -72,8 +72,6 @@ class TopUpController extends GetxController {
     _draft.value = TopUpDraft(amount: amount);
   }
 
-  void prepareCard() => selectSavedCard(_wallet.overview?.savedCards.firstOrNull?.id);
-
   void keepWatching() {
     final current = state;
     if (current is! TopUpStillProcessing) return;
@@ -90,9 +88,18 @@ class TopUpController extends GetxController {
 
   void chooseMethod(TopUpMethod method) => _draft.value = draft.copyWith(method: method);
 
-  void selectSavedCard(String? cardId) => _draft.value = draft.copyWith(savedCardId: () => cardId);
+  void checkoutOpened() {
+    final current = state;
+    if (current is! TopUpCheckout) return;
+    _state.value = TopUpConfirming(current.topUp);
+    _startPolling(_epoch.current, confirmPollInterval);
+  }
 
-  void setSaveCard(bool value) => _draft.value = draft.copyWith(saveCard: value);
+  Future<void> checkoutUnavailable() async {
+    if (state is! TopUpCheckout) return;
+    await _clearSaved();
+    _state.value = const TopUpFailed(TopUpFailure.unknown, method: TopUpMethod.card);
+  }
 
   void retry() {
     if (state is! TopUpFailed && state is! TopUpUnknown) return;
@@ -100,14 +107,14 @@ class TopUpController extends GetxController {
     _state.value = const TopUpEditing();
   }
 
-  Future<void> submitCard(CardDetails? _) async {
+  Future<void> submitCard() async {
     final amount = draft.amount;
     if (state is! TopUpEditing || amount == null) return;
     if (_isOffline) return _failBeforeSending(TopUpMethod.card);
     final epoch = _epoch.next();
     _state.value = const TopUpSubmitting(TopUpMethod.card);
     final mutation = _newCreation(TopUpMethod.card, amount);
-    await _persistIntent(mutation, TopUpMethod.card, amount, draft.savedCardId);
+    await _persistIntent(mutation, TopUpMethod.card, amount);
     await _runCreation(mutation, TopUpMethod.card, amount, epoch);
   }
 
@@ -192,7 +199,7 @@ class TopUpController extends GetxController {
     final isRetry = previous != null && _creationAmount == amount && previous.state.value is MutationFailed<TopUp>;
     final mutation = isRetry ? previous : _newCreation(TopUpMethod.transfer, amount);
     if (isRetry) mutation.reset(keepKey: true);
-    await _persistIntent(mutation, TopUpMethod.transfer, amount, null);
+    await _persistIntent(mutation, TopUpMethod.transfer, amount);
     await _runCreation(mutation, TopUpMethod.transfer, amount, epoch);
   }
 
@@ -232,7 +239,7 @@ class TopUpController extends GetxController {
       run: (key) async {
         final response = await _api.post(
           WalletEndpoints.topUpCreateOf(scope.groupId),
-          data: {'amount': amount.major},
+          data: {'amount': amount.major, 'method': method.serverCode},
           key: key,
           suppressErrorToast: true,
         );
@@ -327,6 +334,9 @@ class TopUpController extends GetxController {
           await _clearSaved();
           _state.value = TopUpFailed(TopUpFailure.checkNotSupported, method: TopUpMethod.card);
         }
+      case TopUpStatus.pending || TopUpStatus.unknown when topUp.authorizationUrl != null:
+        await _remember(topUp, method);
+        _state.value = TopUpCheckout(topUp);
       case TopUpStatus.pending || TopUpStatus.unknown:
         await _remember(topUp, method);
         _state.value = TopUpConfirming(topUp);

@@ -4,18 +4,19 @@ import 'package:sanga_ride_core/sanga_ride_core.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 enum TopUpMethod {
-  transfer('transfer', 'Transfer', 'Send from any bank app'),
-  card('card', 'Card', 'Pay with a debit or credit card');
+  transfer('transfer', 'bank_transfer', 'Transfer', 'Send from any bank app'),
+  card('card', 'card', 'Card', 'Pay with a debit or credit card');
 
-  const TopUpMethod(this.code, this.label, this.subtitle);
+  const TopUpMethod(this.code, this.serverCode, this.label, this.subtitle);
 
   final String code;
+  final String serverCode;
   final String label;
   final String subtitle;
 
   static TopUpMethod? tryFromCode(String? code) {
     for (final method in values) {
-      if (method.code == code) return method;
+      if (method.code == code || method.serverCode == code) return method;
     }
     return null;
   }
@@ -83,6 +84,7 @@ class TopUp {
     this.balance,
     this.reference,
     this.instructions,
+    this.authorizationUrl,
   });
 
   factory TopUp.fromJson(Map<String, dynamic> json) {
@@ -99,6 +101,7 @@ class TopUp {
       balance: reader.moneyOrNull('balance'),
       reference: reader.strOrNull('reference'),
       instructions: reader.strOrNull('instructions'),
+      authorizationUrl: reader.strOrNull('authorizationUrl'),
     );
   }
 
@@ -113,6 +116,7 @@ class TopUp {
   final Money? balance;
   final String? reference;
   final String? instructions;
+  final String? authorizationUrl;
 }
 
 class TransferExpectation {
@@ -150,6 +154,11 @@ enum TopUpFailure {
     'This card needs another check',
     'This card needs a check we can’t do in the app. Try another card or pay by transfer.',
   ),
+  expired(
+    'expired',
+    'That top up timed out',
+    'It wasn’t finished in time, so nothing was charged. Start again whenever you’re ready.',
+  ),
   transferExpired(
     'transfer_expired',
     'That transfer window closed',
@@ -185,7 +194,6 @@ class SavedTopUp {
     required this.amount,
     this.topUpId,
     this.status,
-    this.savedCardId,
   });
 
   static SavedTopUp? tryFromJson(Map<String, dynamic>? json) {
@@ -202,7 +210,6 @@ class SavedTopUp {
       amount: amount,
       topUpId: reader.strOrNull('topUpId'),
       status: status == null ? null : TopUpStatus.fromCode(status),
-      savedCardId: reader.strOrNull('savedCardId'),
     );
   }
 
@@ -211,7 +218,6 @@ class SavedTopUp {
   final Money amount;
   final String? topUpId;
   final TopUpStatus? status;
-  final String? savedCardId;
 
   Map<String, dynamic> toJson() => {
     'intentKey': intentKey,
@@ -219,7 +225,6 @@ class SavedTopUp {
     'amount': amount.toJson(),
     'topUpId': ?topUpId,
     'status': ?status?.code,
-    'savedCardId': ?savedCardId,
   };
 
   SavedTopUp copyWith({String? topUpId, TopUpStatus? status}) => SavedTopUp(
@@ -228,6 +233,5 @@ class SavedTopUp {
     amount: amount,
     topUpId: topUpId ?? this.topUpId,
     status: status ?? this.status,
-    savedCardId: savedCardId,
   );
 }

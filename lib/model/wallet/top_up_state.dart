@@ -2,24 +2,13 @@ import 'package:sanga_ride/model/wallet/top_up.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 class TopUpDraft {
-  const TopUpDraft({this.amount, this.method = TopUpMethod.card, this.savedCardId, this.saveCard = false});
+  const TopUpDraft({this.amount, this.method = TopUpMethod.card});
 
   final Money? amount;
   final TopUpMethod method;
-  final String? savedCardId;
-  final bool saveCard;
 
-  TopUpDraft copyWith({
-    Money? Function()? amount,
-    TopUpMethod? method,
-    String? Function()? savedCardId,
-    bool? saveCard,
-  }) => TopUpDraft(
-    amount: amount == null ? this.amount : amount(),
-    method: method ?? this.method,
-    savedCardId: savedCardId == null ? this.savedCardId : savedCardId(),
-    saveCard: saveCard ?? this.saveCard,
-  );
+  TopUpDraft copyWith({Money? Function()? amount, TopUpMethod? method}) =>
+      TopUpDraft(amount: amount == null ? this.amount : amount(), method: method ?? this.method);
 }
 
 enum OtpStage { ready, verifying, mismatch, failed }
@@ -59,6 +48,12 @@ final class TopUpOtp extends TopUpState {
   final TopUpFailure? failure;
 
   TopUpOtp withStage(OtpStage next, {TopUpFailure? failure}) => TopUpOtp(topUp, action, stage: next, failure: failure);
+}
+
+final class TopUpCheckout extends TopUpState {
+  const TopUpCheckout(this.topUp);
+
+  final TopUp topUp;
 }
 
 final class TopUpConfirming extends TopUpState {

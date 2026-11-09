@@ -23,7 +23,7 @@ abstract final class WalletCopy {
   static const String addMoney = 'Add money';
   static const String enterAmount = 'Amount';
   static const String pickAnotherWay = 'Pick another way';
-  static const String saveCardForNextTime = 'Save this card for next time';
+  static const String cardCheckoutNote = 'You’ll pay on a secure Paystack page, then come straight back here.';
   static const String sentIt = 'I’ve sent it';
   static const String doneForNow = 'Done for now';
   static const String checkAgain = 'Check again';

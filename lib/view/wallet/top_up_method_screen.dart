@@ -20,7 +20,6 @@ class TopUpMethodScreen extends StatelessWidget {
   };
 
   Future<void> _continue(BuildContext context, TopUpController topUp, TopUpMethod method) async {
-    if (method == TopUpMethod.card) topUp.prepareCard();
     final route = switch (method) {
       TopUpMethod.transfer => WalletRoutes.topUpTransferStartOf(groupId: scope.groupId),
       TopUpMethod.card => WalletRoutes.topUpCardOf(groupId: scope.groupId),
