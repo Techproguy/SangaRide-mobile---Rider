@@ -86,7 +86,6 @@ class _PlaceSearchSheetState extends State<PlaceSearchSheet> {
             child: ListenableBuilder(
               listenable: _search,
               builder: (context, _) => ListView(
-                keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
                 padding: EdgeInsets.only(
                   top: SangaSpacing.md,
                   bottom: SangaSpacing.md + SangaSheetClearance.of(context),

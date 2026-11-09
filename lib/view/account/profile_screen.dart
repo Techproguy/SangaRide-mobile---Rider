@@ -149,27 +149,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _accountActions() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      spacing: SangaSpacing.xs,
+    return SangaListSection(
+      title: SangaAccountCopy.accountSection,
       children: [
-        const SangaSectionHeader(SangaAccountCopy.accountSection),
-        SangaListGroup(
-          children: [
-            SangaListRow(
-              leading: const Icon(Icons.logout_rounded, size: 22, color: SangaColors.textPrimary),
-              title: SangaAccountCopy.logOut,
-              trailing: _isLoggingOut ? SangaListRow.spinner : const SizedBox.shrink(),
-              onTap: _isLoggingOut ? null : _logout,
-            ),
-            SangaListRow(
-              leading: const Icon(Icons.delete_outline_rounded, size: 22, color: SangaColors.dangerStrong),
-              title: SangaAccountCopy.deleteAccount,
-              subtitle: AccountCopy.removedAfter30Days,
-              titleMaxLines: 2,
-              onTap: () => context.push(AccountRoutes.delete),
-            ),
-          ],
+        SangaListRow.action(
+          icon: Icons.logout_rounded,
+          title: SangaAccountCopy.logOut,
+          trailing: _isLoggingOut ? SangaListRow.spinner : null,
+          onTap: _isLoggingOut ? null : _logout,
+        ),
+        SangaListRow.action(
+          icon: Icons.delete_outline_rounded,
+          title: SangaAccountCopy.deleteAccount,
+          subtitle: AccountCopy.removedAfter30Days,
+          trailing: SangaListRow.chevron,
+          isDestructive: true,
+          onTap: () => context.push(AccountRoutes.delete),
         ),
       ],
     );

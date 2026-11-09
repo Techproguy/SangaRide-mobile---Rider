@@ -153,7 +153,7 @@ class _RideSearchScreenState extends State<RideSearchScreen> {
                 SangaSpacing.gutter,
                 SangaSpacing.sm + SangaSpacing.xs + SangaSpacing.sm,
                 SangaSpacing.gutter,
-                0,
+                SangaSpacing.sm,
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -165,10 +165,9 @@ class _RideSearchScreenState extends State<RideSearchScreen> {
               child: ListenableBuilder(
                 listenable: _search,
                 builder: (context, _) => ListView(
-                  keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
                   padding: const EdgeInsets.fromLTRB(
                     SangaSpacing.gutter,
-                    SangaSpacing.md,
+                    SangaSpacing.sm,
                     SangaSpacing.gutter,
                     SangaSpacing.xl,
                   ).withBottomInset(context),
