@@ -29,6 +29,7 @@ class PayScreen extends StatefulWidget {
 class _PayScreenState extends State<PayScreen> {
   final _payment = Get.find<TripPaymentController>();
   final _wallet = Get.find<WalletController>();
+  WalletController get _payerWallet => _payment.payerWallet;
   final _waitingSheet = PaymentSheetSlot();
   final _checkingSheet = PaymentSheetSlot();
   final _unconfirmedSheet = PaymentSheetSlot();
@@ -149,10 +150,6 @@ class _PayScreenState extends State<PayScreen> {
       await _payment.payWallet();
       return;
     }
-    if (state.selected == PaymentMethod.groupWallet) {
-      await _payment.payGroupWallet();
-      return;
-    }
     _payment.beginCard();
     final paid = await context.push<bool>(TripWrapUpRoutes.payCardOf(widget.tripId));
     if (!mounted) return;
@@ -176,7 +173,7 @@ class _PayScreenState extends State<PayScreen> {
   Widget build(BuildContext context) {
     return Obx(() {
       final state = _payment.state;
-      final walletState = _wallet.state;
+      final walletState = _payerWallet.state;
       return PopScope(
         canPop: state is! PaymentProcessing && state is! PaymentChecking && state is! PaymentAwaitingDriver,
         child: SangaPageLayout(
@@ -205,7 +202,7 @@ class _PayScreenState extends State<PayScreen> {
                 walletState: walletState,
                 onSelect: _payment.select,
                 onTopUp: _topUpWallet,
-                onRetryWallet: _wallet.reload,
+                onRetryWallet: _payerWallet.reload,
               ),
             ),
           ],

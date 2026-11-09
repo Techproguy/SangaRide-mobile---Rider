@@ -65,7 +65,7 @@ class ReceiptPayment {
 
   String get label => switch ((method, group)) {
     (PaymentMethod.card, _) when last4 != null => '•••• $last4',
-    (PaymentMethod.groupWallet, final group?) => '${group.name} wallet',
+    (PaymentMethod.wallet, final group?) => '${group.name} wallet',
     (final PaymentMethod method?, _) => method.label,
     _ => display ?? 'Paid',
   };

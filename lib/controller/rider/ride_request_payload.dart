@@ -47,7 +47,7 @@ extension RideRequestPayload on RideRequestController {
       'stops': [for (final stop in stops) stop.toLocationJson()],
       'dropoff': dropoff.toLocationJson(),
       'pricingOption': PricingOption.standard.code,
-      ..._whoForJson(Get.find<RideForController>().rideFor),
+      ...Get.find<RideForController>().rideFor.bookingJson,
       'package': booking.toPackageJson(),
     };
   }
@@ -69,7 +69,7 @@ extension RideRequestPayload on RideRequestController {
       'preferences': preferences.toJson(),
       'pricingOption': pricing.code,
       if (pricing == PricingOption.fairFare) 'offeredFare': price.major,
-      ..._whoForJson(Get.find<RideForController>().rideFor),
+      ...Get.find<RideForController>().rideFor.bookingJson,
       ...bookingJson,
     };
   }
@@ -94,10 +94,20 @@ extension RideRequestPayload on RideRequestController {
   }
 
   Future<String> _paymentMethodFor(Money? fare) async {
-    final wallet = Get.find<WalletController>();
+    final wallet = _payerWallet(Get.find<RideForController>().rideFor);
     if (wallet.state is! WalletLoaded) await wallet.open();
     final covers = fare != null && WalletPayOption.from(wallet.state, fare) is WalletCovers;
     return (covers ? PaymentMethod.wallet : PaymentMethod.cash).code;
+  }
+
+  WalletController _payerWallet(RideFor rideFor) {
+    final groupId = switch (rideFor) {
+      RideForFamily(:final member) => member.groupId,
+      RideForBusiness(:final profile) => profile.id,
+      RideForMe() || RideForSomeone() => null,
+    };
+    if (groupId == null) return Get.find<WalletController>();
+    return WalletControllers.wallet(WalletScope.group(groupId));
   }
 
   void forgetLockedQuote() {
@@ -115,16 +125,6 @@ extension RideRequestPayload on RideRequestController {
       return null;
     }
   }
-
-  Map<String, dynamic> _whoForJson(RideFor rideFor) => switch (rideFor) {
-    RideForMe() => {'bookedFor': 'self'},
-    RideForSomeone(:final passengerId) => {'bookedFor': 'other', 'passengerId': passengerId},
-    RideForFamily(:final member) => {'bookedFor': 'family', 'familyMemberId': member.id},
-    RideForBusiness(:final profile, :final purpose, :final note) => {
-      'bookedFor': 'business',
-      'business': {'groupId': profile.id, 'purpose': purpose, 'note': ?note},
-    },
-  };
 
   Future<ScheduleOutcome?> scheduleBooking() async {
     if (isScheduling || !isScheduledBooking) return null;

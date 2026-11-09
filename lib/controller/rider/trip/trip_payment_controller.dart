@@ -4,12 +4,15 @@ import 'dart:developer';
 import 'package:flutter/foundation.dart' show VoidCallback;
 import 'package:get/get.dart';
 import 'package:sanga_ride/controller/rider/trip/live_problem.dart';
+import 'package:sanga_ride/controller/rider/groups/groups_controller.dart';
+import 'package:sanga_ride/controller/rider/wallet_bindings.dart';
 import 'package:sanga_ride/controller/rider/wallet_controller.dart';
 import 'package:sanga_ride/core/api/api.dart';
 import 'package:sanga_ride/core/api/app_endpoints.dart';
 import 'package:sanga_ride/core/api/idempotency_intents.dart';
 import 'package:sanga_ride/core/api/server_codes.dart';
 import 'package:sanga_ride/core/services/card_tokenizer.dart';
+import 'package:sanga_ride/model/groups/group_kind.dart';
 import 'package:sanga_ride/model/trip/wrapup/wrapup.dart';
 import 'package:sanga_ride/model/wallet/wallet.dart';
 import 'package:sanga_ride_core/sanga_ride_core.dart';
@@ -44,6 +47,10 @@ class TripPaymentController extends GetxController {
 
   Worker? _walletWorker;
 
+  Worker? _payerWalletWorker;
+
+  PaymentGroup? _payer;
+
   Timer? _cashTimer;
 
   _Attempt? _attempt;
@@ -63,6 +70,11 @@ class TripPaymentController extends GetxController {
     _ => null,
   };
 
+  WalletController get payerWallet => switch (_payer) {
+    final PaymentGroup payer => WalletControllers.wallet(WalletScope.group(payer.id)),
+    null => _wallet,
+  };
+
   bool get isProcessing => state is PaymentProcessing || state is PaymentChecking;
 
   @override
@@ -74,6 +86,7 @@ class TripPaymentController extends GetxController {
   @override
   void onClose() {
     _walletWorker?.dispose();
+    _payerWalletWorker?.dispose();
     _invalidate();
     super.onClose();
   }
@@ -90,6 +103,7 @@ class TripPaymentController extends GetxController {
   Future<void> open(String tripId) async {
     if (_tripId != tripId) {
       _forgetAttempts();
+      _forgetPayer();
       _isRechoosing = false;
     }
     _tripId = tripId;
@@ -108,6 +122,43 @@ class TripPaymentController extends GetxController {
     _cancelCashMutation = null;
   }
 
+  void _forgetPayer() {
+    _payerWalletWorker?.dispose();
+    _payerWalletWorker = null;
+    _payer = null;
+  }
+
+  Future<PaymentGroup?> _resolvePayer(String id) async {
+    try {
+      final ride = await _api.get(AppEndpoints.liveTripOf(id), suppressErrorToast: true);
+      final kind = switch (JsonReader.of(ride.dataMapOrEmpty).strOrNull('bookedFor')) {
+        'family' => GroupKind.family,
+        'business' => GroupKind.business,
+        _ => null,
+      };
+      if (kind == null) return null;
+      final groups = Get.find<GroupsController>();
+      await groups.open();
+      final summary = groups.groupOf(kind);
+      if (summary == null) return null;
+      return PaymentGroup(id: summary.id, kind: summary.kind, name: summary.name);
+    } catch (error) {
+      log('payer lookup failed: ${error.runtimeType}', name: 'TripPayment');
+      return null;
+    }
+  }
+
+  void _watchPayerWallet() {
+    _payerWalletWorker?.dispose();
+    _payerWalletWorker = null;
+    if (_payer == null) return;
+    final wallet = payerWallet;
+    unawaited(wallet.open());
+    _payerWalletWorker = ever(wallet.stateRx, (_) => _onWalletChanged());
+  }
+
+  TripPayment _withPayer(TripPayment payment) => payment.group == null ? payment.withGroup(_payer) : payment;
+
   Future<void> _load() async {
     final id = _tripId;
     if (id == null) return;
@@ -117,7 +168,12 @@ class TripPaymentController extends GetxController {
     try {
       final payment = await _fetchPayment(id, profile: RequestProfile.interactive);
       if (!_epoch.isCurrent(epoch)) return;
-      _apply(payment, epoch);
+      if (_payer == null && payment.status == PaymentStatus.pending) {
+        _payer = await _resolvePayer(id);
+        if (!_epoch.isCurrent(epoch)) return;
+        _watchPayerWallet();
+      }
+      _apply(_withPayer(payment), epoch);
     } catch (error) {
       log('payment load failed: ${error.runtimeType}', name: 'TripPayment');
       if (_epoch.isCurrent(epoch)) _state.value = PaymentUnavailable(PaymentProblem.of(error));
@@ -126,7 +182,7 @@ class TripPaymentController extends GetxController {
 
   Future<TripPayment> _fetchPayment(String id, {RequestProfile profile = RequestProfile.background}) async {
     final response = await _api.get(AppEndpoints.tripPaymentOf(id), suppressErrorToast: true, profile: profile);
-    return TripPayment.fromJson(response.dataMapOrEmpty);
+    return _withPayer(TripPayment.fromJson(response.dataMapOrEmpty));
   }
 
   void _apply(TripPayment payment, int epoch) {
@@ -155,25 +211,10 @@ class TripPaymentController extends GetxController {
   }
 
   void _settleWallets(TripPayment payment) {
-    switch (payment.method) {
-      case PaymentMethod.wallet:
-        unawaited(_wallet.reloadQuietly());
-      case PaymentMethod.groupWallet:
-        _reloadGroupWallet(payment.group?.id);
-      default:
-        break;
-    }
+    if (payment.method == PaymentMethod.wallet) unawaited(payerWallet.reloadQuietly());
   }
 
-  void _reloadGroupWallet(String? groupId) {
-    if (groupId == null) return;
-    final scope = WalletScope.group(groupId);
-    if (Get.isRegistered<WalletController>(tag: scope.tag)) {
-      unawaited(Get.find<WalletController>(tag: scope.tag).reloadQuietly());
-    }
-  }
-
-  bool _walletCovers(Money fare) => WalletPayOption.from(_wallet.state, fare) is WalletCovers;
+  bool _walletCovers(Money fare) => WalletPayOption.from(payerWallet.state, fare) is WalletCovers;
 
   bool _isChoosable(TripPayment payment, PaymentMethod method) =>
       payment.allowedMethods.contains(method) && (method != PaymentMethod.wallet || _walletCovers(payment.amount));
@@ -184,7 +225,6 @@ class TripPaymentController extends GetxController {
   }
 
   PaymentMethod? _preferredOf(TripPayment payment) {
-    if (_isChoosable(payment, PaymentMethod.groupWallet)) return PaymentMethod.groupWallet;
     final last = payment.lastMethod ?? payment.method;
     if (last != null && _isChoosable(payment, last)) return last;
     return payment.allowedMethods.where((method) => _isChoosable(payment, method)).firstOrNull;
@@ -230,12 +270,6 @@ class TripPaymentController extends GetxController {
     final current = state;
     if (current is! PaymentChoosing || current.selected != PaymentMethod.wallet) return;
     await _submit(current.payment, const PaymentRequest.wallet(), signature: 'wallet');
-  }
-
-  Future<void> payGroupWallet() async {
-    final current = state;
-    if (current is! PaymentChoosing || current.selected != PaymentMethod.groupWallet) return;
-    await _submit(current.payment, const PaymentRequest.groupWallet(), signature: 'group_wallet');
   }
 
   Future<void> payCard(CardDetails details) async {
@@ -300,7 +334,7 @@ class TripPaymentController extends GetxController {
           key: key,
           suppressErrorToast: true,
         );
-        return TripPayment.fromJson(response.dataMapOrEmpty);
+        return _withPayer(TripPayment.fromJson(response.dataMapOrEmpty));
       },
       reconcile: () => _reconcile(id),
     );

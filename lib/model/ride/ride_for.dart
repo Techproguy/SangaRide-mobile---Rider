@@ -149,7 +149,7 @@ sealed class RideFor {
 
   String? get detail;
 
-  Map<String, dynamic> toJson();
+  Map<String, dynamic> get bookingJson;
 }
 
 final class RideForMe extends RideFor {
@@ -165,7 +165,7 @@ final class RideForMe extends RideFor {
   String? get detail => null;
 
   @override
-  Map<String, dynamic> toJson() => {'type': 'me'};
+  Map<String, dynamic> get bookingJson => {'bookedFor': 'self'};
 }
 
 final class RideForSomeone extends RideFor {
@@ -185,12 +185,7 @@ final class RideForSomeone extends RideFor {
   String? get detail => 'Number checked';
 
   @override
-  Map<String, dynamic> toJson() => {
-    'type': 'someone',
-    'passenger': passenger.toJson(),
-    'passengerId': passengerId,
-    'verifiedAt': verifiedAt.toUtc().toIso8601String(),
-  };
+  Map<String, dynamic> get bookingJson => {'bookedFor': 'other', 'passengerId': passengerId};
 }
 
 final class RideForFamily extends RideFor {
@@ -208,7 +203,7 @@ final class RideForFamily extends RideFor {
   String? get detail => member.relationship;
 
   @override
-  Map<String, dynamic> toJson() => {'type': 'family', 'groupId': member.groupId, 'memberId': member.id};
+  Map<String, dynamic> get bookingJson => {'bookedFor': 'family', 'familyMemberId': member.id};
 }
 
 final class RideForBusiness extends RideFor {
@@ -228,7 +223,10 @@ final class RideForBusiness extends RideFor {
   String? get detail => purpose;
 
   @override
-  Map<String, dynamic> toJson() => {'type': 'business', 'groupId': profile.id, 'purpose': purpose, 'note': ?note};
+  Map<String, dynamic> get bookingJson => {
+    'bookedFor': 'business',
+    'business': {'profileId': profile.id, 'purpose': purpose, 'details': ?note, 'paymentSource': 'company_wallet'},
+  };
 }
 
 sealed class RideForListState<T> {

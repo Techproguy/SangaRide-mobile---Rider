@@ -7,11 +7,10 @@ abstract final class PaymentMethodIcon {
     null => Icons.receipt_long_outlined,
     PaymentMethod.cash => Icons.payments_outlined,
     PaymentMethod.card => Icons.credit_card_rounded,
-    PaymentMethod.wallet => Icons.account_balance_wallet_outlined,
-    PaymentMethod.groupWallet => switch (groupKind) {
+    PaymentMethod.wallet => switch (groupKind) {
       GroupKind.business => Icons.apartment_rounded,
       GroupKind.family => Icons.family_restroom_rounded,
-      null => Icons.groups_rounded,
+      null => Icons.account_balance_wallet_outlined,
     },
   };
 }

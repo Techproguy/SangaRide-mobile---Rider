@@ -20,13 +20,6 @@ enum PaymentMethod {
     'Pay from your Sanga balance',
     'Paid from your wallet',
     'Your wallet payment went through.',
-  ),
-  groupWallet(
-    'group_wallet',
-    'Group wallet',
-    'Charged to the group',
-    'Paid by the group wallet',
-    'The group wallet covered this ride.',
   );
 
   const PaymentMethod(this.code, this.label, this.subtitle, this.paidTitle, this.paidMessage);
@@ -161,12 +154,33 @@ class TripPayment {
   final PaymentGroup? group;
   final DateTime? cashWaitExpiresAt;
 
+  TripPayment withGroup(PaymentGroup? payer) => TripPayment(
+    tripId: tripId,
+    amount: amount,
+    status: status,
+    allowedMethods: allowedMethods,
+    method: method,
+    last4: last4,
+    paidAt: paidAt,
+    lastMethod: lastMethod,
+    declineReason: declineReason,
+    declineMessage: declineMessage,
+    group: payer,
+    cashWaitExpiresAt: cashWaitExpiresAt,
+  );
+
   PaymentMethod? get preferredMethod {
     if (lastMethod != null && allowedMethods.contains(lastMethod)) return lastMethod;
     return allowedMethods.isEmpty ? null : allowedMethods.first;
   }
 
-  String get paidTitle => method?.paidTitle ?? 'Payment complete';
+  String get paidTitle => switch ((method, group)) {
+    (PaymentMethod.wallet, final payer?) => 'Paid by ${payer.name}',
+    _ => method?.paidTitle ?? 'Payment complete',
+  };
 
-  String get paidMessage => method?.paidMessage ?? 'Your payment went through.';
+  String get paidMessage => switch ((method, group)) {
+    (PaymentMethod.wallet, final payer?) => 'The ${payer.name} wallet covered this ride.',
+    _ => method?.paidMessage ?? 'Your payment went through.',
+  };
 }

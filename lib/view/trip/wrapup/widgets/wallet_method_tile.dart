@@ -9,6 +9,7 @@ class WalletMethodTile extends StatelessWidget {
   const WalletMethodTile({
     super.key,
     required this.option,
+    required this.group,
     required this.isSelected,
     required this.onSelect,
     required this.onTopUp,
@@ -16,6 +17,7 @@ class WalletMethodTile extends StatelessWidget {
   });
 
   final WalletPayOption option;
+  final PaymentGroup? group;
   final bool isSelected;
   final VoidCallback onSelect;
   final VoidCallback onTopUp;
@@ -23,24 +25,33 @@ class WalletMethodTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final icon = SangaIconBadge(child: Icon(PaymentMethodIcon.of(PaymentMethod.wallet)));
+    final payer = group;
+    final icon = SangaIconBadge(child: Icon(PaymentMethodIcon.of(PaymentMethod.wallet, groupKind: payer?.kind)));
+    final title = payer == null ? PaymentMethod.wallet.label : '${payer.name} wallet';
     return switch (option) {
       WalletCovers(:final balance) => SangaOptionCard(
         leading: icon,
-        title: PaymentMethod.wallet.label,
+        title: title,
         subtitle: 'Balance ${WalletFormat.money(balance)}',
         isSelected: isSelected,
         onTap: onSelect,
       ),
+      WalletShort(:final shortBy) when payer != null => _UnavailableTile(
+        icon: icon,
+        title: title,
+        subtitle: 'Short by ${WalletFormat.money(shortBy)}. Ask an admin to top it up.',
+      ),
       WalletShort(:final shortBy) => _UnavailableTile(
         icon: icon,
+        title: title,
         subtitle: 'Top up ${WalletFormat.money(shortBy)} to use your wallet',
         actionLabel: 'Top up',
         onAction: onTopUp,
       ),
-      WalletBalanceLoading() => _UnavailableTile(icon: icon, subtitle: 'Checking your balance'),
+      WalletBalanceLoading() => _UnavailableTile(icon: icon, title: title, subtitle: 'Checking your balance'),
       WalletBalanceFailed() => _UnavailableTile(
         icon: icon,
+        title: title,
         subtitle: 'We couldn’t check your balance',
         actionLabel: 'Retry',
         onAction: onRetry,
@@ -50,11 +61,12 @@ class WalletMethodTile extends StatelessWidget {
 }
 
 class _UnavailableTile extends StatelessWidget {
-  const _UnavailableTile({required this.icon, required this.subtitle, this.actionLabel, this.onAction});
+  const _UnavailableTile({required this.icon, required this.title, required this.subtitle, this.actionLabel, this.onAction});
 
   static const double _mutedOpacity = 0.55;
 
   final Widget icon;
+  final String title;
   final String subtitle;
   final String? actionLabel;
   final VoidCallback? onAction;
@@ -80,7 +92,7 @@ class _UnavailableTile extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 spacing: SangaSpacing.xxs,
                 children: [
-                  Text(PaymentMethod.wallet.label, style: SangaTextStyles.cardTitle),
+                  Text(title, style: SangaTextStyles.cardTitle),
                   Text(subtitle, style: SangaTextStyles.cardSubtitle),
                 ],
               ),

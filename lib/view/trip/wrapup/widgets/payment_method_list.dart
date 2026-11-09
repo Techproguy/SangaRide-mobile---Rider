@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:sanga_ride/model/groups/group_kind.dart';
 import 'package:sanga_ride/model/trip/wrapup/wrapup.dart';
 import 'package:sanga_ride/model/wallet/wallet.dart';
 import 'package:sanga_ride/view/trip/wrapup/widgets/wallet_method_tile.dart';
@@ -28,19 +27,7 @@ class PaymentMethodList extends StatelessWidget {
   final VoidCallback onTopUp;
   final VoidCallback onRetryWallet;
 
-  String _titleOf(PaymentMethod method) {
-    final group = this.group;
-    if (method != PaymentMethod.groupWallet || group == null) return method.label;
-    return switch (group.kind) {
-      GroupKind.family => 'Family wallet',
-      GroupKind.business => 'Business wallet',
-      null => 'Group wallet',
-    };
-  }
-
   String _subtitleOf(PaymentMethod method) {
-    final group = this.group;
-    if (method == PaymentMethod.groupWallet && group != null) return 'Paid by ${group.name}';
     return method == lastMethod ? 'You paid this way last time' : method.subtitle;
   }
 
@@ -53,6 +40,7 @@ class PaymentMethodList extends StatelessWidget {
           if (method == PaymentMethod.wallet)
             WalletMethodTile(
               option: walletOption,
+              group: group,
               isSelected: method == selected,
               onSelect: () => onSelect(method),
               onTopUp: onTopUp,
@@ -60,8 +48,8 @@ class PaymentMethodList extends StatelessWidget {
             )
           else
             SangaOptionCard(
-              leading: SangaIconBadge(child: Icon(PaymentMethodIcon.of(method, groupKind: group?.kind))),
-              title: _titleOf(method),
+              leading: SangaIconBadge(child: Icon(PaymentMethodIcon.of(method))),
+              title: method.label,
               subtitle: _subtitleOf(method),
               isSelected: method == selected,
               onTap: () => onSelect(method),
