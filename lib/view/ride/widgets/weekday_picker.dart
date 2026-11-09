@@ -93,7 +93,7 @@ class _WeekdayOption extends StatelessWidget {
                   label,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: SangaTextStyles.input.copyWith(fontSize: 13, color: SangaColors.textMid),
+                  style: SangaTextStyles.cardBody,
                 ),
               ),
             ],

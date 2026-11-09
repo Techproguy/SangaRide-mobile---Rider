@@ -27,7 +27,7 @@ class _GroupMenuTrailingState extends State<GroupMenuTrailing> {
 
   Widget _invites(int count) {
     if (count == 0) return const SizedBox.shrink();
-    return SangaTag.scheduled(label: GroupCopy.invitesCount(count), icon: Icons.mail_outline_rounded);
+    return SangaCountBadge(label: '$count', semanticLabel: GroupCopy.invitesCount(count));
   }
 
   @override
