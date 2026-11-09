@@ -25,6 +25,7 @@ class SavedPlacesList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SangaListGroup(
+      dividerIndent: SangaListRow.textInset,
       children: [
         for (final kind in SavedPlaceKind.values.where((kind) => kind.isSlot)) _slot(kind),
         for (final saved in book.others) _saved(saved, onTap: () => onEdit(saved)),

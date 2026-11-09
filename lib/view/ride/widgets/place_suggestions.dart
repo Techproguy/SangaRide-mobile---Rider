@@ -55,6 +55,7 @@ class PlaceSuggestions extends StatelessWidget {
           if (recent.isNotEmpty)
             SangaListSection(
               title: 'Recent',
+              dividerIndent: SangaListRow.textInset,
               children: [
                 for (final place in recent)
                   Dismissible(

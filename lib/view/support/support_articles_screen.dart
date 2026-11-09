@@ -76,6 +76,7 @@ class _SupportArticlesScreenState extends State<SupportArticlesScreen> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         SangaListGroup(
+          dividerIndent: SangaListRow.textInset,
           children: [
             for (final article in state.items)
               ArticleRow(article: article, onTap: () => context.push(SupportRoutes.articleOf(article.id))),

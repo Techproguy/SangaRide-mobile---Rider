@@ -17,6 +17,7 @@ class MenuScreen extends StatelessWidget {
   Widget _section(BuildContext context, MenuSection section) {
     return SangaListSection(
       title: section.title,
+      dividerIndent: SangaListRow.textInset,
       children: [for (final entry in section.entries) _row(context, entry)],
     );
   }

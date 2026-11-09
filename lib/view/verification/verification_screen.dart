@@ -100,6 +100,7 @@ class _VerificationScreenState extends State<VerificationScreen> {
   Widget _items(Verification verification) {
     final isLocked = verification.status == VerificationStatus.pending;
     return SangaListGroup(
+      dividerIndent: SangaListRow.textInset,
       children: [
         for (final item in verification.items)
           VerificationItemTile(
