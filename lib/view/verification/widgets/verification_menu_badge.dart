@@ -32,7 +32,7 @@ class _VerificationMenuBadgeState extends State<VerificationMenuBadge> {
       VerificationStatus.pending => SangaTag.scheduled(label: label, icon: Icons.hourglass_top_rounded),
       VerificationStatus.rejected ||
       VerificationStatus.actionNeeded => SangaTag.urgent(label: label, icon: Icons.error_outline_rounded),
-      VerificationStatus.unverified => SangaTag.warning(label: label, icon: Icons.shield_outlined),
+      VerificationStatus.unverified => SangaTag.warning(label: label, icon: Icons.info_outline_rounded),
     };
   }
 
