@@ -47,9 +47,7 @@ class PlaceFieldTile extends StatelessWidget {
                         chosen?.name ?? placeholder,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: SangaTextStyles.input.copyWith(
-                          color: chosen == null ? SangaColors.textPlaceholder : null,
-                        ),
+                        style: chosen == null ? SangaTextStyles.hint : SangaTextStyles.input,
                       ),
                       if (chosen != null || hint != null)
                         Text(

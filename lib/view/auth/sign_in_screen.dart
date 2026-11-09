@@ -62,6 +62,7 @@ class _SignInScreenState extends State<SignInScreen> {
       children: [
         Obx(
           () => SangaPhoneField(
+            isRequired: false,
             onRegionChanged: RegionMemory.apply,
             controller: _phone,
             autofocus: true,
