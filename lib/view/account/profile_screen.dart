@@ -82,7 +82,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           spacing: SangaSpacing.sm,
           children: [
             if (rating != null) SangaStarRating(rating: rating, size: 15),
-            Text(AccountCopy.tripsLine(account), style: SangaTextStyles.body),
+            Flexible(child: Text(AccountCopy.tripsLine(account), style: SangaTextStyles.body)),
           ],
         ),
       ],
