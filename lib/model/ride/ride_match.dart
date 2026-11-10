@@ -293,6 +293,8 @@ class DriverVehicle {
 
   static final RegExp _plateBreaks = RegExp(r'(?<=[A-Za-z])(?=\d)|(?<=\d)(?=[A-Za-z])');
 
+  static final RegExp _summaryPlate = RegExp(r'[\s,·|-]*REG\s*NO:?.*$', caseSensitive: false);
+
   final String make;
   final String model;
   final int year;
@@ -305,7 +307,7 @@ class DriverVehicle {
 
   String get name {
     final makeModel = [make, model].where((part) => part.isNotEmpty).join(' ');
-    if (makeModel.isEmpty) return summary;
+    if (makeModel.isEmpty) return plate.isEmpty ? summary : summary.replaceFirst(_summaryPlate, '').trim();
     return year == 0 ? makeModel : '$makeModel ($year)';
   }
 
