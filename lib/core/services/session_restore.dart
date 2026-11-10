@@ -14,7 +14,6 @@ import 'package:sanga_ride/core/router/trip_routes.dart';
 import 'package:sanga_ride/core/router/trip_wrapup_routes.dart';
 import 'package:sanga_ride/core/services/me_state.dart';
 import 'package:sanga_ride/core/services/session_storage.dart';
-import 'package:sanga_ride/core/services/skipped_ratings.dart';
 import 'package:sanga_ride/view/auth/sign_up_steps.dart';
 import 'package:sanga_ride_core/sanga_ride_core.dart';
 

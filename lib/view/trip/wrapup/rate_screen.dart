@@ -5,7 +5,6 @@ import 'package:get/get.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sanga_ride/controller/rider/trip/trip_rating_controller.dart';
 import 'package:sanga_ride/controller/rider/trip/trip_receipt_controller.dart';
-import 'package:sanga_ride/core/services/skipped_ratings.dart';
 import 'package:sanga_ride/core/router/routes.dart';
 import 'package:sanga_ride/model/ride/ride_match.dart';
 import 'package:sanga_ride/model/trip/wrapup/wrapup.dart';
@@ -13,6 +12,7 @@ import 'package:sanga_ride/view/trip/wrapup/widgets/rating_comment_field.dart';
 import 'package:sanga_ride/view/trip/wrapup/widgets/rating_driver_header.dart';
 import 'package:sanga_ride/view/trip/wrapup/widgets/rating_tag_wrap.dart';
 import 'package:sanga_ride/view/trip/wrapup/widgets/wrapup_async_body.dart';
+import 'package:sanga_ride_core/sanga_ride_core.dart' show SkippedRatings;
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 class RateScreen extends StatefulWidget {

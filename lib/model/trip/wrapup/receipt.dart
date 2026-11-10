@@ -132,7 +132,8 @@ class TripReceipt {
 
   factory TripReceipt.fromJson(Map<String, dynamic> json) {
     final reader = JsonReader.of(json);
-    final delivery = reader.objectOrNull('delivery');
+    final isRide = reader.strOrNull('kind') == 'ride';
+    final delivery = isRide ? null : reader.objectOrNull('delivery');
     final payment = reader.objectOrNull('payment');
     return TripReceipt(
       tripId: reader.str('rideId'),
@@ -152,7 +153,7 @@ class TripReceipt {
       vehicle: DriverVehicle.fromJson(reader.raw['vehicle']),
       category: RideCategory.values.asNameMap()[reader.strOrNull('category')] ?? RideCategory.go,
       ratedStars: reader.objectOrNull('rating')?.intOrNull('stars'),
-      delivery: delivery == null ? null : ReceiptDelivery.fromJson(delivery.raw),
+      delivery: delivery == null || delivery.raw.isEmpty ? null : ReceiptDelivery.fromJson(delivery.raw),
     );
   }
 
