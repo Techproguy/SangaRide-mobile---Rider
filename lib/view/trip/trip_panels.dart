@@ -155,7 +155,6 @@ extension _TripPanels on _TripScreenState {
         onCall: () => _call(trip),
         onMessage: _openChat,
         onSafety: _openSafety,
-        onMakePayment: _makePayment,
       ),
       TripInProgress(:final trip) => ActiveRidePanel(
         trip: trip,

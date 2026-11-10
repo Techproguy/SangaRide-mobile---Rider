@@ -35,6 +35,7 @@ class _PayScreenState extends State<PayScreen> {
   final _unconfirmedSheet = PaymentSheetSlot();
   late final Worker _stateWorker;
   bool _isFinishing = false;
+  bool _isCardOpen = false;
 
   @override
   void initState() {
@@ -50,12 +51,6 @@ class _PayScreenState extends State<PayScreen> {
     super.dispose();
   }
 
-  bool get _ownsState =>
-      _waitingSheet.isOpen ||
-      _checkingSheet.isOpen ||
-      _unconfirmedSheet.isOpen ||
-      (ModalRoute.of(context)?.isCurrent ?? false);
-
   void _closeSheets() {
     _waitingSheet.close(context);
     _checkingSheet.close(context);
@@ -63,7 +58,7 @@ class _PayScreenState extends State<PayScreen> {
   }
 
   void _onState(PaymentState state) {
-    if (!mounted || !_ownsState) return;
+    if (!mounted || _isCardOpen) return;
     switch (state) {
       case PaymentAwaitingDriver():
         _closeSheetsExcept(_waitingSheet);
@@ -151,9 +146,11 @@ class _PayScreenState extends State<PayScreen> {
       return;
     }
     _payment.beginCard();
+    _isCardOpen = true;
     final paid = await context.push<bool>(TripWrapUpRoutes.payCardOf(widget.tripId));
+    _isCardOpen = false;
     if (!mounted) return;
-    if (paid == true) {
+    if (paid == true || _payment.state is PaymentPaid) {
       _finish();
     } else {
       _payment.backToChoosing();
