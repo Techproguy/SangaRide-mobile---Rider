@@ -13,6 +13,7 @@ class AuthenticatedPanel extends StatelessWidget {
     required this.onCall,
     required this.onMessage,
     required this.onSafety,
+    required this.onMakePayment,
   });
 
   final Trip trip;
@@ -20,6 +21,7 @@ class AuthenticatedPanel extends StatelessWidget {
   final VoidCallback onCall;
   final VoidCallback onMessage;
   final VoidCallback onSafety;
+  final VoidCallback onMakePayment;
 
   @override
   Widget build(BuildContext context) {
@@ -29,6 +31,7 @@ class AuthenticatedPanel extends StatelessWidget {
         const TripPanelDivider(),
         Text('Your driver confirmed your PIN', style: SangaTextStyles.cardTitle.copyWith(color: SangaColors.success)),
         TripActionTiles(unreadCount: unreadCount, onCall: onCall, onMessage: onMessage, onSafety: onSafety),
+        SangaButton.primary(label: 'Make payment', onPressed: onMakePayment),
       ],
     );
   }

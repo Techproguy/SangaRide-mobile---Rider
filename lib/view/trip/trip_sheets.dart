@@ -71,11 +71,16 @@ extension _TripSheets on _TripScreenState {
 
   Future<void> _showAuthenticated() {
     return _present(
+      isDismissible: false,
       padding: SangaSheetInsets.standard,
-      builder: (_) => const SangaStatusContent(
-        status: SangaStatus.success,
-        title: 'Ride authenticated',
-        message: 'Your driver confirmed your PIN.',
+      builder: (_) => PopScope(
+        canPop: false,
+        child: SangaStatusContent(
+          status: SangaStatus.success,
+          title: 'Ride authenticated',
+          message: 'Your driver confirmed your PIN.',
+          action: SangaButton.primary(label: 'Make payment', onPressed: _makePayment),
+        ),
       ),
     );
   }
