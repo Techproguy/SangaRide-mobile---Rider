@@ -38,6 +38,7 @@ import 'package:sanga_ride_core/sanga_ride_core.dart'
         SocialSignInResult,
         SocialSignupRequired,
         SocialUnavailable;
+import 'package:sanga_ride_push/sanga_ride_push.dart' show PushService;
 import 'package:sanga_ride_ui/sanga_ride_ui.dart' show SangaAuthCopy, SangaRegion, SangaToast, SangaToastTone;
 
 class AuthController extends GetxController {
@@ -220,6 +221,7 @@ class AuthController extends GetxController {
   }
 
   Future<void> logout() async {
+    await PushService.instance.unregister();
     unawaited(_revokeSession());
     await Future<void>.delayed(Duration.zero);
     await SessionHub.instance.end(SessionEndReason.loggedOut);
@@ -248,5 +250,6 @@ class AuthController extends GetxController {
     Realtime.resume();
     await Get.find<UserController>().setUser(UserModel.fromJson(data['user'] as Map<String, dynamic>));
     unawaited(Get.find<SessionRestore>().refreshQuietly());
+    unawaited(PushService.instance.signedIn());
   }
 }

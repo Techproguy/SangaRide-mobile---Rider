@@ -17,6 +17,8 @@ dependencies:
     path: ../sanga-ride-building-blocks/packages/sanga_ride_maps
   sanga_ride_core:
     path: ../sanga-ride-building-blocks/packages/sanga_ride_core
+  sanga_ride_push:
+    path: ../sanga-ride-building-blocks/packages/sanga_ride_push
   get: ^4.7.3
   go_router: ^17.0.1
   dio: ^5.9.1
