@@ -13,14 +13,12 @@ class WalletController extends GetxController {
 
   static const int recentCount = 5;
   static const Duration transferWatchInterval = Duration(seconds: 5);
-  static const Duration freshFor = Duration(seconds: 20);
 
   final WalletScope scope;
   final _api = Get.find<ApiService>();
 
   final Rx<WalletState> _state = Rx<WalletState>(const WalletLoading());
   LivePoller? _watcher;
-  DateTime? _loadedAt;
   final Epoch _epoch = Epoch();
 
   Rx<WalletState> get stateRx => _state;
@@ -46,12 +44,6 @@ class WalletController extends GetxController {
     await reload();
   }
 
-  Future<void> openIfStale() async {
-    final loadedAt = _loadedAt;
-    final isFresh = state is WalletLoaded && loadedAt != null && DateTime.now().difference(loadedAt) < freshFor;
-    if (!isFresh) await open();
-  }
-
   Future<void> reload() async {
     _state.value = const WalletLoading();
     await _load();
@@ -75,7 +67,6 @@ class WalletController extends GetxController {
     if (!_epoch.isCurrent(epoch)) return;
     final overview = fetched.overview;
     if (overview != null) {
-      _loadedAt = DateTime.now();
       _state.value = WalletLoaded(overview, recent);
     } else if (previous is WalletLoaded) {
       _state.value = previous.markStale();

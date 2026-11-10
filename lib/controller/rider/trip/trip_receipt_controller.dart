@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'dart:developer';
 
 import 'package:get/get.dart';
+import 'package:sanga_ride/controller/rider/wallet_controller.dart';
 import 'package:sanga_ride/core/api/api.dart';
 import 'package:sanga_ride/core/api/app_endpoints.dart';
 import 'package:sanga_ride/model/trip/trip.dart';
@@ -67,6 +69,7 @@ class TripReceiptController extends GetxController {
       if (json['kind'] == 'delivery' && !receipt.isDelivery) receipt = await _withDelivery(id, receipt);
       if (!_epoch.isCurrent(epoch)) return;
       _state.value = ReceiptLoaded(receipt);
+      unawaited(Get.find<WalletController>().reloadQuietly());
     } catch (e) {
       log('receipt load failed: ${e is ApiException ? e.code : e.runtimeType}');
       if (!_epoch.isCurrent(epoch) || isQuiet) return;
