@@ -49,6 +49,10 @@
 	<string>Sanga Ride uses your location during trips so your driver can find you.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Sanga Ride uses your location to set your pickup point and show drivers nearby.</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>remote-notification</string>
+	</array>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

@@ -2,3 +2,4 @@
 #include "Generated.xcconfig"
 #include? "Secrets.xcconfig"
 #include "Google-prod.xcconfig"
+APS_ENVIRONMENT = development

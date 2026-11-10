@@ -3,3 +3,4 @@
 #include? "Secrets.xcconfig"
 #include? "Secrets-dev.xcconfig"
 #include "Google-dev.xcconfig"
+APS_ENVIRONMENT = production

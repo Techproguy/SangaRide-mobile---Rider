@@ -240,6 +240,7 @@
 				97C146EA1CF9000F007C117D /* Sources */,
 				97C146EB1CF9000F007C117D /* Frameworks */,
 				97C146EC1CF9000F007C117D /* Resources */,
+				5E7A1F0C2B3D4A5E6F708192 /* Copy Firebase Config */,
 				9705A1C41CF9048500538489 /* Embed Frameworks */,
 				3B06AD1E1E4923F5004D2608 /* Thin Binary */,
 				F4475CE0C035658B8585B531 /* [CP] Embed Pods Frameworks */,
@@ -316,6 +317,22 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
+		5E7A1F0C2B3D4A5E6F708192 /* Copy Firebase Config */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+				"$(SRCROOT)/Runner/Firebase/$(FIREBASE_ENV)/GoogleService-Info.plist",
+			);
+			name = "Copy Firebase Config";
+			outputPaths = (
+				"$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/GoogleService-Info.plist",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "SOURCE=\"${SRCROOT}/Runner/Firebase/${FIREBASE_ENV}/GoogleService-Info.plist\"\nif [ ! -f \"$SOURCE\" ]; then\n  echo \"error: missing $SOURCE (FIREBASE_ENV=${FIREBASE_ENV})\" >&2\n  exit 1\nfi\ncp \"$SOURCE\" \"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/GoogleService-Info.plist\"\n";
+		};
 		3B06AD1E1E4923F5004D2608 /* Thin Binary */ = {
 			isa = PBXShellScriptBuildPhase;
 			alwaysOutOfDate = 1;
