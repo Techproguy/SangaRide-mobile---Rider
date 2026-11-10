@@ -28,8 +28,6 @@ abstract final class ServerCode {
   static const String invalidEmail = 'invalid_email';
   static const String invalidOption = 'invalid_option';
   static const String invalidPhone = 'invalid_phone';
-  static const String invalidSocialToken = 'invalid_social_token';
-  static const String invalidProviderToken = 'invalid_provider_token';
   static const String signupRequired = 'signup_required';
   static const String nameRequired = 'name_required';
   static const String notFound = 'not_found';

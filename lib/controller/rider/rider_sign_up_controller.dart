@@ -77,6 +77,7 @@ class RiderSignUpController extends GetxController {
         'lastName': lastName,
         'country': (SangaRegion.ofPhone(phone) ?? SangaRegion.current).isoCode,
         'phone': phone,
+        'signupToken': ?prefill?.signupToken,
       };
       final response = await _api.post(
         AppEndpoints.signUp,

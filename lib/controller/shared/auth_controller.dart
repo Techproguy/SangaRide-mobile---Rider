@@ -5,7 +5,6 @@ import 'package:get/get.dart';
 import 'package:sanga_ride/controller/shared/user_controller.dart';
 import 'package:sanga_ride/core/api/api.dart';
 import 'package:sanga_ride/core/api/app_endpoints.dart';
-import 'package:sanga_ride/core/api/server_codes.dart';
 import 'package:sanga_ride/core/api/idempotency_intents.dart';
 import 'package:sanga_ride/core/constants.dart';
 import 'package:sanga_ride/core/copy/auth_problem_copy.dart';
@@ -30,6 +29,7 @@ import 'package:sanga_ride_core/sanga_ride_core.dart'
         SocialCredential,
         SocialFailed,
         SocialObtained,
+        SocialProblem,
         SocialProvider,
         SocialProviderLabel,
         SocialSignIn,
@@ -206,8 +206,14 @@ class AuthController extends GetxController {
   }
 
   String _socialMessage(ApiException error) {
-    if (error.hasCode(ServerCode.invalidSocialToken) || error.hasCode(ServerCode.invalidProviderToken)) {
-      return SangaAuthCopy.socialFailed;
+    switch (SocialProblem.of(error)) {
+      case SocialProblem.badToken:
+        return SangaAuthCopy.socialFailed;
+      case SocialProblem.wrongApp:
+        return SangaAuthCopy.socialWrongApp;
+      case SocialProblem.noAccount:
+      case null:
+        break;
     }
     final isRefusal = error.kind == ApiFailureKind.rejected || error.kind == ApiFailureKind.unauthorized;
     return isRefusal ? _rejectedMessage(error) : AuthProblem.of(error).message;
