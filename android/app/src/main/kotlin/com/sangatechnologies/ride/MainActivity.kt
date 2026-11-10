@@ -18,6 +18,7 @@ class MainActivity : FlutterActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         WindowCompat.setDecorFitsSystemWindows(window, false)
+        PushChannel.ensure(this)
     }
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {

@@ -1,0 +1,143 @@
+{
+  "project_info": {
+    "project_number": "1053422719853",
+    "project_id": "sanga-mobile",
+    "storage_bucket": "sanga-mobile.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1053422719853:android:d8438663ab5f1e7fee8064",
+        "android_client_info": {
+          "package_name": "com.sangatechnologies.ogodrop"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDWmsIUW4-eRN_jTgcoPT3IkpkXkBGpw6o"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1053422719853:android:057cfda059ef0a83ee8064",
+        "android_client_info": {
+          "package_name": "com.sangatechnologies.ride"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDWmsIUW4-eRN_jTgcoPT3IkpkXkBGpw6o"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1053422719853:android:f7376c99ade2f6d1ee8064",
+        "android_client_info": {
+          "package_name": "com.sangatechnologies.ride.dev"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDWmsIUW4-eRN_jTgcoPT3IkpkXkBGpw6o"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1053422719853:android:f7a699345956ef46ee8064",
+        "android_client_info": {
+          "package_name": "com.sangatechnologies.ride.driver"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDWmsIUW4-eRN_jTgcoPT3IkpkXkBGpw6o"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1053422719853:android:4ef4f0a33a6b4ab9ee8064",
+        "android_client_info": {
+          "package_name": "com.sangatechnologies.ride.driver.dev"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDWmsIUW4-eRN_jTgcoPT3IkpkXkBGpw6o"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1053422719853:android:4df7bb59856a320cee8064",
+        "android_client_info": {
+          "package_name": "com.sangatechnologies.stay"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDWmsIUW4-eRN_jTgcoPT3IkpkXkBGpw6o"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1053422719853:android:cb19e962e50a5c81ee8064",
+        "android_client_info": {
+          "package_name": "com.sangatechnologies.stay.dev"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDWmsIUW4-eRN_jTgcoPT3IkpkXkBGpw6o"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
