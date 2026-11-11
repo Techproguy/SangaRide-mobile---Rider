@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:sanga_ride/core/services/app_signature.dart';
 import 'package:sanga_ride/core/services/region_memory.dart';
 import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
@@ -59,6 +60,7 @@ Future<void> initializeSanga() async {
       useDirections: true,
       iosBundleId: SangaConstants.installedAppId,
       androidPackage: SangaConstants.installedAppId,
+      androidCertSha1: await AppSignature.androidCertSha1(),
     ),
   );
   SocialSignIn.configure(googleServerClientId: SangaConstants.googleServerClientId);

@@ -69,6 +69,6 @@ class MainActivity : FlutterActivity() {
         }
         val first = signatures?.firstOrNull() ?: return null
         val digest = MessageDigest.getInstance("SHA-1").digest(first.toByteArray())
-        return digest.joinToString(":") { "%02X".format(it) }
+        return digest.joinToString("") { "%02X".format(it) }
     }
 }
