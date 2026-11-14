@@ -41,6 +41,117 @@ definitions:
         app-store-connect fetch-signing-files "$BUNDLE_ID" --type IOS_APP_STORE --create
         keychain add-certificates
         xcode-project use-profiles
+    - &version_guard
+      name: Version guard
+      script: |
+        python3 - <<'PY'
+        import json
+        import os
+        import re
+        import subprocess
+        import sys
+        import time
+
+        LIVE_APP_STORE_STATES = {
+            "READY_FOR_SALE",
+            "PENDING_DEVELOPER_RELEASE",
+            "PENDING_APPLE_RELEASE",
+            "WAITING_FOR_REVIEW",
+            "IN_REVIEW",
+            "PROCESSING_FOR_APP_STORE",
+        }
+        SHIPPED_PLAY_STATUSES = {"completed", "inProgress", "halted"}
+
+
+        def version_key(text):
+            match = re.search(r"\((\d+(?:\.\d+)*)\)", text or "") or re.search(r"(\d+(?:\.\d+)+)", text or "")
+            if not match:
+                return ()
+            parts = [int(part) for part in match.group(1).split(".")]
+            while parts and parts[-1] == 0:
+                parts.pop()
+            return tuple(parts)
+
+
+        def run_cli(*args):
+            result = None
+            for attempt in range(3):
+                result = subprocess.run(args, capture_output=True, text=True)
+                if result.returncode == 0:
+                    return json.loads(result.stdout) if result.stdout.strip() else []
+                time.sleep(5)
+            tail = (result.stderr or result.stdout).strip()[-400:]
+            sys.exit(f"Version guard: could not read the store ({' '.join(args[:4])}). {tail}")
+
+
+        def pubspec_version(path):
+            with open(path) as handle:
+                match = re.search(r"^version:\s*(\d+(?:\.\d+)*)", handle.read(), re.M)
+            if not match:
+                sys.exit(f"Version guard: no version found in {path}.")
+            return match.group(1)
+
+
+        def ios_problems(app_id, pubspec):
+            mine = version_key(pubspec)
+            problems = []
+            for pre_release in run_cli("app-store-connect", "apps", "pre-release-versions", app_id, "--json"):
+                version = pre_release["attributes"]["version"]
+                if pre_release["attributes"].get("platform", "IOS") != "IOS" or version_key(version) <= mine:
+                    continue
+                live = run_cli(
+                    "app-store-connect", "apps", "builds", app_id,
+                    "--not-expired", "--pre-release-version", version, "--json",
+                )
+                if live:
+                    problems.append(f"TestFlight still has {len(live)} non-expired build(s) of {version}.")
+            for store_version in run_cli("app-store-connect", "apps", "app-store-versions", app_id, "--json"):
+                attributes = store_version["attributes"]
+                if attributes["appStoreState"] in LIVE_APP_STORE_STATES and version_key(attributes["versionString"]) > mine:
+                    problems.append(f"The App Store has {attributes['versionString']} ({attributes['appStoreState']}).")
+            return problems
+
+
+        def android_problems(package, pubspec):
+            mine = version_key(pubspec)
+            problems = []
+            for track in run_cli("google-play", "tracks", "list", "--package-name", package, "--json"):
+                for release in track.get("releases") or []:
+                    if release.get("status") not in SHIPPED_PLAY_STATUSES:
+                        continue
+                    if version_key(release.get("name")) > mine:
+                        codes = ", ".join(release.get("versionCodes") or [])
+                        problems.append(f"Play track {track['track']} has {release.get('name')} (version code {codes}).")
+            return problems
+
+
+        def main():
+            platform = os.environ.get("VERSION_GUARD_PLATFORM", "")
+            pubspec = pubspec_version(os.environ.get("PUBSPEC_PATH", "pubspec.yaml"))
+            if platform == "ios":
+                target = os.environ.get("APP_STORE_APPLE_ID", "")
+                if not target:
+                    sys.exit("Version guard: APP_STORE_APPLE_ID is not set.")
+                problems = ios_problems(target, pubspec)
+            elif platform == "android":
+                target = os.environ.get("PACKAGE_NAME", "")
+                if not target:
+                    sys.exit("Version guard: PACKAGE_NAME is not set.")
+                problems = android_problems(target, pubspec)
+            else:
+                sys.exit("Version guard: VERSION_GUARD_PLATFORM must be ios or android.")
+            if problems:
+                print(f"Version guard FAILED: pubspec.yaml says {pubspec}, which is lower than what is already out.")
+                for problem in problems:
+                    print(f"  - {problem}")
+                print("A build under this version would sort below those builds. Raise the version in pubspec.yaml "
+                      "to at least the highest one listed, or expire those builds, then run again.")
+                sys.exit(1)
+            print(f"Version guard OK: pubspec.yaml {pubspec} is not lower than anything on the {platform} stores.")
+
+
+        main()
+        PY
 
 workflows:
   testflight:
@@ -51,10 +162,12 @@ workflows:
       groups:
         - sanga_ride_rider
       vars:
+        VERSION_GUARD_PLATFORM: ios
         APP_ENV: prod
         BUNDLE_ID: com.sangatechnologies.ride
         APP_STORE_APPLE_ID: 6824516357
     scripts: &testflight_scripts
+      - *version_guard
       - *fetch_building_blocks
       - *write_env_config
       - *ios_signing
@@ -86,10 +199,12 @@ workflows:
       groups:
         - sanga_ride_rider
       vars:
+        VERSION_GUARD_PLATFORM: android
         APP_ENV: prod
         PACKAGE_NAME: com.sangatechnologies.ride
         CM_KEYSTORE_PATH: /tmp/upload.keystore
     scripts: &play_open_testing_scripts
+      - *version_guard
       - *fetch_building_blocks
       - *write_env_config
       - name: Android upload keystore
