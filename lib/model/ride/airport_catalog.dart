@@ -10,6 +10,41 @@ abstract final class AirportRules {
   static const int flightFieldLength = 8;
 }
 
+const _diacritics = {
+  'à': 'a',
+  'á': 'a',
+  'â': 'a',
+  'ã': 'a',
+  'ä': 'a',
+  'å': 'a',
+  'ç': 'c',
+  'è': 'e',
+  'é': 'e',
+  'ê': 'e',
+  'ë': 'e',
+  'ì': 'i',
+  'í': 'i',
+  'î': 'i',
+  'ï': 'i',
+  'ñ': 'n',
+  'ò': 'o',
+  'ó': 'o',
+  'ô': 'o',
+  'õ': 'o',
+  'ö': 'o',
+  'ù': 'u',
+  'ú': 'u',
+  'û': 'u',
+  'ü': 'u',
+  'ý': 'y',
+  'ÿ': 'y',
+};
+
+List<String> _searchTokens(String text) {
+  final folded = text.toLowerCase().split('').map((char) => _diacritics[char] ?? char).join();
+  return folded.split(RegExp(r'[^a-z0-9]+')).where((token) => token.isNotEmpty).toList();
+}
+
 class AirportTerminal {
   const AirportTerminal({required this.id, required this.name, required this.kind});
 
@@ -70,9 +105,22 @@ class Airport {
   String get location => country == null ? city : '$city, $country';
 
   bool matches(String query) {
-    final needle = query.trim().toLowerCase();
-    if (needle.isEmpty) return true;
-    return '$name $city $iata'.toLowerCase().contains(needle);
+    final tokens = _searchTokens(query);
+    if (tokens.isEmpty) return true;
+    final haystack = _searchTokens('$name $city ${country ?? ''} $iata');
+    return tokens.every(
+      (token) => haystack.any((word) => word.startsWith(token)) || haystack.join(' ').contains(token),
+    );
+  }
+
+  int rank(String query) {
+    final tokens = _searchTokens(query);
+    if (tokens.isEmpty) return 0;
+    final joined = tokens.join(' ');
+    if (iata.toLowerCase() == joined) return 0;
+    if (_searchTokens(city).join(' ').startsWith(joined)) return 1;
+    if (_searchTokens(name).join(' ').startsWith(joined)) return 2;
+    return 3;
   }
 
   Place toPlace({String? terminalName}) => Place(
@@ -106,10 +154,14 @@ class AirportCatalog {
 
   Airport? airportById(String id) => airports.where((airport) => airport.id == id).firstOrNull;
 
-  List<Airport> search(String query) => [
-    for (final airport in airports)
-      if (airport.matches(query)) airport,
-  ];
+  List<Airport> search(String query) {
+    final results = [
+      for (final airport in airports)
+        if (airport.matches(query)) airport,
+    ];
+    results.sort((a, b) => a.rank(query).compareTo(b.rank(query)));
+    return results;
+  }
 }
 
 sealed class AirportCatalogState {

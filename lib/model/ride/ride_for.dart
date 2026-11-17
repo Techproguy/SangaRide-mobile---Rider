@@ -5,7 +5,7 @@ import 'package:sanga_ride/model/ride/server_deadline.dart';
 import 'package:sanga_ride_core/sanga_ride_core.dart';
 
 enum RideForKind {
-  me('Just for me', 'You’re the one riding'),
+  me('Me', 'You’re the one riding'),
   family('Family member', 'Book it for someone in your family group'),
   someone('Someone else', 'Send a ride to another person'),
   business('Business ride', 'Charged to your company, with a purpose');
@@ -37,7 +37,7 @@ enum PassengerFailure {
     'We lost track of that code. Tap Resend to get a new one.',
     needsNewCode: true,
   ),
-  ownNumber('own_number', 'That’s your own number. Pick Just for me instead.', needsNewCode: false),
+  ownNumber('own_number', 'That’s your own number. Pick Me instead.', needsNewCode: false),
   invalidPhone(ServerCode.invalidPhone, 'We can’t text that number. Check it and try again.', needsNewCode: false),
   connection('connection', SangaCommonCopy.offlineAnotherGo, needsNewCode: false),
   unknown('unknown', SangaCommonCopy.serverTrouble, needsNewCode: false);
