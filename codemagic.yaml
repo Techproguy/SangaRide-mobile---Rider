@@ -3,6 +3,12 @@ definitions:
     flutter: 3.47.6
     xcode: latest
     cocoapods: default
+  release_triggering: &on_release_tag
+    events:
+      - tag
+    tag_patterns:
+      - pattern: "release-*"
+        include: true
   triggering: &on_version_tag
     events:
       - tag
@@ -227,6 +233,7 @@ workflows:
   app-store-review:
     name: Sanga Ride · App Store review
     max_build_duration: 90
+    triggering: *on_release_tag
     environment: *testflight_environment
     scripts: *testflight_scripts
     artifacts: *testflight_artifacts
@@ -242,6 +249,7 @@ workflows:
   play-production:
     name: Sanga Ride · Play production
     max_build_duration: 60
+    triggering: *on_release_tag
     environment: *play_open_testing_environment
     scripts: *play_open_testing_scripts
     artifacts: *play_open_testing_artifacts
