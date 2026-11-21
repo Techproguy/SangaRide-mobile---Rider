@@ -46,7 +46,7 @@ abstract final class ApiFailureCopy {
       ServerCode.rateLimited ||
       ServerCode.tooManyAttempts ||
       ServerCode.otpTooManyAttempts ||
-      ServerCode.otpTooSoon => SangaCommonCopy.rateLimitedWait,
+      ServerCode.otpTooSoon => _rateLimitMessage(error),
       ServerCode.accountSuspended => SangaCommonCopy.accountOnHold,
       ServerCode.sessionRevoked || ServerCode.tokenExpired => SangaCommonCopy.sessionEnded,
       ServerCode.accountNotFound => SangaAuthCopy.noAccountForNumber,
@@ -55,8 +55,15 @@ abstract final class ApiFailureCopy {
     };
   }
 
+  static String _rateLimitMessage(ApiException error) {
+    final errors = error.data['errors'];
+    final first = errors is List && errors.isNotEmpty && errors.first is Map ? errors.first as Map : const {};
+    final seconds = first['retryAfterSec'];
+    return seconds is int && seconds > 0 ? SangaCommonCopy.rateLimitedWaitFor(seconds) : SangaCommonCopy.rateLimitedWait;
+  }
+
   static String _byStatus(ApiException error) => switch (error.statusCode) {
-    429 => SangaCommonCopy.rateLimitedWait,
+    429 => _rateLimitMessage(error),
     410 => SangaCommonCopy.expiredStartOver,
     400 || 422 => SangaCommonCopy.detailsDontLookRight,
     _ => SangaCommonCopy.rejectedTryAgain,
