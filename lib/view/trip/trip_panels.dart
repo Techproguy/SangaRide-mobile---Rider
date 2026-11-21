@@ -63,8 +63,8 @@ extension _TripPanels on _TripScreenState {
 
   String _carLine(Trip trip) {
     final vehicle = trip.vehicle;
-    final car = [vehicle.colour, vehicle.make, vehicle.model].where((part) => part.isNotEmpty).join(' ');
-    return [trip.driver.name, if (car.isNotEmpty) car, if (vehicle.plate.isNotEmpty) vehicle.plate].join(' · ');
+    final car = [vehicle.colourLabel, vehicle.make, vehicle.model].where((part) => part.isNotEmpty).join(' ');
+    return [trip.driver.name, if (car.isNotEmpty) car, if (vehicle.plate.isNotEmpty) vehicle.plateLabel].join(' · ');
   }
 
   Widget? _peek(TripState state) {
