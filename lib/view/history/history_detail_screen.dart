@@ -7,6 +7,7 @@ import 'package:sanga_ride/controller/rider/ride_history_controller.dart';
 import 'package:sanga_ride/core/router/history_routes.dart';
 import 'package:sanga_ride/model/history/history_action.dart';
 import 'package:sanga_ride/model/history/history_detail.dart';
+import 'package:sanga_ride/model/history/history_item.dart';
 import 'package:sanga_ride/view/history/widgets/history_cancellation_card.dart';
 import 'package:sanga_ride/view/history/widgets/history_delivery_cards.dart';
 import 'package:sanga_ride/view/history/widgets/history_payment_cards.dart';
@@ -18,9 +19,10 @@ import 'package:sanga_ride_core/sanga_ride_core.dart' show RefreshMoments;
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 class HistoryDetailScreen extends StatefulWidget {
-  const HistoryDetailScreen({super.key, required this.id});
+  const HistoryDetailScreen({super.key, required this.id, this.kind = HistoryKind.unknown});
 
   final String id;
+  final HistoryKind kind;
 
   @override
   State<HistoryDetailScreen> createState() => _HistoryDetailScreenState();
@@ -43,11 +45,17 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
     super.dispose();
   }
 
+  String get _pendingTitle => switch (widget.kind) {
+    HistoryKind.ride => 'Ride details',
+    HistoryKind.delivery => 'Delivery details',
+    HistoryKind.unknown => 'Trip details',
+  };
+
   @override
   Widget build(BuildContext context) {
     return Obx(() {
       final state = _history.detailStateFor(widget.id);
-      final title = state is HistoryDetailLoaded ? state.detail.title : 'Trip details';
+      final title = state is HistoryDetailLoaded ? state.detail.title : _pendingTitle;
       return SangaPageLayout(
         title: title,
         children: [

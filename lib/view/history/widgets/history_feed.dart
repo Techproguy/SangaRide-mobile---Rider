@@ -155,7 +155,7 @@ class _HistoryFeedState extends State<HistoryFeed> {
         return HistoryCard(
           item: item,
           whenLabel: formatHistoryWhen(context, item.occurredAt),
-          onTap: () => context.push(HistoryRoutes.detailOf(item.id)),
+          onTap: () => context.push(HistoryRoutes.detailOf(item.id, kind: item.kind)),
           onRebook: item.canRebook && !widget.scope.isGroup
               ? () => rebookRide(context, item.route, item.category)
               : null,

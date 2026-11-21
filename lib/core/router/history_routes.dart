@@ -1,4 +1,5 @@
 import 'package:go_router/go_router.dart';
+import 'package:sanga_ride/model/history/history_item.dart';
 import 'package:sanga_ride/model/history/history_tab.dart';
 import 'package:sanga_ride/view/history/history_actions_screen.dart';
 import 'package:sanga_ride/view/history/history_detail_screen.dart';
@@ -11,8 +12,12 @@ abstract final class HistoryRoutes {
   static const String actions = '/rides/history/:id/actions';
 
   static const String _tabKey = 'tab';
+  static const String _kindKey = 'kind';
 
-  static String detailOf(String id) => fillPath(detail, {'id': id});
+  static String detailOf(String id, {HistoryKind? kind}) {
+    final path = fillPath(detail, {'id': id});
+    return kind == null ? path : '$path?$_kindKey=${kind.code}';
+  }
 
   static String actionsOf(String id) => fillPath(actions, {'id': id});
 
@@ -25,7 +30,10 @@ abstract final class HistoryRoutes {
     ),
     GoRoute(
       path: detail,
-      builder: (context, state) => HistoryDetailScreen(id: state.pathParameters['id']!),
+      builder: (context, state) => HistoryDetailScreen(
+        id: state.pathParameters['id']!,
+        kind: HistoryKind.fromCode(state.uri.queryParameters[_kindKey]),
+      ),
     ),
     GoRoute(
       path: actions,
