@@ -55,7 +55,7 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
   Widget build(BuildContext context) {
     return Obx(() {
       final state = _history.detailStateFor(widget.id);
-      final title = state is HistoryDetailLoaded ? state.detail.title : _pendingTitle;
+      final title = state is HistoryDetailLoaded && widget.kind != HistoryKind.unknown ? state.detail.title : _pendingTitle;
       return SangaPageLayout(
         title: title,
         children: [
