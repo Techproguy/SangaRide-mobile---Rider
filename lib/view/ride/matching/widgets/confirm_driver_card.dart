@@ -36,8 +36,9 @@ class ConfirmDriverCard extends StatelessWidget {
             isVerified: driver.isVerified,
             caption: driver.ridesLabel,
             nameMaxLines: 2,
-            trailing: Row(
-              spacing: SangaSpacing.sm,
+            trailing: Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              spacing: SangaSpacing.xs,
               children: [
                 DriverStatBadge(icon: Icons.alt_route_rounded, label: SangaDistance.away(hold.distanceAwayKm * 1000)),
                 if (matchLabel != null)
