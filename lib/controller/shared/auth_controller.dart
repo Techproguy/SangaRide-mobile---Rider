@@ -66,11 +66,13 @@ class AuthController extends GetxController {
 
   String? get requestError => _requestError.value;
 
-  void clearOtpError() => _otpError.value = null;
+  void clearOtpError() {
+    if (_otpError.value != null) _otpError.value = null;
+  }
 
   void clearPhoneError() {
-    _phoneError.value = null;
-    _requestError.value = null;
+    if (_phoneError.value != null) _phoneError.value = null;
+    if (_requestError.value != null) _requestError.value = null;
   }
 
   Future<bool> isRegistered(String phone) async {

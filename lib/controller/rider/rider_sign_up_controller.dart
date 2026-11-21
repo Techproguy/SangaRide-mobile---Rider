@@ -51,8 +51,8 @@ class RiderSignUpController extends GetxController {
   void clearEmailError() => _emailError.value = null;
 
   void clearPhoneError() {
-    _phoneError.value = null;
-    _formError.value = null;
+    if (_phoneError.value != null) _phoneError.value = null;
+    if (_formError.value != null) _formError.value = null;
   }
 
   bool get _isOffline => ConnectionMonitor.current?.isOnline == false;
