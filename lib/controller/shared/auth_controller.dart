@@ -138,7 +138,12 @@ class AuthController extends GetxController {
     try {
       final response = await _api.post(
         AppEndpoints.verifyOtp,
-        data: {'phone': phone, 'code': code, 'purpose': purpose.name},
+        data: {
+          'phone': phone,
+          'country': (SangaRegion.ofPhone(phone) ?? SangaRegion.current).isoCode,
+          'code': code,
+          'purpose': purpose.name,
+        },
         suppressErrorToast: true,
       );
       await _startSession(response.dataMap);
