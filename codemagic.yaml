@@ -1,7 +1,7 @@
 definitions:
   environment: &environment
     flutter: 3.47.6
-    xcode: latest
+    xcode: 27.2
     cocoapods: default
   release_triggering: &on_release_tag
     events:
