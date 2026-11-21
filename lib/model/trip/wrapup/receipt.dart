@@ -175,6 +175,24 @@ class TripReceipt {
 
   bool get isDelivery => delivery != null;
 
+  TripReceipt withCategory(RideCategory value) => TripReceipt(
+    tripId: tripId,
+    pickup: pickup,
+    dropoff: dropoff,
+    stops: stops,
+    distanceKm: distanceKm,
+    durationMinutes: durationMinutes,
+    lines: lines,
+    total: total,
+    paidWith: paidWith,
+    paidAt: paidAt,
+    driver: driver,
+    vehicle: vehicle,
+    category: value,
+    ratedStars: ratedStars,
+    delivery: delivery,
+  );
+
   TripReceipt withDelivery(ReceiptDelivery value) => TripReceipt(
     tripId: tripId,
     pickup: pickup,
