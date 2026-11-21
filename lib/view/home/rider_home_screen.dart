@@ -134,6 +134,12 @@ class _RiderHomeScreenState extends State<RiderHomeScreen> {
           retryLabel: access == PermissionAccess.denied ? 'Allow' : 'Settings',
           onRetry: _fixLocation,
         ),
+      if (status == LocationStatus.error)
+        SangaStaleNotice(
+          message: 'We couldn’t find your location. Check your signal, then try again.',
+          retryLabel: 'Try again',
+          onRetry: _home.locate,
+        ),
       if (_home.hasRefreshProblem) SangaStaleNotice(onRetry: _home.refreshHome),
     ];
   }
