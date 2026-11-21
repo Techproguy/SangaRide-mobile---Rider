@@ -39,7 +39,10 @@ abstract final class PushBinding {
     return Get.find<SessionRestore>().meState?.onboardingStep == null;
   }
 
-  static bool _canAskPermission() => _canRoute() && SangaRouter.currentPath == SangaRoutes.home;
+  static bool _canAskPermission() =>
+      _canRoute() &&
+      SangaRouter.currentPath == SangaRoutes.home &&
+      !(Get.isRegistered<PermissionCenter>() && Get.find<PermissionCenter>().isAsking);
 
   static void _open(PushTap tap) {
     _refreshNotifications();

@@ -68,6 +68,7 @@ class PermissionCenter extends GetxService {
     for (final kind in PermissionKind.values) kind: PermissionAccess.denied.obs,
   };
   StreamSubscription<void>? _resumeSubscription;
+  int _activeAsks = 0;
 
   Rx<PermissionAccess> statusRx(PermissionKind kind) => _statuses[kind]!;
 
@@ -98,7 +99,11 @@ class PermissionCenter extends GetxService {
     return access;
   }
 
-  Future<PermissionAccess> prime(PermissionKind kind, BuildContext context) async {
+  bool get isAsking => _activeAsks > 0;
+
+  Future<PermissionAccess> prime(PermissionKind kind, BuildContext context) => _tracked(() => _prime(kind, context));
+
+  Future<PermissionAccess> _prime(PermissionKind kind, BuildContext context) async {
     final current = await check(kind);
     if (!current.canAskAgain || !context.mounted) return current;
     if (!_wasPrimed(kind)) {
@@ -124,9 +129,18 @@ class PermissionCenter extends GetxService {
     return prime(kind, context);
   }
 
-  Future<PermissionAccess> request(PermissionKind kind) async {
+  Future<PermissionAccess> request(PermissionKind kind) => _tracked(() async {
     await _ask(kind);
     return check(kind);
+  });
+
+  Future<T> _tracked<T>(Future<T> Function() action) async {
+    _activeAsks++;
+    try {
+      return await action();
+    } finally {
+      _activeAsks--;
+    }
   }
 
   Future<void> openSettings() async {
