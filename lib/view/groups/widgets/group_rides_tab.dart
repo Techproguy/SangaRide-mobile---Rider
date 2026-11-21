@@ -35,6 +35,7 @@ class _GroupRidesTabState extends State<GroupRidesTab> {
   @override
   Widget build(BuildContext context) {
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         _ChipRow(
           children: [
