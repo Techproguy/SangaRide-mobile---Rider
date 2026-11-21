@@ -180,6 +180,10 @@ class GroupController extends GetxController {
         _dropMember(memberId);
         unawaited(Get.find<GroupsController>().reloadQuietly());
       }
+      if (result.failure == GroupFailure.memberNotFound) {
+        await reloadQuietly();
+        if (detail?.memberOf(memberId) != null) return GroupFailure.stillListed;
+      }
       return _afterFailure(result.failure, memberId: memberId);
     } finally {
       _isBusy.value = false;

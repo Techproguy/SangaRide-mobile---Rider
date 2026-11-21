@@ -27,6 +27,11 @@ enum GroupFailure {
   approvalExpired('approval_expired', 'That request ran out of time', 'Nobody answered in time, so it has closed.'),
   rideCancelled('ride_cancelled', 'The ride was cancelled', 'The rider cancelled before anyone answered.'),
   memberNotFound('member_not_found', 'They’re no longer here', 'That person has already left or been removed.'),
+  stillListed(
+    'still_listed',
+    'We couldn’t do that',
+    'They’re still on the list. An open invite closes on its own when it expires.',
+  ),
   connection('connection', SangaCommonCopy.unreachableTitle, SangaCommonCopy.connectionAnotherGo),
   unknown('unknown', SangaCommonCopy.somethingWentWrongOurSide, SangaCommonCopy.tryAgainInAMoment),
   unconfirmed(
