@@ -7,13 +7,20 @@ import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 enum SearchOutcome { seeDrivers, noDriver, failed, cancelled }
 
-Future<SearchOutcome?> showSearchingSheet(BuildContext context) {
-  return showSangaSheet<SearchOutcome>(
-    context: context,
-    isDismissible: false,
-    enableDrag: false,
-    builder: (context) => const PopScope(canPop: false, child: _SearchingSheet()),
-  );
+final ValueNotifier<bool> searchingSheetOpen = ValueNotifier<bool>(false);
+
+Future<SearchOutcome?> showSearchingSheet(BuildContext context) async {
+  searchingSheetOpen.value = true;
+  try {
+    return await showSangaSheet<SearchOutcome>(
+      context: context,
+      isDismissible: false,
+      enableDrag: false,
+      builder: (context) => const PopScope(canPop: false, child: _SearchingSheet()),
+    );
+  } finally {
+    searchingSheetOpen.value = false;
+  }
 }
 
 typedef _Progress = ({List<String> steps, int doneCount, DateTime? continueAt, bool isReconnecting});

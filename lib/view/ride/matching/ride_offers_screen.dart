@@ -7,6 +7,7 @@ import 'package:sanga_ride/controller/rider/ride_match_controller.dart';
 import 'package:sanga_ride/core/router/routes.dart';
 import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride/view/ride/matching/matching_flow.dart';
+import 'package:sanga_ride/view/ride/matching/searching_sheet.dart';
 import 'package:sanga_ride/view/ride/matching/widgets/offer_card.dart';
 import 'package:sanga_ride/view/ride/matching/widgets/searching_sheet_content.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
@@ -94,12 +95,19 @@ class _RideOffersScreenState extends State<RideOffersScreen> {
     return SangaBackScope(
       canPop: false,
       onBack: _leave,
-      child: SangaPageLayout(title: 'Available drivers', onBack: _leave, children: [Obx(() => _body(context))]),
+      child: SangaPageLayout(title: 'Available drivers', onBack: _leave, children: [
+          ValueListenableBuilder<bool>(
+            valueListenable: searchingSheetOpen,
+            builder: (context, isSheetOpen, _) => Obx(() => _body(context, isSheetOpen: isSheetOpen)),
+          ),
+        ],
+      ),
     );
   }
 
-  Widget _body(BuildContext context) {
+  Widget _body(BuildContext context, {required bool isSheetOpen}) {
     final state = _match.state;
+    if (isSheetOpen && state is MatchSearching) return const SizedBox.shrink();
     return switch (state) {
       MatchBrowsing() => _buildOffers(context, state),
       MatchOffersLoading() ||
