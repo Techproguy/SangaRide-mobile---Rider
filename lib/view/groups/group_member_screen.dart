@@ -170,7 +170,7 @@ class _MemberMenu extends StatelessWidget {
           spacing: SangaSpacing.lg,
           children: [
             MemberSummary(member: member),
-            if (!_isManager) SangaListGroup(children: _settings(context)),
+            if (!_isManager && !member.isInvited) SangaListGroup(children: _settings(context)),
             SangaListGroup(
               children: [
                 if (canChangeRole)
