@@ -73,13 +73,14 @@ class Airport {
 
   factory Airport.fromJson(Map<String, dynamic> raw) {
     final json = JsonReader(raw);
+    final point = json.objectOrNull('coordinates') ?? json;
     return Airport(
       id: json.str('id'),
       iata: json.str('iata'),
       name: json.str('name'),
       city: json.str('city'),
       country: json.strOrNull('country'),
-      coordinates: LatLng(json.number('lat').toDouble(), json.number('lng').toDouble()),
+      coordinates: LatLng(point.number('lat').toDouble(), point.number('lng').toDouble()),
       terminals: json.listOf('terminals', (item) => AirportTerminal.fromJson(item.raw)),
       meetPoint: json.strOr('meetPoint', ''),
       utcOffsetMinutes: json.intOrNull('utcOffsetMinutes'),

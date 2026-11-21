@@ -79,13 +79,17 @@ class AirportController extends GetxController {
       ]);
       final airports = JsonReader.of((responses[0].data as Map)['data']);
       final airlines = JsonReader.of((responses[1].data as Map)['data']);
-      _catalog.value = AirportCatalogReady(
-        AirportCatalog(
-          airports: airports.listOf('airports', (item) => Airport.fromJson(item.raw)),
-          popularIds: airports.strings('popular'),
-          airlines: airlines.listOf('airlines', (item) => Airline.fromJson(item.raw)),
+      final catalog = AirportCatalog(
+        airports: airports.listOf(
+          'airports',
+          (item) => Airport.fromJson(item.raw),
+          onSkip: (key, error) => log('airport skipped: $error'),
         ),
+        popularIds: airports.strings('popular'),
+        airlines: airlines.listOf('airlines', (item) => Airline.fromJson(item.raw)),
       );
+      if (catalog.airports.isEmpty) throw StateError('no airports in the catalog');
+      _catalog.value = AirportCatalogReady(catalog);
       _catalogLoadedAt = DateTime.now();
     } catch (e) {
       log('loadCatalog failed: $e');
