@@ -4,7 +4,7 @@ import 'package:sanga_ride/model/ride/booking.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 String formatRideClock(BuildContext context, DateTime time) =>
-    DateFormat(MediaQuery.alwaysUse24HourFormatOf(context) ? 'HH:mm' : 'h:mm a').format(time).replaceAll(' ', '\u00A0');
+    DateFormat(MediaQuery.alwaysUse24HourFormatOf(context) ? 'H:mm' : 'h:mm a').format(time).replaceAll(' ', '\u00A0');
 
 String formatRideSchedule(BuildContext context, DateTime time) {
   final clock = formatRideClock(context, time);
