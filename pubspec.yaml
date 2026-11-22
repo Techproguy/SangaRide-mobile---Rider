@@ -3,7 +3,7 @@ description: "The official repository for the Sanga Ride rider app. Frontend onl
 
 publish_to: "none"
 
-version: 0.1.2+7
+version: 0.1.2+8
 
 environment:
   sdk: ^3.13.5
