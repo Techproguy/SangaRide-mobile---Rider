@@ -11,7 +11,7 @@ class SangaRouter {
 
   static final router = GoRouter(
     navigatorKey: navigatorKey,
-    initialLocation: SessionStorage.tokens.hasSession ? SangaRoutes.boot : SangaRoutes.onboarding,
+    initialLocation: SangaRoutes.boot,
     debugLogDiagnostics: kDebugMode,
     observers: [SangaNavObserver()],
     routes: SangaRoutes.allRoutes,

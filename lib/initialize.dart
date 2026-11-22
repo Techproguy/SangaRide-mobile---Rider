@@ -70,10 +70,8 @@ Future<void> initializeSanga() async {
   await _withinCap(
     SangaPhotoBackdrop.precache([
       for (final image in AppAssets.firstScreenPhotos) AssetImage(image),
-      if (SessionStorage.tokens.hasSession) ...const [
-        AssetImage(AppAssets.splashRoad),
-        AssetImage(AppAssets.splashCar),
-      ],
+      const AssetImage(AppAssets.splashRoad),
+      const AssetImage(AppAssets.splashCar),
     ]),
   );
 

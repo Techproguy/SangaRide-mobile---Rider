@@ -48,6 +48,11 @@ class _BootScreenState extends State<BootScreen> {
   }
 
   Future<void> _restoreAndLeave() async {
+    if (!SessionStorage.tokens.hasSession) {
+      await _splashDone.future;
+      if (mounted) SangaRouter.router.go(SangaRoutes.onboarding);
+      return;
+    }
     final pending = _restore.resolveBoot();
     await _splashDone.future;
     final stack = await pending;
