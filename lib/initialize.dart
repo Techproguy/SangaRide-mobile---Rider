@@ -40,6 +40,7 @@ import 'package:sanga_ride/core/services/session_restore.dart';
 import 'package:sanga_ride/core/services/session_storage.dart';
 import 'package:sanga_ride/view/widgets/map/sanga_marker_icons.dart';
 import 'package:sanga_ride_core/sanga_ride_core.dart';
+import 'package:sanga_ride/view/boot/app_splash.dart';
 import 'package:sanga_ride_maps/sanga_ride_maps.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
@@ -68,10 +69,9 @@ Future<void> initializeSanga() async {
   unawaited(SangaMarkerIcons.preload());
   await _withinCap(SangaFrame.preload(SangaConstants.frame));
   await _withinCap(
-    SangaPhotoBackdrop.precache([
-      for (final image in AppAssets.firstScreenPhotos) AssetImage(image),
-      const AssetImage(AppAssets.splashRoad),
-      const AssetImage(AppAssets.splashCar),
+    Future.wait([
+      SangaPhotoBackdrop.precache([for (final image in AppAssets.firstScreenPhotos) AssetImage(image)]),
+      SangaSplashSequence.precache(AppSplash.scene),
     ]),
   );
 
