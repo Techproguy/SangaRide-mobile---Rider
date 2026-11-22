@@ -30,7 +30,7 @@ definitions:
         env = os.environ["APP_ENV"]
         raw = os.environ[f"DART_DEFINES_{env.upper()}"]
         defines = json.loads(raw)
-        if not defines.get("BASE_URL") or "replace-with" in defines["BASE_URL"]:
+        if not defines.get("BASE_URL", "").startswith("https://") or "replace-with" in defines["BASE_URL"]:
             defines["BASE_URL"] = "https://api-staging.sangaride.com"
         with open(f"dart_defines/{env}.json", "w") as f:
             json.dump(defines, f)
