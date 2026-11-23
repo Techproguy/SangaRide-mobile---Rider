@@ -84,21 +84,10 @@ class ReceiptDelivery {
     final reader = JsonReader.of(json);
     return ReceiptDelivery(
       tier: reader.strOr('tier', 'standard'),
-      itemName: reader.strOr('itemName', ''),
-      recipientName: reader.strOr('recipientName', ''),
+      itemName: reader.objectOrNull('item')?.strOr('name', '') ?? '',
+      recipientName: reader.objectOrNull('recipient')?.strOr('name', '') ?? '',
       deliveredAt: reader.timeOrNull('deliveredAt')?.toLocal(),
-      proofPhotoUrl: reader.strOrNull('proofPhotoUrl'),
-    );
-  }
-
-  factory ReceiptDelivery.fromTrip(TripDelivery delivery) {
-    final proof = delivery.deliveryProof;
-    return ReceiptDelivery(
-      tier: delivery.tier,
-      itemName: delivery.item.name,
-      recipientName: delivery.recipient.name,
-      deliveredAt: proof?.at,
-      proofPhotoUrl: proof?.photoUrl,
+      proofPhotoUrl: reader.strOrNull('proofOfDeliveryUrl'),
     );
   }
 
@@ -191,24 +180,6 @@ class TripReceipt {
     category: value,
     ratedStars: ratedStars,
     delivery: delivery,
-  );
-
-  TripReceipt withDelivery(ReceiptDelivery value) => TripReceipt(
-    tripId: tripId,
-    pickup: pickup,
-    dropoff: dropoff,
-    stops: stops,
-    distanceKm: distanceKm,
-    durationMinutes: durationMinutes,
-    lines: lines,
-    total: total,
-    paidWith: paidWith,
-    paidAt: paidAt,
-    driver: driver,
-    vehicle: vehicle,
-    category: category,
-    ratedStars: ratedStars,
-    delivery: value,
   );
 
   bool get isRated => ratedStars != null;

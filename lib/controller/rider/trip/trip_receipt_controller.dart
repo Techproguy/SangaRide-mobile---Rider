@@ -42,14 +42,11 @@ class TripReceiptController extends GetxController {
     await _load();
   }
 
-  Future<TripReceipt> _withTrip(String id, TripReceipt receipt) async {
+  Future<TripReceipt> _withCategory(String id, TripReceipt receipt) async {
     try {
       final response = await _api.get(AppEndpoints.liveTripOf(id), suppressErrorToast: true);
       final trip = Trip.fromJson(response.dataMapOrEmpty);
-      final delivery = trip.delivery;
-      final enriched = receipt.withCategory(trip.rideType);
-      if (delivery == null || enriched.isDelivery) return enriched;
-      return enriched.withDelivery(ReceiptDelivery.fromTrip(delivery));
+      return receipt.withCategory(trip.rideType);
     } catch (_) {
       return receipt;
     }
@@ -69,7 +66,7 @@ class TripReceiptController extends GetxController {
       if (!_epoch.isCurrent(epoch)) return;
       final json = JsonReader.of(JsonReader.of(response.data).raw['data']).raw;
       var receipt = TripReceipt.fromJson(json);
-      receipt = await _withTrip(id, receipt);
+      receipt = await _withCategory(id, receipt);
       if (!_epoch.isCurrent(epoch)) return;
       _state.value = ReceiptLoaded(receipt);
       unawaited(Get.find<WalletController>().reloadQuietly());
