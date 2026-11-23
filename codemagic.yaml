@@ -245,7 +245,7 @@ workflows:
         issuer_id: $APP_STORE_CONNECT_ISSUER_ID
         submit_to_testflight: false
         submit_to_app_store: true
-        release_type: MANUAL
+        release_type: AFTER_APPROVAL
 
   play-production:
     name: Sanga Ride · Play production
