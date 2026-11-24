@@ -50,12 +50,13 @@ class SavedPlacesController extends GetxController {
       return true;
     } catch (e) {
       log('load saved places failed: $e');
-      if (_epoch.isCurrent(epoch) && state is! SavedPlacesLoaded) {
-        _state.value = SavedPlacesFailed(problem: RideLoadProblem.of(e));
-      }
-      return state is SavedPlacesLoaded;
+      if (!_epoch.isCurrent(epoch)) return state is SavedPlacesLoaded;
+      if (state is! SavedPlacesLoaded) _state.value = SavedPlacesFailed(problem: RideLoadProblem.of(e));
+      return false;
     }
   }
+
+  Future<bool> refreshContent() async => state is SavedPlacesLoading || await load();
 
   Future<bool> ensureLoaded() async => state is SavedPlacesLoaded || await load();
 

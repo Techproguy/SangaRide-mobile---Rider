@@ -12,6 +12,8 @@ import 'package:sanga_ride/view/account/account_copy.dart';
 import 'package:sanga_ride/view/account/widgets/account_image.dart';
 import 'package:sanga_ride/view/account/widgets/profile_edit_sheet.dart';
 import 'package:sanga_ride/view/delivery/send/widgets/photo_source_sheet.dart';
+import 'package:sanga_ride/view/wallet/widgets/wallet_page.dart';
+import 'package:sanga_ride/view/widgets/feedback/refresh_feedback.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -188,15 +190,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget build(BuildContext context) {
     return Obx(() {
       final state = _controller.state;
-      return SangaPageLayout(
+      return WalletPage(
         title: SangaAccountCopy.profile,
-        children: [
-          switch (state) {
-            AccountLoading() => const SangaSkeleton.heights([96, 24, 56, 56, 56, 56]),
-            AccountFailed(:final problem) => SangaFailureMessage(message: problem.message, onRetry: _controller.retry),
-            AccountLoaded() => Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: _loaded(state)),
-          },
-        ],
+        body: SangaRefreshList.children(
+          onRefresh: () => refreshWithFeedback(_controller.refreshContent),
+          children: [
+            switch (state) {
+              AccountLoading() => const SangaSkeleton.heights([96, 24, 56, 56, 56, 56]),
+              AccountFailed(:final problem) => SangaFailureMessage(message: problem.message, onRetry: _controller.retry),
+              AccountLoaded() => Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: _loaded(state)),
+            },
+          ],
+        ),
       );
     });
   }

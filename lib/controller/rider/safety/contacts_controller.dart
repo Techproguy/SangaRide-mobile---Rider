@@ -37,12 +37,27 @@ class ContactsController extends GetxController {
     if (state is ContactsFailed) _state.value = const ContactsIdle();
   }
 
-  Future<void> reloadContacts() async {
+  Future<bool> reloadContacts() async {
     try {
       final response = await _api.get(SafetyEndpoints.contacts, suppressErrorToast: true);
       _centre.applyContacts(EmergencyContact.listFromBody(response.data));
+      return true;
     } catch (e) {
       log('contacts refresh failed: $e');
+      return false;
+    }
+  }
+
+  Future<bool> refreshContent() async {
+    if (isBusy) return true;
+    switch (_centre.state) {
+      case SafetyCentreLoading():
+        return true;
+      case SafetyCentreFailed():
+        await _centre.retry();
+        return _centre.state is! SafetyCentreFailed;
+      case SafetyCentreLoaded():
+        return reloadContacts();
     }
   }
 

@@ -10,6 +10,8 @@ import 'package:sanga_ride/view/safety/widgets/dial_number.dart';
 import 'package:sanga_ride/view/safety/widgets/emergency_contacts_card.dart';
 import 'package:sanga_ride/view/safety/widgets/remove_contact.dart';
 import 'package:sanga_ride/view/trip/wrapup/widgets/wrapup_async_body.dart';
+import 'package:sanga_ride/view/wallet/widgets/wallet_page.dart';
+import 'package:sanga_ride/view/widgets/feedback/refresh_feedback.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 class EmergencyContactsScreen extends StatefulWidget {
@@ -134,24 +136,29 @@ class _EmergencyContactsScreenState extends State<EmergencyContactsScreen> {
       final centreState = _centre.state;
       final contactsState = _contacts.state;
       final centre = _centre.centre;
-      return SangaPageLayout(
+      final footer = _footer(centre, contactsState);
+      return WalletPage(
         title: 'Emergency contacts',
-        footer: _footer(centre, contactsState),
-        children: [
-          WrapUpAsyncBody(
-            isLoading: centreState is SafetyCentreLoading,
-            failure: switch (centreState) {
-              SafetyCentreFailed(:final problem) => WrapUpFailure(
-                title: 'We couldn’t load your contacts',
-                message: problem.message,
-                onRetry: () => unawaited(_centre.retry()),
-              ),
-              SafetyCentreLoading() || SafetyCentreLoaded() => null,
-            },
-            skeletonHeights: const [150, 44, 44],
-            builder: (_) => centre == null ? const SizedBox.shrink() : _body(centre, contactsState),
-          ),
-        ],
+        footer: footer,
+        body: SangaRefreshList.children(
+          onRefresh: () => refreshWithFeedback(_contacts.refreshContent),
+          insetsBottom: footer == null,
+          children: [
+            WrapUpAsyncBody(
+              isLoading: centreState is SafetyCentreLoading,
+              failure: switch (centreState) {
+                SafetyCentreFailed(:final problem) => WrapUpFailure(
+                  title: 'We couldn’t load your contacts',
+                  message: problem.message,
+                  onRetry: () => unawaited(_centre.retry()),
+                ),
+                SafetyCentreLoading() || SafetyCentreLoaded() => null,
+              },
+              skeletonHeights: const [150, 44, 44],
+              builder: (_) => centre == null ? const SizedBox.shrink() : _body(centre, contactsState),
+            ),
+          ],
+        ),
       );
     });
   }

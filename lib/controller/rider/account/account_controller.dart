@@ -48,19 +48,23 @@ class AccountController extends GetxController {
     if (!isFresh) await load();
   }
 
-  Future<void> load() async {
+  Future<bool> refreshContent() async => _state.value is AccountLoading || await load();
+
+  Future<bool> load() async {
     final epoch = _loadEpoch.next();
     if (_state.value is! AccountLoaded) _state.value = const AccountLoading();
     try {
       final tripCount = _users.fetchTripCount();
       final response = await _api.get(AccountEndpoints.profile, suppressErrorToast: true);
       final rides = await tripCount;
-      if (!_loadEpoch.isCurrent(epoch)) return;
+      if (!_loadEpoch.isCurrent(epoch)) return true;
       _loadedAt = DateTime.now();
       await apply({...response.dataMapOrEmpty, 'ridesCount': ?rides});
+      return true;
     } on Object catch (error) {
-      final shouldFail = _loadEpoch.isCurrent(epoch) && _state.value is! AccountLoaded;
-      if (shouldFail) _state.value = AccountFailed(AccountProblem.of(error));
+      if (!_loadEpoch.isCurrent(epoch)) return true;
+      if (_state.value is! AccountLoaded) _state.value = AccountFailed(AccountProblem.of(error));
+      return false;
     }
   }
 

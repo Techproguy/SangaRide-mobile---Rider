@@ -9,6 +9,8 @@ import 'package:sanga_ride/view/places/widgets/saved_place_actions.dart';
 import 'package:sanga_ride/view/places/widgets/saved_place_form.dart';
 import 'package:sanga_ride/view/places/widgets/saved_places_list.dart';
 import 'package:sanga_ride/view/ride/widgets/ride_option_async_state.dart';
+import 'package:sanga_ride/view/wallet/widgets/wallet_page.dart';
+import 'package:sanga_ride/view/widgets/feedback/refresh_feedback.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 class SavedPlacesScreen extends StatefulWidget {
@@ -42,23 +44,26 @@ class _SavedPlacesScreenState extends State<SavedPlacesScreen> {
   Widget build(BuildContext context) {
     return Obx(() {
       final state = _places.state;
-      return SangaPageLayout(
+      return WalletPage(
         title: 'Saved places',
-        children: [
-          RideOptionAsyncState(
-            isLoading: state is SavedPlacesLoading,
-            hasFailed: state is SavedPlacesFailed,
-            errorTitle: 'We couldn’t load your places',
-            failureMessage: state is SavedPlacesFailed ? state.problem.message : null,
-            onRetry: _places.load,
-            skeletonCount: 3,
-            skeletonHeight: 64,
-            builder: (context) => switch (_places.state) {
-              SavedPlacesLoaded(:final book, :final busy) => _body(context, book, busy),
-              SavedPlacesLoading() || SavedPlacesFailed() => const SizedBox.shrink(),
-            },
-          ),
-        ],
+        body: SangaRefreshList.children(
+          onRefresh: () => refreshWithFeedback(_places.refreshContent),
+          children: [
+            RideOptionAsyncState(
+              isLoading: state is SavedPlacesLoading,
+              hasFailed: state is SavedPlacesFailed,
+              errorTitle: 'We couldn’t load your places',
+              failureMessage: state is SavedPlacesFailed ? state.problem.message : null,
+              onRetry: _places.load,
+              skeletonCount: 3,
+              skeletonHeight: 64,
+              builder: (context) => switch (_places.state) {
+                SavedPlacesLoaded(:final book, :final busy) => _body(context, book, busy),
+                SavedPlacesLoading() || SavedPlacesFailed() => const SizedBox.shrink(),
+              },
+            ),
+          ],
+        ),
       );
     });
   }
