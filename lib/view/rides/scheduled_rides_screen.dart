@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:sanga_ride/view/rides/widgets/scheduled_rides_body.dart';
+import 'package:sanga_ride/view/wallet/widgets/wallet_page.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 class ScheduledRidesScreen extends StatelessWidget {
@@ -7,6 +8,9 @@ class ScheduledRidesScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const SangaPageLayout(title: 'Scheduled rides', children: [ScheduledRidesBody()]);
+    return const WalletPage(
+      title: 'Scheduled rides',
+      body: SangaRefreshList.children(onRefresh: refreshScheduledRides, children: [ScheduledRidesBody()]),
+    );
   }
 }

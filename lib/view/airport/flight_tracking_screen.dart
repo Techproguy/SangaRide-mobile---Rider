@@ -88,8 +88,7 @@ class _FlightTrackingScreenState extends State<FlightTrackingScreen> {
         body: Column(
           children: [
             Expanded(
-              child: RefreshIndicator(
-                color: SangaColors.primary,
+              child: SangaRefreshList(
                 onRefresh: _tracking.reload,
                 child: Obx(() {
                   const padding = EdgeInsets.fromLTRB(

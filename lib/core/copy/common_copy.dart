@@ -7,4 +7,5 @@ abstract final class CommonCopy {
   static const String placeLoadFailed = 'We couldn’t load that place. Try another one.';
   static const String processing = 'Hang tight, this only takes a moment.';
   static const String reportIssue = 'Report an issue';
+  static const String refreshFailed = 'Couldn’t refresh. Showing what we had.';
 }

@@ -10,7 +10,10 @@ import 'package:sanga_ride/view/ride/widgets/ride_option_async_state.dart';
 import 'package:sanga_ride/view/ride/widgets/ride_option_schedule_format.dart';
 import 'package:sanga_ride/view/rides/widgets/scheduled_actions.dart';
 import 'package:sanga_ride/view/rides/widgets/scheduled_ride_card.dart';
+import 'package:sanga_ride/view/widgets/feedback/refresh_feedback.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
+
+Future<void> refreshScheduledRides() => refreshWithFeedback(Get.find<ScheduledRidesController>().refreshContent);
 
 class ScheduledRidesBody extends StatefulWidget {
   const ScheduledRidesBody({super.key});

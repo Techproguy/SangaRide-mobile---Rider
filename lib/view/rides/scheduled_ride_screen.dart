@@ -12,6 +12,8 @@ import 'package:sanga_ride/view/ride/widgets/ride_option_schedule_format.dart';
 import 'package:sanga_ride/view/ride/widgets/trip_type_icon.dart';
 import 'package:sanga_ride/view/rides/widgets/scheduled_actions.dart';
 import 'package:sanga_ride/view/trip/trip_wait_copy.dart';
+import 'package:sanga_ride/view/wallet/widgets/wallet_page.dart';
+import 'package:sanga_ride/view/widgets/feedback/refresh_feedback.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 class ScheduledRideScreen extends StatefulWidget {
@@ -50,33 +52,37 @@ class _ScheduledRideScreenState extends State<ScheduledRideScreen> {
       final ride = _ride;
       final state = _rides.state;
       final busy = ride == null || state is! ScheduledLoaded ? null : state.actionOn(ride.id);
-      return SangaPageLayout(
+      return WalletPage(
         title: 'Ride details',
         footer: ride == null ? null : _footer(ride, busy),
-        children: [
-          RideOptionAsyncState(
-            isLoading: state is ScheduledLoading,
-            hasFailed: state is ScheduledFailed,
-            errorTitle: 'We couldn’t load this ride',
-            failureMessage: switch (_rides.state) {
-              ScheduledFailed(:final problem) => problem.message,
-              _ => null,
-            },
-            onRetry: _rides.load,
-            skeletonCount: 3,
-            skeletonHeight: 120,
-            builder: (context) => switch (_ride) {
-              final shown? => _body(context, shown),
-              null => SangaEmptyMessage(
-                icon: Icons.event_busy_rounded,
-                title: 'We can’t find that ride',
-                message: 'It may already be gone.',
-                actionLabel: 'Go back',
-                onAction: context.pop,
-              ),
-            },
-          ),
-        ],
+        body: SangaRefreshList.children(
+          onRefresh: () => refreshWithFeedback(_rides.refreshContent),
+          insetsBottom: ride == null,
+          children: [
+            RideOptionAsyncState(
+              isLoading: state is ScheduledLoading,
+              hasFailed: state is ScheduledFailed,
+              errorTitle: 'We couldn’t load this ride',
+              failureMessage: switch (_rides.state) {
+                ScheduledFailed(:final problem) => problem.message,
+                _ => null,
+              },
+              onRetry: _rides.load,
+              skeletonCount: 3,
+              skeletonHeight: 120,
+              builder: (context) => switch (_ride) {
+                final shown? => _body(context, shown),
+                null => SangaEmptyMessage(
+                  icon: Icons.event_busy_rounded,
+                  title: 'We can’t find that ride',
+                  message: 'It may already be gone.',
+                  actionLabel: 'Go back',
+                  onAction: context.pop,
+                ),
+              },
+            ),
+          ],
+        ),
       );
     });
   }

@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
-import 'package:sanga_ride/controller/rider/scheduled_rides_controller.dart';
 import 'package:sanga_ride/model/history/history_tab.dart';
 import 'package:sanga_ride/view/history/widgets/history_feed.dart';
 import 'package:sanga_ride/view/history/widgets/history_tab_bar.dart';
@@ -66,19 +64,6 @@ class _ScheduledTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return RefreshIndicator(
-      color: SangaColors.primary,
-      onRefresh: () => Get.find<ScheduledRidesController>().load(),
-      child: ListView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.fromLTRB(
-          SangaSpacing.gutter,
-          SangaSpacing.md,
-          SangaSpacing.gutter,
-          SangaSpacing.xl,
-        ).withBottomInset(context),
-        children: const [ScheduledRidesBody()],
-      ),
-    );
+    return const SangaRefreshList.children(onRefresh: refreshScheduledRides, children: [ScheduledRidesBody()]);
   }
 }

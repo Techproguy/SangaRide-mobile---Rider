@@ -17,10 +17,12 @@ class ScheduledRidesController extends GetxController {
   final _api = Get.find<ApiService>();
 
   final Rx<ScheduledRidesState> _state = Rx<ScheduledRidesState>(const ScheduledLoading());
+  final Epoch _epoch = Epoch();
 
   ScheduledRidesState get state => _state.value;
 
-  Future<void> load() async {
+  Future<bool> load() async {
+    final epoch = _epoch.next();
     if (state is! ScheduledLoaded) _state.value = const ScheduledLoading();
     try {
       final response = await _api.get(
@@ -31,12 +33,22 @@ class ScheduledRidesController extends GetxController {
       final rides = JsonReader.of((response.data as Map)['data'])
           .listOf('rides', ScheduledRide.fromRide, onSkip: (key, error) => log('skipped a scheduled ride: $error'));
       final series = await _loadSeries();
-      _state.value = ScheduledLoaded([...rides, ...series]..sort((a, b) => a.scheduledAt.compareTo(b.scheduledAt)));
+      if (!_epoch.isCurrent(epoch)) return true;
+      final current = state;
+      _state.value = ScheduledLoaded(
+        [...rides, ...series]..sort((a, b) => a.scheduledAt.compareTo(b.scheduledAt)),
+        busy: current is ScheduledLoaded ? current.busy : const {},
+      );
+      return true;
     } catch (e) {
       log('load scheduled rides failed: $e');
+      if (!_epoch.isCurrent(epoch)) return true;
       if (state is! ScheduledLoaded) _state.value = ScheduledFailed(problem: RideLoadProblem.of(e));
+      return false;
     }
   }
+
+  Future<bool> refreshContent() async => state is ScheduledLoading || await load();
 
   Future<List<ScheduledRide>> _loadSeries() async {
     try {

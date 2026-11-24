@@ -15,6 +15,7 @@ import 'package:sanga_ride/view/history/widgets/history_rating_card.dart';
 import 'package:sanga_ride/view/history/widgets/history_rebook.dart';
 import 'package:sanga_ride/view/history/widgets/history_trip_card.dart';
 import 'package:sanga_ride/view/ride/widgets/ride_option_image.dart';
+import 'package:sanga_ride/view/wallet/widgets/wallet_page.dart';
 import 'package:sanga_ride_core/sanga_ride_core.dart' show RefreshMoments;
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
@@ -56,33 +57,36 @@ class _HistoryDetailScreenState extends State<HistoryDetailScreen> {
     return Obx(() {
       final state = _history.detailStateFor(widget.id);
       final title = state is HistoryDetailLoaded && widget.kind != HistoryKind.unknown ? state.detail.title : _pendingTitle;
-      return SangaPageLayout(
+      return WalletPage(
         title: title,
-        children: [
-          switch (state) {
-            HistoryDetailLoading() => const SangaSkeleton.list(count: 3, height: 150),
-            HistoryDetailFailed(:final reason) when reason.canRetry => SangaFailureMessage(
-              title: reason.title,
-              message: reason.message,
-              onRetry: _history.reloadDetail,
-            ),
-            HistoryDetailFailed(:final reason) => SangaFailureMessage(
-              title: reason.title,
-              message: reason.message,
-              icon: Icons.search_off_rounded,
-              retryLabel: 'Go back',
-              onRetry: context.pop,
-            ),
-            HistoryDetailLoaded(:final detail, :final isStale) => Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              spacing: SangaSpacing.md,
-              children: [
-                if (isStale) SangaStaleNotice(onRetry: _history.refreshDetail),
-                _body(context, detail),
-              ],
-            ),
-          },
-        ],
+        body: SangaRefreshList.children(
+          onRefresh: _history.refreshDetail,
+          children: [
+            switch (state) {
+              HistoryDetailLoading() => const SangaSkeleton.list(count: 3, height: 150),
+              HistoryDetailFailed(:final reason) when reason.canRetry => SangaFailureMessage(
+                title: reason.title,
+                message: reason.message,
+                onRetry: _history.reloadDetail,
+              ),
+              HistoryDetailFailed(:final reason) => SangaFailureMessage(
+                title: reason.title,
+                message: reason.message,
+                icon: Icons.search_off_rounded,
+                retryLabel: 'Go back',
+                onRetry: context.pop,
+              ),
+              HistoryDetailLoaded(:final detail, :final isStale) => Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                spacing: SangaSpacing.md,
+                children: [
+                  if (isStale) SangaStaleNotice(onRetry: _history.refreshDetail),
+                  _body(context, detail),
+                ],
+              ),
+            },
+          ],
+        ),
       );
     });
   }

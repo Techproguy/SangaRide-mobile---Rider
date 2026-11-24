@@ -114,7 +114,7 @@ class RideHistoryController extends GetxController {
   }
 
   Future<void> refreshDetail() async {
-    if (_detailId.value == null) return;
+    if (_detailId.value == null || detailState is HistoryDetailLoading) return;
     await _loadDetail(showLoading: false);
   }
 
