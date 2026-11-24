@@ -17,17 +17,21 @@ class SupportHelpController extends GetxController {
 
   ArticleState detailFor(String id) => _details[id] ?? const ArticleLoading();
 
-  Future<void> loadHome() async {
+  Future<bool> loadHome() async {
     if (_home.value is! SupportHomeLoaded) _home.value = const SupportHomeLoading();
     try {
       final response = await _api.get(SupportEndpoints.home, suppressErrorToast: true);
       _home.value = SupportHomeLoaded(SupportHome.fromJson(response.dataMapOrEmpty));
+      return true;
     } on Object catch (error) {
       if (_home.value is! SupportHomeLoaded) {
         _home.value = SupportHomeFailed(SupportProblem.of(error));
       }
+      return false;
     }
   }
+
+  Future<bool> refreshHome() async => _home.value is SupportHomeLoading || await loadHome();
 
   Future<void> loadArticles(ArticleQuery query) async {
     _articles[query] = const ArticlesLoading();

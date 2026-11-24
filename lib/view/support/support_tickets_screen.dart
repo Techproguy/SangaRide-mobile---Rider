@@ -9,6 +9,7 @@ import 'package:sanga_ride/core/router/support_routes.dart';
 import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride/view/support/support_copy.dart';
 import 'package:sanga_ride/view/support/widgets/ticket_row.dart';
+import 'package:sanga_ride/view/wallet/widgets/wallet_page.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 class SupportTicketsScreen extends StatefulWidget {
@@ -72,22 +73,26 @@ class _SupportTicketsScreenState extends State<SupportTicketsScreen> {
       final state = _controller.list;
       return NotificationListener<ScrollNotification>(
         onNotification: _onScroll,
-        child: SangaPageLayout(
+        child: WalletPage(
           title: SupportCopy.myReports,
           footer: SangaButton.outline(
             label: CommonCopy.reportIssue,
             onPressed: () => context.push(SupportRoutes.reportOf()),
           ),
-          children: [
-            switch (state) {
-              TicketsLoading() => const SangaSkeleton.heights([56, 56, 56]),
-              TicketsFailed(:final problem) => SangaFailureMessage(
-                message: problem.message,
-                onRetry: _controller.retryList,
-              ),
-              final TicketsLoaded loaded => _list(loaded),
-            },
-          ],
+          body: SangaRefreshList.children(
+            onRefresh: _controller.refreshList,
+            insetsBottom: false,
+            children: [
+              switch (state) {
+                TicketsLoading() => const SangaSkeleton.heights([56, 56, 56]),
+                TicketsFailed(:final problem) => SangaFailureMessage(
+                  message: problem.message,
+                  onRetry: _controller.retryList,
+                ),
+                final TicketsLoaded loaded => _list(loaded),
+              },
+            ],
+          ),
         ),
       );
     });

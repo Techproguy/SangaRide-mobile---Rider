@@ -8,6 +8,8 @@ import 'package:sanga_ride/core/router/support_routes.dart';
 import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride/view/support/support_copy.dart';
 import 'package:sanga_ride/view/support/widgets/article_row.dart';
+import 'package:sanga_ride/view/wallet/widgets/wallet_page.dart';
+import 'package:sanga_ride/view/widgets/feedback/refresh_feedback.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 class SupportHomeScreen extends StatefulWidget {
@@ -109,18 +111,21 @@ class _SupportHomeScreenState extends State<SupportHomeScreen> {
   Widget build(BuildContext context) {
     return Obx(() {
       final state = _controller.home;
-      return SangaPageLayout(
+      return WalletPage(
         title: SupportCopy.support,
-        children: [
-          switch (state) {
-            SupportHomeLoading() => const SangaSkeleton.heights([48, 120, 56, 56]),
-            SupportHomeFailed(:final problem) => SangaFailureMessage(
-              message: problem.message,
-              onRetry: _controller.loadHome,
-            ),
-            SupportHomeLoaded(:final home) => _loaded(home),
-          },
-        ],
+        body: SangaRefreshList.children(
+          onRefresh: () => refreshWithFeedback(_controller.refreshHome),
+          children: [
+            switch (state) {
+              SupportHomeLoading() => const SangaSkeleton.heights([48, 120, 56, 56]),
+              SupportHomeFailed(:final problem) => SangaFailureMessage(
+                message: problem.message,
+                onRetry: _controller.loadHome,
+              ),
+              SupportHomeLoaded(:final home) => _loaded(home),
+            },
+          ],
+        ),
       );
     });
   }

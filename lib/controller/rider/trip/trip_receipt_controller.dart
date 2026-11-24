@@ -42,6 +42,12 @@ class TripReceiptController extends GetxController {
     await _load();
   }
 
+  Future<bool> refreshContent() async {
+    final current = state;
+    if (_tripId == null || current is ReceiptLoading) return true;
+    return _load(isQuiet: current is ReceiptLoaded);
+  }
+
   Future<TripReceipt> _withCategory(String id, TripReceipt receipt) async {
     try {
       final response = await _api.get(AppEndpoints.liveTripOf(id), suppressErrorToast: true);
@@ -52,9 +58,9 @@ class TripReceiptController extends GetxController {
     }
   }
 
-  Future<void> _load({bool isQuiet = false}) async {
+  Future<bool> _load({bool isQuiet = false}) async {
     final id = _tripId;
-    if (id == null) return;
+    if (id == null) return true;
     final epoch = _epoch.next();
     if (!isQuiet) _state.value = const ReceiptLoading();
     try {
@@ -63,17 +69,19 @@ class TripReceiptController extends GetxController {
         suppressErrorToast: true,
         profile: RequestProfile.interactive,
       );
-      if (!_epoch.isCurrent(epoch)) return;
+      if (!_epoch.isCurrent(epoch)) return true;
       final json = JsonReader.of(JsonReader.of(response.data).raw['data']).raw;
       var receipt = TripReceipt.fromJson(json);
       receipt = await _withCategory(id, receipt);
-      if (!_epoch.isCurrent(epoch)) return;
+      if (!_epoch.isCurrent(epoch)) return true;
       _state.value = ReceiptLoaded(receipt);
       unawaited(Get.find<WalletController>().reloadQuietly());
+      return true;
     } catch (e) {
       log('receipt load failed: ${e is ApiException ? e.code : e.runtimeType}');
-      if (!_epoch.isCurrent(epoch) || isQuiet) return;
-      _state.value = ReceiptFailed(ReceiptFailure.of(e));
+      if (!_epoch.isCurrent(epoch)) return true;
+      if (!isQuiet) _state.value = ReceiptFailed(ReceiptFailure.of(e));
+      return false;
     }
   }
 }

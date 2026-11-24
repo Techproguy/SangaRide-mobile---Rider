@@ -47,6 +47,11 @@ class SupportTicketsController extends GetxController {
     }
   }
 
+  Future<void> refreshList() async {
+    if (_list.value is TicketsLoading) return;
+    await loadList();
+  }
+
   Future<void> retryList() async {
     _list.value = const TicketsLoading();
     await loadList();

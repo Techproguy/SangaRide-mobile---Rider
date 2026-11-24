@@ -9,6 +9,8 @@ import 'package:sanga_ride/view/trip/wrapup/widgets/receipt_delivery_card.dart';
 import 'package:sanga_ride/view/trip/wrapup/widgets/receipt_paid_with.dart';
 import 'package:sanga_ride/view/trip/wrapup/widgets/receipt_route_card.dart';
 import 'package:sanga_ride/view/trip/wrapup/widgets/wrapup_async_body.dart';
+import 'package:sanga_ride/view/wallet/widgets/wallet_page.dart';
+import 'package:sanga_ride/view/widgets/feedback/refresh_feedback.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 class ReceiptScreen extends StatefulWidget {
@@ -41,7 +43,7 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
   Widget build(BuildContext context) {
     return Obx(() {
       final state = _receipt.state;
-      return SangaPageLayout(
+      return WalletPage(
         title: state is ReceiptLoaded && state.receipt.isDelivery ? 'Delivery receipt' : 'Trip receipt',
         trailing: IconButton(
           tooltip: 'Share receipt',
@@ -50,22 +52,25 @@ class _ReceiptScreenState extends State<ReceiptScreen> {
           icon: const Icon(Icons.file_download_outlined, color: SangaColors.textPrimary),
           onPressed: state is ReceiptLoaded ? () => unawaited(_share(state.receipt)) : null,
         ),
-        children: [
-          WrapUpAsyncBody(
-            isLoading: state is ReceiptLoading,
-            failure: switch (state) {
-              ReceiptFailed(:final reason) => WrapUpFailure(
-                title: reason.title,
-                message: reason.message,
-                onRetry: reason.canRetry ? _receipt.reload : null,
-              ),
-              ReceiptLoading() || ReceiptLoaded() => null,
-            },
-            skeletonHeights: const [150, 160, 80],
-            builder: (context) =>
-                state is ReceiptLoaded ? _ReceiptBody(receipt: state.receipt) : const SizedBox.shrink(),
-          ),
-        ],
+        body: SangaRefreshList.children(
+          onRefresh: () => refreshWithFeedback(_receipt.refreshContent),
+          children: [
+            WrapUpAsyncBody(
+              isLoading: state is ReceiptLoading,
+              failure: switch (state) {
+                ReceiptFailed(:final reason) => WrapUpFailure(
+                  title: reason.title,
+                  message: reason.message,
+                  onRetry: reason.canRetry ? _receipt.reload : null,
+                ),
+                ReceiptLoading() || ReceiptLoaded() => null,
+              },
+              skeletonHeights: const [150, 160, 80],
+              builder: (context) =>
+                  state is ReceiptLoaded ? _ReceiptBody(receipt: state.receipt) : const SizedBox.shrink(),
+            ),
+          ],
+        ),
       );
     });
   }
