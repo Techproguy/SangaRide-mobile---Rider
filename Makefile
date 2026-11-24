@@ -1,4 +1,4 @@
-env ?= dev
+env ?= prod
 flavor_dev := dev
 flavor_prod := prod
 flavor = $(flavor_$(env))
