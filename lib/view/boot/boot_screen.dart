@@ -67,7 +67,7 @@ class _BootScreenState extends State<BootScreen> {
   @override
   Widget build(BuildContext context) {
     return AnnotatedRegion(
-      value: SangaSystemUi.onPhoto,
+      value: SangaSystemUi.onDark,
       child: Scaffold(
         backgroundColor: SangaColors.primary,
         body: Stack(

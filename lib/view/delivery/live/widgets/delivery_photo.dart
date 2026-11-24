@@ -78,7 +78,7 @@ class _PhotoViewer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AnnotatedRegion(
-      value: SangaSystemUi.onPhoto,
+      value: SangaSystemUi.onDark,
       child: Material(
         color: SangaColors.textPrimary,
         child: Stack(
