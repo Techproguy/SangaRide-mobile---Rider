@@ -1,6 +1,3 @@
-import java.io.FileInputStream
-import java.util.Properties
-
 plugins {
     id("com.android.application")
     id("com.google.gms.google-services")
@@ -8,14 +5,6 @@ plugins {
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
 }
-
-val secretsFile = rootProject.file("secrets.properties")
-val secretProps = Properties().apply {
-    if (secretsFile.exists()) load(FileInputStream(secretsFile))
-}
-val mapsApiKey: String = (secretProps["MAPS_API_KEY_ANDROID"] as String?)
-    ?: System.getenv("MAPS_API_KEY_ANDROID")
-    ?: ""
 
 android {
     namespace = "com.sangatechnologies.ride"
@@ -33,20 +22,8 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
-        manifestPlaceholders["MAPS_API_KEY"] = mapsApiKey
-    }
-
-    flavorDimensions += "env"
-    productFlavors {
-        create("dev") {
-            dimension = "env"
-            applicationIdSuffix = ".dev"
-            manifestPlaceholders["appName"] = "Sanga Ride Dev"
-        }
-        create("prod") {
-            dimension = "env"
-            manifestPlaceholders["appName"] = "Sanga Ride"
-        }
+        manifestPlaceholders["MAPS_API_KEY"] = "AIzaSyC6xmUBqo4PtfIKf2iGfX3jnBqfnFXNg3o"
+        manifestPlaceholders["appName"] = "Sanga Ride"
     }
 
     signingConfigs {
@@ -62,8 +39,22 @@ android {
 
     buildTypes {
         release {
-            signingConfig = signingConfigs.findByName("release") ?: signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.findByName("release")
         }
+    }
+}
+
+val releaseBuildTask = Regex("^(assemble|bundle|package)(.*)Release$")
+
+gradle.taskGraph.whenReady {
+    val releaseKey = android.signingConfigs.findByName("release")
+    val isReleaseBuild = allTasks.any { it.project == project && releaseBuildTask.matches(it.name) }
+    val keystoreMissing = releaseKey == null || releaseKey.storeFile?.exists() != true
+    if (isReleaseBuild && keystoreMissing) {
+        throw GradleException(
+            "Release build stopped: no release keystore. Set CM_KEYSTORE_PATH (an existing file), " +
+                "CM_KEYSTORE_PASSWORD, CM_KEY_ALIAS and CM_KEY_PASSWORD. Release builds are never signed with the debug key."
+        )
     }
 }
 
