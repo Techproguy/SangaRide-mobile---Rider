@@ -9,6 +9,7 @@ import 'package:sanga_ride/model/ride/ride_request.dart';
 import 'package:sanga_ride/model/trip/scheduled_wait.dart';
 import 'package:sanga_ride/model/trip/server_time.dart';
 import 'package:sanga_ride/model/trip/trip_delivery.dart';
+import 'package:sanga_ride/model/trip/wrapup/payment.dart';
 import 'package:sanga_ride_core/sanga_ride_core.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
@@ -245,6 +246,7 @@ class Trip {
     this.freeWait = Duration.zero,
     this.scheduledWait,
     this.hourlyMinutes,
+    this.payment,
   });
 
   factory Trip.fromJson(Map<String, dynamic> json) {
@@ -289,6 +291,7 @@ class Trip {
       freeWait: Duration(seconds: waiting?.intOr('freeWaitSeconds', 0) ?? 0),
       scheduledWait: ScheduledWait.maybeFrom(waiting ?? reader, pickupAt: _localTime(reader, 'scheduledFor')),
       hourlyMinutes: reader.intOrNull('hourlyDurationMin') ?? reader.objectOrNull('hourly')?.intOrNull('durationMin'),
+      payment: TripPaymentSummary.tryFrom(reader.objectOrNull('payment')),
     );
   }
 
@@ -369,6 +372,7 @@ class Trip {
   final Duration freeWait;
   final ScheduledWait? scheduledWait;
   final int? hourlyMinutes;
+  final TripPaymentSummary? payment;
 
   Trip withLocal({
     String? pin,
@@ -406,6 +410,7 @@ class Trip {
       freeWait: freeWait,
       scheduledWait: scheduledWait,
       hourlyMinutes: hourlyMinutes,
+      payment: payment,
     );
   }
 
@@ -414,6 +419,8 @@ class Trip {
   List<TripPlace> get route => [pickup, ...stops, dropoff];
 
   bool get isDelivery => delivery != null;
+
+  bool get isPaymentSettled => payment?.isSettled ?? false;
 
   bool get canChange => status.canChange && (delivery?.stage.canCancel ?? true);
 

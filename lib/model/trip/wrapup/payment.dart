@@ -98,6 +98,32 @@ class PaymentGroup {
   final String name;
 }
 
+class TripPaymentSummary {
+  const TripPaymentSummary({required this.status, required this.paid, this.method, this.paidAt});
+
+  static TripPaymentSummary? tryFrom(JsonReader? reader) {
+    if (reader == null) return null;
+    final status = PaymentStatus.fromCode(reader.strOrNull('status'));
+    return TripPaymentSummary(
+      status: status,
+      paid: reader.boolOr('paid', status == PaymentStatus.succeeded),
+      method: PaymentMethod.tryFromCode(reader.strOrNull('method')),
+      paidAt: reader.timeOrNull('paidAt')?.toLocal(),
+    );
+  }
+
+  final PaymentStatus status;
+  final bool paid;
+  final PaymentMethod? method;
+  final DateTime? paidAt;
+
+  bool get isSettled => paid || status == PaymentStatus.awaitingDriver;
+
+  String get waitingMessage => paid
+      ? 'Your payment went through. Your driver is finishing up.'
+      : 'Your driver is confirming your cash payment.';
+}
+
 class TripPayment {
   const TripPayment({
     required this.tripId,

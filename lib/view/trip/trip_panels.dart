@@ -92,6 +92,11 @@ extension _TripPanels on _TripScreenState {
         title: 'On the way to drop off',
         subtitle: trip.dropoff.title,
       ),
+      TripAtDropoff(:final trip) when trip.isPaymentSettled => SangaSheetPeek(
+        trailing: _peekMessages(),
+        title: TripPaymentWaitCopy.title,
+        subtitle: trip.payment!.waitingMessage,
+      ),
       TripAtDropoff(:final trip) => SangaSheetPeek(
         trailing: _peekMessages(),
         title: 'You’ve arrived at your drop off',
@@ -179,7 +184,9 @@ extension _TripPanels on _TripScreenState {
         onAddStops: _openAddStops,
         onExtend: _openExtend,
         onCancel: _openCancel,
-        action: SangaButton.primary(label: 'Complete ride', onPressed: _makePayment),
+        action: trip.isPaymentSettled
+            ? TripPaymentWait(payment: trip.payment!)
+            : SangaButton.primary(label: 'Complete ride', onPressed: _makePayment),
       ),
       TripCancelled(:final reason, :final trip) => TripEndedPanel(
         reason: reason,

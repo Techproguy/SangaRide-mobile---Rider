@@ -27,6 +27,7 @@ import 'package:sanga_ride/view/trip/widgets/report_sheet.dart';
 import 'package:sanga_ride/view/trip/widgets/share_trip.dart';
 import 'package:sanga_ride/view/trip/widgets/trip_flight_line.dart';
 import 'package:sanga_ride/view/trip/widgets/trip_map.dart';
+import 'package:sanga_ride/view/trip/widgets/trip_payment_wait.dart';
 import 'package:sanga_ride/view/trip/widgets/trip_state_panel.dart';
 import 'package:sanga_ride/view/trip/widgets/verifying_panel.dart';
 import 'package:sanga_ride_maps/sanga_ride_maps.dart';
@@ -207,6 +208,7 @@ class _TripScreenState extends State<TripScreen> {
   Future<void> _makePayment() async {
     _closeSheet();
     await context.push<bool>(TripWrapUpRoutes.payOf(widget.tripId));
+    if (mounted) unawaited(_trip.pollNow());
   }
 
   void _leaveForCompletion(String tripId) {

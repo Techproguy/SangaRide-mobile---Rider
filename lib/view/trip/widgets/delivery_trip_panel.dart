@@ -7,6 +7,7 @@ import 'package:sanga_ride/view/trip/widgets/trip_action_tiles.dart';
 import 'package:sanga_ride/view/trip/widgets/trip_driver_header.dart';
 import 'package:sanga_ride/view/trip/widgets/trip_eta_line.dart';
 import 'package:sanga_ride/view/trip/widgets/trip_panel_body.dart';
+import 'package:sanga_ride/view/trip/widgets/trip_payment_wait.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 class DeliveryPanelActions {
@@ -110,7 +111,12 @@ class DeliveryTripPanel extends StatelessWidget {
         SangaButton.muted(label: CommonCopy.reportIssue, onPressed: actions.onReportMismatch),
       ],
       DeliveryPhase.confirmPickup => [SangaButton.primary(label: 'Confirm pickup', onPressed: actions.onConfirmPickup)],
-      DeliveryPhase.payment => [SangaButton.primary(label: 'Make payment', onPressed: actions.onMakePayment)],
+      DeliveryPhase.payment => [
+        if (trip.isPaymentSettled && trip.payment != null)
+          TripPaymentWait(payment: trip.payment!)
+        else
+          SangaButton.primary(label: 'Make payment', onPressed: actions.onMakePayment),
+      ],
       DeliveryPhase.onTheWay ||
       DeliveryPhase.atDropoff ||
       DeliveryPhase.verifying ||

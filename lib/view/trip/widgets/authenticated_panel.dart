@@ -3,6 +3,7 @@ import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride/view/trip/widgets/trip_action_tiles.dart';
 import 'package:sanga_ride/view/trip/widgets/trip_driver_header.dart';
 import 'package:sanga_ride/view/trip/widgets/trip_panel_body.dart';
+import 'package:sanga_ride/view/trip/widgets/trip_payment_wait.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 class AuthenticatedPanel extends StatelessWidget {
@@ -25,13 +26,17 @@ class AuthenticatedPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final payment = trip.payment;
     return TripPanelBody(
       children: [
         TripDriverHeader(driver: trip.driver),
         const TripPanelDivider(),
         Text('Your driver confirmed your PIN', style: SangaTextStyles.cardTitle.copyWith(color: SangaColors.success)),
         TripActionTiles(unreadCount: unreadCount, onCall: onCall, onMessage: onMessage, onSafety: onSafety),
-        SangaButton.primary(label: 'Make payment', onPressed: onMakePayment),
+        if (trip.isPaymentSettled && payment != null)
+          TripPaymentWait(payment: payment)
+        else
+          SangaButton.primary(label: 'Make payment', onPressed: onMakePayment),
       ],
     );
   }
