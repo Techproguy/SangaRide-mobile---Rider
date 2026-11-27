@@ -2,35 +2,15 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Dev",
+      "name": "Sanga Ride",
       "request": "launch",
-      "type": "dart",
-      "args": [
-        "--flavor",
-        "dev",
-        "--dart-define-from-file=dart_defines/dev.json"
-      ]
+      "type": "dart"
     },
     {
-      "name": "Prod",
+      "name": "Sanga Ride (release)",
       "request": "launch",
       "type": "dart",
-      "args": [
-        "--flavor",
-        "prod",
-        "--dart-define-from-file=dart_defines/prod.json"
-      ]
-    },
-    {
-      "name": "Prod (release)",
-      "request": "launch",
-      "type": "dart",
-      "flutterMode": "release",
-      "args": [
-        "--flavor",
-        "prod",
-        "--dart-define-from-file=dart_defines/prod.json"
-      ]
+      "flutterMode": "release"
     }
   ]
 }

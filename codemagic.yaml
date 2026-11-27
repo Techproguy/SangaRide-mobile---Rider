@@ -22,25 +22,6 @@ definitions:
         mkdir -p ~/.ssh
         ssh-keyscan github.com >> ~/.ssh/known_hosts
         git clone --depth 1 git@github.com:Techproguy/sanga-ride-building-blocks.git "$CM_BUILD_DIR/../sanga-ride-building-blocks"
-    - &write_env_config
-      name: Write env config
-      script: |
-        python3 - <<'PY'
-        import json, os
-        env = os.environ["APP_ENV"]
-        raw = os.environ[f"DART_DEFINES_{env.upper()}"]
-        defines = json.loads(raw)
-        base_url = defines.get("BASE_URL") or ""
-        if not base_url.startswith("https://") or "replace-with" in base_url:
-            defines["BASE_URL"] = "https://api-staging.sangaride.com"
-        with open(f"dart_defines/{env}.json", "w") as f:
-            json.dump(defines, f)
-        with open("android/secrets.properties", "w") as f:
-            f.write(f"MAPS_API_KEY_ANDROID={defines['MAPS_API_KEY_ANDROID']}\n")
-        xcconfig = "Secrets.xcconfig" if env == "prod" else f"Secrets-{env}.xcconfig"
-        with open(f"ios/Flutter/{xcconfig}", "w") as f:
-            f.write(f"MAPS_API_KEY={defines['MAPS_API_KEY_IOS']}\n")
-        PY
     - &ios_signing
       name: iOS signing
       script: |
@@ -170,19 +151,16 @@ workflows:
         - sanga_ride_rider
       vars:
         VERSION_GUARD_PLATFORM: ios
-        APP_ENV: prod
         BUNDLE_ID: com.sangatechnologies.ride
         APP_STORE_APPLE_ID: 6824516357
     scripts: &testflight_scripts
       - *version_guard
       - *fetch_building_blocks
-      - *write_env_config
       - *ios_signing
       - name: Build IPA
         script: |
           LATEST=$(app-store-connect get-latest-build-number "$APP_STORE_APPLE_ID" --all-versions 2>/dev/null || echo 0)
-          flutter build ipa --release --flavor prod \
-            --dart-define-from-file=dart_defines/prod.json \
+          flutter build ipa --release \
             --build-number=$((LATEST + 1)) \
             --export-options-plist=/Users/builder/export_options.plist
     artifacts: &testflight_artifacts
@@ -207,20 +185,17 @@ workflows:
         - sanga_ride_rider
       vars:
         VERSION_GUARD_PLATFORM: android
-        APP_ENV: prod
         PACKAGE_NAME: com.sangatechnologies.ride
         CM_KEYSTORE_PATH: /tmp/upload.keystore
     scripts: &play_open_testing_scripts
       - *version_guard
       - *fetch_building_blocks
-      - *write_env_config
       - name: Android upload keystore
         script: echo "$CM_KEYSTORE" | base64 --decode > "$CM_KEYSTORE_PATH"
       - name: Build App Bundle
         script: |
           LATEST=$(google-play get-latest-build-number --package-name "$PACKAGE_NAME" 2>/dev/null || echo 0)
-          flutter build appbundle --release --flavor prod \
-            --dart-define-from-file=dart_defines/prod.json \
+          flutter build appbundle --release \
             --build-number=$((LATEST + 1))
     artifacts: &play_open_testing_artifacts
       - build/app/outputs/bundle/**/*.aab
