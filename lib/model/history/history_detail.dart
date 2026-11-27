@@ -177,7 +177,8 @@ class HistoryDetail {
     final receiptReader = receipt == null ? null : JsonReader.of(receipt);
     final trip = Trip.fromJson(json);
     final kind = HistoryKind.fromCode(reader.strOrNull('kind'));
-    final status = HistoryStatus.fromCode(reader.strOrNull('status'));
+    final isReturned = HistoryItem.isReturnedRide(reader);
+    final status = isReturned ? HistoryStatus.cancelled : HistoryStatus.fromCode(reader.strOrNull('status'));
     final createdAt = reader.time('createdAt').toLocal();
     final hasDriver = reader.objectOrNull('driver') != null;
     final delivery = reader.objectOrNull('delivery');
@@ -215,7 +216,9 @@ class HistoryDetail {
               by: trip.cancellationReason == TripCancelReason.riderNoShow
                   ? CancelledBy.noShow
                   : CancelledBy.fromCode(reader.strOrNull('cancelledBy')),
-              reason: (trip.cancellationReason ?? TripCancelReason.other).message,
+              reason:
+                  (isReturned ? TripCancelReason.deliveryReturned : trip.cancellationReason ?? TripCancelReason.other)
+                      .message,
               fee: reader.moneyOrNull('cancellationFee') ?? reader.moneyOr('noShowFee', Money.zero()),
             )
           : null,

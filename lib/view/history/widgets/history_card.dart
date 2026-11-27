@@ -96,7 +96,10 @@ class HistoryCard extends StatelessWidget {
           spacing: SangaSpacing.xxs,
           children: [
             Text(whenLabel, maxLines: 1, overflow: TextOverflow.ellipsis, style: SangaTextStyles.cardTitle),
-            if (isCancelled) const SangaTag.urgent(label: 'Cancelled', icon: Icons.close_rounded),
+            if (item.isReturned)
+              const SangaTag.warning(label: 'Returned', icon: Icons.undo_rounded)
+            else if (isCancelled)
+              const SangaTag.urgent(label: 'Cancelled', icon: Icons.close_rounded),
             if (item.status == HistoryStatus.unknown)
               const SangaTag.scheduled(label: 'Updating', icon: Icons.sync_rounded),
             if (item.memberName case final name?) _who(name),

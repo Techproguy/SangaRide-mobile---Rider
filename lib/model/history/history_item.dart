@@ -32,8 +32,11 @@ enum HistoryStatus {
 
   static const List<HistoryStatus> tabs = [completed, cancelled];
 
-  static HistoryStatus fromCode(String? code) =>
-      code == 'no_driver_found' ? cancelled : enumByCode(values, code, (status) => status.code, HistoryStatus.unknown);
+  static const Set<String> _endedWithoutTrip = {'no_driver_found', 'returned'};
+
+  static HistoryStatus fromCode(String? code) => _endedWithoutTrip.contains(code)
+      ? cancelled
+      : enumByCode(values, code, (status) => status.code, HistoryStatus.unknown);
 }
 
 class HistoryRoute {
@@ -68,6 +71,7 @@ class HistoryItem {
     required this.occurredAt,
     required this.route,
     required this.fare,
+    this.isReturned = false,
     this.itemName,
     this.memberName,
     this.purpose,
@@ -79,15 +83,23 @@ class HistoryItem {
     return HistoryItem(
       id: ride.str('id'),
       kind: HistoryKind.fromCode(ride.strOrNull('kind')),
-      status: HistoryStatus.fromCode(ride.strOrNull('status')),
+      status: isReturnedRide(ride) ? HistoryStatus.cancelled : HistoryStatus.fromCode(ride.strOrNull('status')),
       category: RideCategory.values.asNameMap()[ride.objectOrNull('rideClass')?.strOrNull('code')] ?? RideCategory.go,
       occurredAt: (JsonReader.of(ride.raw['timestamps']).timeOrNull('completedAt') ?? ride.time('createdAt')).toLocal(),
       route: HistoryRoute.fromRide(ride),
       fare: TripFare.fromJson(ride).total,
+      isReturned: isReturnedRide(ride),
       itemName: item?.strOrNull('name'),
       packagePhotoUrl: item?.strOrNull('photoUrl'),
     );
   }
+
+  static const String _returnedCode = 'returned';
+
+  static bool isReturnedRide(JsonReader ride) =>
+      ride.strOrNull('status') == _returnedCode ||
+      ride.objectOrNull('package')?.strOrNull('status') == _returnedCode ||
+      ride.objectOrNull('delivery')?.strOrNull('stage') == _returnedCode;
 
   factory HistoryItem.fromGroupRide(JsonReader ride) => HistoryItem(
     id: ride.str('id'),
@@ -110,6 +122,7 @@ class HistoryItem {
   final DateTime occurredAt;
   final HistoryRoute route;
   final Money fare;
+  final bool isReturned;
   final String? itemName;
   final String? memberName;
   final String? purpose;
