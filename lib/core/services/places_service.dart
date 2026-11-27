@@ -18,7 +18,7 @@ class PlacesService {
     BaseOptions(
       connectTimeout: const Duration(seconds: 10),
       receiveTimeout: const Duration(seconds: 10),
-      headers: {if (Platform.isIOS) 'X-Ios-Bundle-Identifier': SangaConstants.installedAppId},
+      headers: {if (Platform.isIOS) 'X-Ios-Bundle-Identifier': SangaConstants.appId},
     ),
   )..interceptors.add(_androidIdentityInterceptor());
 
@@ -207,7 +207,7 @@ Interceptor _androidIdentityInterceptor() {
       if (Platform.isAndroid) {
         final sha = await AppSignature.androidCertSha1();
         if (sha != null) {
-          options.headers['X-Android-Package'] = SangaConstants.installedAppId;
+          options.headers['X-Android-Package'] = SangaConstants.appId;
           options.headers['X-Android-Cert'] = sha;
         }
       }

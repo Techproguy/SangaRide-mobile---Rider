@@ -1,5 +1,3 @@
-import 'dart:io';
-
 class SangaStorageKeys {
   SangaStorageKeys._();
 
@@ -13,23 +11,5 @@ class SangaStorageKeys {
 class SangaMapsKeys {
   SangaMapsKeys._();
 
-  static const String _android = String.fromEnvironment('MAPS_API_KEY_ANDROID');
-  static const String _ios = String.fromEnvironment('MAPS_API_KEY_IOS');
-
-  static const String _placeholderPrefix = 'replace-with';
-
-  static bool get isConfigured {
-    final key = Platform.isIOS ? _ios : _android;
-    return key.isNotEmpty && !key.startsWith(_placeholderPrefix);
-  }
-
-  static String get defaultKey {
-    final key = Platform.isIOS ? _ios : _android;
-    assert(
-      key.isNotEmpty,
-      'Maps key missing. Copy dart_defines/<env>.example.json to dart_defines/<env>.json, '
-      'fill it in, and run with --flavor <flavor> --dart-define-from-file=dart_defines/<env>.json',
-    );
-    return key;
-  }
+  static const String key = 'AIzaSyC6xmUBqo4PtfIKf2iGfX3jnBqfnFXNg3o';
 }

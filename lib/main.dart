@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
-import 'package:sanga_ride/core/api/api_environment.dart';
 import 'package:sanga_ride/core/constants.dart';
 import 'package:sanga_ride/core/router/router.dart';
 import 'package:sanga_ride/initialize.dart';
@@ -15,7 +14,6 @@ import 'package:sanga_ride_crash/sanga_ride_crash.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 void main() {
-  ApiEnvironment.verify();
   unawaited(SangaCrash.guard(_start));
 }
 

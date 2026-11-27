@@ -1,5 +1,4 @@
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:sanga_ride_core/sanga_ride_core.dart' show AppEnvironment;
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 import 'package:sanga_ride/core/storage_keys.dart';
 
@@ -11,11 +10,9 @@ class SangaConstants {
   static const String userType = 'rider';
   static const String googleServerClientId = '889203916709-9raiunpo9og0deo7p3r18a6ghhm812se.apps.googleusercontent.com';
 
-  static const String baseUrl = String.fromEnvironment('BASE_URL');
+  static const String baseUrl = 'https://api-staging.sangaride.com';
 
-  static String get installedAppId => AppEnvironment.current.isProduction ? appId : '$appId.dev';
-
-  static final String googleMapsApiKey = SangaMapsKeys.defaultKey;
+  static const String googleMapsApiKey = SangaMapsKeys.key;
 
   static String get placesCountryCode => SangaRegion.current.placesCountryCode;
 
