@@ -86,6 +86,8 @@ class CancelReviewView extends StatelessWidget {
             if (reason.isSafety)
               const SangaNotice(message: CancelCopy.getHelpFirst, tone: SangaTone.neutral, icon: Icons.shield_outlined),
             if (review.hasFee) SangaNotice(message: review.notice(review.fee.format())),
+            if (review.hasFee && review.leavesBalanceOwed)
+              SangaNotice(message: CancelCopy.owedNotice(review.owed!.format()), tone: SangaTone.warning),
           ],
         ),
       ],

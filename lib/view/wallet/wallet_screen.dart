@@ -128,6 +128,12 @@ class _WalletBodyState extends State<WalletBody> {
         children: [
           if (isStale) SangaStaleNotice(onRetry: _wallet.reloadQuietly),
           BalanceCard(label: WalletCopy.balanceLabel(scope), balance: overview.balance, onAddMoney: _addMoney),
+          if (overview.owes && !scope.isGroup)
+            SangaNotice(
+              title: WalletCopy.owedTitle,
+              message: WalletCopy.owedMessage(overview.outstanding.format()),
+              tone: SangaTone.warning,
+            ),
           if (showsSaved && widget.canTopUp) ResumeTopUpCard(saved: saved, onTap: () => _openSaved(saved)),
           if (pending != null && pendingId != null)
             PendingTransferCard(

@@ -13,6 +13,8 @@ class CancelCopy {
   static const String fareBreakdown = 'Cancellation summary';
   static const String cancellationFee = 'Cancellation fee';
   static const String free = 'Free';
+  static const String takenFrom = 'Taken from';
+  static const String yourWallet = 'Your wallet';
   static const String paymentMethod = 'Payment method';
   static const String notSetYet = 'Not set yet';
   static const String refund = 'Refund';
@@ -23,6 +25,9 @@ class CancelCopy {
 
   static String feeChanged(String before, String after) =>
       'The fee changed from $before to $after. Take a look before you cancel.';
+
+  static String owedNotice(String amount) =>
+      'Your wallet is short, so you’ll owe $amount. Your next top up pays it off first.';
 
   static String refundTo(String amount, String destination) => '$amount to your $destination';
 

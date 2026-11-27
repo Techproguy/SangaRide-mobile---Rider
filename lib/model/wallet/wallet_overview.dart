@@ -82,6 +82,7 @@ class WalletOverview {
     required this.limits,
     required this.virtualAccount,
     required this.savedCards,
+    required this.outstanding,
   });
 
   factory WalletOverview.fromJson(Map<String, dynamic> json) {
@@ -91,6 +92,7 @@ class WalletOverview {
       limits: WalletLimits.fromJson(reader.objectOrNull('limits')?.raw ?? const {}),
       virtualAccount: VirtualAccount.tryFromJson(reader.objectOrNull('virtualAccount')),
       savedCards: reader.listOf('savedCards', SavedCard.fromReader),
+      outstanding: reader.moneyOrNull('outstandingBalance') ?? Money.zero(),
     );
   }
 
@@ -98,6 +100,9 @@ class WalletOverview {
   final WalletLimits limits;
   final VirtualAccount? virtualAccount;
   final List<SavedCard> savedCards;
+  final Money outstanding;
+
+  bool get owes => outstanding.isPositive;
 
   bool get canPayByTransfer => virtualAccount != null;
 }

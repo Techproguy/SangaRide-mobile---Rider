@@ -95,7 +95,7 @@ enum TripCancelReason {
   riderNoShow(
     'RIDER_NO_SHOW',
     'You missed your ride',
-    'Your driver waited at the pickup but couldn’t find you, so the trip ended. A no show fee applies.',
+    'Your driver waited at the pickup but couldn’t find you, so the trip ended. The no show fee comes out of your wallet.',
   ),
   packageRefused('package_refused', 'Package not accepted', 'Your driver couldn’t take this package.'),
   deliveryCancelled('delivery_cancelled', 'Delivery cancelled', 'This delivery was cancelled.'),
@@ -247,6 +247,7 @@ class Trip {
     this.scheduledWait,
     this.hourlyMinutes,
     this.payment,
+    this.cancellationFee,
   });
 
   factory Trip.fromJson(Map<String, dynamic> json) {
@@ -292,6 +293,7 @@ class Trip {
       scheduledWait: ScheduledWait.maybeFrom(waiting ?? reader, pickupAt: _localTime(reader, 'scheduledFor')),
       hourlyMinutes: reader.intOrNull('hourlyDurationMin') ?? reader.objectOrNull('hourly')?.intOrNull('durationMin'),
       payment: TripPaymentSummary.tryFrom(reader.objectOrNull('payment')),
+      cancellationFee: reader.moneyOrNull('cancellationFee') ?? reader.moneyOrNull('noShowFee'),
     );
   }
 
@@ -373,6 +375,7 @@ class Trip {
   final ScheduledWait? scheduledWait;
   final int? hourlyMinutes;
   final TripPaymentSummary? payment;
+  final Money? cancellationFee;
 
   Trip withLocal({
     String? pin,
@@ -411,6 +414,7 @@ class Trip {
       scheduledWait: scheduledWait,
       hourlyMinutes: hourlyMinutes,
       payment: payment,
+      cancellationFee: cancellationFee,
     );
   }
 

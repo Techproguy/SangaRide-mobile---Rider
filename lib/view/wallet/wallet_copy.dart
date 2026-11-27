@@ -125,6 +125,11 @@ abstract final class WalletCopy {
 
   static String transactionsTitle(WalletScope scope) => scope.isGroup ? 'Group wallet activity' : 'Transaction history';
 
+  static const String owedTitle = 'You owe a ride fee';
+
+  static String owedMessage(String amount) =>
+      'A cancellation or missed ride fee left your wallet short by $amount. Your next top up pays it off first.';
+
   static String balanceLabel(WalletScope scope) => scope.isGroup ? 'Group balance' : 'Your balance';
 
   static String loadFailedTitle(WalletScope scope) =>

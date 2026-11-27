@@ -74,16 +74,25 @@ class TripUpdatingPanel extends StatelessWidget {
 }
 
 class TripEndedPanel extends StatelessWidget {
-  const TripEndedPanel({super.key, required this.reason, required this.onHome, this.message, this.returnFee});
+  const TripEndedPanel({
+    super.key,
+    required this.reason,
+    required this.onHome,
+    this.message,
+    this.returnFee,
+    this.cancellationFee,
+  });
 
   final TripCancelReason reason;
   final VoidCallback onHome;
   final String? message;
   final Money? returnFee;
+  final Money? cancellationFee;
 
   @override
   Widget build(BuildContext context) {
     final fee = returnFee;
+    final cancelFee = cancellationFee;
     return TripPanelBody(
       children: [
         Center(
@@ -98,6 +107,17 @@ class TripEndedPanel extends StatelessWidget {
           SangaDetailList(
             title: 'Return fee',
             rows: [SangaDetailRow(icon: Icons.undo_rounded, label: 'Charged for the way back', value: fee.format())],
+          ),
+        if (cancelFee != null && cancelFee.isPositive)
+          SangaDetailList(
+            title: 'Fee',
+            rows: [
+              SangaDetailRow(
+                icon: Icons.account_balance_wallet_outlined,
+                label: 'Taken from your wallet',
+                value: cancelFee.format(),
+              ),
+            ],
           ),
         SangaButton.primary(label: SangaCommonCopy.backToHome, onPressed: onHome),
       ],

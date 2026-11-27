@@ -76,6 +76,7 @@ class CancellationReview {
     required this.refund,
     required this.paymentMethod,
     this.message,
+    this.owed,
   });
 
   factory CancellationReview.fromJson(Map<String, dynamic> json) {
@@ -91,6 +92,7 @@ class CancellationReview {
           : null,
       paymentMethod: paymentMethod,
       message: fee.strOrNull('notice'),
+      owed: reader.moneyOrNull('outstandingBalance') ?? fee.moneyOrNull('outstandingBalance'),
     );
   }
 
@@ -99,8 +101,11 @@ class CancellationReview {
   final CancellationRefund? refund;
   final PaymentMethod? paymentMethod;
   final String? message;
+  final Money? owed;
 
   bool get hasFee => fee.isPositive;
+
+  bool get leavesBalanceOwed => owed?.isPositive ?? false;
 
   String notice(String amount) => message ?? feeReason.notice(amount);
 }
@@ -111,7 +116,7 @@ class CancelOutcome {
   factory CancelOutcome.fromJson(Map<String, dynamic> json) {
     final reader = JsonReader.of(json);
     final fee = reader.money('cancellationFee');
-    final feeNote = fee.isPositive ? '${fee.format()} cancellation fee applied.' : 'No fee was charged.';
+    final feeNote = fee.isPositive ? '${fee.format()} was taken from your wallet.' : 'No fee was charged.';
     return CancelOutcome(tripId: reader.str('id'), feeCharged: fee, message: reader.strOr('message', feeNote));
   }
 
