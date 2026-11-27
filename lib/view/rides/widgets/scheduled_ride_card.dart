@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:sanga_ride/model/ride/scheduled_ride.dart';
 import 'package:sanga_ride/view/ride/widgets/ride_option_image.dart';
+import 'package:sanga_ride/view/rides/widgets/scheduled_copy.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 class ScheduledRideCard extends StatelessWidget {
@@ -16,6 +17,7 @@ class ScheduledRideCard extends StatelessWidget {
     this.reminderLabel,
     this.busyAction,
     this.onRemind,
+    this.onBookAgain,
   });
 
   final ScheduledRide ride;
@@ -28,6 +30,7 @@ class ScheduledRideCard extends StatelessWidget {
   final VoidCallback? onTap;
   final String? flightLabel;
   final VoidCallback? onRemind;
+  final VoidCallback? onBookAgain;
 
   static const double _stackScale = 1.3;
 
@@ -87,7 +90,9 @@ class ScheduledRideCard extends StatelessWidget {
 
   Widget _details(BuildContext context) {
     final isStacked = MediaQuery.textScalerOf(context).scale(1) > _stackScale;
-    final tag = SangaTag.scheduled(label: tagLabel, icon: ride.airport == null ? null : Icons.flight_land_rounded);
+    final tag = ride.hasNoDriver
+        ? const SangaTag.warning(label: ScheduledCopy.noDriverTag, icon: Icons.person_off_outlined)
+        : SangaTag.scheduled(label: tagLabel, icon: ride.airport == null ? null : Icons.flight_land_rounded);
     final when = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       spacing: SangaSpacing.xxs,
@@ -95,6 +100,7 @@ class ScheduledRideCard extends StatelessWidget {
         Text(whenLabel, maxLines: 2, overflow: TextOverflow.ellipsis, style: SangaTextStyles.cardTitle),
         if (repeatLabel != null) Text(repeatLabel!, style: SangaTextStyles.cardSubtitle),
         if (flightLabel != null) Text(flightLabel!, style: SangaTextStyles.cardSubtitle),
+        if (ride.hasNoDriver) const Text(ScheduledCopy.noDriverMessage, style: SangaTextStyles.cardSubtitle),
       ],
     );
     return Column(
@@ -138,6 +144,13 @@ class ScheduledRideCard extends StatelessWidget {
   }
 
   Widget _actions() {
+    if (ride.hasNoDriver) {
+      return SangaButton.primary(
+        label: ScheduledCopy.bookAgain,
+        size: SangaButtonSize.compact,
+        onPressed: onBookAgain,
+      );
+    }
     return Row(
       spacing: SangaSpacing.sm,
       children: [

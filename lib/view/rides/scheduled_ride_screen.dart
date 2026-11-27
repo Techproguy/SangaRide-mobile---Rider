@@ -11,6 +11,7 @@ import 'package:sanga_ride/view/ride/widgets/ride_option_review_cards.dart';
 import 'package:sanga_ride/view/ride/widgets/ride_option_schedule_format.dart';
 import 'package:sanga_ride/view/ride/widgets/trip_type_icon.dart';
 import 'package:sanga_ride/view/rides/widgets/scheduled_actions.dart';
+import 'package:sanga_ride/view/rides/widgets/scheduled_copy.dart';
 import 'package:sanga_ride/view/trip/trip_wait_copy.dart';
 import 'package:sanga_ride/view/wallet/widgets/wallet_page.dart';
 import 'package:sanga_ride/view/widgets/feedback/refresh_feedback.dart';
@@ -88,6 +89,12 @@ class _ScheduledRideScreenState extends State<ScheduledRideScreen> {
   }
 
   Widget _footer(ScheduledRide ride, ScheduledAction? busy) {
+    if (ride.hasNoDriver) {
+      return SangaButton.primary(
+        label: ScheduledCopy.bookAgain,
+        onPressed: ride.route == null ? null : () => bookScheduledRideAgain(context, ride),
+      );
+    }
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -114,6 +121,12 @@ class _ScheduledRideScreenState extends State<ScheduledRideScreen> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       spacing: SangaSpacing.md,
       children: [
+        if (ride.hasNoDriver)
+          const SangaNotice(
+            title: ScheduledCopy.noDriverTitle,
+            message: ScheduledCopy.noDriverMessage,
+            tone: SangaTone.warning,
+          ),
         RideOptionRouteCard(
           pickup: Place(placeId: '', name: ride.pickup.name, address: ride.pickup.address),
           stops: const [],
@@ -214,6 +227,7 @@ class _ScheduledRideScreenState extends State<ScheduledRideScreen> {
   }
 
   ({String label, IconData icon}) _tag(ScheduledRide ride) {
+    if (ride.hasNoDriver) return (label: ScheduledCopy.noDriverTag, icon: Icons.person_off_outlined);
     if (ride.isRepeat) return (label: 'Repeat', icon: Icons.event_repeat_rounded);
     if (ride.airport != null) return (label: TripType.airport.label, icon: TripType.airport.icon);
     return (label: 'Scheduled', icon: Icons.event_rounded);

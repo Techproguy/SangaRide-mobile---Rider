@@ -2,6 +2,7 @@ import 'package:flutter/widgets.dart';
 import 'package:sanga_ride/controller/rider/scheduled_rides_controller.dart';
 import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride/model/ride/scheduled_ride.dart';
+import 'package:sanga_ride/view/history/widgets/history_rebook.dart';
 import 'package:sanga_ride/view/ride/widgets/ride_option_schedule_format.dart';
 import 'package:sanga_ride/view/rides/widgets/cancel_scheduled_sheet.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart' show SangaToast, SangaToastTone;
@@ -20,6 +21,11 @@ Future<bool> cancelScheduledRide(BuildContext context, ScheduledRidesController 
   }
   SangaToast.show(problem.message, tone: SangaToastTone.error);
   return false;
+}
+
+void bookScheduledRideAgain(BuildContext context, ScheduledRide ride) {
+  final route = ride.route;
+  if (route != null) rebookRide(context, route, ride.category);
 }
 
 Future<void> remindScheduledRide(ScheduledRidesController rides, ScheduledRide ride) async {

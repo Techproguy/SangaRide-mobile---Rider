@@ -1,4 +1,5 @@
 import 'package:sanga_ride/core/format/money_json.dart';
+import 'package:sanga_ride/model/history/history_item.dart';
 import 'package:sanga_ride/model/ride/airport.dart';
 import 'package:sanga_ride/model/ride/booking.dart';
 import 'package:sanga_ride/model/ride/ride_load_problem.dart';
@@ -61,6 +62,8 @@ class ScheduledRide {
     this.reminderAt,
     this.airport,
     this.wait,
+    this.hasNoDriver = false,
+    this.route,
   });
 
   factory ScheduledRide.fromJson(JsonReader json) {
@@ -112,7 +115,19 @@ class ScheduledRide {
       hours: hourlyMinutes == null ? null : hourlyMinutes ~/ Duration.minutesPerHour,
       airport: airport?.timeOrNull('estimatedArrival') == null ? null : ScheduledAirport.fromJson(airport!.raw),
       wait: ScheduledWait.maybeFrom(json.objectOrNull('waiting') ?? json, pickupAt: scheduledAt),
+      hasNoDriver: json.strOrNull('status') == _noDriverStatus || json.boolOr('scheduledDispatchFailed', false),
+      route: _routeOf(json),
     );
+  }
+
+  static const String _noDriverStatus = 'no_driver_found';
+
+  static HistoryRoute? _routeOf(JsonReader json) {
+    try {
+      return HistoryRoute.fromRide(json);
+    } on Object {
+      return null;
+    }
   }
 
   static const Duration reminderLead = Duration(minutes: 30);
@@ -160,13 +175,15 @@ class ScheduledRide {
   final DateTime? reminderAt;
   final ScheduledAirport? airport;
   final ScheduledWait? wait;
+  final bool hasNoDriver;
+  final HistoryRoute? route;
 
   bool get isRepeat => kind == ScheduledRideKind.repeat;
 
   bool get hasReminder => reminderAt != null;
 
   bool get showsRemindAction =>
-      canRemind && !hasReminder && scheduledAt.subtract(reminderLead).isAfter(BookingClock.now());
+      canRemind && !hasNoDriver && !hasReminder && scheduledAt.subtract(reminderLead).isAfter(BookingClock.now());
 
   ScheduledRide copyWith({DateTime? reminderAt, DateTime? scheduledAt, RepeatRule? repeat}) => ScheduledRide(
     id: id,
@@ -183,6 +200,8 @@ class ScheduledRide {
     reminderAt: reminderAt ?? this.reminderAt,
     airport: airport,
     wait: wait,
+    hasNoDriver: hasNoDriver,
+    route: route,
   );
 }
 

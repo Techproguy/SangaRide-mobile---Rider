@@ -81,6 +81,7 @@ class _ScheduledRidesBodyState extends State<ScheduledRidesBody> {
       onTap: () => context.push(BookingRoutes.scheduledRideOf(ride.id)),
       onCancel: () => cancelScheduledRide(context, _rides, ride),
       onRemind: ride.showsRemindAction ? () => remindScheduledRide(_rides, ride) : null,
+      onBookAgain: ride.route == null ? null : () => bookScheduledRideAgain(context, ride),
     );
   }
 
