@@ -7,6 +7,7 @@ abstract final class GroupEndpoints {
   static const String inviteDecline = '/groups/invites/:inviteId/decline';
   static const String group = '/groups/:groupId';
   static const String invites = '/groups/:groupId/invites';
+  static const String invite = '/groups/:groupId/invites/:inviteId';
   static const String members = '/groups/:groupId/members/:memberId';
   static const String leave = '/groups/:groupId/leave';
   static const String approvals = '/groups/:groupId/approvals';
@@ -18,6 +19,8 @@ abstract final class GroupEndpoints {
   static String groupOf(String id) => fillPath(group, {'groupId': id});
 
   static String invitesOf(String id) => fillPath(invites, {'groupId': id});
+
+  static String inviteOf(String id, String inviteId) => fillPath(invite, {'groupId': id, 'inviteId': inviteId});
 
   static String memberOf(String id, String memberId) => fillPath(members, {'groupId': id, 'memberId': memberId});
 

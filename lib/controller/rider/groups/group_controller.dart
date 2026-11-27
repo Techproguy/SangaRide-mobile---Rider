@@ -160,15 +160,17 @@ class GroupController extends GetxController {
     }
   }
 
-  Future<GroupFailure?> removeMember(String memberId) async {
+  Future<GroupFailure?> removeMember(GroupMember member) async {
     if (isBusy) return GroupFailure.connection;
+    final memberId = member.id;
+    final path = member.isInvited ? GroupEndpoints.inviteOf(groupId, memberId) : GroupEndpoints.memberOf(groupId, memberId);
     _isBusy.value = true;
     try {
       final result = await _mutations.run<void>(
         signature: 'remove:$memberId',
         intent: IdempotencyIntent.memberRemove,
         send: (key) async {
-          await _api.delete(GroupEndpoints.memberOf(groupId, memberId), key: key, suppressErrorToast: true);
+          await _api.delete(path, key: key, suppressErrorToast: true);
         },
         reconcile: () async {
           await reloadQuietly();

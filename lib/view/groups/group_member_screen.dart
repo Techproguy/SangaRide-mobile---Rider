@@ -149,7 +149,7 @@ class _MemberMenu extends StatelessWidget {
       isDestructive: true,
     );
     if (!confirmed || !context.mounted) return;
-    final failure = await group.removeMember(member.id);
+    final failure = await group.removeMember(member);
     if (!context.mounted) return;
     if (failure != null && failure != GroupFailure.memberNotFound) {
       SangaToast.show(GroupCopy.failureText(failure), tone: SangaToastTone.error);
