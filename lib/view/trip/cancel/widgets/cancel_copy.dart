@@ -14,7 +14,6 @@ class CancelCopy {
   static const String cancellationFee = 'Cancellation fee';
   static const String free = 'Free';
   static const String takenFrom = 'Taken from';
-  static const String yourWallet = 'Your wallet';
   static const String paymentMethod = 'Payment method';
   static const String notSetYet = 'Not set yet';
   static const String refund = 'Refund';

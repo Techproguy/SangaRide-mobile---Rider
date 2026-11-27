@@ -19,7 +19,7 @@ class HistoryCancellationCard extends StatelessWidget {
         SangaDetailRow(
           icon: Icons.payments_outlined,
           label: 'Fee',
-          value: cancellation.hasFee ? '${cancellation.fee.format()} from your wallet' : 'No fee',
+          value: cancellation.hasFee ? cancellation.payer.feeFrom(cancellation.fee.format()) : 'No fee',
         ),
         SangaDetailRow(icon: Icons.event_rounded, label: 'Date', value: formatHistoryDate(detail.occurredAt)),
         SangaDetailRow(icon: Icons.tag_rounded, label: 'Reference', value: detail.reference),

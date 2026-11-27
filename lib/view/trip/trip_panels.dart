@@ -192,6 +192,7 @@ extension _TripPanels on _TripScreenState {
         reason: reason,
         message: trip.cancellationMessage,
         cancellationFee: trip.cancellationFee,
+        feePayer: trip.feePayer,
         onHome: _goHome,
       ),
       TripRefused(:final trip) => TripEndedPanel(

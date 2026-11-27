@@ -4,6 +4,7 @@ import 'package:sanga_ride/core/format/money_json.dart';
 import 'package:sanga_ride/model/history/history_item.dart';
 import 'package:sanga_ride_core/sanga_ride_core.dart';
 import 'package:sanga_ride/model/ride/ride_match.dart';
+import 'package:sanga_ride/model/trip/fee_payer.dart';
 import 'package:sanga_ride/model/ride/ride_request.dart';
 import 'package:sanga_ride/model/trip/trip.dart';
 import 'package:sanga_ride/model/trip/wrapup/payment.dart';
@@ -73,7 +74,7 @@ enum CancelledBy {
 }
 
 class HistoryCancellation {
-  const HistoryCancellation({required this.by, required this.reason, required this.fee});
+  const HistoryCancellation({required this.by, required this.reason, required this.fee, required this.payer});
 
   factory HistoryCancellation.fromJson(Map<String, dynamic> json) {
     final reader = JsonReader(json);
@@ -81,12 +82,14 @@ class HistoryCancellation {
       by: CancelledBy.fromCode(reader.strOrNull('by')),
       reason: reader.strOr('reason', ''),
       fee: reader.money('fee'),
+      payer: FeePayer.fromJson(json),
     );
   }
 
   final CancelledBy by;
   final String reason;
   final Money fee;
+  final FeePayer payer;
 
   bool get hasFee => fee.isPositive;
 }
@@ -182,6 +185,7 @@ class HistoryDetail {
     final createdAt = reader.time('createdAt').toLocal();
     final hasDriver = reader.objectOrNull('driver') != null;
     final delivery = reader.objectOrNull('delivery');
+    final paidWith = _paymentOf(reader, receiptReader);
     return HistoryDetail(
       id: trip.id,
       kind: kind,
@@ -200,7 +204,7 @@ class HistoryDetail {
           ...receiptReader.listOf('adjustments', (line) => ReceiptLine.fromJson(line.raw)),
         ],
       ],
-      paidWith: _paymentOf(reader, receiptReader),
+      paidWith: paidWith,
       driver: hasDriver
           ? HistoryDriver(profile: trip.driver, isBlocked: blockedDriverIds.contains(trip.driver.id))
           : null,
@@ -220,6 +224,7 @@ class HistoryDetail {
                   (isReturned ? TripCancelReason.deliveryReturned : trip.cancellationReason ?? TripCancelReason.other)
                       .message,
               fee: reader.moneyOrNull('cancellationFee') ?? reader.moneyOr('noShowFee', Money.zero()),
+              payer: paidWith?.group != null ? FeePayer.group : trip.feePayer,
             )
           : null,
       delivery: delivery == null ? null : _tryParse(() => HistoryDelivery.fromJson(delivery.raw)),

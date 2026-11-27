@@ -154,7 +154,7 @@ class CancelController extends GetxController {
           key: key,
           suppressErrorToast: true,
         );
-        return CancelOutcome.fromJson(response.dataMapOrEmpty);
+        return CancelOutcome.fromJson(response.dataMapOrEmpty, payer: reviewing.review.payer);
       },
       reconcile: () => _reconcile(id, reviewing.review.fee),
     );

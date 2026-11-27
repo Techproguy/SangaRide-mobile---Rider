@@ -6,6 +6,7 @@ import 'package:sanga_ride/model/location/place.dart';
 import 'package:sanga_ride/model/ride/airport.dart';
 import 'package:sanga_ride/model/ride/ride_match.dart';
 import 'package:sanga_ride/model/ride/ride_request.dart';
+import 'package:sanga_ride/model/trip/fee_payer.dart';
 import 'package:sanga_ride/model/trip/scheduled_wait.dart';
 import 'package:sanga_ride/model/trip/server_time.dart';
 import 'package:sanga_ride/model/trip/trip_delivery.dart';
@@ -95,7 +96,7 @@ enum TripCancelReason {
   riderNoShow(
     'RIDER_NO_SHOW',
     'You missed your ride',
-    'Your driver waited at the pickup but couldn’t find you, so the trip ended. The no show fee comes out of your wallet.',
+    'Your driver waited at the pickup but couldn’t find you, so the trip ended. A no show fee applies.',
   ),
   packageRefused('package_refused', 'Package not accepted', 'Your driver couldn’t take this package.'),
   deliveryCancelled('delivery_cancelled', 'Delivery cancelled', 'This delivery was cancelled.'),
@@ -248,6 +249,7 @@ class Trip {
     this.hourlyMinutes,
     this.payment,
     this.cancellationFee,
+    this.feePayer = FeePayer.unknown,
   });
 
   factory Trip.fromJson(Map<String, dynamic> json) {
@@ -294,6 +296,7 @@ class Trip {
       hourlyMinutes: reader.intOrNull('hourlyDurationMin') ?? reader.objectOrNull('hourly')?.intOrNull('durationMin'),
       payment: TripPaymentSummary.tryFrom(reader.objectOrNull('payment')),
       cancellationFee: reader.moneyOrNull('cancellationFee') ?? reader.moneyOrNull('noShowFee'),
+      feePayer: FeePayer.fromJson(json),
     );
   }
 
@@ -376,6 +379,7 @@ class Trip {
   final int? hourlyMinutes;
   final TripPaymentSummary? payment;
   final Money? cancellationFee;
+  final FeePayer feePayer;
 
   Trip withLocal({
     String? pin,
@@ -415,6 +419,7 @@ class Trip {
       hourlyMinutes: hourlyMinutes,
       payment: payment,
       cancellationFee: cancellationFee,
+      feePayer: feePayer,
     );
   }
 

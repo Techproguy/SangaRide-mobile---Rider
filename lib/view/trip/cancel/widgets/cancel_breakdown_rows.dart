@@ -30,7 +30,8 @@ class CancelBreakdownRows extends StatelessWidget {
           value: review.hasFee ? review.fee.format() : CancelCopy.free,
           style: feeStyle,
         ),
-        if (review.hasFee) const _Row(label: CancelCopy.takenFrom, value: CancelCopy.yourWallet),
+        if (review.hasFee && review.payer.sourceValue != null)
+          _Row(label: CancelCopy.takenFrom, value: review.payer.sourceValue!),
         _Row(label: CancelCopy.paymentMethod, value: review.paymentMethod?.label ?? CancelCopy.notSetYet),
         _Row(label: CancelCopy.refund, value: _refundLabel),
         _Row(label: CancelCopy.reason, value: reason.summary),

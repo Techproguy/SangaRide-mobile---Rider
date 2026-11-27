@@ -28,6 +28,11 @@ class PlacesService {
       Options(headers: {'X-Goog-Api-Key': _apiKey, 'X-Goog-FieldMask': ?fieldMask});
 
   static const double _biasRadiusMeters = 30000;
+  static const int _minFallbackLength = 3;
+  static const String _fallbackMask = '$_placeListMask,places.addressComponents';
+
+  String? _fallbackKey;
+  List<PlaceAutocomplete> _fallbackPredictions = const [];
 
   Future<List<PlaceAutocomplete>> getAutocompletePredictions(
     String input, {
@@ -61,11 +66,18 @@ class PlacesService {
         .whereType<Map>()
         .map((p) => PlaceAutocomplete.fromJson(Map<String, dynamic>.from(p)))
         .toList();
-    if (predictions.isNotEmpty) return predictions;
-    return _textPredictions(input, origin: origin, language: language);
+    if (predictions.isNotEmpty || input.length < _minFallbackLength) return predictions;
+    try {
+      return await _textPredictions(input, origin: origin, language: language);
+    } catch (e) {
+      log('Error in text search fallback: $e');
+      return predictions;
+    }
   }
 
   Future<List<PlaceAutocomplete>> _textPredictions(String input, {LatLng? origin, required String language}) async {
+    final key = '$input|$language|${origin?.latitude},${origin?.longitude}';
+    if (key == _fallbackKey) return _fallbackPredictions;
     final response = await _dio.post(
       MapsEndpoints.placesSearchText,
       data: {
@@ -77,18 +89,34 @@ class PlacesService {
             'circle': {'center': _latLng(origin), 'radius': _biasRadiusMeters},
           },
       },
-      options: _options(_placeListMask),
+      options: _options(_fallbackMask),
     );
-    return [
-      for (final place in _parsePlaces(response))
-        if (place.placeId.isNotEmpty)
-          PlaceAutocomplete(
-            placeId: place.placeId,
-            description: '${place.name}, ${place.address}',
-            mainText: place.name,
-            secondaryText: place.address,
-          ),
+    final rawPlaces = response.statusCode == 200 && response.data is Map
+        ? (response.data['places'] as List?) ?? const []
+        : const [];
+    final predictions = [
+      for (final raw in rawPlaces.whereType<Map>())
+        if (_isInPlacesCountry(raw))
+          if (Place.fromJson(Map<String, dynamic>.from(raw)) case final place when place.placeId.isNotEmpty)
+            PlaceAutocomplete(
+              placeId: place.placeId,
+              description: '${place.name}, ${place.address}',
+              mainText: place.name,
+              secondaryText: place.address,
+            ),
     ];
+    _fallbackKey = key;
+    _fallbackPredictions = predictions;
+    return predictions;
+  }
+
+  static bool _isInPlacesCountry(Map place) {
+    final components = place['addressComponents'];
+    if (components is! List) return false;
+    final country = SangaConstants.placesCountryCode.toUpperCase();
+    return components.whereType<Map>().any(
+      (c) => (c['types'] as List?)?.contains('country') == true && '${c['shortText']}'.toUpperCase() == country,
+    );
   }
 
   Future<Place?> getPlaceDetails(String placeId, {String? sessionToken}) async {

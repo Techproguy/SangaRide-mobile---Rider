@@ -81,6 +81,7 @@ class TripEndedPanel extends StatelessWidget {
     this.message,
     this.returnFee,
     this.cancellationFee,
+    this.feePayer = FeePayer.unknown,
   });
 
   final TripCancelReason reason;
@@ -88,6 +89,7 @@ class TripEndedPanel extends StatelessWidget {
   final String? message;
   final Money? returnFee;
   final Money? cancellationFee;
+  final FeePayer feePayer;
 
   @override
   Widget build(BuildContext context) {
@@ -114,7 +116,7 @@ class TripEndedPanel extends StatelessWidget {
             rows: [
               SangaDetailRow(
                 icon: Icons.account_balance_wallet_outlined,
-                label: 'Taken from your wallet',
+                label: feePayer.takenFromLabel,
                 value: cancelFee.format(),
               ),
             ],

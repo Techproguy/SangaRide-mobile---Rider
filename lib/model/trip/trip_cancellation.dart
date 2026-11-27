@@ -1,4 +1,5 @@
 import 'package:sanga_ride/core/format/money_json.dart';
+import 'package:sanga_ride/model/trip/fee_payer.dart';
 import 'package:sanga_ride/model/trip/trip.dart';
 import 'package:sanga_ride/model/trip/wrapup/payment.dart';
 import 'package:sanga_ride_core/sanga_ride_core.dart';
@@ -75,6 +76,7 @@ class CancellationReview {
     required this.feeReason,
     required this.refund,
     required this.paymentMethod,
+    this.payer = FeePayer.unknown,
     this.message,
     this.owed,
   });
@@ -91,6 +93,7 @@ class CancellationReview {
           ? CancellationRefund(amount: refund.money('amount'), method: paymentMethod)
           : null,
       paymentMethod: paymentMethod,
+      payer: FeePayer.fromJson(reader.raw),
       message: fee.strOrNull('notice'),
       owed: reader.moneyOrNull('outstandingBalance') ?? fee.moneyOrNull('outstandingBalance'),
     );
@@ -100,6 +103,7 @@ class CancellationReview {
   final CancelFeeReason feeReason;
   final CancellationRefund? refund;
   final PaymentMethod? paymentMethod;
+  final FeePayer payer;
   final String? message;
   final Money? owed;
 
@@ -113,10 +117,10 @@ class CancellationReview {
 class CancelOutcome {
   const CancelOutcome({required this.tripId, required this.feeCharged, required this.message});
 
-  factory CancelOutcome.fromJson(Map<String, dynamic> json) {
+  factory CancelOutcome.fromJson(Map<String, dynamic> json, {FeePayer payer = FeePayer.unknown}) {
     final reader = JsonReader.of(json);
     final fee = reader.money('cancellationFee');
-    final feeNote = fee.isPositive ? '${fee.format()} was taken from your wallet.' : 'No fee was charged.';
+    final feeNote = fee.isPositive ? payer.feeTakenNote(fee.format()) : 'No fee was charged.';
     return CancelOutcome(tripId: reader.str('id'), feeCharged: fee, message: reader.strOr('message', feeNote));
   }
 
