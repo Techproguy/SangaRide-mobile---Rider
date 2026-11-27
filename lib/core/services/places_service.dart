@@ -54,14 +54,41 @@ class PlacesService {
       },
       options: _options(),
     );
-    if (response.data is! Map) return [];
-    final suggestions = (response.data['suggestions'] as List?) ?? const [];
-    return suggestions
+    final suggestions = response.data is Map ? (response.data['suggestions'] as List?) ?? const [] : const [];
+    final predictions = suggestions
         .whereType<Map>()
         .map((s) => s['placePrediction'])
         .whereType<Map>()
         .map((p) => PlaceAutocomplete.fromJson(Map<String, dynamic>.from(p)))
         .toList();
+    if (predictions.isNotEmpty) return predictions;
+    return _textPredictions(input, origin: origin, language: language);
+  }
+
+  Future<List<PlaceAutocomplete>> _textPredictions(String input, {LatLng? origin, required String language}) async {
+    final response = await _dio.post(
+      MapsEndpoints.placesSearchText,
+      data: {
+        'textQuery': input,
+        'languageCode': language,
+        'regionCode': SangaConstants.placesCountryCode,
+        if (origin != null)
+          'locationBias': {
+            'circle': {'center': _latLng(origin), 'radius': _biasRadiusMeters},
+          },
+      },
+      options: _options(_placeListMask),
+    );
+    return [
+      for (final place in _parsePlaces(response))
+        if (place.placeId.isNotEmpty)
+          PlaceAutocomplete(
+            placeId: place.placeId,
+            description: '${place.name}, ${place.address}',
+            mainText: place.name,
+            secondaryText: place.address,
+          ),
+    ];
   }
 
   Future<Place?> getPlaceDetails(String placeId, {String? sessionToken}) async {
