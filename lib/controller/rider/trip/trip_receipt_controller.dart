@@ -49,6 +49,7 @@ class TripReceiptController extends GetxController {
   }
 
   Future<TripReceipt> _withCategory(String id, TripReceipt receipt) async {
+    if (receipt.knowsCategory) return receipt;
     try {
       final response = await _api.get(AppEndpoints.liveTripOf(id), suppressErrorToast: true);
       final trip = Trip.fromJson(response.dataMapOrEmpty);

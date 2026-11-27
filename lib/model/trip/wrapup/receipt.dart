@@ -117,6 +117,8 @@ class TripReceipt {
     required this.category,
     required this.ratedStars,
     this.delivery,
+    this.rideClassName,
+    this.knowsCategory = false,
   });
 
   factory TripReceipt.fromJson(Map<String, dynamic> json) {
@@ -124,6 +126,9 @@ class TripReceipt {
     final isRide = reader.strOrNull('kind') == 'ride';
     final delivery = isRide ? null : reader.objectOrNull('delivery');
     final payment = reader.objectOrNull('payment');
+    final rideClass = reader.objectOrNull('rideClass');
+    final classCategory = RideCategory.values.asNameMap()[rideClass?.strOrNull('code')];
+    final category = classCategory ?? RideCategory.values.asNameMap()[reader.strOrNull('category')];
     return TripReceipt(
       tripId: reader.str('rideId'),
       pickup: ReceiptPlace.fromJson(reader.object('pickup').raw),
@@ -140,7 +145,9 @@ class TripReceipt {
       paidAt: (payment?.timeOrNull('paidAt') ?? reader.timeOrNull('completedAt'))?.toLocal() ?? DateTime.now(),
       driver: OfferDriver.fromJson(reader.raw['driver']),
       vehicle: DriverVehicle.fromJson(reader.raw['vehicle']),
-      category: RideCategory.values.asNameMap()[reader.strOrNull('category')] ?? RideCategory.go,
+      category: category ?? RideCategory.go,
+      knowsCategory: category != null,
+      rideClassName: rideClass?.strOrNull('name'),
       ratedStars: reader.objectOrNull('rating')?.intOrNull('stars'),
       delivery: delivery == null || delivery.raw.isEmpty ? null : ReceiptDelivery.fromJson(delivery.raw),
     );
@@ -161,6 +168,8 @@ class TripReceipt {
   final RideCategory category;
   final int? ratedStars;
   final ReceiptDelivery? delivery;
+  final String? rideClassName;
+  final bool knowsCategory;
 
   bool get isDelivery => delivery != null;
 
@@ -180,6 +189,8 @@ class TripReceipt {
     category: value,
     ratedStars: ratedStars,
     delivery: delivery,
+    rideClassName: rideClassName,
+    knowsCategory: true,
   );
 
   bool get isRated => ratedStars != null;
