@@ -6,22 +6,22 @@ import 'package:get/get.dart';
 import 'package:sanga_ride/core/api/api_environment.dart';
 import 'package:sanga_ride/core/constants.dart';
 import 'package:sanga_ride/core/router/router.dart';
-import 'package:sanga_ride/core/services/crash_reporter.dart';
 import 'package:sanga_ride/initialize.dart';
 import 'package:sanga_ride/view/boot/app_overlays.dart';
 import 'package:sanga_ride/view/boot/session_end_notice.dart';
 import 'package:sanga_ride/view/boot/startup_error_app.dart';
 import 'package:sanga_ride_core/sanga_ride_core.dart' show SessionEndReason, SessionHub, navigatorKey;
+import 'package:sanga_ride_crash/sanga_ride_crash.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 void main() {
   ApiEnvironment.verify();
-  runZonedGuarded(_start, CrashReporting.recordZoneError);
+  unawaited(SangaCrash.guard(_start));
 }
 
 Future<void> _start() async {
   WidgetsFlutterBinding.ensureInitialized();
-  CrashReporting.install();
+  await SangaCrash.install();
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
   await _launch();
 }
@@ -35,7 +35,7 @@ Future<void> _launch() async {
     await initializeSanga();
     runApp(const SangaRide());
   } catch (error, stack) {
-    CrashReporting.recordZoneError(error, stack);
+    SangaCrash.recordStartupFailure(error, stack);
     Get.reset();
     runApp(StartupErrorApp(onRetry: () => unawaited(_launch())));
   } finally {

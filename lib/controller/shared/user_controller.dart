@@ -9,6 +9,7 @@ import 'package:sanga_ride/core/services/session_storage.dart';
 import 'package:sanga_ride/core/storage_keys.dart';
 import 'package:sanga_ride_core/sanga_ride_core.dart' show JsonReader, ResponseData;
 import 'package:sanga_ride/model/models.dart';
+import 'package:sanga_ride_crash/sanga_ride_crash.dart';
 
 class UserController extends GetxController {
   final _api = Get.find<ApiService>();
@@ -23,9 +24,11 @@ class UserController extends GetxController {
     super.onInit();
     final cached = _storage.read<Map<String, dynamic>>(SangaStorageKeys.user);
     if (cached == null) return;
-    _user.value = UserModel.fromJson(cached);
-    RegionMemory.applyPhone(_user.value?.phone);
-    SessionStorage.drafts.userScope = _user.value?.id;
+    final user = UserModel.fromJson(cached);
+    _user.value = user;
+    RegionMemory.applyPhone(user.phone);
+    SessionStorage.drafts.userScope = user.id;
+    SangaCrash.identify(user.id);
   }
 
   Future<void> fetchMe() async {
@@ -57,11 +60,13 @@ class UserController extends GetxController {
     RegionMemory.applyPhone(user.phone);
     _user.value = user;
     SessionStorage.drafts.userScope = user.id;
+    SangaCrash.identify(user.id);
     await _storage.write(SangaStorageKeys.user, user.toJson());
   }
 
   Future<void> clear() async {
     _user.value = null;
+    SangaCrash.clearUser();
     await _storage.remove(SangaStorageKeys.user);
   }
 }
