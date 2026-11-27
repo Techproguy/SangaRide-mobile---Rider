@@ -47,8 +47,13 @@ class NotificationAction {
   factory NotificationAction.fromReader(JsonReader? reader) =>
       NotificationAction(route: NotificationRoute.fromCode(reader?.strOrNull('route')), id: reader?.strOrNull('id'));
 
-  factory NotificationAction.fromData(NotificationKind kind, JsonReader? data) {
+  static const String _noDriverFoundType = 'ride.no_driver_found';
+
+  factory NotificationAction.fromData(NotificationKind kind, JsonReader? data, {String? type}) {
     final rideId = data?.strOrNull('rideId') ?? data?.strOrNull('deliveryId');
+    if (rideId != null && type == _noDriverFoundType) {
+      return NotificationAction(route: NotificationRoute.scheduledRide, id: rideId);
+    }
     if (rideId != null) return NotificationAction(route: NotificationRoute.trip, id: rideId);
     final ticketId = data?.strOrNull('ticketId');
     if (ticketId != null) return NotificationAction(route: NotificationRoute.supportTicket, id: ticketId);
@@ -91,7 +96,7 @@ class AppNotification {
       createdAt: createdAt,
       readAt: reader.timeOrNull('readAt')?.toLocal() ?? (reader.boolOr('read', false) ? createdAt : null),
       action: action == null
-          ? NotificationAction.fromData(kind, reader.objectOrNull('data'))
+          ? NotificationAction.fromData(kind, reader.objectOrNull('data'), type: reader.strOrNull('type'))
           : NotificationAction.fromReader(action),
     );
   }
