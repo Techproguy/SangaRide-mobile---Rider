@@ -97,7 +97,8 @@ extension RideRequestPayload on RideRequestController {
   Future<String> _paymentMethodFor(Money? fare) async {
     final wallet = _payerWallet(Get.find<RideForController>().rideFor);
     if (wallet.state is! WalletLoaded) await wallet.open();
-    final covers = fare != null && WalletPayOption.from(wallet.state, fare) is WalletCovers;
+    final balance = wallet.balance;
+    final covers = fare != null && balance != null && balance >= fare;
     return (covers ? PaymentMethod.wallet : PaymentMethod.cash).code;
   }
 

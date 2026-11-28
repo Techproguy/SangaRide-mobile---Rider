@@ -35,6 +35,7 @@ class TopUpMethodScreen extends StatelessWidget {
     return Obx(() {
       final draft = topUp.draft;
       final amount = draft.amount;
+      // TODO(#270): read the funding methods from the wallet when GET /rider/wallet sends methods[]
       final methods = [if (wallet.overview?.canPayByTransfer ?? false) TopUpMethod.transfer, TopUpMethod.card];
       final selected = methods.contains(draft.method) ? draft.method : TopUpMethod.card;
       return SangaPageLayout(

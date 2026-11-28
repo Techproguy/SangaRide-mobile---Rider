@@ -15,6 +15,7 @@ class WalletLimits {
     );
   }
 
+  // TODO(#270): drop the regional top up limits when GET /wallet sends limits.minTopUp and maxTopUp
   static WalletLimits get standard => SangaRegion.current == SangaRegion.us
       ? WalletLimits(minTopUp: Money.major(5), maxTopUp: Money.major(500))
       : WalletLimits(minTopUp: Money.major(500), maxTopUp: Money.major(500000));

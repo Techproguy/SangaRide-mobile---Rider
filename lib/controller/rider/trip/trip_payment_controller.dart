@@ -214,10 +214,7 @@ class TripPaymentController extends GetxController {
     if (payment.method == PaymentMethod.wallet) unawaited(payerWallet.reloadQuietly());
   }
 
-  bool _walletCovers(Money fare) => WalletPayOption.from(payerWallet.state, fare) is WalletCovers;
-
-  bool _isChoosable(TripPayment payment, PaymentMethod method) =>
-      payment.allowedMethods.contains(method) && (method != PaymentMethod.wallet || _walletCovers(payment.amount));
+  bool _isChoosable(TripPayment payment, PaymentMethod method) => payment.allowedMethods.contains(method);
 
   PaymentMethod? _rechoiceOf(TripPayment payment) {
     final preferred = _preferredOf(payment);

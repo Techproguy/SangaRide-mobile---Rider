@@ -23,6 +23,7 @@ abstract final class WalletCopy {
   static const String addMoney = 'Add money';
   static const String enterAmount = 'Amount';
   static const String pickAnotherWay = 'Pick another way';
+  // TODO(#270): read the provider name when top ups send checkout.providerName
   static const String cardCheckoutNote = 'You’ll pay on a secure Paystack page, then come straight back here.';
   static const String sentIt = 'I’ve sent it';
   static const String doneForNow = 'Done for now';
@@ -165,11 +166,6 @@ abstract final class WalletCopy {
     TransactionFilter.topUps => 'Money you add to your wallet shows up here.',
     TransactionFilter.rides => 'Pay for a ride with your wallet and it shows up here.',
     TransactionFilter.credits => 'Refunds, bonuses and promo credit land here.',
-  };
-
-  static String amountProblem(AmountProblem problem, WalletLimits limits) => switch (problem) {
-    AmountProblem.tooLow => 'Add at least ${WalletFormat.money(limits.minTopUp)}',
-    AmountProblem.tooHigh => 'You can add up to ${WalletFormat.money(limits.maxTopUp)} at a time',
   };
 
   static String limitsHint(WalletLimits limits) =>

@@ -26,20 +26,16 @@ class _TopUpAmountScreenState extends State<TopUpAmountScreen> {
   late final _topUp = WalletControllers.topUp(widget.scope);
   final _amount = TextEditingController();
   final _focus = FocusNode();
-  final RxBool _hasLeftField = false.obs;
 
   @override
   void initState() {
     super.initState();
-    _focus.addListener(_onFocusChanged);
     WidgetsBinding.instance.addPostFrameCallback((_) => _start());
   }
 
   @override
   void dispose() {
-    _focus
-      ..removeListener(_onFocusChanged)
-      ..dispose();
+    _focus.dispose();
     _amount.dispose();
     super.dispose();
   }
@@ -52,10 +48,6 @@ class _TopUpAmountScreenState extends State<TopUpAmountScreen> {
     unawaited(_wallet.open());
   }
 
-  void _onFocusChanged() {
-    if (!_focus.hasFocus && _amount.text.isNotEmpty) _hasLeftField.value = true;
-  }
-
   void _pickQuick(Money amount) {
     _amount.text = NumberFormats.groupedWhole(amount);
     _topUp.setAmount(amount);
@@ -66,14 +58,6 @@ class _TopUpAmountScreenState extends State<TopUpAmountScreen> {
     _focus.unfocus();
     final done = await context.push<bool>(WalletRoutes.topUpMethodOf(groupId: widget.scope.groupId));
     if (done == true && mounted) context.pop(true);
-  }
-
-  String? _errorOf(Money? amount, WalletLimits limits) {
-    if (amount == null) return null;
-    final problem = limits.problemWith(amount);
-    if (problem == null) return null;
-    if (problem == AmountProblem.tooLow && !_hasLeftField.value) return null;
-    return WalletCopy.amountProblem(problem, limits);
   }
 
   Widget _body(WalletState state, Money? amount) => switch (state) {
@@ -102,7 +86,6 @@ class _TopUpAmountScreenState extends State<TopUpAmountScreen> {
               focusNode: _focus,
               hintText: '0',
               maxDigits: limits.maxTopUp.wholeMajor.toString().length,
-              errorText: _errorOf(amount, limits),
               onChanged: (value) => _topUp.setAmount(NumberFormats.moneyOf(value)),
               onSubmitted: (_) => _focus.unfocus(),
             ),
@@ -131,8 +114,7 @@ class _TopUpAmountScreenState extends State<TopUpAmountScreen> {
     return Obx(() {
       final state = _wallet.state;
       final amount = _topUp.draft.amount;
-      final limits = _wallet.overview?.limits;
-      final canContinue = amount != null && limits != null && limits.problemWith(amount) == null;
+      final canContinue = amount != null && amount.isPositive;
       return SangaPageLayout(
         title: WalletCopy.addMoney,
         footer: SangaButton.primary(label: SangaAuthCopy.continueLabel, onPressed: canContinue ? _continue : null),

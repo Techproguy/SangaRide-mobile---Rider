@@ -74,7 +74,12 @@ class _PayScreenState extends State<PayScreen> {
         _celebrate(payment);
       case PaymentDeclined(:final reason, :final payment):
         _closeSheets();
-        _reject(payment.declineMessage ?? reason.message);
+        if (reason == PaymentDeclineReason.insufficientBalance && payment.group == null) {
+          _payment.backToChoosing();
+          unawaited(_topUpWallet(payment.amount));
+        } else {
+          _reject(payment.declineMessage ?? reason.message);
+        }
       case PaymentLoading() || PaymentUnavailable() || PaymentChoosing() || PaymentCardEntry():
         _closeSheets();
     }
@@ -157,8 +162,10 @@ class _PayScreenState extends State<PayScreen> {
     }
   }
 
-  Future<void> _topUpWallet(Money shortBy) async {
+  Future<void> _topUpWallet(Money fare) async {
     final overview = _wallet.overview;
+    final balance = overview?.balance;
+    final shortBy = balance != null && balance < fare ? fare - balance : fare;
     final suggestion = overview?.limits.suggestionFor(shortBy);
     await context.push<bool>(WalletRoutes.topUpOf(amount: suggestion?.wholeMajor));
     if (!mounted) return;
@@ -170,7 +177,7 @@ class _PayScreenState extends State<PayScreen> {
   Widget build(BuildContext context) {
     return Obx(() {
       final state = _payment.state;
-      final walletState = _payerWallet.state;
+      final walletBalance = _payerWallet.balance;
       return PopScope(
         canPop: state is! PaymentProcessing && state is! PaymentChecking && state is! PaymentAwaitingDriver,
         child: SangaPageLayout(
@@ -196,10 +203,8 @@ class _PayScreenState extends State<PayScreen> {
                   : null,
               builder: (context) => _PayBody(
                 state: state,
-                walletState: walletState,
+                walletBalance: walletBalance,
                 onSelect: _payment.select,
-                onTopUp: _topUpWallet,
-                onRetryWallet: _payerWallet.reload,
               ),
             ),
           ],
@@ -212,24 +217,19 @@ class _PayScreenState extends State<PayScreen> {
 class _PayBody extends StatelessWidget {
   const _PayBody({
     required this.state,
-    required this.walletState,
+    required this.walletBalance,
     required this.onSelect,
-    required this.onTopUp,
-    required this.onRetryWallet,
   });
 
   final PaymentState state;
-  final WalletState walletState;
+  final Money? walletBalance;
   final ValueChanged<PaymentMethod> onSelect;
-  final ValueChanged<Money> onTopUp;
-  final VoidCallback onRetryWallet;
 
   @override
   Widget build(BuildContext context) {
     final current = state;
     if (current is! PaymentLoaded) return const SizedBox.shrink();
     final payment = current.payment;
-    final walletOption = WalletPayOption.from(walletState, payment.amount);
     final notice = current is PaymentChoosing ? current.notice : null;
     return Column(
       spacing: SangaSpacing.lg,
@@ -241,10 +241,8 @@ class _PayBody extends StatelessWidget {
           selected: _selectedOf(current),
           lastMethod: payment.lastMethod,
           group: payment.group,
-          walletOption: walletOption,
+          walletBalance: walletBalance,
           onSelect: onSelect,
-          onTopUp: () => onTopUp(walletOption is WalletShort ? walletOption.shortBy : Money.zero()),
-          onRetryWallet: onRetryWallet,
         ),
       ],
     );

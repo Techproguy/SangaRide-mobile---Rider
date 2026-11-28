@@ -23,6 +23,7 @@ class TopUpController extends GetxController {
 
   static const Duration transferPollInterval = Duration(seconds: 3);
   static const Duration confirmPollInterval = Duration(seconds: 2);
+  // TODO(#270): drop the 90 second delayed and still processing clocks when top ups send expectedBySeconds or expiresAt
   static const Duration transferDelayedAfter = Duration(seconds: 90);
   static const Duration confirmGiveUpAfter = Duration(seconds: 90);
   static const Duration creationClockSkew = Duration(seconds: 5);
