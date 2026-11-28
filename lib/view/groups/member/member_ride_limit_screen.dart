@@ -34,6 +34,7 @@ class _Form extends StatefulWidget {
 }
 
 class _FormState extends State<_Form> {
+  // TODO(#270): drop the starting ride limit and allowed hours when GET /groups/defaults is live
   static const int defaultLimit = 3;
   static const int maximum = 20;
 

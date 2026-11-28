@@ -34,6 +34,7 @@ class _Form extends StatefulWidget {
 }
 
 class _FormState extends State<_Form> {
+  // TODO(#270): drop the starting allowed hours when GET /groups/defaults is live
   static const String defaultFrom = '06:00';
   static const String defaultTo = '21:00';
 

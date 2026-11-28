@@ -22,6 +22,7 @@ enum TransactionKind {
   static TransactionKind fromCode(String? code) =>
       enumByCode(values, _liveAliases[code] ?? code, (kind) => kind.code, TransactionKind.adjustment);
 
+  // TODO(#270): drop the kind aliases and the direction sign when wallet transactions return a normalised kind and signed amount
   static const Map<String, String> _liveAliases = {'topup': 'top_up', 'payment': 'ride_payment'};
 }
 

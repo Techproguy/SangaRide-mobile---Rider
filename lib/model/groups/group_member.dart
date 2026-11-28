@@ -12,16 +12,16 @@ class MemberPermissions {
     required this.bookRides,
     required this.bookForOthers,
     required this.useGroupWallet,
-    this.viewHistory = true,
+    required this.viewHistory,
   });
 
   factory MemberPermissions.fromJson(Map<String, dynamic> json) {
     final reader = JsonReader(json);
     return MemberPermissions(
-      bookRides: reader.boolOr('bookRides', true),
+      bookRides: reader.boolOr('bookRides', false),
       bookForOthers: reader.boolOr('bookForOthers', false),
-      useGroupWallet: reader.boolOr('useWallet', true),
-      viewHistory: reader.boolOr('viewHistory', true),
+      useGroupWallet: reader.boolOr('useWallet', false),
+      viewHistory: reader.boolOr('viewHistory', false),
     );
   }
 
@@ -53,6 +53,7 @@ class MemberAlerts {
 
   factory MemberAlerts.fromJson(Map<String, dynamic> json) {
     final reader = JsonReader(json);
+    // TODO(#270): drop the all-on alert defaults when group members return alerts{tripStarted,tripEnded,sos,overLimit}
     return MemberAlerts(
       tripStarted: reader.boolOr('tripStarted', true),
       tripEnded: reader.boolOr('tripEnded', true),
@@ -143,6 +144,7 @@ class MemberLimits {
     );
   }
 
+  // TODO(#270): drop the minimum monthly spend when the group returns limits.minMonthlySpend
   static const Map<SangaRegion, int> _minimumSpendByRegion = {SangaRegion.ng: 1000, SangaRegion.us: 5};
 
   static Money get minimumMonthlySpend => Money.major(_minimumSpendByRegion[SangaRegion.current] ?? 1);

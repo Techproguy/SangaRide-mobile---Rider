@@ -93,13 +93,6 @@ class RideForController extends GetxController {
     return (detail: detail, me: group.me);
   }
 
-  bool _canBookFor(GroupMember member, GroupDetail detail, GroupMember? me) {
-    if (member.isInvited) return false;
-    if (detail.canManage) return true;
-    if (member.id == me?.id) return me?.permissions.bookRides == true && me?.permissions.useGroupWallet == true;
-    return me?.permissions.bookForOthers == true;
-  }
-
   Future<void> loadFamily() async {
     if (family is! RideForListLoaded) _family.value = const RideForListLoading();
     try {
@@ -109,7 +102,7 @@ class RideForController extends GetxController {
           ? <FamilyMember>[]
           : [
               for (final member in found.detail.members)
-                if (_canBookFor(member, found.detail, found.me))
+                if (!member.isInvited)
                   FamilyMember(
                     id: member.id,
                     groupId: found.detail.id,

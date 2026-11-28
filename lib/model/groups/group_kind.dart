@@ -23,6 +23,7 @@ enum GroupRole {
   final String code;
   final String label;
 
+  // TODO(#270): drop the role check when the group returns me.capabilities{canTopUp,canInvite,canManageMembers}
   bool get canManage => this != member;
 
   static GroupRole fromCode(String? code) => enumByCode(values, code, (role) => role.code, GroupRole.member);
