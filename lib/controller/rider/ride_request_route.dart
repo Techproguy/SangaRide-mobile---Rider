@@ -31,8 +31,8 @@ extension RideRequestRoute on RideRequestController {
       case RoutePoint.stop:
         final index = edit.stopIndex;
         if (index == null) {
-          const limit = RideRequestController.maxStops;
-          if (stops.length >= limit) return AddStopCopy.stopLimit(limit);
+          final limit = maxStops;
+          if (limit != null && stops.length >= limit) return AddStopCopy.stopLimit(limit);
           _stops.add(place);
         } else {
           _stops[index] = place;

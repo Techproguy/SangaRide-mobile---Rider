@@ -205,6 +205,7 @@ class TripPlace {
 class TripFare {
   const TripFare({required this.total, this.counterOffer});
 
+  // TODO(#270): drop the finalFare, agreedFare, riderFare precedence when rides send fare.total
   factory TripFare.fromJson(JsonReader json) => TripFare(
     total: json.moneyOrNull('finalFare') ?? json.moneyOrNull('agreedFare') ?? json.moneyOr('riderFare', Money.zero()),
   );
@@ -423,8 +424,6 @@ class Trip {
     );
   }
 
-  static const int maxStops = 3;
-
   List<TripPlace> get route => [pickup, ...stops, dropoff];
 
   bool get isDelivery => delivery != null;
@@ -433,7 +432,7 @@ class Trip {
 
   bool get canChange => status.canChange && (delivery?.stage.canCancel ?? true);
 
-  bool get canAddStops => !isDelivery && canChange && stops.length < maxStops;
+  bool get canAddStops => !isDelivery && canChange;
 
   bool get isHourly => (hourlyMinutes ?? 0) > 0;
 

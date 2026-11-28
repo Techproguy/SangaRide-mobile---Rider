@@ -205,7 +205,7 @@ class _RideReviewScreenState extends State<RideReviewScreen> {
     return [
       SangaFareLine('Trip', ride.tripType.label),
       if (ride.tripType == TripType.hourly) ...[
-        SangaFareLine('Duration', _hoursLabel(ride.hours)),
+        if (ride.hours case final hours?) SangaFareLine('Duration', _hoursLabel(hours)),
         SangaFareLine('Stay with me', ride.staysWithRider ? 'Yes' : 'No'),
       ],
       if (ride.tripType == TripType.intercity && ride.fromCity != null && ride.toCity != null)

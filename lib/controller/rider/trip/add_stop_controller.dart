@@ -44,7 +44,12 @@ class AddStopController extends GetxController {
     _ => false,
   };
 
-  int slotsLeft(Trip trip) => RideRequestController.maxStops - trip.stops.length - added.length;
+  final _rides = Get.find<RideRequestController>();
+
+  int? slotsLeft(Trip trip) {
+    final limit = _rides.maxStops;
+    return limit == null ? null : limit - trip.stops.length - added.length;
+  }
 
   @override
   void onClose() {
@@ -54,6 +59,7 @@ class AddStopController extends GetxController {
 
   void open(String tripId) {
     _tripId = tripId;
+    unawaited(_rides.loadCatalog());
     _epoch.next();
     _releaseMutation();
     _state.value = const AddStopDrafting([]);
@@ -74,7 +80,8 @@ class AddStopController extends GetxController {
 
   String? validate(Place place, Trip trip) {
     if (place.coordinates == null) return AddStopCopy.unplaceable;
-    if (slotsLeft(trip) <= 0) return AddStopCopy.stopLimit(RideRequestController.maxStops);
+    final slots = slotsLeft(trip);
+    if (slots != null && slots <= 0) return AddStopCopy.stopLimit(_rides.maxStops!);
     if (trip.pickup.toPlace().isSameAs(place)) return AddStopCopy.sameAsPickup;
     if (trip.dropoff.toPlace().isSameAs(place)) return AddStopCopy.sameAsDropoff;
     final taken = [for (final stop in trip.stops) stop.toPlace(), ...added];

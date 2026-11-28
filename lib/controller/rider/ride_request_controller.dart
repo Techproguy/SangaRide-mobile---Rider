@@ -23,7 +23,6 @@ part 'ride_request_payload.dart';
 part 'ride_request_route.dart';
 
 class RideRequestController extends GetxController {
-  static const int maxStops = Trip.maxStops;
   static const Duration catalogLifetime = Duration(minutes: 10);
 
   final _api = Get.find<ApiService>();
@@ -59,7 +58,7 @@ class RideRequestController extends GetxController {
   final RxBool _isRestoring = false.obs;
   final Rxn<RepeatRule> _repeatRule = Rxn<RepeatRule>();
   final Rxn<DateTime> _returnAt = Rxn<DateTime>();
-  final RxInt _hours = BookingRules.defaultHours.obs;
+  final RxnInt _hours = RxnInt();
   final RxBool _staysWithRider = true.obs;
   final RxBool _isScheduling = false.obs;
   final Rx<BookingCatalogState> _catalog = Rx<BookingCatalogState>(const CatalogLoading());
@@ -113,7 +112,7 @@ class RideRequestController extends GetxController {
 
   DateTime? get returnAt => _returnAt.value;
 
-  int get hours => _hours.value;
+  int? get hours => _hours.value ?? hourlyCatalog?.presets.firstOrNull?.hours;
 
   bool get staysWithRider => _staysWithRider.value;
 
@@ -137,7 +136,14 @@ class RideRequestController extends GetxController {
     CatalogLoading() || CatalogFailed() => null,
   };
 
-  BookingRules get rules => readyCatalog?.rules ?? BookingRules.fallback;
+  BookingRules? get rules => readyCatalog?.rules;
+
+  int? get maxStops => rules?.maxStops;
+
+  Future<BookingRules?> ensureRules() async {
+    if (rules == null) await loadCatalog();
+    return rules;
+  }
 
   @override
   void onInit() {
@@ -236,6 +242,7 @@ class RideRequestController extends GetxController {
 
   Money? get hourlyRate => hourlyCatalog?.hourlyRate;
 
+  // TODO(#270): drop the return slack and rounding step when booking rules send returnSlackMinutes and timeStepMinutes
   static const Duration _returnSlack = Duration(minutes: 5);
   static const int _returnStepMinutes = 5;
 
@@ -243,7 +250,10 @@ class RideRequestController extends GetxController {
 
   DateTime? get departureAt => timing == RideTiming.now ? BookingClock.now() : scheduledAt;
 
-  DateTime? get earliestReturn => departureAt?.add(rules.returnGap);
+  DateTime? get earliestReturn {
+    final gap = rules?.returnGap;
+    return gap == null ? null : departureAt?.add(gap);
+  }
 
   DateTime? get earliestPickableReturn {
     final earliest = earliestReturn?.add(_returnSlack);
@@ -269,7 +279,10 @@ class RideRequestController extends GetxController {
 
   bool get hasRoute => pickup != null && dropoff != null;
 
-  bool get canAddStop => hasRoute && stops.length < maxStops;
+  bool get canAddStop {
+    final limit = maxStops;
+    return hasRoute && (limit == null || stops.length < limit);
+  }
 
   List<LatLng> get routePoints => [
     for (final place in [pickup, ...stops, dropoff]) ?place?.coordinates,
@@ -294,13 +307,14 @@ class RideRequestController extends GetxController {
     _scheduledAt.value = null;
     _repeatRule.value = null;
     _returnAt.value = null;
-    _hours.value = BookingRules.defaultHours;
+    _hours.value = null;
     _staysWithRider.value = true;
     _airport.value = null;
     _delivery.value = null;
     _knownMeetGreetFee.value = null;
     _optionId.value = category == null ? null : _options.firstWhereOrNull((o) => o.category == category)?.id;
     _preferredCategory = category;
+    unawaited(loadCatalog());
   }
 
   RideCategory? _preferredCategory;

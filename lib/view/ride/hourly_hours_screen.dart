@@ -25,7 +25,7 @@ class _HourlyHoursScreenState extends State<HourlyHoursScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) => _ride.loadCatalog());
   }
 
-  bool _isCustom(HourlyCatalog catalog) => _customChosen || !catalog.isPreset(_ride.hours);
+  bool _isCustom(HourlyCatalog catalog, int hours) => _customChosen || !catalog.isPreset(hours);
 
   void _pickPreset(int hours) {
     setState(() => _customChosen = false);
@@ -39,14 +39,14 @@ class _HourlyHoursScreenState extends State<HourlyHoursScreen> {
       footer: Obx(
         () => SangaButton.primary(
           label: 'Confirm',
-          onPressed: _ride.hourlyRate == null ? null : () => context.push(BookingRoutes.afterHours),
+          onPressed: _ride.hourlyCatalog == null ? null : () => context.push(BookingRoutes.afterHours),
         ),
       ),
       children: [
         Obx(
           () => RideOptionAsyncState(
             isLoading: _ride.catalog is CatalogLoading,
-            hasFailed: _ride.catalog is CatalogFailed || _ride.hourlyRate == null,
+            hasFailed: _ride.catalog is CatalogFailed || _ride.hourlyCatalog == null,
             errorTitle: 'We couldn’t load hourly prices',
             failureMessage: switch (_ride.catalog) {
               CatalogFailed(:final problem) => problem.message,
@@ -65,17 +65,19 @@ class _HourlyHoursScreenState extends State<HourlyHoursScreen> {
   Widget _buildContent(BuildContext context) {
     final catalog = _ride.hourlyCatalog;
     final rate = _ride.hourlyRate;
-    if (catalog == null || rate == null) return const SizedBox.shrink();
+    final hours = _ride.hours;
+    if (catalog == null || hours == null) return const SizedBox.shrink();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       spacing: SangaSpacing.lg,
       children: [
-        Text('${_ride.option?.name ?? 'This ride'} costs ${rate.format()} an hour.', style: SangaTextStyles.body),
+        if (rate != null)
+          Text('${_ride.option?.name ?? 'This ride'} costs ${rate.format()} an hour.', style: SangaTextStyles.body),
         HourlyDurationOptions(
           catalog: catalog,
           hourlyRate: rate,
-          hours: _ride.hours,
-          isCustom: _isCustom(catalog),
+          hours: hours,
+          isCustom: _isCustom(catalog, hours),
           onPreset: _pickPreset,
           onCustom: () => setState(() => _customChosen = true),
           onHoursChanged: _ride.setHours,

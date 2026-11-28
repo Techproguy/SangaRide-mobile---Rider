@@ -126,7 +126,7 @@ abstract final class FlightNumber {
 enum FlightProblem {
   notFound('flight_not_found', 'We can’t find that flight. Check the airline, number and date.'),
   wrongAirport('wrong_airport', 'That flight lands at a different airport. Check your flight or pick another airport.'),
-  dateOutOfRange('date_out_of_range', 'We can only plan pick ups from today up to 30 days ahead.'),
+  dateOutOfRange('date_out_of_range', 'That date is too far ahead for us to plan a pick up. Try a closer one.'),
   alreadyArrived('flight_already_arrived', 'That flight landed a while ago. Check the date and number.'),
   connection('connection', SangaCommonCopy.offlineAnotherGo),
   unknown('unknown', 'We couldn’t check that flight. Try again in a moment.');
@@ -164,15 +164,20 @@ final class FlightFound extends FlightLookupState {
 }
 
 final class FlightLookupFailed extends FlightLookupState {
-  const FlightLookupFailed(this.problem, {this.destination});
+  const FlightLookupFailed(this.problem, {this.destination, this.windowDays});
 
   final FlightProblem problem;
   final String? destination;
+  final int? windowDays;
 
   String get message {
     final destination = this.destination;
     if (problem == FlightProblem.wrongAirport && destination != null) {
       return 'That flight lands in $destination. Go back and pick that airport, or check your flight number.';
+    }
+    final days = windowDays;
+    if (problem == FlightProblem.dateOutOfRange && days != null) {
+      return 'We can only plan pick ups from today up to ${SangaPlural.count(days, 'day')} ahead.';
     }
     return problem.message;
   }

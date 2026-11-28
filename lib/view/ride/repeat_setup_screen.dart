@@ -77,13 +77,15 @@ class _RepeatSetupScreenState extends State<RepeatSetupScreen> {
   }
 
   Future<void> _pickStart() async {
+    final rules = await _ride.ensureRules();
+    if (rules == null || !mounted) return;
     final today = _dateOnly(BookingClock.now());
     final picked = await showSangaDateSheet(
       context: context,
       title: 'Start date',
       initialDate: _start.isBefore(today) ? today : _start,
       firstDate: today,
-      lastDate: today.add(_ride.rules.bookingWindow),
+      lastDate: today.add(rules.bookingWindow),
     );
     if (picked == null) return;
     setState(() {

@@ -108,7 +108,7 @@ class _AddStopScreenState extends State<AddStopScreen> {
     return StopDraftingView(
       trip: trip,
       added: _add.added,
-      slotsLeft: _add.slotsLeft(trip),
+      hasRoom: (_add.slotsLeft(trip) ?? 1) > 0,
       onChoose: () => unawaited(_choose()),
       onRemove: _add.removeAt,
       onDone: () => unawaited(_add.requestQuote()),

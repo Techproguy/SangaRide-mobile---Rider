@@ -6,10 +6,10 @@ extension RideRequestPayload on RideRequestController {
     'timing': timing.name,
     if (scheduledAt case final at?) ...{'scheduledFor': at.toUtc().toIso8601String(), 'timezone': at.timeZoneName},
     if (repeatRule case final rule?) 'repeat': rule.toJson(),
-    if (tripType == TripType.hourly) ...{
-      'hourlyDurationMin': hours * Duration.minutesPerHour,
+    if (tripType == TripType.hourly && hours != null) ...{
+      'hourlyDurationMin': hours! * Duration.minutesPerHour,
       'stayWithMe': staysWithRider,
-      'hourly': {'durationMin': hours * Duration.minutesPerHour, 'stayWithMe': staysWithRider},
+      'hourly': {'durationMin': hours! * Duration.minutesPerHour, 'stayWithMe': staysWithRider},
     },
     if (tripType == TripType.intercity) ...{
       'fromCityId': fromCity?.id,
@@ -93,6 +93,7 @@ extension RideRequestPayload on RideRequestController {
     return {...payload, 'quoteId': _lockedQuoteId, 'paymentMethod': _lockedPaymentMethod};
   }
 
+  // TODO(#270): drop the local wallet-or-cash choice when estimate returns paymentMethods[] with walletCovers
   Future<String> _paymentMethodFor(Money? fare) async {
     final wallet = _payerWallet(Get.find<RideForController>().rideFor);
     if (wallet.state is! WalletLoaded) await wallet.open();

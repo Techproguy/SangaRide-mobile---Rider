@@ -56,13 +56,15 @@ class _FlightDetailsScreenState extends State<FlightDetailsScreen> {
   }
 
   Future<void> _pickDate() async {
+    final rules = await Get.find<RideRequestController>().ensureRules();
+    if (rules == null || !mounted) return;
     final today = _today;
     final picked = await showSangaDateSheet(
       context: context,
       title: 'Arrival date',
       initialDate: _airport.draft.arrivalDate ?? today,
       firstDate: today,
-      lastDate: today.add(Get.find<RideRequestController>().rules.bookingWindow),
+      lastDate: today.add(rules.bookingWindow),
     );
     if (picked != null) _airport.setArrivalDate(picked);
   }

@@ -15,7 +15,7 @@ class HourlyDurationOptions extends StatelessWidget {
   });
 
   final HourlyCatalog catalog;
-  final Money hourlyRate;
+  final Money? hourlyRate;
   final int hours;
   final bool isCustom;
   final ValueChanged<int> onPreset;
@@ -38,15 +38,16 @@ class HourlyDurationOptions extends StatelessWidget {
             isSelected: !isCustom && hours == preset.hours,
             onTap: () => onPreset(preset.hours),
           ),
-        SangaOptionCard(
-          leading: const SangaIconBadge(child: Icon(Icons.tune_rounded)),
-          title: 'Custom duration',
-          subtitle: 'Anything from ${catalog.minHours} to ${catalog.maxHours} hours',
-          value: isCustom ? (hourlyRate * hours).format() : null,
-          isSelected: isCustom,
-          onTap: onCustom,
-        ),
-        if (isCustom)
+        if (hourlyRate case final rate?)
+          SangaOptionCard(
+            leading: const SangaIconBadge(child: Icon(Icons.tune_rounded)),
+            title: 'Custom duration',
+            subtitle: 'Anything from ${catalog.minHours} to ${catalog.maxHours} hours',
+            value: isCustom ? (rate * hours).format() : null,
+            isSelected: isCustom,
+            onTap: onCustom,
+          ),
+        if (isCustom && hourlyRate != null)
           Row(
             children: [
               Expanded(child: Text(hoursLabel(hours), style: SangaTextStyles.cardTitle)),

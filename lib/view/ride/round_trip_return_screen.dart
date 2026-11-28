@@ -7,6 +7,7 @@ import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride/model/ride/booking.dart';
 import 'package:sanga_ride/view/ride/widgets/booking_note.dart';
 import 'package:sanga_ride/view/ride/widgets/booking_picker_field.dart';
+import 'package:sanga_ride/view/ride/widgets/ride_option_async_state.dart';
 import 'package:sanga_ride/view/ride/widgets/ride_option_schedule_format.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
@@ -14,13 +15,14 @@ class RoundTripReturnScreen extends StatelessWidget {
   const RoundTripReturnScreen({super.key});
 
   Future<void> _pickReturn(BuildContext context, RideRequestController ride) async {
+    final rules = await ride.ensureRules();
     final earliest = ride.earliestPickableReturn;
-    if (earliest == null) return;
+    if (rules == null || earliest == null || !context.mounted) return;
     final picked = await showSangaDateTimeSheet(
       context: context,
       title: 'Return date and time',
       minimumDate: earliest,
-      maximumDate: earliest.add(ride.rules.bookingWindow),
+      maximumDate: earliest.add(rules.bookingWindow),
       initialDateTime: ride.returnAt,
     );
     if (picked != null) ride.setReturnAt(picked);
@@ -57,11 +59,22 @@ class RoundTripReturnScreen extends StatelessWidget {
                   ),
                 ],
               ),
-              BookingPickerField(
-                label: 'Return date and time',
-                icon: Icons.event_rounded,
-                value: returnAt == null ? null : formatRideSchedule(context, returnAt),
-                onTap: () => _pickReturn(context, ride),
+              RideOptionAsyncState(
+                isLoading: ride.catalog is CatalogLoading,
+                hasFailed: ride.catalog is CatalogFailed,
+                errorTitle: 'We couldn’t load booking times',
+                failureMessage: switch (ride.catalog) {
+                  CatalogFailed(:final problem) => problem.message,
+                  _ => null,
+                },
+                onRetry: ride.loadCatalog,
+                skeletonCount: 1,
+                builder: (_) => BookingPickerField(
+                  label: 'Return date and time',
+                  icon: Icons.event_rounded,
+                  value: returnAt == null ? null : formatRideSchedule(context, returnAt),
+                  onTap: () => _pickReturn(context, ride),
+                ),
               ),
               if (away != null)
                 Text('You’ll be away for about ${formatRideDuration(away)}.', style: SangaTextStyles.body),

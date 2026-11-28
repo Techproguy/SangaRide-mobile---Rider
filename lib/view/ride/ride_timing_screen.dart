@@ -6,6 +6,7 @@ import 'package:sanga_ride/core/router/booking_routes.dart';
 import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride/model/ride/booking.dart';
 import 'package:sanga_ride/view/ride/widgets/booking_picker_field.dart';
+import 'package:sanga_ride/view/ride/widgets/ride_option_async_state.dart';
 import 'package:sanga_ride/view/ride/widgets/ride_option_schedule_format.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
@@ -39,13 +40,19 @@ class _RideTimingScreenState extends State<RideTimingScreen> {
       if (timing != RideTiming.repeat || _ride.tripType.allowsRepeat) timing,
   ];
 
-  DateTime get _earliest => BookingClock.now().add(_ride.rules.scheduleLeadTime);
+  DateTime? get _earliest {
+    final lead = _ride.rules?.scheduleLeadTime;
+    return lead == null ? null : BookingClock.now().add(lead);
+  }
 
-  bool get _isTooSoon => _schedule?.isBefore(_earliest) ?? false;
+  bool get _isTooSoon {
+    final earliest = _earliest;
+    return earliest != null && (_schedule?.isBefore(earliest) ?? false);
+  }
 
   bool get _canConfirm => switch (_ride.timing) {
     RideTiming.now => true,
-    RideTiming.later => _schedule != null && !_isTooSoon,
+    RideTiming.later => _earliest != null && _schedule != null && !_isTooSoon,
     RideTiming.repeat => _ride.repeatRule != null,
   };
 
@@ -61,12 +68,14 @@ class _RideTimingScreenState extends State<RideTimingScreen> {
   }
 
   Future<void> _pickSchedule() async {
-    final earliest = _earliest;
+    final rules = await _ride.ensureRules();
+    if (rules == null || !mounted) return;
+    final earliest = BookingClock.now().add(rules.scheduleLeadTime);
     final picked = await showSangaDateTimeSheet(
       context: context,
       title: 'Pick up date and time',
       minimumDate: earliest,
-      maximumDate: earliest.add(_ride.rules.bookingWindow),
+      maximumDate: earliest.add(rules.bookingWindow),
       initialDateTime: _isTooSoon ? null : _schedule,
     );
     if (picked == null || !mounted) return;
@@ -107,14 +116,29 @@ class _RideTimingScreenState extends State<RideTimingScreen> {
                 clipBehavior: Clip.hardEdge,
                 child: switch (_ride.timing) {
                   RideTiming.now => const SizedBox(width: double.infinity),
-                  RideTiming.later => _buildSchedule(),
-                  RideTiming.repeat => _buildRepeat(),
+                  RideTiming.later => _awaitRules(_buildSchedule),
+                  RideTiming.repeat => _awaitRules(_buildRepeat),
                 },
               ),
             ],
           ),
         ),
       ],
+    );
+  }
+
+  Widget _awaitRules(Widget Function() builder) {
+    return RideOptionAsyncState(
+      isLoading: _ride.catalog is CatalogLoading,
+      hasFailed: _ride.catalog is CatalogFailed,
+      errorTitle: 'We couldn’t load booking times',
+      failureMessage: switch (_ride.catalog) {
+        CatalogFailed(:final problem) => problem.message,
+        _ => null,
+      },
+      onRetry: _ride.loadCatalog,
+      skeletonCount: 1,
+      builder: (_) => builder(),
     );
   }
 

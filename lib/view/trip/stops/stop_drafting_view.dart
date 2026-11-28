@@ -8,7 +8,7 @@ class StopDraftingView extends StatelessWidget {
     super.key,
     required this.trip,
     required this.added,
-    required this.slotsLeft,
+    required this.hasRoom,
     required this.onChoose,
     required this.onRemove,
     required this.onDone,
@@ -16,7 +16,7 @@ class StopDraftingView extends StatelessWidget {
 
   final Trip trip;
   final List<Place> added;
-  final int slotsLeft;
+  final bool hasRoom;
   final VoidCallback onChoose;
   final ValueChanged<int> onRemove;
   final VoidCallback onDone;
@@ -32,7 +32,7 @@ class StopDraftingView extends StatelessWidget {
           spacing: SangaSpacing.md,
           children: [
             StopsRouteCard(entries: StopsRouteEntry.of(trip, added, onRemove: onRemove)),
-            if (slotsLeft > 0 && added.isEmpty)
+            if (hasRoom && added.isEmpty)
               SangaRouteField.display(
                 kind: SangaStopKind.stop,
                 label: 'Search for where you’d like to stop',
@@ -40,7 +40,7 @@ class StopDraftingView extends StatelessWidget {
                 isPlaceholder: true,
                 onTap: onChoose,
               )
-            else if (slotsLeft > 0)
+            else if (hasRoom)
               SangaButton.outline(label: '+ Add another stop', onPressed: onChoose)
             else if (added.isEmpty)
               const SangaNotice(

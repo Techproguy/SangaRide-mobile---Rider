@@ -9,27 +9,27 @@ import 'package:sanga_ride_core/sanga_ride_core.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 class BookingRules {
-  const BookingRules({required this.scheduleLeadTime, required this.returnGap, required this.bookingWindow});
+  const BookingRules({
+    required this.scheduleLeadTime,
+    required this.returnGap,
+    required this.bookingWindow,
+    required this.maxStops,
+  });
 
   factory BookingRules.fromJson(Object? body) {
     final json = JsonReader.of(body);
     return BookingRules(
-      scheduleLeadTime: Duration(minutes: json.intOr('scheduleLeadMinutes', fallback.scheduleLeadTime.inMinutes)),
-      returnGap: Duration(minutes: json.intOr('returnGapMinutes', fallback.returnGap.inMinutes)),
-      bookingWindow: Duration(days: json.intOr('windowDays', fallback.bookingWindow.inDays)),
+      scheduleLeadTime: Duration(minutes: json.integer('scheduleLeadMinutes')),
+      returnGap: Duration(minutes: json.integer('returnGapMinutes')),
+      bookingWindow: Duration(days: json.integer('windowDays')),
+      maxStops: json.intOrNull('maxStops'),
     );
   }
-
-  static const BookingRules fallback = BookingRules(
-    scheduleLeadTime: Duration(minutes: 15),
-    returnGap: Duration(minutes: 30),
-    bookingWindow: Duration(days: 30),
-  );
-  static const int defaultHours = 2;
 
   final Duration scheduleLeadTime;
   final Duration returnGap;
   final Duration bookingWindow;
+  final int? maxStops;
 }
 
 abstract final class BookingClock {
@@ -202,8 +202,6 @@ class HourlyPreset {
   final int hours;
   final String blurb;
   final Money price;
-
-  Money get perHour => Money((price.minor / hours).round(), price.currency);
 }
 
 class HourlyCatalog {
@@ -220,17 +218,19 @@ class HourlyCatalog {
     final json = JsonReader.of(body);
     final presets = json.listOf('tiers', HourlyPreset.fromJson);
     final custom = json.objectOrNull('custom');
-    final isCustomEnabled = custom?.boolOr('enabled', false) ?? false;
-    final firstPreset = presets.firstOrNull;
-    final rate = custom?.moneyOrNull('perHour') ?? firstPreset?.perHour;
+    if (custom != null && custom.boolOr('enabled', false)) {
+      return HourlyCatalog(
+        hourlyRate: custom.money('perHour'),
+        minHours: (custom.integer('minMin') / Duration.minutesPerHour).ceil(),
+        maxHours: custom.integer('maxMin') ~/ Duration.minutesPerHour,
+        presets: presets,
+      );
+    }
+    if (presets.isEmpty) throw JsonFormatError('Expected hourly tiers or a custom rate', body);
     return HourlyCatalog(
-      hourlyRate: rate,
-      minHours: isCustomEnabled
-          ? (custom!.intOr('minMin', Duration.minutesPerHour) / Duration.minutesPerHour).ceil()
-          : firstPreset?.hours ?? 1,
-      maxHours: isCustomEnabled
-          ? custom!.intOr('maxMin', 12 * Duration.minutesPerHour) ~/ Duration.minutesPerHour
-          : presets.lastOrNull?.hours ?? 12,
+      hourlyRate: null,
+      minHours: presets.first.hours,
+      maxHours: presets.last.hours,
       presets: presets,
     );
   }
@@ -252,8 +252,8 @@ class IntercityCatalog {
     final json = JsonReader.of(body);
     return IntercityCatalog(
       cities: json.listOf('cities', City.fromJson),
-      departureLead: Duration(minutes: json.intOr('departureLeadMinutes', 120)),
-      bookingWindow: Duration(days: json.intOr('windowDays', BookingRules.fallback.bookingWindow.inDays)),
+      departureLead: Duration(minutes: json.integer('departureLeadMinutes')),
+      bookingWindow: Duration(days: json.integer('windowDays')),
     );
   }
 

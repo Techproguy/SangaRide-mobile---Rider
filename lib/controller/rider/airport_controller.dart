@@ -166,6 +166,7 @@ class AirportController extends GetxController {
         _lookup.value = FlightLookupFailed(
           FlightProblem.of(e),
           destination: e is ApiException ? e.data['destination'] as String? : null,
+          windowDays: Get.find<RideRequestController>().rules?.bookingWindow.inDays,
         );
       }
       return false;
