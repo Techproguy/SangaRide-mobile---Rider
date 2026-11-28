@@ -1,3 +1,4 @@
+// TODO(#270): drop the built-in delete reasons when GET /me/delete-reasons returns reasons[{code,label}]
 enum DeleteReason {
   stoppedRiding('stopped_riding', 'I don’t ride anymore'),
   anotherApp('another_app', 'I use another app'),
