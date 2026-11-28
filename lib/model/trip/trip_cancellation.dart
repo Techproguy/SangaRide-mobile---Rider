@@ -5,6 +5,7 @@ import 'package:sanga_ride/model/trip/wrapup/payment.dart';
 import 'package:sanga_ride_core/sanga_ride_core.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
+// TODO(#270): drop the built-in cancel reasons, driver-late rule and note rule when GET /trips/{id}/cancellation returns reasons[{code,label,needsNote,maxNoteLength}]
 enum CancelReason {
   driverLate('driver_late', 'Driver is taking too long', 'Driver taking too long'),
   driverAsked('driver_asked', 'Driver asked me to cancel', 'Driver asked me to cancel'),
@@ -33,34 +34,6 @@ enum CancelReason {
   bool isValidWith(String note) => !needsNote || note.trim().isNotEmpty;
 }
 
-enum CancelFeeReason {
-  freeWindow('free_window'),
-  driverFault('driver_fault'),
-  driverOnTheWay('driver_on_the_way'),
-  driverArrived('driver_arrived'),
-  tripStarted('trip_started');
-
-  const CancelFeeReason(this.code);
-
-  final String code;
-
-  String notice(String amount) => switch (this) {
-    freeWindow || driverFault || driverOnTheWay =>
-      'You’ll pay $amount to cover your driver’s time and distance, as our cancellation policy explains.',
-    driverArrived =>
-      'Your driver is already at your pickup, so you’ll pay $amount to cover their time, as our cancellation policy explains.',
-    tripStarted => 'You’ll pay $amount for the distance you’ve already travelled, as our cancellation policy explains.',
-  };
-
-  static const String _withinGrace = 'within_grace';
-
-  static CancelFeeReason fromCode(String? code) {
-    final normalized = code?.toLowerCase();
-    if (normalized == _withinGrace) return freeWindow;
-    return enumByCode(values, normalized, (reason) => reason.code, driverOnTheWay);
-  }
-}
-
 class CancellationRefund {
   const CancellationRefund({required this.amount, required this.method});
 
@@ -73,7 +46,6 @@ class CancellationRefund {
 class CancellationReview {
   const CancellationReview({
     required this.fee,
-    required this.feeReason,
     required this.refund,
     required this.paymentMethod,
     this.payer = FeePayer.unknown,
@@ -88,7 +60,6 @@ class CancellationReview {
     final paymentMethod = PaymentMethod.tryFromCode(JsonReader.of(reader.raw['paymentMethod']).strOrNull('type'));
     return CancellationReview(
       fee: fee.money('amount'),
-      feeReason: CancelFeeReason.fromCode(fee.strOrNull('policyRule')),
       refund: refund != null && refund.boolOr('applicable', false)
           ? CancellationRefund(amount: refund.money('amount'), method: paymentMethod)
           : null,
@@ -100,7 +71,6 @@ class CancellationReview {
   }
 
   final Money fee;
-  final CancelFeeReason feeReason;
   final CancellationRefund? refund;
   final PaymentMethod? paymentMethod;
   final FeePayer payer;
@@ -110,8 +80,6 @@ class CancellationReview {
   bool get hasFee => fee.isPositive;
 
   bool get leavesBalanceOwed => owed?.isPositive ?? false;
-
-  String notice(String amount) => message ?? feeReason.notice(amount);
 }
 
 class CancelOutcome {
