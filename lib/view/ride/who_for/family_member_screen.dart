@@ -31,7 +31,10 @@ class _FamilyMemberScreenState extends State<FamilyMemberScreen> {
     context.pop(true);
   }
 
-  String _subtitleOf(FamilyMember member) => member.isYou ? 'You · ${member.relationship}' : member.relationship;
+  String _subtitleOf(FamilyMember member) {
+    final parts = [if (member.isYou) 'You', if (member.relationship.isNotEmpty) member.relationship];
+    return parts.join(' · ');
+  }
 
   @override
   Widget build(BuildContext context) {

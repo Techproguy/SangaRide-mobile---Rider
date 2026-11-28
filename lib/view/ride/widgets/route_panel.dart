@@ -38,7 +38,7 @@ class RoutePanel extends StatelessWidget {
           SangaLocationRow(
             kind: SangaStopKind.stop,
             title: stop.title,
-            subtitle: 'Stop ${index + 1} · ${stop.subtitle}',
+            subtitle: stop.subtitle.isEmpty ? 'Stop ${index + 1}' : 'Stop ${index + 1} · ${stop.subtitle}',
             onTap: () => onEdit(RouteEdit.stop(index)),
             trailing: IconButton(
               tooltip: 'Remove stop',
