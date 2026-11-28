@@ -2,6 +2,7 @@ import 'dart:developer';
 import 'dart:io';
 
 import 'package:flutter_image_compress/flutter_image_compress.dart';
+import 'package:sanga_ride/core/services/rider_config.dart';
 import 'package:sanga_ride/model/models.dart';
 
 abstract final class ImageCompressionService {
@@ -23,7 +24,8 @@ abstract final class ImageCompressionService {
       if (await output.length() <= _targetBytes) return _keepOnly(output, attempts);
     }
     final best = attempts.last;
-    if (await best.length() > DeliveryRules.maxPhotoBytes) {
+    final maxBytes = RiderConfig.uploads?.maxBytes;
+    if (maxBytes != null && await best.length() > maxBytes) {
       await _keepOnly(null, attempts);
       throw const PhotoException(DeliveryFailure.fileTooLarge);
     }

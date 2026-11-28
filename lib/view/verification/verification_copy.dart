@@ -38,8 +38,9 @@ abstract final class VerificationCopy {
   static const String tagExpired = 'Expired';
   static const String tagExpiringSoon = 'Expiring soon';
 
-  static String underReviewMessage(int estimatedReviewHours) =>
-      'This usually takes up to ${hoursLabel(estimatedReviewHours)}. We’ll let you know in your notifications.';
+  static String underReviewMessage(int? estimatedReviewHours) => estimatedReviewHours == null
+      ? 'We’ll let you know in your notifications.'
+      : 'This usually takes up to ${hoursLabel(estimatedReviewHours)}. We’ll let you know in your notifications.';
 
   static String sentLine(String ago) => 'Sent $ago. We’ll let you know in your notifications.';
 
@@ -56,8 +57,9 @@ abstract final class VerificationCopy {
     ),
     VerificationStatus.pending => VerificationHeroCopy(
       title: 'Under review',
-      message:
-          'We’re checking your details. This usually takes up to ${hoursLabel(verification.estimatedReviewHours)}.',
+      message: verification.estimatedReviewHours == null
+          ? 'We’re checking your details.'
+          : 'We’re checking your details. This usually takes up to ${hoursLabel(verification.estimatedReviewHours!)}.',
     ),
     VerificationStatus.verified => const VerificationHeroCopy(
       title: 'You’re verified',

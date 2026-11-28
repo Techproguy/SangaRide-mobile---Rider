@@ -8,8 +8,10 @@ import 'package:sanga_ride/core/api/api.dart';
 import 'package:sanga_ride/core/api/idempotency_intents.dart';
 import 'package:sanga_ride/core/api/upload_purposes.dart';
 import 'package:sanga_ride/core/api/verification_endpoints.dart';
+import 'package:sanga_ride/core/services/auth_config.dart';
 import 'package:sanga_ride/core/services/image_compression_service.dart';
 import 'package:sanga_ride/core/services/package_photo_service.dart';
+import 'package:sanga_ride/core/services/rider_config.dart';
 import 'package:sanga_ride/core/services/selfie_verifier.dart';
 import 'package:sanga_ride/core/services/session_storage.dart';
 import 'package:sanga_ride/core/storage/draft_keys.dart';
@@ -26,6 +28,7 @@ class VerificationController extends GetxController {
 
   final Rx<VerificationState> _state = Rx<VerificationState>(const VerificationLoading());
   final Rx<DocumentDraft> _draft = Rx<DocumentDraft>(const DocumentDraft());
+  final Rx<List<IdDocumentType>> _offered = Rx<List<IdDocumentType>>(RiderConfig.documentTypes);
   final RxBool _isSubmitting = false.obs;
   final Map<DocumentSide, Epoch> _epochs = {for (final side in DocumentSide.values) side: Epoch()};
 
@@ -47,9 +50,10 @@ class VerificationController extends GetxController {
 
   List<IdDocumentType> get documentTypes {
     final accepted = documentItem?.documentTypes ?? const <String>[];
-    if (accepted.isEmpty) return IdDocumentType.values;
+    final offered = _offered.value;
+    if (accepted.isEmpty) return offered;
     return [
-      for (final type in IdDocumentType.values)
+      for (final type in offered)
         if (accepted.contains(type.code)) type,
     ];
   }
@@ -61,8 +65,14 @@ class VerificationController extends GetxController {
     super.onClose();
   }
 
+  Future<void> reloadConfig() async {
+    await AuthConfig.loadServerConfig(_api);
+    _offered.value = RiderConfig.documentTypes;
+  }
+
   Future<void> load() async {
     try {
+      if (RiderConfig.documentTypes.isEmpty) unawaited(reloadConfig());
       await _fetchStatus();
     } on Object catch (error) {
       if (_state.value is! VerificationLoaded) _state.value = VerificationFailed(VerificationProblem.of(error));
@@ -75,6 +85,7 @@ class VerificationController extends GetxController {
   }
 
   void startDocument() {
+    _offered.value = RiderConfig.documentTypes;
     for (final side in DocumentSide.values) {
       _nextEpoch(side);
     }
@@ -326,7 +337,7 @@ class VerificationController extends GetxController {
     if (saved == null) return const DocumentDraft();
     final reader = JsonReader(saved);
     return DocumentDraft(
-      type: IdDocumentType.fromCode(reader.strOrNull('type')),
+      type: RiderConfig.documentTypeOf(reader.strOrNull('type')),
       front: _uploadedOf(reader.objectOrNull('front')) ?? const PhotoNone(),
       back: _uploadedOf(reader.objectOrNull('back')) ?? const PhotoNone(),
     );

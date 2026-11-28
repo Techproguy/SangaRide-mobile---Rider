@@ -44,26 +44,6 @@ class ItemReason {
   final String message;
 }
 
-class UploadRules {
-  const UploadRules({required this.maxBytes, required this.formats});
-
-  static UploadRules? tryFromReader(JsonReader? reader) {
-    if (reader == null) return null;
-    final maxBytes = reader.intOrNull('maxBytes');
-    if (maxBytes == null) return null;
-    return UploadRules(maxBytes: maxBytes, formats: reader.strings('formats'));
-  }
-
-  final int maxBytes;
-  final List<String> formats;
-
-  String get summary {
-    final size = maxBytes >= 1048576 ? '${(maxBytes / 1048576).round()}MB' : '${(maxBytes / 1024).round()}KB';
-    final kinds = formats.map((format) => format.toUpperCase()).join(' or ');
-    return kinds.isEmpty ? 'Up to $size each' : 'Accepted formats: $kinds, up to $size each';
-  }
-}
-
 class VerificationItem {
   const VerificationItem({
     required this.id,
@@ -72,7 +52,6 @@ class VerificationItem {
     required this.status,
     required this.reason,
     required this.expiresAt,
-    this.uploadRules,
     this.documentTypes = const [],
   });
 
@@ -83,7 +62,6 @@ class VerificationItem {
     status: ItemStatus.fromCode(reader.strOrNull('status')),
     reason: ItemReason.tryFromReader(reader),
     expiresAt: reader.timeOrNull('expiresAt')?.toLocal(),
-    uploadRules: UploadRules.tryFromReader(reader.objectOrNull('upload')),
     documentTypes: reader.strings('documentTypes'),
   );
 
@@ -93,7 +71,6 @@ class VerificationItem {
   final ItemStatus status;
   final ItemReason? reason;
   final DateTime? expiresAt;
-  final UploadRules? uploadRules;
   final List<String> documentTypes;
 
   bool get needsAction => status.needsAction;
@@ -105,7 +82,6 @@ class VerificationItem {
     status: status,
     reason: reason,
     expiresAt: expiresAt,
-    uploadRules: uploadRules,
     documentTypes: documentTypes,
   );
 }
@@ -135,14 +111,14 @@ class Verification {
     return Verification(
       status: isUnsent ? VerificationStatus.unverified : reported,
       submittedAt: submittedAt,
-      estimatedReviewHours: reader.intOr('estimatedReviewHours', 24),
+      estimatedReviewHours: reader.intOrNull('estimatedReviewHours'),
       items: items,
     );
   }
 
   final VerificationStatus status;
   final DateTime? submittedAt;
-  final int estimatedReviewHours;
+  final int? estimatedReviewHours;
   final List<VerificationItem> items;
 
   List<VerificationItem> get actionItems => [

@@ -2,6 +2,7 @@ import 'dart:developer';
 
 import 'package:sanga_ride/core/api/api.dart';
 import 'package:sanga_ride/core/api/app_endpoints.dart';
+import 'package:sanga_ride/core/services/rider_config.dart';
 import 'package:sanga_ride_core/sanga_ride_core.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart' show SangaRegion;
 
@@ -35,6 +36,7 @@ class AuthConfig {
       final response = await api.get(AppEndpoints.config, suppressErrorToast: true);
       LegalLinks.apply(JsonReader.of(response.dataMap).objectOrNull('legal'));
       ServerConfig.apply(response.dataMap);
+      RiderConfig.apply(response.dataMap);
     } catch (e) {
       log('server config failed: $e');
     }

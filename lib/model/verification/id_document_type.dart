@@ -1,24 +1,25 @@
-import 'package:sanga_ride_ui/sanga_ride_ui.dart';
+import 'package:sanga_ride_core/sanga_ride_core.dart';
 
-enum IdDocumentType {
-  nationalId('national_id', 'National identity card', 'Front and back of your card', hasBack: true),
-  driversLicense('drivers_license', 'Driver’s license', 'Front and back of your license', hasBack: true),
-  passport('passport', 'International passport', 'The page with your photo', hasBack: false);
+class IdDocumentType {
+  const IdDocumentType({required this.code, required this.label, required this.hasBack, this.hint});
 
-  const IdDocumentType(this.code, this._label, this.hint, {required this.hasBack});
+  factory IdDocumentType.fromReader(JsonReader reader) => IdDocumentType(
+    code: reader.strOrNull('code') ?? reader.str('id'),
+    label: reader.str('label'),
+    hasBack: reader.boolOr('hasBack', (reader.intOrNull('sides') ?? 1) > 1),
+    hint: reader.strOrNull('hint'),
+  );
 
   final String code;
-  final String _label;
-  final String hint;
+  final String label;
   final bool hasBack;
-
-  String get label => switch ((this, SangaRegion.current)) {
-    (nationalId, SangaRegion.us) => 'State ID card',
-    (passport, SangaRegion.us) => 'Passport',
-    _ => _label,
-  };
+  final String? hint;
 
   String get frontLabel => hasBack ? 'Front of ID' : 'Photo page';
 
-  static IdDocumentType? fromCode(Object? code) => values.where((type) => type.code == '$code').firstOrNull;
+  @override
+  bool operator ==(Object other) => other is IdDocumentType && other.code == code;
+
+  @override
+  int get hashCode => code.hashCode;
 }

@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:sanga_ride/controller/rider/account/verification_controller.dart';
 import 'package:sanga_ride/core/router/verification_routes.dart';
 import 'package:sanga_ride/core/services/permission_center.dart';
+import 'package:sanga_ride/core/services/rider_config.dart';
 import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride/view/delivery/send/widgets/photo_source_sheet.dart';
 import 'package:sanga_ride/view/verification/verification_copy.dart';
@@ -73,7 +74,7 @@ class _VerificationDocumentScreenState extends State<VerificationDocumentScreen>
       context: context,
       status: SangaStatus.pending,
       title: VerificationCopy.underReviewTitle,
-      message: VerificationCopy.underReviewMessage(_controller.state.verificationOrNull?.estimatedReviewHours ?? 24),
+      message: VerificationCopy.underReviewMessage(_controller.state.verificationOrNull?.estimatedReviewHours),
       actionLabel: VerificationCopy.done,
     );
     if (mounted) context.pop();
@@ -118,6 +119,9 @@ class _VerificationDocumentScreenState extends State<VerificationDocumentScreen>
 
   List<Widget> _children(DocumentDraft draft) {
     final type = draft.type;
+    if (_controller.documentTypes.isEmpty) {
+      return [SangaFailureMessage(message: VerificationProblem.connection.message, onRetry: _controller.reloadConfig)];
+    }
     return [
       SangaSelectField<IdDocumentType>(
         label: VerificationCopy.documentType,
@@ -134,11 +138,10 @@ class _VerificationDocumentScreenState extends State<VerificationDocumentScreen>
           crossAxisAlignment: CrossAxisAlignment.stretch,
           spacing: SangaSpacing.md,
           children: [
-            Text(type.hint, style: SangaTextStyles.body),
+            if (type.hint != null) Text(type.hint!, style: SangaTextStyles.body),
             _slot(draft, DocumentSide.front, type.frontLabel),
             if (type.hasBack) _slot(draft, DocumentSide.back, VerificationCopy.backOfId),
-            if (_controller.documentItem?.uploadRules case final rules?)
-              Text(rules.summary, style: SangaTextStyles.caption),
+            if (RiderConfig.uploads case final uploads?) Text(uploads.summary, style: SangaTextStyles.caption),
           ],
         ),
       const SizedBox(height: SangaSpacing.lg),

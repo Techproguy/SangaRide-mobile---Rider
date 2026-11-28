@@ -30,6 +30,7 @@ import 'package:sanga_ride/core/api/api.dart';
 import 'package:sanga_ride/core/assets.dart';
 import 'package:sanga_ride/core/constants.dart';
 import 'package:sanga_ride/core/services/auth_config.dart';
+import 'package:sanga_ride/core/services/rider_config.dart';
 import 'package:sanga_ride/core/services/card_tokenizer.dart';
 import 'package:sanga_ride/core/services/connectivity_service.dart';
 import 'package:sanga_ride/core/services/permission_center.dart';
@@ -54,6 +55,7 @@ Future<void> initializeSanga() async {
   RegionMemory.restore();
   LegalLinks.restore();
   ServerConfig.restore();
+  RiderConfig.restore();
   SangaCountdown.serverClock = ServerClock.instance.now;
   SangaRouteService.configure(
     SangaRouteConfig(

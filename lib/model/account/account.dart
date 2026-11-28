@@ -13,7 +13,6 @@ class Account {
     required this.rating,
     required this.ridesCount,
     required this.memberSince,
-    required this.verification,
   });
 
   factory Account.fromJson(Map<String, dynamic> json) {
@@ -29,22 +28,7 @@ class Account {
       rating: reader.doubleOrNull('rating'),
       ridesCount: reader.intOr('ridesCount', 0),
       memberSince: reader.timeOrNull('createdAt')?.toLocal(),
-      verification: _verificationOf(reader.objectOrNull('verification')),
     );
-  }
-
-  static VerificationStatus _verificationOf(JsonReader? json) {
-    if (json == null) return VerificationStatus.unverified;
-    if (json.boolOr('isVerified', false)) return VerificationStatus.verified;
-    final parts = [
-      VerificationStatus.fromCode(json.objectOrNull('selfie')?.strOrNull('status')),
-      VerificationStatus.fromCode(json.objectOrNull('documents')?.strOrNull('status')),
-    ];
-    if (parts.any((part) => part.needsAction)) return VerificationStatus.rejected;
-    if (parts.every((part) => part == VerificationStatus.pending || part == VerificationStatus.verified)) {
-      return VerificationStatus.pending;
-    }
-    return VerificationStatus.unverified;
   }
 
   static DateTime? _dayOf(String? raw) => raw == null ? null : DateTime.tryParse(raw);
@@ -59,7 +43,6 @@ class Account {
   final double? rating;
   final int ridesCount;
   final DateTime? memberSince;
-  final VerificationStatus verification;
 
   String get fullName => [firstName, lastName].where((part) => part.isNotEmpty).join(' ');
 

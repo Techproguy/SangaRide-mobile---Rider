@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:sanga_ride/controller/rider/account/account_controller.dart';
+import 'package:sanga_ride/controller/rider/account/verification_controller.dart';
 import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride/view/account/account_copy.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
@@ -15,13 +15,13 @@ class VerificationMenuBadge extends StatefulWidget {
 }
 
 class _VerificationMenuBadgeState extends State<VerificationMenuBadge> {
-  final _controller = Get.find<AccountController>();
+  final _controller = Get.find<VerificationController>();
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) unawaited(_controller.loadIfStale());
+      if (mounted) unawaited(_controller.load());
     });
   }
 
@@ -39,7 +39,7 @@ class _VerificationMenuBadgeState extends State<VerificationMenuBadge> {
   @override
   Widget build(BuildContext context) {
     return Obx(() {
-      final status = _controller.account?.verification;
+      final status = _controller.state.verificationOrNull?.status;
       return status == null ? const SizedBox.shrink() : _tag(status);
     });
   }

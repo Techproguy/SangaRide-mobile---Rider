@@ -3,13 +3,11 @@ import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/services.dart';
 import 'package:sanga_ride/core/services/image_compression_service.dart';
+import 'package:sanga_ride/core/services/rider_config.dart';
 import 'package:sanga_ride/model/models.dart';
 
 abstract final class DocumentFileService {
-  static const int maxPdfBytes = 5 * 1024 * 1024;
   static const String _pdf = 'pdf';
-  static const List<String> _imageExtensions = ['jpg', 'jpeg', 'png', 'webp', 'heic', 'heif'];
-  static const List<String> _allowedExtensions = [_pdf, ..._imageExtensions];
 
   static bool isPdf(String? path) => _extensionOf(path) == _pdf;
 
@@ -19,7 +17,8 @@ abstract final class DocumentFileService {
     onPicked();
     final extension = _extensionOf(path);
     if (extension == _pdf) return _checkedPdf(path);
-    if (!_imageExtensions.contains(extension)) {
+    final allowed = RiderConfig.uploads?.imageExtensions;
+    if (allowed != null && !allowed.contains(extension)) {
       await ImageCompressionService.discard(path);
       throw const PhotoException(DeliveryFailure.unsupportedType);
     }
@@ -32,7 +31,10 @@ abstract final class DocumentFileService {
 
   static Future<String?> _pickPath() async {
     try {
-      final file = await FilePicker.pickFile(type: FileType.custom, allowedExtensions: _allowedExtensions);
+      final allowed = RiderConfig.uploads?.documentExtensions;
+      final file = allowed == null || allowed.isEmpty
+          ? await FilePicker.pickFile()
+          : await FilePicker.pickFile(type: FileType.custom, allowedExtensions: allowed);
       return file?.path;
     } on PlatformException {
       throw const PhotoException(DeliveryFailure.unreadablePhoto);
@@ -42,7 +44,8 @@ abstract final class DocumentFileService {
   static Future<String> _checkedPdf(String path) async {
     final file = File(path);
     if (!await file.exists()) throw const PhotoException(DeliveryFailure.unreadablePhoto);
-    if (await file.length() > maxPdfBytes) {
+    final maxBytes = RiderConfig.uploads?.maxBytes;
+    if (maxBytes != null && await file.length() > maxBytes) {
       await ImageCompressionService.discard(path);
       throw const PhotoException(DeliveryFailure.fileTooLarge);
     }

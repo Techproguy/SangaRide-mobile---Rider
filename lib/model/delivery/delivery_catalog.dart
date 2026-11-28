@@ -6,11 +6,10 @@ abstract final class DeliveryRules {
   // TODO(#270): drop the document kind ids, default package type and forced smallest size when GET /deliveries/config returns kinds[].{requiresPhoto,impliedSizeId,impliedPackageTypeId}
   static const Set<String> documentsKindIds = {'document', 'documents'};
   static const String defaultPackageTypeId = 'not_fragile';
-  // TODO(#270): drop these field limits when GET /deliveries/config returns limits{itemNameMax,descriptionMax,recipientNameMax,photoMaxBytes}
+  // TODO(#270): drop these field limits when GET /deliveries/config returns limits{itemNameMax,descriptionMax,recipientNameMax}
   static const int itemNameMaxLength = 60;
   static const int descriptionMaxLength = 200;
   static const int recipientNameMaxLength = 60;
-  static const int maxPhotoBytes = 8 * 1024 * 1024;
 }
 
 String deliveryEtaLabel(List<int> minutes) {
