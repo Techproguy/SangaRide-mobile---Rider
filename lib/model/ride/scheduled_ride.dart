@@ -110,7 +110,7 @@ class ScheduledRide {
       pickup: ScheduledStop.fromRide(json.object('pickup')),
       dropoff: ScheduledStop.fromRide(json.object('dropoff')),
       fare: TripFare.fromJson(json).total,
-      canRemind: json.boolOr('canRemind', true),
+      canRemind: json.boolOr('canRemind', false),
       reminderAt: (json.timeOrNull('reminderAt') ?? json.timeOrNull('reminderSentAt'))?.toLocal(),
       hours: hourlyMinutes == null ? null : hourlyMinutes ~/ Duration.minutesPerHour,
       airport: airport?.timeOrNull('estimatedArrival') == null ? null : ScheduledAirport.fromJson(airport!.raw),
@@ -130,6 +130,7 @@ class ScheduledRide {
     }
   }
 
+  // TODO(#270): drop the 30 minute reminder lead when scheduled rides send reminder.leadMinutes and reminder.available
   static const Duration reminderLead = Duration(minutes: 30);
 
   factory ScheduledRide.fromSeries(JsonReader json) {

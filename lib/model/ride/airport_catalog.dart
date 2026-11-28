@@ -4,6 +4,7 @@ import 'package:sanga_ride/model/ride/ride_load_problem.dart';
 import 'package:sanga_ride_core/sanga_ride_core.dart';
 
 abstract final class AirportRules {
+  // TODO(#270): drop the passenger and luggage caps when the airport catalog sends airport.limits.maxPassengers and maxLuggage
   static const int maxPassengers = 6;
   static const int maxLuggage = 8;
   static const int maxFlightDigits = 4;

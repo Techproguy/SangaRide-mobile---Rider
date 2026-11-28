@@ -54,6 +54,7 @@ class StopQuote {
     );
   }
 
+  // TODO(#270): drop the 5 minute stop quote lifetime when /stops/quote sends expiresAt
   static const Duration _liveQuoteLifetime = Duration(minutes: 5);
 
   final String id;

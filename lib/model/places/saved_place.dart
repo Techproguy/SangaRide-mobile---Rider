@@ -79,6 +79,7 @@ class SavedPlaceBook {
     );
   }
 
+  // TODO(#270): read the saved place cap when GET /places sends maxOthers
   static const int defaultMaxOthers = 10;
 
   static const int maxLabelLength = 24;

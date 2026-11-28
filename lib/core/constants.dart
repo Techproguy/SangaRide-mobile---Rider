@@ -16,6 +16,7 @@ class SangaConstants {
 
   static String get placesCountryCode => SangaRegion.current.placesCountryCode;
 
+  // TODO(#270): read the map centre when GET /config sends defaultMapCenter
   static LatLng get defaultMapCenter => _mapCenters[SangaRegion.current]!;
 
   static const Map<SangaRegion, LatLng> _mapCenters = {

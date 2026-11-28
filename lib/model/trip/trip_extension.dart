@@ -24,6 +24,7 @@ class ExtendQuote {
 }
 
 abstract final class ExtendOptions {
+  // TODO(#270): read the extend options when the trip sends extendOptions{presetMinutes,customMin,customMax,step}
   static const List<int> presetMinutes = [60, 120, 180];
   static const int customStepMinutes = 30;
   static const int customMinMinutes = 210;

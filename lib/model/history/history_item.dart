@@ -30,6 +30,7 @@ enum HistoryStatus {
   final String code;
   final String label;
 
+  // TODO(#270): drop the fixed tabs and the no_driver_found and returned mapping when history rows send tab
   static const List<HistoryStatus> tabs = [completed, cancelled];
 
   static const Set<String> _endedWithoutTrip = {'no_driver_found', 'returned'};

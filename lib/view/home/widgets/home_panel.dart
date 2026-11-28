@@ -67,6 +67,7 @@ class HomePanel extends StatelessWidget {
         const SizedBox(height: SangaSpacing.md),
         const Divider(height: 1, thickness: 1, color: SangaColors.cardBorder),
         const SizedBox(height: SangaSpacing.md),
+        // TODO(#270): read the home services per country when GET /home sends services[]
         HomeServiceRow(
           services: [
             HomeService(
@@ -91,6 +92,7 @@ class HomePanel extends StatelessWidget {
           ],
         ),
         const SizedBox(height: SangaSpacing.md),
+        // TODO(#270): read the promo banner when GET /home sends promo{title,imageUrl,target}
         SangaPromoBanner(
           image: const AssetImage(AppAssets.promoLux),
           label: 'Sanga Lux, arrive in style',
