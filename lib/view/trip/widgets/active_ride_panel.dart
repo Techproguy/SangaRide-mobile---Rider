@@ -61,7 +61,7 @@ class ActiveRidePanel extends StatelessWidget {
           onSafety: onSafety,
           onAddStops: trip.canAddStops ? onAddStops : null,
           onExtend: trip.canExtend ? onExtend : null,
-          onCancel: trip.canChange ? onCancel : null,
+          onCancel: onCancel,
         ),
         action,
       ],

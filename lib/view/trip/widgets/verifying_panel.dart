@@ -43,7 +43,7 @@ class VerifyingPanel extends StatelessWidget {
           onMessage: onMessage,
           onSafety: onSafety,
           onAddStops: trip.canAddStops ? onAddStops : null,
-          onCancel: trip.canChange ? onCancel : null,
+          onCancel: onCancel,
         ),
         SangaButton.primary(label: 'Show trip PIN', onPressed: onShowPin),
         SangaButton.muted(label: CommonCopy.reportIssue, onPressed: onReport),

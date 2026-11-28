@@ -40,7 +40,7 @@ class EnRoutePanel extends StatelessWidget {
           onMessage: onMessage,
           onSafety: onSafety,
           onAddStops: trip.canAddStops ? onAddStops : null,
-          onCancel: trip.canChange ? onCancel : null,
+          onCancel: onCancel,
         ),
         SangaNotice(
           message: trip.enRouteWaitNotice(context) ?? 'Your driver is heading to your pickup, please be ready',

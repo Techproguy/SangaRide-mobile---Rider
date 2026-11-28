@@ -23,8 +23,6 @@ enum DeliveryStage {
 
   final String code;
 
-  bool get canCancel => this == toPickup || this == atPickup;
-
   bool get isPastPickup => this != unknown && index >= pickedUp.index && this != refused;
 
   bool get isReturn => this == returning || this == returned;

@@ -42,7 +42,7 @@ class ArrivedPanel extends StatelessWidget {
           onMessage: onMessage,
           onSafety: onSafety,
           onAddStops: trip.canAddStops ? onAddStops : null,
-          onCancel: trip.canChange ? onCancel : null,
+          onCancel: onCancel,
         ),
         if (waitNotice != null) SangaNotice(message: waitNotice, tone: SangaTone.neutral, icon: Icons.schedule_rounded),
         SangaButton.primary(label: 'Confirm details', onPressed: onConfirmDetails),

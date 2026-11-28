@@ -98,7 +98,7 @@ class DeliveryTripPanel extends StatelessWidget {
       onShare: phase.index >= DeliveryPhase.onTheWay.index ? actions.onShare : null,
       onSafety: actions.onSafety,
       onReportIssue: phase.canReport ? actions.onReportIssue : null,
-      onCancel: trip.canChange ? actions.onCancel : null,
+      onCancel: actions.onCancel,
     );
   }
 

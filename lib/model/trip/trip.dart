@@ -34,8 +34,6 @@ enum TripStatus {
 
   bool get isTerminal => this == completed || this == cancelled;
 
-  bool get canChange => this == driverEnRoute || this == driverArrived || this == inProgress;
-
   static TripStatus ofRide(String? code, {required bool isPinVerified}) {
     final status = enumByCode(values, code, (status) => status.code, unknown);
     return status == driverArrived && isPinVerified ? pinVerified : status;
@@ -430,13 +428,11 @@ class Trip {
 
   bool get isPaymentSettled => payment?.isSettled ?? false;
 
-  bool get canChange => status.canChange && (delivery?.stage.canCancel ?? true);
-
-  bool get canAddStops => !isDelivery && canChange;
+  bool get canAddStops => !isDelivery;
 
   bool get isHourly => (hourlyMinutes ?? 0) > 0;
 
-  bool get canExtend => isHourly && !isDelivery && canChange;
+  bool get canExtend => isHourly && !isDelivery;
 
   DeliveryPhase? get deliveryPhase {
     final delivery = this.delivery;

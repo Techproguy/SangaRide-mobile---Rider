@@ -62,11 +62,10 @@ class _Details extends StatelessWidget {
       spacing: SangaSpacing.md,
       children: [
         _group(context, fare),
-        if (trip.canChange)
-          SangaButton.danger(
-            label: trip.isDelivery ? 'Cancel delivery' : 'Cancel ride',
-            onPressed: () => context.push(TripRoutes.cancelOf(trip.id)),
-          ),
+        SangaButton.danger(
+          label: trip.isDelivery ? 'Cancel delivery' : 'Cancel ride',
+          onPressed: () => context.push(TripRoutes.cancelOf(trip.id)),
+        ),
       ],
     );
   }
