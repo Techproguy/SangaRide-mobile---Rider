@@ -5,6 +5,7 @@ import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 abstract final class AccountCopy {
   static final DateFormat _month = DateFormat('MMMM y');
 
+  // TODO(#270): build the 30 day wording from deletion.graceDays when GET /config sends it
   static const List<String> deletionConsequences = [
     'Your account is scheduled for deletion and disappears after 30 days',
     'Log back in during those 30 days and your account stays right where it was',
