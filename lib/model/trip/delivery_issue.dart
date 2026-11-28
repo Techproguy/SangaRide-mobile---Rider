@@ -1,41 +1,38 @@
-import 'package:sanga_ride_ui/sanga_ride_ui.dart';
+import 'package:sanga_ride/model/support/support_ticket.dart';
 import 'package:sanga_ride_core/sanga_ride_core.dart';
+import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
-enum DeliveryIssueReason {
-  driverNotMoving('driver_not_moving', 'Driver not moving', 'Driver has stopped for too long'),
-  cannotReachDriver('cannot_reach_driver', 'Cannot reach driver', 'Driver is not responding'),
-  wrongLocation('wrong_location', 'Wrong location', 'Driver is at a different location'),
-  extraPayment('extra_payment_requested', 'Driver asked for extra payment', 'Additional payment query'),
-  unableToComplete('unable_to_complete_delivery', 'Unable to complete delivery', 'Driver cannot deliver the package'),
-  safety('safety_concern', 'Safety concern', 'I feel something is wrong'),
-  other('other', 'Other', 'Something not listed above');
+abstract final class DeliveryIssueRules {
+  static const String safetyCategoryId = 'safety_concern';
+  // TODO(#270): drop the note limit and the safety category id when GET /issues/categories returns maxDescription and a pointsToSafety flag
+  static const int maxNoteLength = 300;
 
-  const DeliveryIssueReason(this.code, this.label, this.hint);
+  static bool pointsToSafety(IssueType reason) => reason.id == safetyCategoryId;
 
-  final String code;
-  final String label;
-  final String hint;
-
-  bool get needsNote => this == other;
-
-  bool get pointsToSafety => this == safety;
-
-  static DeliveryIssueReason? fromCode(String? code) {
-    for (final reason in values) {
-      if (reason.code == code) return reason;
-    }
-    return null;
+  static bool isReady(IssueType? reason, String note) {
+    if (reason == null) return false;
+    return !reason.requiresDescription || note.trim().isNotEmpty;
   }
 }
 
-abstract final class DeliveryIssueRules {
-  static const int maxNoteLength = 300;
-  static const int minOtherNoteLength = 10;
+sealed class IssueReasonsState {
+  const IssueReasonsState();
+}
 
-  static bool isReady(DeliveryIssueReason? reason, String note) {
-    if (reason == null) return false;
-    return !reason.needsNote || note.trim().length >= minOtherNoteLength;
-  }
+final class IssueReasonsLoading extends IssueReasonsState {
+  const IssueReasonsLoading();
+}
+
+final class IssueReasonsFailed extends IssueReasonsState {
+  const IssueReasonsFailed(this.problem);
+
+  final DeliveryIssueProblem problem;
+}
+
+final class IssueReasonsLoaded extends IssueReasonsState {
+  const IssueReasonsLoaded(this.reasons);
+
+  final List<IssueType> reasons;
 }
 
 enum DeliveryIssueStatus {
@@ -180,7 +177,7 @@ final class IssueIdle extends DeliveryIssueState {
 final class IssueSubmitting extends DeliveryIssueState {
   const IssueSubmitting(this.reason, this.note);
 
-  final DeliveryIssueReason reason;
+  final IssueType reason;
   final String note;
 }
 
@@ -188,7 +185,7 @@ final class IssueSubmitFailed extends DeliveryIssueState {
   const IssueSubmitFailed(this.problem, this.reason, this.note);
 
   final DeliveryIssueProblem problem;
-  final DeliveryIssueReason reason;
+  final IssueType reason;
   final String note;
 }
 

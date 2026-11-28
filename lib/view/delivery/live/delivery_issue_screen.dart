@@ -23,7 +23,7 @@ class DeliveryIssueScreen extends StatefulWidget {
 class _DeliveryIssueScreenState extends State<DeliveryIssueScreen> {
   final _issue = Get.find<DeliveryIssueController>();
   final _note = TextEditingController();
-  DeliveryIssueReason? _reason;
+  IssueType? _reason;
 
   @override
   void initState() {
@@ -39,6 +39,7 @@ class _DeliveryIssueScreenState extends State<DeliveryIssueScreen> {
   }
 
   Future<void> _prepare() async {
+    unawaited(_issue.loadReasons());
     await _issue.open(widget.tripId);
     if (!mounted) return;
     _issue.backToReasons();
@@ -86,22 +87,19 @@ class _DeliveryIssueScreenState extends State<DeliveryIssueScreen> {
               spacing: SangaSpacing.lg,
               children: [
                 const Text('What’s going on with your delivery?', style: SangaTextStyles.body),
-                IssueReasonList(
-                  selected: _reason,
-                  isEnabled: !isSubmitting,
-                  onSelect: (reason) => setState(() => _reason = reason),
-                ),
-                if (_reason case final DeliveryIssueReason reason) ...[
-                  if (reason.pointsToSafety)
+                _reasons(isSubmitting),
+                if (_reason case final IssueType reason) ...[
+                  if (DeliveryIssueRules.pointsToSafety(reason))
                     _SafetyNotice(onOpen: () => unawaited(context.push(SafetyRoutes.centreOf(tripId: widget.tripId)))),
                   SangaTextArea(
-                    label: reason.needsNote ? 'Tell us what happened' : 'Anything else we should know? (optional)',
+                    label: reason.requiresDescription
+                        ? 'Tell us what happened'
+                        : 'Anything else we should know? (optional)',
                     controller: _note,
                     maxLength: DeliveryIssueRules.maxNoteLength,
                     minLines: 3,
                     isEnabled: !isSubmitting,
                   ),
-                  if (reason.needsNote) ListenableBuilder(listenable: _note, builder: (context, _) => _lengthHint()),
                 ],
                 if (state case IssueSubmitFailed(:final problem))
                   SangaNotice(message: problem.message, tone: SangaTone.warning),
@@ -113,14 +111,20 @@ class _DeliveryIssueScreenState extends State<DeliveryIssueScreen> {
     });
   }
 
-  Widget _lengthHint() {
-    final length = _note.text.trim().length;
-    if (length == 0 || length >= DeliveryIssueRules.minOtherNoteLength) return const SizedBox.shrink();
-    return Text(
-      'Add a bit more, at least ${DeliveryIssueRules.minOtherNoteLength} characters.',
-      style: SangaTextStyles.caption,
-    );
-  }
+  Widget _reasons(bool isSubmitting) => switch (_issue.reasons) {
+    IssueReasonsLoaded(:final reasons) => IssueReasonList(
+      reasons: reasons,
+      selected: _reason,
+      isEnabled: !isSubmitting,
+      onSelect: (reason) => setState(() => _reason = reason),
+    ),
+    IssueReasonsFailed(:final problem) => SangaFailureMessage(
+      title: problem.title,
+      message: problem.message,
+      onRetry: () => unawaited(_issue.loadReasons()),
+    ),
+    IssueReasonsLoading() => const SangaSkeleton.heights([72, 72, 72]),
+  };
 }
 
 class _SafetyNotice extends StatelessWidget {

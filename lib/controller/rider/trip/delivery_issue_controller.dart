@@ -7,6 +7,7 @@ import 'package:sanga_ride/controller/rider/trip/trip_controller.dart';
 import 'package:sanga_ride/core/api/api.dart';
 import 'package:sanga_ride/core/api/delivery_live_endpoints.dart';
 import 'package:sanga_ride/core/api/idempotency_intents.dart';
+import 'package:sanga_ride/core/services/issue_categories_service.dart';
 import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride_core/sanga_ride_core.dart';
 
@@ -17,6 +18,7 @@ class DeliveryIssueController extends GetxController {
   final _trip = Get.find<TripController>();
 
   final Rx<DeliveryIssueState> _state = Rx<DeliveryIssueState>(const IssueIdle());
+  final Rx<IssueReasonsState> _reasons = Rx<IssueReasonsState>(const IssueReasonsLoading());
   final Map<String, String> _issueIds = {};
 
   LivePoller? _poller;
@@ -32,6 +34,8 @@ class DeliveryIssueController extends GetxController {
   Rx<DeliveryIssueState> get stateRx => _state;
 
   DeliveryIssueState get state => _state.value;
+
+  IssueReasonsState get reasons => _reasons.value;
 
   DeliveryIssue? get issue => switch (state) {
     IssueLoaded(:final issue) => issue,
@@ -164,7 +168,7 @@ class DeliveryIssueController extends GetxController {
     }
   }
 
-  Future<bool> submit(DeliveryIssueReason reason, String note) async {
+  Future<bool> submit(IssueType reason, String note) async {
     final tripId = _tripId;
     if (tripId == null || state is IssueSubmitting) return false;
     final trimmed = note.trim();
@@ -200,8 +204,8 @@ class DeliveryIssueController extends GetxController {
     return false;
   }
 
-  Mutation<DeliveryIssue> _submitMutationFor(String tripId, DeliveryIssueReason reason, String note) {
-    final signature = '$tripId|${reason.code}|$note';
+  Mutation<DeliveryIssue> _submitMutationFor(String tripId, IssueType reason, String note) {
+    final signature = '$tripId|${reason.id}|$note';
     final existing = _submitMutation;
     if (existing != null && _submitSignature == signature) return existing;
     existing?.dispose();
@@ -211,7 +215,7 @@ class DeliveryIssueController extends GetxController {
       run: (key) async {
         final response = await _api.post(
           DeliveryLiveEndpoints.issuesOf(tripId),
-          data: {'category': reason.code, if (note.isNotEmpty) 'description': note},
+          data: {'category': reason.id, if (note.isNotEmpty) 'description': note},
           key: key,
           suppressErrorToast: true,
         );
@@ -225,6 +229,19 @@ class DeliveryIssueController extends GetxController {
         return ReconciledDone(await _fetchIssue(tripId, issueId));
       },
     );
+  }
+
+  Future<void> loadReasons() async {
+    if (reasons is! IssueReasonsLoaded) _reasons.value = const IssueReasonsLoading();
+    try {
+      final categories = await IssueCategoriesService.load(_api);
+      _reasons.value = IssueReasonsLoaded([
+        for (final category in categories)
+          if (category.isOffered(IssueContext.delivery)) category,
+      ]);
+    } catch (e) {
+      if (reasons is! IssueReasonsLoaded) _reasons.value = IssueReasonsFailed(DeliveryIssueProblem.of(e));
+    }
   }
 
   void backToReasons() {

@@ -1,6 +1,7 @@
 import 'package:get/get.dart';
 import 'package:sanga_ride/core/api/api.dart';
 import 'package:sanga_ride/core/api/history_endpoints.dart';
+import 'package:sanga_ride/core/services/issue_categories_service.dart';
 import 'package:sanga_ride/core/api/idempotency_intents.dart';
 import 'package:sanga_ride/core/api/support_endpoints.dart';
 import 'package:sanga_ride/model/history/history_item.dart';
@@ -36,14 +37,12 @@ class SupportReportController extends GetxController {
     final epoch = _epoch.next();
     _state.value = const SupportReportLoading();
     try {
-      final response = await _api.get(SupportEndpoints.issueCategories, suppressErrorToast: true);
+      final categories = await IssueCategoriesService.load(_api);
       final rides = _rides ??= await _recentRides();
       if (!_epoch.isCurrent(epoch)) return;
       _state.value = SupportReportDraft(
         types: [
-          for (final type in JsonReader.of({
-            'categories': (response.data as Map)['data'],
-          }).listOf('categories', IssueType.fromReader))
+          for (final type in categories)
             if (type.isOffered(context)) type,
         ],
         recentRides: _ridesFor(context, rides),
