@@ -32,8 +32,8 @@ class ReceiptRouteCard extends StatelessWidget {
           padding: const EdgeInsets.all(SangaSpacing.md),
           child: SangaTripStats(
             stats: [
-              SangaTripStat(Icons.route_outlined, receipt.distanceLabel),
-              SangaTripStat(Icons.schedule_rounded, receipt.durationLabel),
+              if (receipt.distanceLabel case final distance?) SangaTripStat(Icons.route_outlined, distance),
+              if (receipt.durationLabel case final duration?) SangaTripStat(Icons.schedule_rounded, duration),
             ],
           ),
         ),

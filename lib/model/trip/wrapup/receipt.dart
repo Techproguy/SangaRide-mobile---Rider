@@ -134,8 +134,8 @@ class TripReceipt {
       pickup: ReceiptPlace.fromJson(reader.object('pickup').raw),
       dropoff: ReceiptPlace.fromJson(reader.object('dropoff').raw),
       stops: reader.listOf('stops', (stop) => ReceiptPlace.fromJson(stop.raw)),
-      distanceKm: reader.doubleOr('distanceKm', 0),
-      durationMinutes: reader.intOr('durationMin', 0),
+      distanceKm: reader.doubleOrNull('distanceKm'),
+      durationMinutes: reader.intOrNull('durationMin'),
       lines: [
         ...reader.listOf('lines', (line) => ReceiptLine.fromJson(line.raw)),
         ...reader.listOf('adjustments', (line) => ReceiptLine.fromJson(line.raw)),
@@ -157,8 +157,8 @@ class TripReceipt {
   final ReceiptPlace pickup;
   final ReceiptPlace dropoff;
   final List<ReceiptPlace> stops;
-  final double distanceKm;
-  final int durationMinutes;
+  final double? distanceKm;
+  final int? durationMinutes;
   final List<ReceiptLine> lines;
   final Money total;
   final ReceiptPayment paidWith;
@@ -195,9 +195,9 @@ class TripReceipt {
 
   bool get isRated => ratedStars != null;
 
-  String get distanceLabel => SangaDistance.fromKilometers(distanceKm);
+  String? get distanceLabel => distanceKm == null ? null : SangaDistance.fromKilometers(distanceKm!);
 
-  String get durationLabel => SangaPlural.count(durationMinutes, 'minute');
+  String? get durationLabel => durationMinutes == null ? null : SangaPlural.count(durationMinutes!, 'minute');
 }
 
 enum ReceiptFailure {

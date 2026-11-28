@@ -18,6 +18,7 @@ enum TripType {
 
   static TripType fromCode(String? code) => enumByCode(values, code, (type) => type.code, oneWay);
 
+  // TODO(#270): read the trip types per class when ride classes send tripTypes[]
   static List<TripType> get selectable => [
     for (final type in values)
       if (type != airport && type != delivery) type,
@@ -32,6 +33,7 @@ enum TripType {
   bool get handlesOwnRejections => this == delivery;
 }
 
+// TODO(#270): read ride classes and icons from the catalog and stop defaulting an unknown class to go when ride classes send iconUrl
 enum RideCategory { go, plus, xl, lux, moto, assist }
 
 class RideOption {
@@ -42,6 +44,7 @@ class RideOption {
     required this.description,
     required this.seats,
     required this.pricePerKm,
+    required this.isAvailable,
   });
 
   factory RideOption.fromJson(JsonReader json) {
@@ -56,6 +59,7 @@ class RideOption {
       description: json.strOr('tagline', ''),
       seats: seatsMin == seatsMax ? '$seatsMax' : '$seatsMin-$seatsMax',
       pricePerKm: json.money('perKmRate'),
+      isAvailable: json.raw['available'] != false,
     );
   }
 
@@ -65,10 +69,12 @@ class RideOption {
   final String description;
   final String seats;
   final Money pricePerKm;
+  final bool isAvailable;
 
   int get maxSeats => int.tryParse(seats.split('-').last.trim()) ?? 1;
 }
 
+// TODO(#270): read the label, description and adjustment wording when estimate pricingOptions send label, description and adjustmentLabel
 enum PricingOption {
   standard('Standard', 'Best balance of price and speed', 'Standard rate'),
   fairFare('Fair Fare', 'You set the price', null),
@@ -170,13 +176,13 @@ class RidePreferences {
 
 class FareEstimate {
   const FareEstimate({
-    required this.baseFare,
-    required this.distanceKm,
-    required this.distanceFare,
-    required this.discount,
-    required this.boost,
     required this.total,
     required this.pricing,
+    this.baseFare,
+    this.distanceKm,
+    this.distanceFare,
+    this.discount,
+    this.boost,
     this.ratePerKm,
     this.hours,
     this.hourlyRate,
@@ -199,12 +205,12 @@ class FareEstimate {
           option: price,
     };
     final lines = {for (final line in json.listOf('lines', (item) => item)) line.strOr('code', ''): line};
-    Money lineAmount(String code) => lines[code]?.moneyOrNull('amount') ?? Money.zero();
+    Money? lineAmount(String code) => lines[code]?.moneyOrNull('amount');
     final minimumOffer = json.moneyOrNull('minimumOffer');
     final maximumOffer = json.moneyOrNull('maximumOffer');
     return FareEstimate(
       baseFare: lineAmount('base_fare'),
-      distanceKm: json.numOrNull('distanceKm') ?? 0,
+      distanceKm: json.numOrNull('distanceKm'),
       distanceFare: lineAmount('distance'),
       discount: lineAmount('discount'),
       boost: lineAmount('boost'),
@@ -227,11 +233,11 @@ class FareEstimate {
     );
   }
 
-  final Money baseFare;
-  final num distanceKm;
-  final Money distanceFare;
-  final Money discount;
-  final Money boost;
+  final Money? baseFare;
+  final num? distanceKm;
+  final Money? distanceFare;
+  final Money? discount;
+  final Money? boost;
   final Money total;
   final Map<PricingOption, Money> pricing;
   final Money? ratePerKm;
@@ -242,7 +248,7 @@ class FareEstimate {
   final FairFareRange? fairFare;
   final List<({String label, Money amount})> otherLines;
 
-  bool get hasDistanceFare => distanceFare.isPositive;
+  bool get hasDistanceFare => distanceFare?.isPositive ?? false;
 
   Money adjustmentFor(PricingOption option) => (pricing[option] ?? total) - total;
 }

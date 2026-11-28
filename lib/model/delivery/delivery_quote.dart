@@ -76,15 +76,11 @@ class DeliveryQuote {
     final deadlines = [for (final tier in tiers) ?tier.expiresAt];
     return DeliveryQuote(
       quoteId: tiers.firstOrNull?.quoteId ?? '',
-      expiresAt: deadlines.isEmpty
-          ? DateTime.now().add(_defaultLifetime)
-          : deadlines.reduce((a, b) => a.isBefore(b) ? a : b),
+      expiresAt: deadlines.isEmpty ? null : deadlines.reduce((a, b) => a.isBefore(b) ? a : b),
       tiers: tiers,
       recommendedTier: recommendedTier,
     );
   }
-
-  static const Duration _defaultLifetime = Duration(minutes: 10);
 
   factory DeliveryQuote.fromJson(Map<String, dynamic> json) {
     final reader = JsonReader.of(json);
@@ -97,11 +93,14 @@ class DeliveryQuote {
   }
 
   final String quoteId;
-  final DateTime expiresAt;
+  final DateTime? expiresAt;
   final List<QuoteTier> tiers;
   final String? recommendedTier;
 
-  bool get isExpired => !expiresAt.isAfter(DateTime.now());
+  bool get isExpired {
+    final deadline = expiresAt;
+    return deadline != null && !deadline.isAfter(DateTime.now());
+  }
 
   QuoteTier? tierOf(String? id) => tiers.where((tier) => tier.id == id).firstOrNull;
 
