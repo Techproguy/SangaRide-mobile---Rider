@@ -1,36 +1,53 @@
+import 'package:sanga_ride_core/sanga_ride_core.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
-enum RatingTag {
-  fastAndPolite('FAST_AND_POLITE', 'Fast and polite', isPositive: true),
-  cleanCar('CLEAN_CAR', 'Clean car', isPositive: true),
-  greatConversation('GREAT_CONVERSATION', 'Great conversation', isPositive: true),
-  safeDriving('SAFE_DRIVING', 'Safe driving', isPositive: true),
-  onTime('ON_TIME', 'On time', isPositive: true),
-  expertNavigation('EXPERT_NAVIGATION', 'Expert navigation', isPositive: true),
-  lateArrival('LATE_ARRIVAL', 'Late arrival', isPositive: false),
-  unsafeDriving('UNSAFE_DRIVING', 'Unsafe driving', isPositive: false),
-  rude('RUDE', 'Rude', isPositive: false),
-  dirtyCar('DIRTY_CAR', 'Dirty car', isPositive: false),
-  wrongRoute('WRONG_ROUTE', 'Wrong route', isPositive: false);
+class RatingTag {
+  const RatingTag({required this.code, required this.label});
 
-  const RatingTag(this.code, this.label, {required this.isPositive});
+  factory RatingTag.fromReader(JsonReader reader) =>
+      RatingTag(code: reader.str('code'), label: reader.str('label'));
+
+  // TODO(#270): drop these code lists when GET /ratings/tags returns isPositive, appliesTo and minStars
+  static const Set<String> _negativeCodes = {
+    'LATE_ARRIVAL',
+    'UNSAFE_DRIVING',
+    'RUDE',
+    'DIRTY_CAR',
+    'WRONG_ROUTE',
+  };
+  static const Set<String> _positiveCodes = {
+    'FAST_AND_POLITE',
+    'CLEAN_CAR',
+    'GREAT_CONVERSATION',
+    'SAFE_DRIVING',
+    'ON_TIME',
+    'EXPERT_NAVIGATION',
+  };
+  static const Set<String> _ridesOnlyCodes = {
+    'CLEAN_CAR',
+    'GREAT_CONVERSATION',
+    'EXPERT_NAVIGATION',
+    'DIRTY_CAR',
+    'WRONG_ROUTE',
+  };
 
   final String code;
   final String label;
-  final bool isPositive;
 
-  bool get suitsDelivery => switch (this) {
-    cleanCar || greatConversation || expertNavigation || dirtyCar || wrongRoute => false,
-    _ => true,
-  };
+  bool get suitsDelivery => !_ridesOnlyCodes.contains(code);
 
-  static List<RatingTag> forStars(int stars) {
-    if (stars <= 0) return const [];
-    return [
-      for (final tag in values)
-        if (tag.isPositive == stars >= 4) tag,
-    ];
+  bool isOfferedFor(int stars) {
+    if (stars <= 0) return false;
+    return stars >= 4
+        ? !_negativeCodes.contains(code)
+        : !_positiveCodes.contains(code);
   }
+
+  @override
+  bool operator ==(Object other) => other is RatingTag && other.code == code;
+
+  @override
+  int get hashCode => code.hashCode;
 }
 
 class DriverRating {
@@ -44,10 +61,7 @@ class DriverRating {
 
   bool get hasStars => stars > 0;
 
-  List<RatingTag> get availableTags => RatingTag.forStars(stars);
-
-  DriverRating withStars(int value) {
-    final available = RatingTag.forStars(value);
+  DriverRating withStars(int value, {required List<RatingTag> available}) {
     return DriverRating(
       stars: value,
       tags: {
@@ -64,7 +78,8 @@ class DriverRating {
     return DriverRating(stars: stars, tags: next, comment: comment);
   }
 
-  DriverRating withComment(String value) => DriverRating(stars: stars, tags: tags, comment: value);
+  DriverRating withComment(String value) =>
+      DriverRating(stars: stars, tags: tags, comment: value);
 
   Map<String, dynamic> toJson() {
     final review = comment.trim();
@@ -98,5 +113,6 @@ final class RatingFailed extends RatingState {
   const RatingFailed(super.rating);
 
   static const String title = 'We couldn’t send your rating';
-  static const String message = '${SangaCommonCopy.connectionAnotherGo} Your review is still here.';
+  static const String message =
+      '${SangaCommonCopy.connectionAnotherGo} Your review is still here.';
 }

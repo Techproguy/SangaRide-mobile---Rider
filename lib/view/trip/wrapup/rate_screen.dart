@@ -61,6 +61,7 @@ class _RateScreenState extends State<RateScreen> {
     return Obx(() {
       final receiptState = _receipt.state;
       final ratingState = _rating.state;
+      final tags = _rating.tags;
       final driver = receiptState is ReceiptLoaded ? receiptState.receipt.driver : null;
       final isSubmitting = ratingState is RatingSubmitting;
       return SangaPageLayout(
@@ -94,6 +95,7 @@ class _RateScreenState extends State<RateScreen> {
                     driver: driver,
                     isDelivery: receiptState is ReceiptLoaded && receiptState.receipt.isDelivery,
                     state: ratingState,
+                    tags: tags,
                     comment: _comment,
                     onStars: _rating.setStars,
                     onTag: _rating.toggleTag,
@@ -112,6 +114,7 @@ class _RateBody extends StatelessWidget {
     required this.driver,
     required this.isDelivery,
     required this.state,
+    required this.tags,
     required this.comment,
     required this.onStars,
     required this.onTag,
@@ -122,6 +125,7 @@ class _RateBody extends StatelessWidget {
   final OfferDriver driver;
   final bool isDelivery;
   final RatingState state;
+  final List<RatingTag> tags;
   final TextEditingController comment;
   final ValueChanged<int> onStars;
   final ValueChanged<RatingTag> onTag;
@@ -152,13 +156,13 @@ class _RateBody extends StatelessWidget {
           duration: SangaMotion.morph,
           curve: SangaMotion.springBlock,
           alignment: Alignment.topCenter,
-          child: rating.hasStars
+          child: rating.hasStars && tags.isNotEmpty
               ? IgnorePointer(
                   ignoring: isLocked,
                   child: RatingTagWrap(
                     tags: [
-                      for (final tag in rating.availableTags)
-                        if (!isDelivery || tag.suitsDelivery) tag,
+                      for (final tag in tags)
+                        if (tag.isOfferedFor(rating.stars) && (!isDelivery || tag.suitsDelivery)) tag,
                     ],
                     selected: rating.tags,
                     onToggle: onTag,

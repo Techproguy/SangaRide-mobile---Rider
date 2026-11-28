@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:developer';
 
 import 'package:get/get.dart';
@@ -12,6 +13,7 @@ class TripRatingController extends GetxController {
   final _api = Get.find<ApiService>();
 
   final Rx<RatingState> _state = Rx<RatingState>(const RatingEditing(DriverRating()));
+  final RxList<RatingTag> _tags = <RatingTag>[].obs;
   String? _tripId;
   IdempotencyKey? _key;
   String? _keyedRequest;
@@ -23,13 +25,31 @@ class TripRatingController extends GetxController {
 
   bool get isSubmitting => state is RatingSubmitting;
 
+  List<RatingTag> get tags => _tags;
+
+  List<RatingTag> tagsFor(int stars) => [
+    for (final tag in _tags)
+      if (tag.isOfferedFor(stars)) tag,
+  ];
+
   @override
   void onClose() {
     _epoch.next();
     super.onClose();
   }
 
+  Future<void> loadTags() async {
+    try {
+      final response = await _api.get(AppEndpoints.ratingTags, suppressErrorToast: true);
+      final tags = JsonReader.of({'tags': (response.data as Map)['data']}).listOf('tags', RatingTag.fromReader);
+      _tags.assignAll(tags);
+    } catch (e) {
+      log('rating tags failed: $e');
+    }
+  }
+
   void open(String tripId) {
+    unawaited(loadTags());
     if (_tripId == tripId && state is! RatingSubmitted) return;
     _epoch.next();
     _tripId = tripId;
@@ -38,11 +58,11 @@ class TripRatingController extends GetxController {
 
   void setStars(int stars) {
     if (isSubmitting || state is RatingSubmitted) return;
-    _state.value = RatingEditing(state.rating.withStars(stars));
+    _state.value = RatingEditing(state.rating.withStars(stars, available: tagsFor(stars)));
   }
 
   void toggleTag(RatingTag tag) {
-    if (isSubmitting || state is RatingSubmitted || !state.rating.availableTags.contains(tag)) return;
+    if (isSubmitting || state is RatingSubmitted || !tagsFor(state.rating.stars).contains(tag)) return;
     _state.value = RatingEditing(state.rating.toggled(tag));
   }
 

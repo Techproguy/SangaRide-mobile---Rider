@@ -109,6 +109,7 @@ class AppEndpoints {
   static const String tripPaymentCancel = '$_tripWrapUp/payment/cancel';
   static const String tripReceipt = '$_tripWrapUp/receipt';
   static const String tripRating = '$_tripWrapUp/rating';
+  static const String ratingTags = '/ratings/tags';
   static const String tripShare = '$_tripWrapUp/share';
 
   static String tripPaymentOf(String id) => fillPath(tripPayment, {'id': id});
