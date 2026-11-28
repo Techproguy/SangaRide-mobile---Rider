@@ -105,6 +105,8 @@ class _DeliveryReviewScreenState extends State<DeliveryReviewScreen> {
         await _delivery.ensureQuote(force: true);
       case DeliveryFailure.itemProhibited:
         await _edit(DeliveryRoutes.item);
+      case DeliveryFailure.declaredValueTooHigh:
+        await _edit(DeliveryRoutes.value);
       case DeliveryFailure.invalidRecipientPhone:
         _delivery.flagRecipientPhone(failure);
         await _edit(DeliveryRoutes.recipient);

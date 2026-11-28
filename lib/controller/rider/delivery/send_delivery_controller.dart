@@ -290,11 +290,12 @@ class SendDeliveryController extends GetxController {
     _quoteSignature = signature;
     _quote.value = const QuoteLoading();
     try {
-      final results = await Future.wait([for (final tier in catalog.tiers) _estimateTier(catalog, tier)]);
+      final results = (await Future.wait([for (final tier in catalog.tiers) _estimateTier(catalog, tier)])).nonNulls;
       if (!_quoteEpoch.isCurrent(epoch)) return;
-      final tiers = results.nonNulls.toList();
+      final tiers = [for (final result in results) result.tier];
       if (tiers.isEmpty) throw _lastQuoteError ?? StateError('No delivery tier could be priced');
-      final quote = DeliveryQuote.ofTiers(tiers, recommendedTier: _recommendedTierOf(catalog));
+      final recommendedTier = results.map((result) => result.recommendedTier).nonNulls.firstOrNull;
+      final quote = DeliveryQuote.ofTiers(tiers, recommendedTier: recommendedTier);
       _chooseTier(quote);
       _quote.value = QuoteReady(quote, signature: signature);
     } catch (e) {
@@ -305,24 +306,27 @@ class SendDeliveryController extends GetxController {
 
   Object? _lastQuoteError;
 
-  Future<QuoteTier?> _estimateTier(DeliveryCatalog catalog, DeliveryTierInfo tier) async {
+  Future<({QuoteTier tier, String? recommendedTier})?> _estimateTier(
+    DeliveryCatalog catalog,
+    DeliveryTierInfo tier,
+  ) async {
     try {
       final response = await _api.post(
         DeliveryEndpoints.quote,
         data: _quoteBody(catalog, tier.id),
         suppressErrorToast: true,
       );
-      return QuoteTier.fromEstimate(tier.id, response.dataMapOrEmpty, fallbackEta: tier.etaMinutes);
+      final data = response.dataMapOrEmpty;
+      final reader = JsonReader.of(data);
+      return (
+        tier: QuoteTier.fromEstimate(tier.id, data, fallbackEta: tier.etaMinutes),
+        recommendedTier: (reader.objectOrNull('quote') ?? reader).strOrNull('recommendedTier'),
+      );
     } catch (e) {
       _lastQuoteError = e;
       log('estimate for ${tier.id} failed: $e');
       return null;
     }
-  }
-
-  String? _recommendedTierOf(DeliveryCatalog catalog) {
-    if (catalog.isHighValue(draft.declaredValue)) return DeliveryRules.premiumTierId;
-    return catalog.tiers.firstOrNull?.id;
   }
 
   Future<SubmitCheck> prepareSubmit() async {

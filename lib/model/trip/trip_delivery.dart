@@ -247,6 +247,7 @@ class DeliveryProof {
     return lat == null || lng == null ? null : LatLng(lat, lng);
   }
 
+  // TODO(#270): drop the 150 m check and read proof.locationVerified when the delivery returns it
   static const double verifiedRadiusMeters = 150;
 
   final String? photoUrl;

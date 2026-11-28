@@ -3,9 +3,10 @@ import 'package:sanga_ride_core/sanga_ride_core.dart';
 import 'package:sanga_ride_ui/sanga_ride_ui.dart';
 
 abstract final class DeliveryRules {
+  // TODO(#270): drop the document kind ids, default package type and forced smallest size when GET /deliveries/config returns kinds[].{requiresPhoto,impliedSizeId,impliedPackageTypeId}
   static const Set<String> documentsKindIds = {'document', 'documents'};
   static const String defaultPackageTypeId = 'not_fragile';
-  static const String premiumTierId = 'premium_care';
+  // TODO(#270): drop these field limits when GET /deliveries/config returns limits{itemNameMax,descriptionMax,recipientNameMax,photoMaxBytes}
   static const int itemNameMaxLength = 60;
   static const int descriptionMaxLength = 200;
   static const int recipientNameMaxLength = 60;
@@ -98,7 +99,7 @@ class DeliveryCatalog {
     required this.packageTypes,
     required this.tiers,
     required this.highValueThreshold,
-    required this.maxDeclaredValue,
+    required this.highValueMessage,
     required this.prohibitedNotice,
   });
 
@@ -114,7 +115,7 @@ class DeliveryCatalog {
           : const [],
       tiers: _parseAll(reader, 'tiers', DeliveryTierInfo.fromReader),
       highValueThreshold: _requiredMoney(reader, 'highValueThreshold'),
-      maxDeclaredValue: Money.tryParse(reader.raw['maxDeclaredValue']),
+      highValueMessage: reader.strOrNull('highValueMessage'),
       prohibitedNotice: reader.strOrNull('prohibitedNotice') ?? reader.str('prohibitedNote'),
     );
   }
@@ -128,7 +129,7 @@ class DeliveryCatalog {
   final List<PackageType> packageTypes;
   final List<DeliveryTierInfo> tiers;
   final Money highValueThreshold;
-  final Money? maxDeclaredValue;
+  final String? highValueMessage;
   final String prohibitedNotice;
 
   DeliveryKindOption? kindOf(String? id) => kinds.where((kind) => kind.id == id).firstOrNull;
@@ -144,13 +145,6 @@ class DeliveryCatalog {
   PackageType? get defaultPackageType => packageTypeOf(DeliveryRules.defaultPackageTypeId) ?? packageTypes.firstOrNull;
 
   bool get hasPackageTypes => packageTypes.isNotEmpty;
-
-  bool isTooValuable(Money value) => switch (maxDeclaredValue) {
-    final max? => value > max,
-    null => false,
-  };
-
-  String get premiumTierLabel => tierOf(DeliveryRules.premiumTierId)?.label ?? 'a premium tier';
 
   bool isHighValue(Money? value) => value != null && value >= highValueThreshold;
 }

@@ -50,7 +50,7 @@ class _DeliveryValueScreenState extends State<DeliveryValueScreen> {
 
   bool _isValid(DeliveryCatalog? catalog) {
     final value = _delivery.draft.declaredValue;
-    return catalog != null && value != null && value.isPositive && !catalog.isTooValuable(value);
+    return catalog != null && value != null && value.isPositive;
   }
 
   @override
@@ -80,8 +80,6 @@ class _DeliveryValueScreenState extends State<DeliveryValueScreen> {
 
   Widget _body(DeliveryCatalog catalog) {
     final value = _delivery.draft.declaredValue;
-    final maxValue = catalog.maxDeclaredValue;
-    final isTooHigh = value != null && catalog.isTooValuable(value);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       spacing: SangaSpacing.lg,
@@ -94,7 +92,6 @@ class _DeliveryValueScreenState extends State<DeliveryValueScreen> {
             SangaMoneyField(
               controller: _value,
               hintText: '350,000',
-              errorText: isTooHigh && maxValue != null ? 'The most you can declare is ${maxValue.format()}' : null,
               onChanged: (value) => _delivery.setDeclaredValue(NumberFormats.moneyOf(value)),
               onSubmitted: (_) {
                 if (_isValid(catalog)) _next();
@@ -102,13 +99,8 @@ class _DeliveryValueScreenState extends State<DeliveryValueScreen> {
             ),
           ],
         ),
-        if (catalog.isHighValue(value))
-          ValueWarning(
-            title: 'High value item',
-            message:
-                'For items above ${catalog.highValueThreshold.format()} we recommend ${catalog.premiumTierLabel} '
-                'for extra security and careful handling.',
-          )
+        if (catalog.isHighValue(value) && catalog.highValueMessage != null)
+          ValueWarning(title: 'High value item', message: catalog.highValueMessage!)
         else
           const SangaNotice(
             tone: SangaTone.neutral,

@@ -34,6 +34,11 @@ enum DeliveryFailure {
     'We can’t carry that item',
     'Hazardous, illegal or restricted items are not allowed. Change what you’re sending to carry on.',
   ),
+  declaredValueTooHigh(
+    'declared_value_too_high',
+    'That value is too high',
+    'Lower the value you declared to carry on.',
+  ),
   invalidRecipientPhone(
     'invalid_recipient_phone',
     'That phone number looks off',
@@ -54,6 +59,7 @@ enum DeliveryFailure {
   String get actionLabel => switch (this) {
     quoteExpired => 'See new price',
     itemProhibited => 'Edit item',
+    declaredValueTooHigh => 'Edit value',
     invalidRecipientPhone => 'Fix number',
     _ => 'Okay',
   };
