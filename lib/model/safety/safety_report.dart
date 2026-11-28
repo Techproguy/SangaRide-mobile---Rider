@@ -1,5 +1,6 @@
 import 'package:sanga_ride_core/sanga_ride_core.dart';
 
+// TODO(#270): drop the built-in report categories and detail lengths when GET /safety/report-categories returns categories[], minDetails and maxDetails
 enum ReportCategory {
   driving('driving', 'Unsafe driving'),
   harassment('harassment', 'Harassment'),
