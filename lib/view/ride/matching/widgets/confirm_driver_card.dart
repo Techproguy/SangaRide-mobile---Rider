@@ -24,6 +24,7 @@ class ConfirmDriverCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final driver = hold.driver;
     final matchLabel = hold.matchLabel;
+    final distanceAway = hold.distanceAwayKm;
     final counter = hold.counterOffer;
     return SangaListGroup(
       children: [
@@ -40,7 +41,8 @@ class ConfirmDriverCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.end,
               spacing: SangaSpacing.xs,
               children: [
-                DriverStatBadge(icon: Icons.alt_route_rounded, label: SangaDistance.away(hold.distanceAwayKm * 1000)),
+                if (distanceAway != null)
+                  DriverStatBadge(icon: Icons.alt_route_rounded, label: SangaDistance.away(distanceAway * 1000)),
                 if (matchLabel != null)
                   DriverStatBadge(icon: Icons.done_all_rounded, label: matchLabel, tone: DriverStatTone.positive),
               ],

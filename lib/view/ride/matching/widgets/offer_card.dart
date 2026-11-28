@@ -37,7 +37,7 @@ class OfferCard extends StatelessWidget {
               rating: driver.rating,
               photo: driver.photo,
               isVerified: driver.isVerified,
-              trailing: _EtaChip(minutes: offer.etaMinutes),
+              trailing: offer.etaMinutes == null ? null : _EtaChip(minutes: offer.etaMinutes!),
             ),
           ),
           Padding(

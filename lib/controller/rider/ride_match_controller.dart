@@ -496,8 +496,10 @@ class RideMatchController extends GetxController {
     );
     poller.link.addListener(() => _onLink(epoch, poller));
     _searchPoller = poller..start();
+    final deadline = request.searchDeadline;
+    if (deadline == null) return;
     _expiryTimer = SessionHub.instance.timer(
-      ServerClock.instance.remaining(request.searchDeadline) + retryDelay,
+      ServerClock.instance.remaining(deadline) + retryDelay,
       () => _onExpiry(epoch),
     );
   }
