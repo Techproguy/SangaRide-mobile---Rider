@@ -1,4 +1,3 @@
-import 'package:sanga_ride/core/safety_config.dart';
 import 'package:sanga_ride_core/sanga_ride_core.dart';
 import 'package:sanga_ride/model/safety/emergency_contact.dart';
 import 'package:sanga_ride/model/safety/sos.dart';
@@ -91,15 +90,19 @@ class SafetyCentre {
     final trip = reader.objectOrNull('ride');
     return SafetyCentre(
       contacts: reader.listOf('emergencyContacts', (contact) => EmergencyContact.fromJson(contact.raw)),
-      maxContacts: reader.intOr('maxContacts', defaultMaxContacts),
-      sosGrace: Duration(seconds: reader.intOr('sosGraceSeconds', SafetyConfig.sosGrace.inSeconds)),
-      emergencyNumber: SafetyConfig.numberOr(reader.strOrNull('emergencyNumber')),
+      maxContacts: reader.integer('maxContacts'),
+      sosGrace: Duration(seconds: reader.integer('sosGraceSeconds')),
+      emergencyNumber: _emergencyNumberOf(reader),
       activeSos: activeSos == null ? null : _tryRead(() => Sos.fromJson(activeSos.raw)),
       trip: trip == null ? null : _tryRead(() => SafetyTrip.fromJson(trip.raw)),
     );
   }
 
-  static const int defaultMaxContacts = 5;
+  static String _emergencyNumberOf(JsonReader reader) {
+    final number = reader.str('emergencyNumber').trim();
+    if (number.isEmpty) throw JsonFormatError('Expected a number at "emergencyNumber"', reader.raw['emergencyNumber']);
+    return number;
+  }
 
   static T? _tryRead<T>(T Function() parse) {
     try {

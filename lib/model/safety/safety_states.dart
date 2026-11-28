@@ -32,9 +32,10 @@ final class SosIdle extends SosState {
 }
 
 final class SosActivating extends SosState {
-  const SosActivating(this.startedAt);
+  const SosActivating(this.startedAt, this.grace);
 
   final DateTime startedAt;
+  final Duration grace;
 }
 
 final class SosSending extends SosState {

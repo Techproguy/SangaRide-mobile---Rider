@@ -9,7 +9,6 @@ class SosSheetView extends StatelessWidget {
     super.key,
     required this.state,
     required this.contactCount,
-    required this.grace,
     required this.emergencyNumber,
     required this.onGraceComplete,
     required this.onCancel,
@@ -22,8 +21,7 @@ class SosSheetView extends StatelessWidget {
 
   final SosState state;
   final int contactCount;
-  final Duration grace;
-  final String emergencyNumber;
+  final String? emergencyNumber;
   final VoidCallback onGraceComplete;
   final VoidCallback onCancel;
   final VoidCallback onRetry;
@@ -46,14 +44,14 @@ class SosSheetView extends StatelessWidget {
 
   Widget _content() => switch (state) {
     SosIdle() => const SizedBox.shrink(),
-    SosActivating(:final startedAt) => _activating(startedAt),
+    SosActivating(:final startedAt, :final grace) => _activating(startedAt, grace),
     SosSending() => _sending(),
     SosActive(:final sos) => _active(sos, isEnding: false),
     SosEnding(:final sos) => _active(sos, isEnding: true),
     SosFailed(:final problem) => _failed(problem),
   };
 
-  Widget _activating(DateTime startedAt) {
+  Widget _activating(DateTime startedAt, Duration grace) {
     return SangaSosSheetContent(
       title: 'Activating SOS',
       message: contactCount > 0
@@ -90,7 +88,8 @@ class SosSheetView extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         spacing: SangaSpacing.xs,
         children: [
-          _CallEmergencyButton(number: emergencyNumber, onPressed: isEnding ? null : onCallEmergency),
+          if (emergencyNumber != null)
+            _CallEmergencyButton(number: emergencyNumber!, onPressed: isEnding ? null : onCallEmergency),
           SangaButton.muted(label: 'End SOS', isLoading: isEnding, onPressed: onEnd),
         ],
       ),
@@ -137,7 +136,7 @@ class SosSheetView extends StatelessWidget {
         spacing: SangaSpacing.xs,
         children: [
           SangaButton.primary(label: 'Try again', onPressed: onRetry),
-          _CallEmergencyButton(number: emergencyNumber, onPressed: onCallEmergency),
+          if (emergencyNumber != null) _CallEmergencyButton(number: emergencyNumber!, onPressed: onCallEmergency),
           SangaButton.muted(label: 'Close', onPressed: onCloseFailure),
         ],
       ),

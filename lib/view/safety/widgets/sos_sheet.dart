@@ -94,14 +94,15 @@ class _SosSheetState extends State<_SosSheet> {
       return SosSheetView(
         state: _shown,
         contactCount: _sos.contactCount,
-        grace: _sos.grace,
         emergencyNumber: number,
         onGraceComplete: () => unawaited(_sos.send()),
         onCancel: _sos.cancel,
         onRetry: () => unawaited(_sos.retry()),
         onCloseFailure: _sos.dismissFailure,
         onEnd: widget.onEnd,
-        onCallEmergency: () => unawaited(dialNumber(number)),
+        onCallEmergency: () {
+          if (number != null) unawaited(dialNumber(number));
+        },
         onOpenContacts: widget.onOpenContacts,
       );
     });

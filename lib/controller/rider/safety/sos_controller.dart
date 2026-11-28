@@ -7,7 +7,6 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:sanga_ride/core/api/api.dart';
 import 'package:sanga_ride/core/api/idempotency_intents.dart';
 import 'package:sanga_ride/core/api/safety_endpoints.dart';
-import 'package:sanga_ride/core/safety_config.dart';
 import 'package:sanga_ride/core/services/location_service.dart';
 import 'package:sanga_ride/core/services/session_restore.dart';
 import 'package:sanga_ride/model/models.dart';
@@ -23,8 +22,8 @@ class SosController extends GetxController {
 
   final Rx<SosState> _state = Rx<SosState>(const SosIdle());
   final RxInt _contactCount = 0.obs;
-  final Rx<Duration> _grace = Rx<Duration>(SafetyConfig.sosGrace);
-  final RxString _emergencyNumber = SafetyConfig.emergencyNumber.obs;
+  final Rxn<Duration> _grace = Rxn<Duration>();
+  final RxnString _emergencyNumber = RxnString();
   LivePoller? _poller;
   Worker? _meWorker;
   Timer? _graceTimer;
@@ -43,9 +42,7 @@ class SosController extends GetxController {
 
   int get contactCount => _contactCount.value;
 
-  Duration get grace => _grace.value;
-
-  String get emergencyNumber => _emergencyNumber.value;
+  String? get emergencyNumber => _emergencyNumber.value;
 
   @override
   void onInit() {
@@ -85,14 +82,15 @@ class SosController extends GetxController {
   }
 
   void start({required String? tripId}) {
-    if (!isIdle) return;
+    final grace = _grace.value;
+    if (!isIdle || grace == null) return;
     _tripId = tripId;
     _coordinates = null;
     _epoch.next();
     _sendMutation?.dispose();
     _sendMutation = null;
     _pendingLocation = _locate();
-    _state.value = SosActivating(DateTime.now());
+    _state.value = SosActivating(DateTime.now(), grace);
     _graceTimer?.cancel();
     _graceTimer = SessionHub.instance.timer(grace, () => unawaited(send()));
   }
@@ -221,8 +219,8 @@ class SosController extends GetxController {
       suppressErrorToast: true,
       profile: RequestProfile.interactive,
     );
-    final active = SafetyCentre.fromJson(response.dataMapOrEmpty).activeSos;
-    return active == null ? const ReconciledNotDone() : ReconciledDone(active);
+    final active = JsonReader.of(response.dataMapOrEmpty).objectOrNull('activeSos');
+    return active == null ? const ReconciledNotDone() : ReconciledDone(Sos.fromJson(active.raw));
   }
 
   void _onRejected(ApiException error) {
