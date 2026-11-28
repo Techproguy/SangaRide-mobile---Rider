@@ -52,9 +52,7 @@ class _IntercityScreenState extends State<IntercityScreen> {
 
   bool _canConfirm(IntercityCatalog catalog) {
     final departure = _ride.scheduledAt;
-    return _ride.intercityIssue == null &&
-        departure != null &&
-        !departure.isBefore(BookingClock.now().add(catalog.departureLead));
+    return departure != null && !departure.isBefore(BookingClock.now().add(catalog.departureLead));
   }
 
   @override
@@ -124,7 +122,6 @@ class _IntercityScreenState extends State<IntercityScreen> {
   }
 
   Widget _cities() {
-    final issue = _ride.intercityIssue;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       spacing: SangaSpacing.sm,
@@ -132,7 +129,6 @@ class _IntercityScreenState extends State<IntercityScreen> {
         const SangaSectionHeader('Choose cities'),
         _cityRow(SangaStopKind.pickup, _ride.pickup, _ride.fromCity, const RouteEdit.pickup()),
         _cityRow(SangaStopKind.dropoff, _ride.dropoff, _ride.toCity, const RouteEdit.dropoff()),
-        SangaFieldError(issue?.message),
       ],
     );
   }

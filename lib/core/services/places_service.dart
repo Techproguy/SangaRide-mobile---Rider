@@ -29,7 +29,6 @@ class PlacesService {
 
   static const double _biasRadiusMeters = 30000;
   static const int _minFallbackLength = 3;
-  static const String _fallbackMask = '$_placeListMask,places.addressComponents';
 
   String? _fallbackKey;
   List<PlaceAutocomplete> _fallbackPredictions = const [];
@@ -49,7 +48,6 @@ class PlacesService {
         'input': input,
         'sessionToken': ?sessionToken,
         'languageCode': language,
-        'includedRegionCodes': [SangaConstants.placesCountryCode],
         if (origin != null) ...{
           'origin': _latLng(origin),
           'locationBias': {
@@ -89,34 +87,24 @@ class PlacesService {
             'circle': {'center': _latLng(origin), 'radius': _biasRadiusMeters},
           },
       },
-      options: _options(_fallbackMask),
+      options: _options(_placeListMask),
     );
     final rawPlaces = response.statusCode == 200 && response.data is Map
         ? (response.data['places'] as List?) ?? const []
         : const [];
     final predictions = [
       for (final raw in rawPlaces.whereType<Map>())
-        if (_isInPlacesCountry(raw))
-          if (Place.fromJson(Map<String, dynamic>.from(raw)) case final place when place.placeId.isNotEmpty)
-            PlaceAutocomplete(
-              placeId: place.placeId,
-              description: '${place.name}, ${place.address}',
-              mainText: place.name,
-              secondaryText: place.address,
-            ),
+        if (Place.fromJson(Map<String, dynamic>.from(raw)) case final place when place.placeId.isNotEmpty)
+          PlaceAutocomplete(
+            placeId: place.placeId,
+            description: '${place.name}, ${place.address}',
+            mainText: place.name,
+            secondaryText: place.address,
+          ),
     ];
     _fallbackKey = key;
     _fallbackPredictions = predictions;
     return predictions;
-  }
-
-  static bool _isInPlacesCountry(Map place) {
-    final components = place['addressComponents'];
-    if (components is! List) return false;
-    final country = SangaConstants.placesCountryCode.toUpperCase();
-    return components.whereType<Map>().any(
-      (c) => (c['types'] as List?)?.contains('country') == true && '${c['shortText']}'.toUpperCase() == country,
-    );
   }
 
   Future<Place?> getPlaceDetails(String placeId, {String? sessionToken}) async {

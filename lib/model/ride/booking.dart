@@ -174,16 +174,6 @@ class City {
   }
 }
 
-enum IntercityIssue {
-  unsupportedPickup('We don’t cover that pickup for intercity trips yet.'),
-  unsupportedDropoff('We don’t cover that drop off for intercity trips yet.'),
-  sameCity('Pick a drop off in a different city. For trips inside one city, use One way.');
-
-  const IntercityIssue(this.message);
-
-  final String message;
-}
-
 class HourlyPreset {
   const HourlyPreset({required this.hours, required this.blurb, required this.price});
 
@@ -292,8 +282,8 @@ final class CatalogReady extends BookingCatalogState {
 
 enum BookingProblem {
   scheduleTooSoon('schedule_too_soon', 'That time is too close. Pick a later one.'),
-  intercityUnavailable('intercity_unavailable', 'We can’t do that intercity route yet.'),
-  sameCity('same_city', 'Pick a drop off in a different city.'),
+  intercityUnavailable('intercity_unavailable', IntercityCopy.unavailable),
+  sameCity('same_city', IntercityCopy.sameCity),
   reminderTooLate('reminder_too_late', 'This ride is too close for a reminder.'),
   tooEarly('too_early', 'Your flight hasn’t landed yet. You can notify your driver once it has.'),
   quoteExpired(ServerCode.quoteExpired, 'Your price changed. Have a look at the new one, then go again.'),

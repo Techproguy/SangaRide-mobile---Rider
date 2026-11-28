@@ -225,16 +225,6 @@ class RideRequestController extends GetxController {
 
   City? get toCity => cityOf(dropoff);
 
-  IntercityIssue? get intercityIssue {
-    if (readyCatalog == null) return null;
-    final from = fromCity;
-    final to = toCity;
-    if (from == null) return IntercityIssue.unsupportedPickup;
-    if (to == null) return IntercityIssue.unsupportedDropoff;
-    if (from.id == to.id) return IntercityIssue.sameCity;
-    return null;
-  }
-
   HourlyCatalog? get hourlyCatalog {
     final category = option?.category;
     return category == null ? null : readyCatalog?.hourly[category];
@@ -272,7 +262,7 @@ class RideRequestController extends GetxController {
     TripType.oneWay => timing != RideTiming.later || scheduledAt != null,
     TripType.roundTrip => returnAt != null && (timing != RideTiming.later || scheduledAt != null),
     TripType.hourly => timing != RideTiming.later || scheduledAt != null,
-    TripType.intercity => scheduledAt != null && intercityIssue == null,
+    TripType.intercity => scheduledAt != null,
     TripType.airport => airportBooking != null,
     TripType.delivery => deliveryBooking != null,
   };
@@ -490,7 +480,7 @@ class RideRequestController extends GetxController {
     try {
       final response = await _api.get(AppEndpoints.rideOptions, suppressErrorToast: true);
       final loaded = JsonReader.of({'options': (response.data as Map)['data']}).listOf('options', RideOption.fromJson);
-      _options.assignAll(loaded);
+      _options.assignAll(loaded.where((option) => option.isAvailable));
       _optionsLoadedAt = DateTime.now();
       _loadHourlyIfMissing();
       _preselectOption();
