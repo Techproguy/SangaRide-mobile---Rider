@@ -56,6 +56,7 @@ Future<void> initializeSanga() async {
   LegalLinks.restore();
   ServerConfig.restore();
   RiderConfig.restore();
+  AuthConfig.restore();
   SangaCountdown.serverClock = ServerClock.instance.now;
   SangaRouteService.configure(
     SangaRouteConfig(

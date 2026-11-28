@@ -42,7 +42,7 @@ import 'package:sanga_ride_push/sanga_ride_push.dart' show PushService;
 import 'package:sanga_ride_ui/sanga_ride_ui.dart' show SangaAuthCopy, SangaRegion, SangaToast, SangaToastTone;
 
 class AuthController extends GetxController {
-  static int get otpLength => AuthConfig.current.otpLength;
+  static int get otpLength => AuthConfig.requireOtpLength();
   static const Duration logoutRevokeCap = Duration(seconds: 3);
 
   final _api = Get.find<ApiService>();
@@ -92,6 +92,7 @@ class AuthController extends GetxController {
     if (_isOffline) return _failRequest(AuthProblem.offline.message, purpose);
     _isSendingCode.value = true;
     try {
+      await AuthConfig.ensureOtpLength(_api);
       final response = await _api.post(
         AppEndpoints.requestOtp,
         data: {

@@ -10,7 +10,7 @@ enum AccountProblem {
   deleteUnconfirmed('We’re not sure the request went through. Check again before you try deleting.'),
   invalidEmail('That email doesn’t look right. Check it and try again.', code: ServerCode.invalidEmail),
   emailTaken('Another account already uses that email.', code: ServerCode.emailTaken),
-  tooYoung('', code: ServerCode.tooYoung),
+  tooYoung('You don’t meet the minimum age to ride with Sanga yet.', code: ServerCode.tooYoung),
   nameRequired('Add your first and last name.', code: ServerCode.nameRequired),
   invalidPhone(CommonCopy.invalidPhoneSentence, code: ServerCode.invalidPhone),
   phoneTaken('This number already has an account.', code: ServerCode.phoneTaken),
@@ -32,9 +32,10 @@ enum AccountProblem {
   final String _message;
   final String? code;
 
-  String get message => this == tooYoung
-      ? 'You need to be at least ${ServerConfig.current.minimumRiderAge} to ride with Sanga.'
-      : _message;
+  String get message {
+    final age = ServerConfig.current.minimumRiderAge;
+    return this == tooYoung && age != null ? 'You need to be at least $age to ride with Sanga.' : _message;
+  }
 
   bool get opensSettings => this == cameraDenied || this == photosDenied;
 

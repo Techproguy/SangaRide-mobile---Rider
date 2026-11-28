@@ -2,6 +2,7 @@ import 'package:get/get.dart';
 import 'package:sanga_ride/controller/rider/account/account_controller.dart';
 import 'package:sanga_ride/core/api/account_endpoints.dart';
 import 'package:sanga_ride/core/api/api.dart';
+import 'package:sanga_ride/core/services/auth_config.dart';
 import 'package:sanga_ride/core/api/idempotency_intents.dart';
 import 'package:sanga_ride/model/models.dart';
 import 'package:sanga_ride_core/sanga_ride_core.dart';
@@ -33,6 +34,7 @@ class PhoneChangeController extends GetxController {
     }
     _state.value = const PhoneSending();
     try {
+      await AuthConfig.ensureOtpLength(_api);
       final response = await _api.post(
         AccountEndpoints.phone,
         data: {'phone': phone},

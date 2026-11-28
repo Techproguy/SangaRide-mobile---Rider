@@ -12,21 +12,22 @@ enum SangaLegal {
   privacy,
   guidelines;
 
-  static const String _siteRoot = 'https://sangatechnologies.com/';
-  static const String _privacyPage = 'https://sangatechnologies.com/privacy-policy/';
-
   String? get serverUrl => switch (this) {
     SangaLegal.terms => LegalLinks.current.terms,
     SangaLegal.privacy => LegalLinks.current.privacy,
     SangaLegal.guidelines => LegalLinks.current.communityGuidelines,
   };
 
-  String get url => serverUrl ?? (this == SangaLegal.privacy ? _privacyPage : _siteRoot);
 }
 
 Future<void> openSangaLegal(BuildContext context, SangaLegal document) async {
   if (document.serverUrl == null) await AuthConfig.loadServerConfig(Get.find<ApiService>());
-  await launchUrl(Uri.parse(document.url), mode: LaunchMode.inAppBrowserView);
+  final url = document.serverUrl;
+  if (url == null) {
+    SangaToast.show(SangaCommonCopy.unreachableTryAgain, tone: SangaToastTone.error);
+    return;
+  }
+  await launchUrl(Uri.parse(url), mode: LaunchMode.inAppBrowserView);
 }
 
 Widget buildSangaLegalSection(BuildContext context) => SangaLegalSection(

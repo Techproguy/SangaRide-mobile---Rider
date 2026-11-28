@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:sanga_ride/controller/rider/groups/group_bindings.dart';
 import 'package:sanga_ride/controller/rider/groups/groups_controller.dart';
 import 'package:sanga_ride/core/api/api.dart';
+import 'package:sanga_ride/core/services/auth_config.dart';
 import 'package:sanga_ride/core/api/idempotency_intents.dart';
 import 'package:sanga_ride/core/api/who_for_endpoints.dart';
 import 'package:sanga_ride/model/groups/group_models.dart';
@@ -248,6 +249,7 @@ class RideForController extends GetxController {
   }
 
   Future<PassengerVerification> _requestCode(PassengerInfo info, {required bool isResend, String? passengerId}) async {
+    await AuthConfig.ensureOtpLength(_api);
     final response = await _api.post(
       passengerId == null ? WhoForEndpoints.passengerOtp : WhoForEndpoints.passengerResendOf(passengerId),
       data: passengerId == null ? info.toJson() : null,
